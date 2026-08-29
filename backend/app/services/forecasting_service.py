@@ -7,14 +7,21 @@ from sqlalchemy import func
 from app.models.invoice import Invoice
 from app.models.analytics import MonthlyTarget
 
+_FORECAST_CACHE = {"timestamp": 0, "data": None}
+CACHE_TTL_SECONDS = 60
+
 class ForecastingService:
     @staticmethod
-    def get_sales_forecast(db: Session) -> Dict[str, Any]:
+    def get_sales_forecast(db: Session, force_refresh: bool = False) -> Dict[str, Any]:
         """
-        Sales Forecast vs Actual Intelligence:
+        High-Performance Sales Forecast vs Actual Intelligence:
         Calculates month-end projection using rolling velocity and 3-month weighted moving average (50/30/20).
-        Generates single plain-language story statement and daily pacing sparkline.
+        Uses single-query monthly aggregation + 60s in-memory caching.
         """
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if not force_refresh and _FORECAST_CACHE["data"] and (now_ts - _FORECAST_CACHE["timestamp"] < CACHE_TTL_SECONDS):
+            return _FORECAST_CACHE["data"]
+
         today = date.today()
         year = today.year
         month = today.month
@@ -56,29 +63,22 @@ class ForecastingService:
                 "cumulative_revenue": round(cumulative, 2)
             })
 
-        # 3. Trailing 3 Months History for Weighted Moving Average (50/30/20)
-        past_months_data = []
-        for i in range(1, 4):
-            # Calculate prior month
-            m = month - i
-            y = year
-            if m <= 0:
-                m += 12
-                y -= 1
-            start_d = date(y, m, 1)
-            end_d = date(y, m, calendar.monthrange(y, m)[1])
-            
-            m_rev = db.query(func.coalesce(func.sum(Invoice.total_amount), 0)).filter(
-                Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT"]),
-                Invoice.invoice_date >= start_d,
-                Invoice.invoice_date <= end_d
-            ).scalar()
-            past_months_data.append(float(m_rev or 0.0))
+        # 3. Trailing 3 Months History (Single 90-day query instead of 3 sequential queries)
+        start_90d = today - timedelta(days=90)
+        past_revenue_records = db.query(
+            func.to_char(Invoice.invoice_date, 'YYYY-MM').label("m_str"),
+            func.sum(Invoice.total_amount).label("m_total")
+        ).filter(
+            Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT"]),
+            Invoice.invoice_date >= start_90d,
+            Invoice.invoice_date < date(year, month, 1)
+        ).group_by("m_str").order_by("m_str").all()
 
-        # Weights: Last month 50%, 2nd prior 30%, 3rd prior 20%
-        w_m1 = past_months_data[0] if len(past_months_data) > 0 and past_months_data[0] > 0 else current_revenue
-        w_m2 = past_months_data[1] if len(past_months_data) > 1 and past_months_data[1] > 0 else current_revenue
-        w_m3 = past_months_data[2] if len(past_months_data) > 2 and past_months_data[2] > 0 else current_revenue
+        past_map = {r.m_str: float(r.m_total or 0) for r in past_revenue_records}
+        past_values = list(past_map.values())
+        w_m1 = past_values[-1] if len(past_values) > 0 else current_revenue
+        w_m2 = past_values[-2] if len(past_values) > 1 else current_revenue
+        w_m3 = past_values[-3] if len(past_values) > 2 else current_revenue
         weighted_baseline = (w_m1 * 0.50) + (w_m2 * 0.30) + (w_m3 * 0.20)
 
         # 4. Projected Month-End Revenue
@@ -116,7 +116,7 @@ class ForecastingService:
                 f"Focus on high-velocity frozen snacks to close the gap."
             )
 
-        return {
+        response_data = {
             "year_month": year_month_str,
             "days_elapsed": days_elapsed,
             "days_in_month": days_in_month,
@@ -131,6 +131,10 @@ class ForecastingService:
             "story": story,
             "sparkline": sparkline
         }
+
+        _FORECAST_CACHE["timestamp"] = now_ts
+        _FORECAST_CACHE["data"] = response_data
+        return response_data
 
     @staticmethod
     def set_monthly_target(db: Session, year_month: str, target_amount: float, user_id: str = None) -> MonthlyTarget:
@@ -147,4 +151,6 @@ class ForecastingService:
             db.add(target)
         db.commit()
         db.refresh(target)
+        # Invalidate cache
+        _FORECAST_CACHE["timestamp"] = 0
         return target

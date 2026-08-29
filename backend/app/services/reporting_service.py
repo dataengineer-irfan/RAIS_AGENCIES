@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
 from datetime import date, datetime, timedelta, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc, or_
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment
@@ -13,9 +13,16 @@ from app.schemas.reports import (
 )
 from app.domain.enums import InvoiceStatus, CustomerStatus
 
+_DASHBOARD_CACHE = {"timestamp": 0, "data": None}
+CACHE_TTL_SECONDS = 60
+
 class ReportingService:
     @staticmethod
-    def get_dashboard_kpis(db: Session) -> DashboardKPIs:
+    def get_dashboard_kpis(db: Session, force_refresh: bool = False) -> DashboardKPIs:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if not force_refresh and _DASHBOARD_CACHE["data"] and (now_ts - _DASHBOARD_CACHE["timestamp"] < CACHE_TTL_SECONDS):
+            return _DASHBOARD_CACHE["data"]
+
         today = date.today()
         first_day_of_month = today.replace(day=1)
 
@@ -55,8 +62,8 @@ class ReportingService:
         active_customers_count = db.query(func.count(Customer.id)).filter(Customer.status == CustomerStatus.ACTIVE.value).scalar() or 0
         total_products_count = db.query(func.count(Product.id)).filter(Product.is_active == True).scalar() or 0
 
-        # 5. Recent invoices
-        recent_invs = db.query(Invoice).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(6).all()
+        # 5. Recent invoices with customer eagerly joined (1 query)
+        recent_invs = db.query(Invoice).options(joinedload(Invoice.customer)).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(6).all()
         recent_invoices = [
             {
                 "id": inv.id,
@@ -70,8 +77,8 @@ class ReportingService:
             } for inv in recent_invs
         ]
 
-        # 6. Recent payments
-        recent_pays = db.query(Payment).order_by(Payment.payment_date.desc(), Payment.created_at.desc()).limit(6).all()
+        # 6. Recent payments with customer eagerly joined (1 query)
+        recent_pays = db.query(Payment).options(joinedload(Payment.customer)).order_by(Payment.payment_date.desc(), Payment.created_at.desc()).limit(6).all()
         recent_payments = [
             {
                 "id": p.id,
@@ -103,7 +110,7 @@ class ReportingService:
             } for tp in top_prods_query
         ]
 
-        return DashboardKPIs(
+        result = DashboardKPIs(
             total_revenue_month=total_revenue_month,
             total_outstanding=total_outstanding,
             total_overdue=total_overdue,
@@ -115,6 +122,10 @@ class ReportingService:
             recent_payments=recent_payments,
             top_selling_products=top_selling_products
         )
+
+        _DASHBOARD_CACHE["timestamp"] = now_ts
+        _DASHBOARD_CACHE["data"] = result
+        return result
 
     @staticmethod
     def get_aging_summary(db: Session) -> AgingBucket:
