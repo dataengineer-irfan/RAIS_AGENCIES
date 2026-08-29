@@ -1,6 +1,6 @@
 from typing import List, Optional
 from decimal import Decimal
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from app.models.catalogue import Category, Product
 from app.schemas.catalogue import CategoryCreate, ProductCreate, ProductUpdate
@@ -53,7 +53,7 @@ class CatalogueService:
         skip: int = 0,
         limit: int = 100
     ) -> List[Product]:
-        query = db.query(Product)
+        query = db.query(Product).options(joinedload(Product.category))
         if active_only:
             query = query.filter(Product.is_active == True)
         if category_id:
@@ -74,7 +74,7 @@ class CatalogueService:
 
     @staticmethod
     def get_product_by_id(db: Session, product_id: str) -> Product:
-        product = db.query(Product).filter(Product.id == product_id).first()
+        product = db.query(Product).options(joinedload(Product.category)).filter(Product.id == product_id).first()
         if not product:
             raise EntityNotFoundException("Product", product_id)
         return product

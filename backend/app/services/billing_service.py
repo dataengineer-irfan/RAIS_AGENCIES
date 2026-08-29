@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import date, timedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.quotation import Quotation, QuotationItem
@@ -261,6 +261,10 @@ class BillingService:
                 db.commit()
                 db.refresh(inv)
 
+        return BillingService._build_invoice_response(inv)
+
+    @staticmethod
+    def _build_invoice_response(inv: Invoice) -> InvoiceResponse:
         items_resp = [
             InvoiceItemResponse(
                 id=itm.id,
@@ -277,19 +281,23 @@ class BillingService:
                 tax_rate=itm.tax_rate,
                 tax_amount=itm.tax_amount,
                 line_total=itm.line_total
-            ) for itm in inv.items
+            ) for itm in (inv.items or [])
         ]
 
-        allocs_resp = [
-            InvoiceAllocationItem(
-                payment_id=alloc.payment.id,
-                payment_number=alloc.payment.payment_number,
-                payment_date=alloc.payment.payment_date,
-                payment_method=alloc.payment.payment_method,
-                allocated_amount=alloc.allocated_amount,
-                reference_number=alloc.payment.reference_number
-            ) for alloc in inv.allocations
-        ]
+        allocs_resp = []
+        if inv.allocations:
+            for alloc in inv.allocations:
+                if alloc.payment:
+                    allocs_resp.append(
+                        InvoiceAllocationItem(
+                            payment_id=alloc.payment.id,
+                            payment_number=alloc.payment.payment_number,
+                            payment_date=alloc.payment.payment_date,
+                            payment_method=alloc.payment.payment_method,
+                            allocated_amount=alloc.allocated_amount,
+                            reference_number=alloc.payment.reference_number
+                        )
+                    )
 
         return InvoiceResponse(
             id=inv.id,
@@ -332,7 +340,10 @@ class BillingService:
         skip: int = 0,
         limit: int = 100
     ) -> List[InvoiceResponse]:
-        query = db.query(Invoice)
+        query = db.query(Invoice).options(
+            joinedload(Invoice.customer),
+            joinedload(Invoice.items)
+        )
         if customer_id:
             query = query.filter(Invoice.customer_id == customer_id)
         if status:
@@ -352,7 +363,7 @@ class BillingService:
             )
         
         invoices = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()
-        return [BillingService.get_invoice_by_id(db, inv.id) for inv in invoices]
+        return [BillingService._build_invoice_response(inv) for inv in invoices]
 
     # ----------------------------------------------------
     # QUOTATION MANAGEMENT

@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
 from datetime import date, datetime, timedelta, timezone
+from collections import defaultdict
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc, or_
 from app.models.invoice import Invoice, InvoiceItem
@@ -13,7 +14,11 @@ from app.schemas.reports import (
 )
 from app.domain.enums import InvoiceStatus, CustomerStatus
 
+# 60-Second In-Memory Response Caches
 _DASHBOARD_CACHE = {"timestamp": 0, "data": None}
+_AGING_SUMMARY_CACHE = {"timestamp": 0, "data": None}
+_CUSTOMER_AGING_CACHE = {"timestamp": 0, "data": None}
+_PRODUCT_SALES_CACHE = {"timestamp": 0, "data": None}
 CACHE_TTL_SECONDS = 60
 
 class ReportingService:
@@ -24,61 +29,113 @@ class ReportingService:
             return _DASHBOARD_CACHE["data"]
 
         today = date.today()
-        first_day_of_month = today.replace(day=1)
+        first_day_month = date(today.year, today.month, 1)
 
-        valid_revenue_statuses = [
+        valid_statuses = [
             InvoiceStatus.ISSUED.value,
             InvoiceStatus.PARTIALLY_PAID.value,
             InvoiceStatus.PAID.value,
             InvoiceStatus.OVERDUE.value
         ]
 
-        # 1. Total revenue this month
-        rev_query = db.query(func.sum(Invoice.total_amount)).filter(
-            Invoice.invoice_date >= first_day_of_month,
-            Invoice.status.in_(valid_revenue_statuses)
+        # 1. Total Revenue This Month
+        revenue_month_query = db.query(func.sum(Invoice.total_amount)).filter(
+            Invoice.invoice_date >= first_day_month,
+            Invoice.invoice_date <= today,
+            Invoice.status.in_(valid_statuses)
         ).scalar()
-        total_revenue_month = Decimal(str(rev_query or "0.00"))
+        total_revenue_month = Decimal(str(revenue_month_query or "0.00"))
 
-        # 2. Total outstanding
-        out_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
+        # 2. Total Outstanding Balance
+        outstanding_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
             Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value])
         ).scalar()
-        total_outstanding = Decimal(str(out_query or "0.00"))
+        total_outstanding = Decimal(str(outstanding_query or "0.00"))
 
-        # 3. Total overdue
+        # 3. Total Overdue Balance
         overdue_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
-            Invoice.due_date < today,
             Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
+            Invoice.due_date < today,
             Invoice.outstanding_amount > 0
         ).scalar()
         total_overdue = Decimal(str(overdue_query or "0.00"))
 
-        # 4. Counts
-        total_invoices_count = db.query(func.count(Invoice.id)).scalar() or 0
-        open_invoices_count = db.query(func.count(Invoice.id)).filter(
-            Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value])
+        # 4. Total Invoices Count This Month
+        invoices_count = db.query(func.count(Invoice.id)).filter(
+            Invoice.invoice_date >= first_day_month,
+            Invoice.invoice_date <= today,
+            Invoice.status != InvoiceStatus.CANCELLED.value
         ).scalar() or 0
-        active_customers_count = db.query(func.count(Customer.id)).filter(Customer.status == CustomerStatus.ACTIVE.value).scalar() or 0
-        total_products_count = db.query(func.count(Product.id)).filter(Product.is_active == True).scalar() or 0
 
-        # 5. Recent invoices with customer eagerly joined (1 query)
-        recent_invs = db.query(Invoice).options(joinedload(Invoice.customer)).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(6).all()
+        # 5. Open Invoices Count (Unpaid or Partially Paid)
+        open_invoices_count = db.query(func.count(Invoice.id)).filter(
+            Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
+            Invoice.outstanding_amount > 0
+        ).scalar() or 0
+
+        # 6. Active Customers Count
+        active_customers = db.query(func.count(Customer.id)).filter(
+            Customer.status == CustomerStatus.ACTIVE.value
+        ).scalar() or 0
+
+        # 7. Total Products Count
+        total_products = db.query(func.count(Product.id)).filter(
+            Product.is_active == True
+        ).scalar() or 0
+
+        # 8. Top Selling Products
+        top_products_query = db.query(
+            Product.id,
+            Product.name,
+            Product.sku,
+            func.coalesce(func.sum(InvoiceItem.quantity), 0).label("qty_sold"),
+            func.coalesce(func.sum(InvoiceItem.line_total), 0).label("total_rev")
+        ).join(InvoiceItem, Product.id == InvoiceItem.product_id)\
+         .join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
+         .filter(
+            Invoice.invoice_date >= first_day_month,
+            Invoice.status.in_(valid_statuses)
+         ).group_by(Product.id, Product.name, Product.sku)\
+          .order_by(desc("total_rev"))\
+          .limit(5).all()
+
+        top_products = [
+            {
+                "product_id": p[0],
+                "product_name": p[1],
+                "sku": p[2],
+                "quantity_sold": float(p[3]),
+                "total_revenue": float(p[4])
+            }
+            for p in top_products_query
+        ]
+
+        # 9. Recent Invoices
+        recent_invs = db.query(Invoice).options(
+            joinedload(Invoice.customer)
+        ).filter(
+            Invoice.status != InvoiceStatus.CANCELLED.value
+        ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(6).all()
+
         recent_invoices = [
             {
                 "id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "customer_name": inv.customer.business_name if inv.customer else "Unknown",
+                "customer_id": inv.customer_id,
                 "invoice_date": str(inv.invoice_date),
                 "total_amount": float(inv.total_amount),
-                "paid_amount": float(inv.paid_amount),
                 "outstanding_amount": float(inv.outstanding_amount),
                 "status": inv.status
-            } for inv in recent_invs
+            }
+            for inv in recent_invs
         ]
 
-        # 6. Recent payments with customer eagerly joined (1 query)
-        recent_pays = db.query(Payment).options(joinedload(Payment.customer)).order_by(Payment.payment_date.desc(), Payment.created_at.desc()).limit(6).all()
+        # 10. Recent Payments
+        recent_payments_query = db.query(Payment).options(
+            joinedload(Payment.customer)
+        ).order_by(Payment.payment_date.desc(), Payment.created_at.desc()).limit(5).all()
+
         recent_payments = [
             {
                 "id": p.id,
@@ -86,49 +143,34 @@ class ReportingService:
                 "customer_name": p.customer.business_name if p.customer else "Unknown",
                 "payment_date": str(p.payment_date),
                 "amount": float(p.amount),
-                "payment_method": p.payment_method,
-                "reference_number": p.reference_number
-            } for p in recent_pays
+                "payment_method": p.payment_method
+            }
+            for p in recent_payments_query
         ]
 
-        # 7. Top selling products
-        top_prods_query = db.query(
-            InvoiceItem.product_id,
-            InvoiceItem.item_description,
-            func.sum(InvoiceItem.quantity).label("total_qty"),
-            func.sum(InvoiceItem.line_total).label("total_rev")
-        ).join(Invoice).filter(
-            Invoice.status.in_(valid_revenue_statuses)
-        ).group_by(InvoiceItem.product_id, InvoiceItem.item_description).order_by(desc("total_rev")).limit(5).all()
-
-        top_selling_products = [
-            {
-                "product_id": tp[0],
-                "product_name": tp[1],
-                "quantity_sold": float(tp[2] or 0),
-                "total_revenue": float(tp[3] or 0)
-            } for tp in top_prods_query
-        ]
-
-        result = DashboardKPIs(
+        kpis = DashboardKPIs(
             total_revenue_month=total_revenue_month,
             total_outstanding=total_outstanding,
             total_overdue=total_overdue,
-            total_invoices_count=total_invoices_count,
+            total_invoices_count=invoices_count,
             open_invoices_count=open_invoices_count,
-            active_customers_count=active_customers_count,
-            total_products_count=total_products_count,
+            active_customers_count=active_customers,
+            total_products_count=total_products,
+            top_selling_products=top_products,
             recent_invoices=recent_invoices,
-            recent_payments=recent_payments,
-            top_selling_products=top_selling_products
+            recent_payments=recent_payments
         )
 
         _DASHBOARD_CACHE["timestamp"] = now_ts
-        _DASHBOARD_CACHE["data"] = result
-        return result
+        _DASHBOARD_CACHE["data"] = kpis
+        return kpis
 
     @staticmethod
-    def get_aging_summary(db: Session) -> AgingBucket:
+    def get_aging_summary(db: Session, force_refresh: bool = False) -> AgingBucket:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if not force_refresh and _AGING_SUMMARY_CACHE["data"] and (now_ts - _AGING_SUMMARY_CACHE["timestamp"] < CACHE_TTL_SECONDS):
+            return _AGING_SUMMARY_CACHE["data"]
+
         today = date.today()
         d15 = today - timedelta(days=15)
         d30 = today - timedelta(days=30)
@@ -157,31 +199,49 @@ class ReportingService:
                 c_60_plus += amount
 
         total = c_0_15 + c_16_30 + c_31_60 + c_60_plus
-        return AgingBucket(
+        bucket = AgingBucket(
             current_0_15_days=c_0_15,
             aging_16_30_days=c_16_30,
             aging_31_60_days=c_31_60,
             aging_60_plus_days=c_60_plus,
             total_outstanding=total
         )
+        _AGING_SUMMARY_CACHE["timestamp"] = now_ts
+        _AGING_SUMMARY_CACHE["data"] = bucket
+        return bucket
 
     @staticmethod
-    def get_customer_aging_breakdown(db: Session) -> List[CustomerAgingReportItem]:
+    def get_customer_aging_breakdown(db: Session, force_refresh: bool = False) -> List[CustomerAgingReportItem]:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if not force_refresh and _CUSTOMER_AGING_CACHE["data"] and (now_ts - _CUSTOMER_AGING_CACHE["timestamp"] < CACHE_TTL_SECONDS):
+            return _CUSTOMER_AGING_CACHE["data"]
+
         today = date.today()
         d15 = today - timedelta(days=15)
         d30 = today - timedelta(days=30)
         d60 = today - timedelta(days=60)
 
+        # Batch 1: All active customers
         customers = db.query(Customer).filter(Customer.status == CustomerStatus.ACTIVE.value).all()
+        if not customers:
+            return []
+
+        # Batch 2: All open invoices across all active customers
+        cust_ids = [c.id for c in customers]
+        all_open_invs = db.query(Invoice).filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
+            Invoice.outstanding_amount > 0
+        ).all()
+
+        invs_by_customer = defaultdict(list)
+        for inv in all_open_invs:
+            invs_by_customer[inv.customer_id].append(inv)
+
         results: List[CustomerAgingReportItem] = []
 
         for cust in customers:
-            open_invs = db.query(Invoice).filter(
-                Invoice.customer_id == cust.id,
-                Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
-                Invoice.outstanding_amount > 0
-            ).all()
-
+            open_invs = invs_by_customer.get(cust.id, [])
             if not open_invs:
                 continue
 
@@ -218,10 +278,16 @@ class ReportingService:
                 ))
 
         results.sort(key=lambda x: x.total_due, reverse=True)
+        _CUSTOMER_AGING_CACHE["timestamp"] = now_ts
+        _CUSTOMER_AGING_CACHE["data"] = results
         return results
 
     @staticmethod
-    def get_product_sales_performance(db: Session) -> List[ProductPerformanceItem]:
+    def get_product_sales_performance(db: Session, force_refresh: bool = False) -> List[ProductPerformanceItem]:
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if not force_refresh and _PRODUCT_SALES_CACHE["data"] and (now_ts - _PRODUCT_SALES_CACHE["timestamp"] < CACHE_TTL_SECONDS):
+            return _PRODUCT_SALES_CACHE["data"]
+
         valid_statuses = [
             InvoiceStatus.ISSUED.value,
             InvoiceStatus.PARTIALLY_PAID.value,
@@ -244,7 +310,7 @@ class ReportingService:
          .group_by(Product.id, Product.sku, Product.name, Category.name, Product.brand)\
          .order_by(desc("rev")).all()
 
-        return [
+        items = [
             ProductPerformanceItem(
                 product_id=row[0],
                 sku=row[1],
@@ -255,3 +321,7 @@ class ReportingService:
                 total_revenue=Decimal(str(row[6]))
             ) for row in query
         ]
+
+        _PRODUCT_SALES_CACHE["timestamp"] = now_ts
+        _PRODUCT_SALES_CACHE["data"] = items
+        return items

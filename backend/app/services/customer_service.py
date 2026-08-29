@@ -70,10 +70,45 @@ class CustomerService:
                 )
             )
         customers = query.order_by(Customer.business_name.asc()).offset(skip).limit(limit).all()
+        if not customers:
+            return []
         
+        cust_ids = [c.id for c in customers]
+        valid_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+
+        # Single batch query for invoice totals
+        inv_stats = db.query(
+            Invoice.customer_id,
+            func.sum(Invoice.total_amount).label("total_invoiced"),
+            func.sum(Invoice.outstanding_amount).label("total_outstanding")
+        ).filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status.in_(valid_statuses)
+        ).group_by(Invoice.customer_id).all()
+
+        invoiced_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in inv_stats}
+        outstanding_map = {row[0]: Decimal(str(row[2] or "0.00")) for row in inv_stats}
+
+        # Single batch query for payment totals
+        pay_stats = db.query(
+            Payment.customer_id,
+            func.sum(Payment.amount).label("total_paid")
+        ).filter(
+            Payment.customer_id.in_(cust_ids)
+        ).group_by(Payment.customer_id).all()
+
+        paid_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in pay_stats}
+
         result = []
         for c in customers:
-            total_invoiced, total_paid, outstanding = CustomerService.get_customer_balances(db, c.id)
+            total_invoiced = invoiced_map.get(c.id, Decimal("0.00"))
+            total_paid = paid_map.get(c.id, Decimal("0.00"))
+            outstanding = outstanding_map.get(c.id, Decimal("0.00"))
             c_resp = CustomerResponse(
                 id=c.id,
                 customer_code=c.customer_code,

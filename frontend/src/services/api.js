@@ -7,6 +7,33 @@ const api = axios.create({
   },
 });
 
+// ─── HIGH-PERFORMANCE IN-MEMORY CLIENT RESPONSE CACHE ───
+const _CLIENT_CACHE = new Map();
+const CACHE_TTL_MS = 60000; // 60-second in-memory client cache
+
+export const clearApiCache = () => {
+  _CLIENT_CACHE.clear();
+};
+
+const getCacheKey = (url, params) => {
+  return `${url}_${JSON.stringify(params || {})}`;
+};
+
+export const cachedGet = async (url, config = {}) => {
+  const key = getCacheKey(url, config.params);
+  const now = Date.now();
+  if (_CLIENT_CACHE.has(key)) {
+    const cached = _CLIENT_CACHE.get(key);
+    if (now - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+  }
+
+  const res = await api.get(url, config);
+  _CLIENT_CACHE.set(key, { timestamp: now, data: res.data });
+  return res.data;
+};
+
 // Attach JWT token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('rais_token');
@@ -16,9 +43,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401s
+// Handle 401s and Invalidate Cache on Mutations (POST, PUT, DELETE, PATCH)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const method = response.config.method?.toLowerCase();
+    if (['post', 'put', 'patch', 'delete'].includes(method)) {
+      clearApiCache();
+    }
+    return response;
+  },
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('rais_token');
@@ -37,12 +70,10 @@ export const authApi = {
     return res.data;
   },
   getMe: async () => {
-    const res = await api.get('/auth/me');
-    return res.data;
+    return cachedGet('/auth/me');
   },
   getUsers: async () => {
-    const res = await api.get('/auth/users');
-    return res.data;
+    return cachedGet('/auth/users');
   },
   createUser: async (userData) => {
     const res = await api.post('/auth/users', userData);
@@ -52,12 +83,10 @@ export const authApi = {
 
 export const customerApi = {
   list: async (params = {}) => {
-    const res = await api.get('/customers', { params });
-    return res.data;
+    return cachedGet('/customers', { params });
   },
   get: async (id) => {
-    const res = await api.get(`/customers/${id}`);
-    return res.data;
+    return cachedGet(`/customers/${id}`);
   },
   create: async (data) => {
     const res = await api.post('/customers', data);
@@ -68,27 +97,23 @@ export const customerApi = {
     return res.data;
   },
   getLedger: async (id) => {
-    const res = await api.get(`/customers/${id}/ledger`);
-    return res.data;
+    return cachedGet(`/customers/${id}/ledger`);
   }
 };
 
 export const catalogueApi = {
   listCategories: async (activeOnly = true) => {
-    const res = await api.get('/catalogue/categories', { params: { active_only: activeOnly } });
-    return res.data;
+    return cachedGet('/catalogue/categories', { params: { active_only: activeOnly } });
   },
   createCategory: async (data) => {
     const res = await api.post('/catalogue/categories', data);
     return res.data;
   },
   listProducts: async (params = {}) => {
-    const res = await api.get('/catalogue/products', { params });
-    return res.data;
+    return cachedGet('/catalogue/products', { params });
   },
   getProduct: async (id) => {
-    const res = await api.get(`/catalogue/products/${id}`);
-    return res.data;
+    return cachedGet(`/catalogue/products/${id}`);
   },
   createProduct: async (data) => {
     const res = await api.post('/catalogue/products', data);
@@ -102,12 +127,10 @@ export const catalogueApi = {
 
 export const billingApi = {
   listInvoices: async (params = {}) => {
-    const res = await api.get('/invoices', { params });
-    return res.data;
+    return cachedGet('/invoices', { params });
   },
   getInvoice: async (id) => {
-    const res = await api.get(`/invoices/${id}`);
-    return res.data;
+    return cachedGet(`/invoices/${id}`);
   },
   createInvoice: async (data) => {
     const res = await api.post('/invoices', data);
@@ -126,12 +149,10 @@ export const billingApi = {
 
 export const orderApi = {
   list: async (params = {}) => {
-    const res = await api.get('/orders', { params });
-    return res.data;
+    return cachedGet('/orders', { params });
   },
   get: async (id) => {
-    const res = await api.get(`/orders/${id}`);
-    return res.data;
+    return cachedGet(`/orders/${id}`);
   },
   create: async (data) => {
     const res = await api.post('/orders', data);
@@ -145,8 +166,7 @@ export const orderApi = {
 
 export const inventoryApi = {
   getOverview: async (params = {}) => {
-    const res = await api.get('/inventory/overview', { params });
-    return res.data;
+    return cachedGet('/inventory/overview', { params });
   },
   receiveStock: async (data) => {
     const res = await api.post('/inventory/receive', data);
@@ -157,15 +177,13 @@ export const inventoryApi = {
     return res.data;
   },
   getMovements: async (params = {}) => {
-    const res = await api.get('/inventory/movements', { params });
-    return res.data;
+    return cachedGet('/inventory/movements', { params });
   }
 };
 
 export const quotationApi = {
   list: async (params = {}) => {
-    const res = await api.get('/quotations', { params });
-    return res.data;
+    return cachedGet('/quotations', { params });
   },
   create: async (data) => {
     const res = await api.post('/quotations', data);
@@ -179,12 +197,10 @@ export const quotationApi = {
 
 export const paymentApi = {
   list: async (params = {}) => {
-    const res = await api.get('/payments', { params });
-    return res.data;
+    return cachedGet('/payments', { params });
   },
   get: async (id) => {
-    const res = await api.get(`/payments/${id}`);
-    return res.data;
+    return cachedGet(`/payments/${id}`);
   },
   record: async (data) => {
     const res = await api.post('/payments', data);
@@ -201,20 +217,16 @@ export const paymentApi = {
 
 export const reportApi = {
   getDashboard: async () => {
-    const res = await api.get('/reports/dashboard');
-    return res.data;
+    return cachedGet('/reports/dashboard');
   },
   getAging: async () => {
-    const res = await api.get('/reports/aging');
-    return res.data;
+    return cachedGet('/reports/aging');
   },
   getCustomerAging: async () => {
-    const res = await api.get('/reports/aging/customers');
-    return res.data;
+    return cachedGet('/reports/aging/customers');
   },
   getProductSales: async () => {
-    const res = await api.get('/reports/product-sales');
-    return res.data;
+    return cachedGet('/reports/product-sales');
   }
 };
 
@@ -224,44 +236,37 @@ export const aiApi = {
     return res.data;
   },
   getKnowledge: async () => {
-    const res = await api.get('/ai/knowledge');
-    return res.data;
+    return cachedGet('/ai/knowledge');
   }
 };
 
 export const auditApi = {
   list: async (params = {}) => {
-    const res = await api.get('/audit/logs', { params });
-    return res.data;
+    return cachedGet('/audit/logs', { params });
   }
 };
 
 export const analyticsApi = {
   getProductMatrix: async () => {
-    const res = await api.get('/analytics/product-matrix');
-    return res.data;
+    return cachedGet('/analytics/product-matrix');
   },
   getCustomerHealth: async () => {
-    const res = await api.get('/analytics/customer-health');
-    return res.data;
+    return cachedGet('/analytics/customer-health');
   },
   getForecast: async () => {
-    const res = await api.get('/analytics/forecast');
-    return res.data;
+    return cachedGet('/analytics/forecast');
   },
   setMonthlyTarget: async (yearMonth, targetAmount) => {
     const res = await api.post('/analytics/targets', { year_month: yearMonth, target_amount: targetAmount });
     return res.data;
   },
   getThermalReceipt: async (invoiceId, paperWidth = 58) => {
-    const res = await api.get(`/analytics/receipt/${invoiceId}`, { params: { paper_width: paperWidth } });
-    return res.data;
+    return cachedGet(`/analytics/receipt/${invoiceId}`, { params: { paper_width: paperWidth } });
   },
   getDrilldown: async (metric = 'revenue', level = 'category', categoryId = null) => {
-    const res = await api.get('/analytics/drilldown', {
+    return cachedGet('/analytics/drilldown', {
       params: { metric, level, category_id: categoryId }
     });
-    return res.data;
   }
 };
 

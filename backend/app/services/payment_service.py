@@ -1,7 +1,7 @@
 from typing import List, Optional
 from decimal import Decimal
 from datetime import date, datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.payment import Payment, PaymentAllocation
 from app.models.invoice import Invoice
 from app.models.customer import Customer
@@ -159,21 +159,20 @@ class PaymentService:
         return allocation
 
     @staticmethod
-    def get_payment_by_id(db: Session, payment_id: str) -> PaymentResponse:
-        p = db.query(Payment).filter(Payment.id == payment_id).first()
-        if not p:
-            raise EntityNotFoundException("Payment", payment_id)
-
-        allocs = [
-            PaymentAllocationResponse(
-                id=a.id,
-                payment_id=a.payment_id,
-                invoice_id=a.invoice_id,
-                invoice_number=a.invoice.invoice_number if a.invoice else None,
-                allocated_amount=a.allocated_amount,
-                allocated_at=a.allocated_at
-            ) for a in p.allocations
-        ]
+    def _build_payment_response(p: Payment) -> PaymentResponse:
+        allocs = []
+        if p.allocations:
+            for a in p.allocations:
+                allocs.append(
+                    PaymentAllocationResponse(
+                        id=a.id,
+                        payment_id=a.payment_id,
+                        invoice_id=a.invoice_id,
+                        invoice_number=a.invoice.invoice_number if a.invoice else None,
+                        allocated_amount=a.allocated_amount,
+                        allocated_at=a.allocated_at
+                    )
+                )
 
         return PaymentResponse(
             id=p.id,
@@ -193,6 +192,16 @@ class PaymentService:
         )
 
     @staticmethod
+    def get_payment_by_id(db: Session, payment_id: str) -> PaymentResponse:
+        p = db.query(Payment).options(
+            joinedload(Payment.customer),
+            joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
+        ).filter(Payment.id == payment_id).first()
+        if not p:
+            raise EntityNotFoundException("Payment", payment_id)
+        return PaymentService._build_payment_response(p)
+
+    @staticmethod
     def list_payments(
         db: Session,
         customer_id: Optional[str] = None,
@@ -201,7 +210,10 @@ class PaymentService:
         skip: int = 0,
         limit: int = 100
     ) -> List[PaymentResponse]:
-        query = db.query(Payment)
+        query = db.query(Payment).options(
+            joinedload(Payment.customer),
+            joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
+        )
         if customer_id:
             query = query.filter(Payment.customer_id == customer_id)
         if from_date:
@@ -210,4 +222,4 @@ class PaymentService:
             query = query.filter(Payment.payment_date <= to_date)
 
         payments = query.order_by(Payment.payment_date.desc(), Payment.created_at.desc()).offset(skip).limit(limit).all()
-        return [PaymentService.get_payment_by_id(db, p.id) for p in payments]
+        return [PaymentService._build_payment_response(p) for p in payments]
