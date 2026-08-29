@@ -58,7 +58,7 @@ export const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="h-screen w-screen overflow-hidden bg-slate-950 flex">
       {/* Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -67,14 +67,14 @@ export const App = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Header
           onToggleAI={() => setAiDrawerOpen(!aiDrawerOpen)}
           globalSearchTerm={globalSearchTerm}
           onGlobalSearch={setGlobalSearchTerm}
         />
 
-        <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-8 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className={`flex-1 overflow-hidden flex flex-col ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-hidden' : 'p-4 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
           {activeTab === 'dashboard' && (
             <DashboardPage
               onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
