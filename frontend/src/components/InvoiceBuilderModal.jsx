@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer } from 'lucide-react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi } from '../services/api';
 
-export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
+export const InvoiceBuilderModal = ({ 
+  isOpen, 
+  onClose, 
+  onInvoiceCreated,
+  preselectedCustomer = null,
+  preselectedProduct = null
+}) => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -12,7 +18,7 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
 
   // Form State
   const [customerId, setCustomerId] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [invoiceDate, setInvoiceDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 15);
@@ -24,31 +30,70 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
   const [autoIssue, setAutoIssue] = useState(true);
 
   // Line items
-  const [items, setItems] = useState([
-    { product_id: '', quantity: 1, unit_price: '', discount_rate: 0, tax_rate: 0 }
-  ]);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       loadDependencies();
-      resetForm();
     }
-  }, [isOpen]);
+  }, [isOpen, preselectedCustomer, preselectedProduct]);
 
   const loadDependencies = async () => {
     setLoading(true);
+    setError('');
+    setSuccessInvoice(null);
     try {
-      const [custData, prodData] = await Promise.all([
-        customerApi.list(),
+      const [custDataRaw, prodDataRaw] = await Promise.all([
+        customerApi.list({ limit: 100 }),
         catalogueApi.listProducts({ limit: 200 })
       ]);
+
+      const custData = Array.isArray(custDataRaw) ? custDataRaw : (custDataRaw?.items || []);
+      const prodData = Array.isArray(prodDataRaw) ? prodDataRaw : (prodDataRaw?.items || []);
+
       setCustomers(custData);
       setProducts(prodData);
-      if (custData.length > 0 && !customerId) {
+
+      // 1. Resolve initial customer
+      if (preselectedCustomer) {
+        setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
+      } else if (custData.length > 0) {
         setCustomerId(custData[0].id);
       }
+
+      // 2. Resolve initial product line items
+      if (preselectedProduct && typeof preselectedProduct === 'object') {
+        setItems([
+          {
+            product_id: preselectedProduct.id,
+            quantity: 1,
+            unit_price: parseFloat(preselectedProduct.base_price || 0),
+            discount_rate: 0,
+            tax_rate: parseFloat(preselectedProduct.tax_rate || 0),
+            packaging_unit: preselectedProduct.packaging_unit || 'PKT'
+          }
+        ]);
+      } else if (prodData.length > 0) {
+        // Pre-populate with first fast-moving product
+        const firstProd = prodData[0];
+        setItems([
+          {
+            product_id: firstProd.id,
+            quantity: 1,
+            unit_price: parseFloat(firstProd.base_price || 0),
+            discount_rate: 0,
+            tax_rate: parseFloat(firstProd.tax_rate || 0),
+            packaging_unit: firstProd.packaging_unit || 'PKT'
+          }
+        ]);
+      } else {
+        setItems([
+          { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, tax_rate: 0, packaging_unit: 'PKT' }
+        ]);
+      }
     } catch (err) {
-      setError('Failed to load customers or catalogue items.');
+      console.error("Failed to load invoice builder dependencies:", err);
+      setError('Failed to load customers or catalogue items. Please check network connection.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +104,21 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
     setSuccessInvoice(null);
     setInvoiceDiscount('0');
     setNotes('');
-    setItems([{ product_id: '', quantity: 1, unit_price: '', discount_rate: 0, tax_rate: 0 }]);
+    if (products.length > 0) {
+      const firstProd = products[0];
+      setItems([
+        {
+          product_id: firstProd.id,
+          quantity: 1,
+          unit_price: parseFloat(firstProd.base_price || 0),
+          discount_rate: 0,
+          tax_rate: parseFloat(firstProd.tax_rate || 0),
+          packaging_unit: firstProd.packaging_unit || 'PKT'
+        }
+      ]);
+    } else {
+      setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, tax_rate: 0, packaging_unit: 'PKT' }]);
+    }
   };
 
   const handleProductChange = (index, prodId) => {
@@ -69,15 +128,15 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
       newItems[index] = {
         ...newItems[index],
         product_id: prod.id,
-        unit_price: prod.base_price,
-        tax_rate: prod.tax_rate,
-        packaging_unit: prod.packaging_unit
+        unit_price: parseFloat(prod.base_price || 0),
+        tax_rate: parseFloat(prod.tax_rate || 0),
+        packaging_unit: prod.packaging_unit || 'PKT'
       };
     } else {
       newItems[index] = {
         ...newItems[index],
         product_id: '',
-        unit_price: '',
+        unit_price: 0,
         tax_rate: 0
       };
     }
@@ -91,7 +150,28 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
   };
 
   const addItemRow = () => {
-    setItems([...items, { product_id: '', quantity: 1, unit_price: '', discount_rate: 0, tax_rate: 0 }]);
+    // If there are products, pick the next available product or default to first
+    let defaultProd = products.length > 0 ? products[0] : null;
+    if (products.length > items.length) {
+      const unusedProd = products.find(p => !items.some(i => i.product_id === p.id));
+      if (unusedProd) defaultProd = unusedProd;
+    }
+
+    if (defaultProd) {
+      setItems([
+        ...items,
+        {
+          product_id: defaultProd.id,
+          quantity: 1,
+          unit_price: parseFloat(defaultProd.base_price || 0),
+          discount_rate: 0,
+          tax_rate: parseFloat(defaultProd.tax_rate || 0),
+          packaging_unit: defaultProd.packaging_unit || 'PKT'
+        }
+      ]);
+    } else {
+      setItems([...items, { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, tax_rate: 0, packaging_unit: 'PKT' }]);
+    }
   };
 
   const removeItemRow = (index) => {
@@ -113,7 +193,7 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
 
       const gross = qty * rate;
       const discAmt = gross * (disc / 100);
-      const taxable = gross - discAmt;
+      const taxable = Math.max(0, gross - discAmt);
       const taxAmt = taxable * (tax / 100);
 
       subtotal += gross;
@@ -187,22 +267,27 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Create New Tax Invoice</h2>
-              <p className="text-xs text-slate-400">RAIS Agencies Wholesale Billing Engine</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white tracking-tight">Create New Tax Invoice</h2>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold font-mono">
+                  AUTO-CALCULATED
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">RAIS Agencies Wholesale Billing Engine • Rayachoty Depot</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -215,8 +300,12 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-white">Invoice Issued Successfully!</h3>
-            <p className="text-sm text-slate-400 font-mono">Invoice Number: <span className="text-amber-400 font-bold">{successInvoice.invoice_number}</span></p>
-            <p className="text-xs text-slate-400">Grand Total: ₹{parseFloat(successInvoice.total_amount).toFixed(2)} | Billed to {successInvoice.customer_name}</p>
+            <p className="text-sm text-slate-400 font-mono">
+              Invoice Number: <span className="text-amber-400 font-bold">{successInvoice.invoice_number}</span>
+            </p>
+            <p className="text-xs text-slate-400">
+              Grand Total: ₹{parseFloat(successInvoice.total_amount).toFixed(2)} | Billed to {successInvoice.customer_name}
+            </p>
 
             <div className="flex gap-3 pt-4">
               <a
@@ -245,9 +334,10 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
             {/* Scrollable Form Body */}
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
-                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs font-semibold">
+                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs font-semibold flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                   {error}
                 </div>
               )}
@@ -262,7 +352,7 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                   >
                     <option value="">-- Select Customer --</option>
                     {customers.map((c) => (
@@ -282,7 +372,7 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
                     value={invoiceDate}
                     onChange={(e) => setInvoiceDate(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                   />
                 </div>
 
@@ -295,97 +385,140 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                   />
                 </div>
               </div>
 
               {/* Line Items Section */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                    Product Line Items
-                  </h3>
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Product Line Items
+                    </h3>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      ({items.length} {items.length === 1 ? 'item' : 'items'})
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={addItemRow}
-                    className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300"
+                    className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/20 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Product Row
                   </button>
                 </div>
 
-                <div className="space-y-2.5">
-                  {items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 bg-slate-950/60 p-3 rounded-lg border border-slate-800 items-center">
-                      <div className="col-span-5">
-                        <select
-                          value={item.product_id}
-                          onChange={(e) => handleProductChange(index, e.target.value)}
-                          required
-                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 truncate"
-                        >
-                          <option value="">-- Choose Catalogue SKU --</option>
-                          {products.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} ({p.packaging_unit}) — ₹{p.base_price}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                {/* Table Header */}
+                <div className="grid grid-cols-12 gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <div className="col-span-5">Catalogue Product SKU</div>
+                  <div className="col-span-2 text-center">Quantity</div>
+                  <div className="col-span-2 text-right">Unit Price (₹)</div>
+                  <div className="col-span-2 text-center">Disc %</div>
+                  <div className="col-span-1 text-right">Action</div>
+                </div>
 
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          min="0.1"
-                          step="any"
-                          value={item.quantity}
-                          onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
-                          placeholder="Qty"
-                          required
-                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-center text-slate-200 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
+                <div className="space-y-2">
+                  {items.map((item, index) => {
+                    const selProd = products.find(p => p.id === item.product_id);
+                    const lineSub = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+                    const lineDisc = lineSub * ((parseFloat(item.discount_rate) || 0) / 100);
+                    const lineTaxable = Math.max(0, lineSub - lineDisc);
+                    const lineTax = lineTaxable * ((parseFloat(item.tax_rate) || 0) / 100);
+                    const lineTotal = lineTaxable + lineTax;
 
-                      <div className="col-span-2">
-                        <div className="relative">
-                          <span className="absolute left-2 top-1.5 text-xs text-slate-500">₹</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={item.unit_price}
-                            onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
-                            placeholder="Price"
+                    return (
+                      <div key={index} className="grid grid-cols-12 gap-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">
+                        <div className="col-span-5">
+                          <select
+                            value={item.product_id}
+                            onChange={(e) => handleProductChange(index, e.target.value)}
                             required
-                            className="w-full bg-slate-900 border border-slate-800 rounded pl-5 pr-2 py-1.5 text-xs text-right text-slate-200 focus:outline-none focus:border-amber-500"
-                          />
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500 truncate"
+                          >
+                            <option value="">-- Choose Catalogue SKU --</option>
+                            {products.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.packaging_unit || 'PKT'}) — ₹{parseFloat(p.base_price).toFixed(2)}
+                              </option>
+                            ))}
+                          </select>
+                          {selProd && (
+                            <div className="flex items-center gap-2 mt-1 px-1 text-[10px] text-slate-400 font-mono">
+                              <span>GST: {selProd.tax_rate}%</span>
+                              <span>•</span>
+                              <span>SKU: {selProd.sku}</span>
+                              <span>•</span>
+                              <span className="text-emerald-400 font-semibold">Stock: {parseFloat(selProd.current_stock || 0)} {selProd.packaging_unit}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="col-span-2">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0.1"
+                              step="any"
+                              value={item.quantity}
+                              onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
+                              placeholder="Qty"
+                              required
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-xs text-center font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                            />
+                            <span className="absolute right-2 top-2 text-[10px] text-slate-500 font-mono pointer-events-none">
+                              {item.packaging_unit || 'PKT'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="col-span-2">
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-2 text-xs text-slate-500 font-mono">₹</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.unit_price}
+                              onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
+                              placeholder="0.00"
+                              required
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-6 pr-2 py-2 text-xs text-right font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-span-2">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max="100"
+                              value={item.discount_rate}
+                              onChange={(e) => handleItemFieldChange(index, 'discount_rate', e.target.value)}
+                              placeholder="0"
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-xs text-center font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+                            />
+                            <span className="absolute right-2.5 top-2 text-[10px] text-slate-500 pointer-events-none">%</span>
+                          </div>
+                        </div>
+
+                        <div className="col-span-1 flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => removeItemRow(index)}
+                            disabled={items.length === 1}
+                            className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                            title="Delete Line Item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-
-                      <div className="col-span-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={item.discount_rate}
-                          onChange={(e) => handleItemFieldChange(index, 'discount_rate', e.target.value)}
-                          placeholder="Disc %"
-                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-center text-slate-200 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
-
-                      <div className="col-span-1 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => removeItemRow(index)}
-                          disabled={items.length === 1}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 disabled:opacity-30"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -399,81 +532,95 @@ export const InvoiceBuilderModal = ({ isOpen, onClose, onInvoiceCreated }) => {
                     rows={2}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g. Delivered via morning frozen van"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    placeholder="e.g. Delivered via morning refrigerated vehicle • PO Ref #9842"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                   />
                 </div>
 
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Additional Invoice Discount (₹)
+                      Additional Bill-Level Cash Discount (₹)
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={invoiceDiscount}
-                      onChange={(e) => setInvoiceDiscount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-xs text-slate-500 font-mono">₹</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={invoiceDiscount}
+                        onChange={(e) => setInvoiceDiscount(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-7 pr-3 py-2 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center gap-2.5 pt-1">
                     <input
                       type="checkbox"
                       id="autoIssue"
                       checked={autoIssue}
                       onChange={(e) => setAutoIssue(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0"
+                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
                     />
-                    <label htmlFor="autoIssue" className="text-xs font-semibold text-slate-300">
-                      Issue Immediately (Ready for Payment Allocation)
+                    <label htmlFor="autoIssue" className="text-xs font-semibold text-slate-300 cursor-pointer select-none">
+                      Issue Immediately (Ready for 1-Click WhatsApp & Receipt Printing)
                     </label>
                   </div>
                 </div>
               </div>
 
               {/* Totals Summary Card */}
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Calculator className="w-4 h-4 text-amber-500" />
-                  <span>Deterministic Server Calculation Applied</span>
+              <div className="p-4 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+                <div className="flex items-center gap-2.5 text-xs text-slate-400">
+                  <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Calculator className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-slate-200 font-semibold">Deterministic Server Valuation</span>
+                    <p className="text-[10px] text-slate-500">GST + Line Discounts Calculated Real-Time</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-6 font-mono text-xs">
                   <div>
-                    <span className="text-slate-500">Subtotal:</span>{' '}
-                    <span className="text-slate-300 font-bold">₹{totals.subtotal}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-sans">Subtotal</span>
+                    <span className="text-slate-300 font-bold text-sm">₹{totals.subtotal}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">GST:</span>{' '}
-                    <span className="text-slate-300 font-bold">₹{totals.tax}</span>
+                    <span className="text-slate-500 block text-[10px] uppercase font-sans">GST Total</span>
+                    <span className="text-slate-300 font-bold text-sm">₹{totals.tax}</span>
                   </div>
-                  <div className="text-sm">
-                    <span className="text-amber-500 font-bold">Total:</span>{' '}
-                    <span className="text-amber-400 font-black text-base">₹{totals.total}</span>
+                  <div className="text-right pl-3 border-l border-slate-800">
+                    <span className="text-amber-400 block text-[10px] uppercase font-bold font-sans">Grand Total Due</span>
+                    <span className="text-amber-400 font-black text-lg">₹{totals.total}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg uppercase tracking-wider"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center gap-2"
-              >
-                {submitting ? 'Generating...' : autoIssue ? 'Issue Invoice' : 'Save as Draft'}
-              </button>
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-500 font-mono">
+                Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px]">Esc</kbd> to exit
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg uppercase tracking-wider transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-lg shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center gap-2 transition-all transform active:scale-95"
+                >
+                  {submitting ? 'Generating...' : autoIssue ? 'Issue Invoice Now' : 'Save as Draft'}
+                </button>
+              </div>
             </div>
           </form>
         )}
