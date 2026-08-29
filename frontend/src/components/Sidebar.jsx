@@ -35,7 +35,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenInvoiceBuilder }) => {
   }
 
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen sticky top-0 select-none z-30">
+    <aside className="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 h-screen sticky top-0 select-none z-30 shrink-0">
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-xl text-slate-950 shadow-lg shadow-amber-500/20">

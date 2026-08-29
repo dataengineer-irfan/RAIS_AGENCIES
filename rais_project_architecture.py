@@ -30,6 +30,7 @@ if sys.stdout.encoding != 'utf-8':
 
 SYSTEM_METADATA = {
     "project_name": "RAIS Agencies Business Management Platform",
+    "version": "2.0.0 (Decision-Support & Operational Excellence Layer)",
     "industry": "B2B Frozen Foods & Beverage Wholesale Distribution",
     "location": "Reddies Colony, Rayachoty, Annamayya District, Andhra Pradesh - 516269",
     "hotlines": ["9347453135", "9573261696"],
@@ -46,7 +47,8 @@ SYSTEM_METADATA = {
         "backend": "Python 3.12 + FastAPI + SQLAlchemy ORM + Pydantic v2 + Uvicorn (Port 8001)",
         "frontend": "React 18 + Vite + Tailwind CSS + Lucide React (Port 3000)",
         "testing": "Playwright Python E2E Automated QA Suite",
-        "ai_engine": "Semantic Business Knowledge Layer (Deterministic SQL Tools + NLP Router)"
+        "ai_engine": "Semantic Business Knowledge Layer (Deterministic SQL Tools + NLP Router)",
+        "hardware_integration": "ESC/POS 58mm/80mm Bluetooth & Universal Browser Thermal Receipt Printing + Dynamic UPI QR Codes"
     }
 }
 
@@ -62,16 +64,18 @@ OPERATING_MODEL = {
     ),
     "workflow_pipeline": [
         {"step": 1, "module": "Authentication", "action": "Secure JWT Login", "roles": ["ADMIN", "OPERATOR", "VIEWER"]},
-        {"step": 2, "module": "Executive Dashboard", "action": "Commercial KPIs, Total Receivables, Fast Moving SKUs", "route": "/api/reports/dashboard"},
-        {"step": 3, "module": "Customer Directory", "action": "Register Restaurant / View Workspace Profile", "entity": "Customer (CUST-XXXX)"},
-        {"step": 4, "module": "Master Catalogue", "action": "Add/Edit SKUs, Dual Pricing (Base+GST), WhatsApp Price Sheet", "entity": "Product (RAIS-XXX-XX)"},
-        {"step": 5, "module": "Inventory Engine", "action": "Stock Intake (REC-XXXX) & Breakage Adjustments (ADJ-XXXX)", "entity": "StockMovement"},
-        {"step": 6, "module": "Orders & Bookings", "action": "Customer Booking (ORD-XXXX) with live warehouse stock reservation", "entity": "Order / OrderItem"},
-        {"step": 7, "module": "Tax Billing", "action": "1-Click Convert Order to GST Tax Invoice (INV-XXXX) & Stock Deduction", "entity": "Invoice / InvoiceItem"},
-        {"step": 8, "module": "Payment Settlements", "action": "Record UPI/Cash Settlement (PAY-XXXX) & Reconcile Invoices", "entity": "Payment / Allocation"},
-        {"step": 9, "module": "Customer Ledger", "action": "Real-time running debit/credit statement timeline", "entity": "LedgerEntry"},
-        {"step": 10, "module": "Reports & Aging", "action": "Receivables Aging Buckets (0-15, 16-30, 31-60, 60+ days)", "entity": "AgingReport"},
-        {"step": 11, "module": "Semantic AI Assistant", "action": "Conversational tool execution for instant balance/pricing lookups", "endpoint": "/api/ai/query"}
+        {"step": 2, "module": "Executive Decision Canvas", "action": "Commercial KPIs, Global Slicers, Progressive Disclosure Drilldowns", "route": "/api/reports/dashboard"},
+        {"step": 3, "module": "Sales Forecasting & Targets", "action": "Rolling 90-day velocity, month-end projection, inline target editor", "route": "/api/analytics/forecast"},
+        {"step": 4, "module": "Product Performance Matrix", "action": "4-Quadrant matrix (Winner/Steady/Declining/Zero-Mover) & Cold Room Dead Stock alert", "route": "/api/analytics/product-matrix"},
+        {"step": 5, "module": "Customer Health & Early Warning", "action": "DSO, payment punctuality, 1-click WhatsApp reminders", "route": "/api/analytics/customer-health"},
+        {"step": 6, "module": "Master Catalogue", "action": "Add/Edit SKUs, Dual Pricing (Base+GST), WhatsApp Price Sheet", "entity": "Product (RAIS-XXX-XX)"},
+        {"step": 7, "module": "Inventory Engine", "action": "Stock Intake (REC-XXXX) & Breakage Adjustments (ADJ-XXXX)", "entity": "StockMovement"},
+        {"step": 8, "module": "Orders & Bookings", "action": "Customer Booking (ORD-XXXX) with live warehouse stock reservation", "entity": "Order / OrderItem"},
+        {"step": 9, "module": "Tax Billing & Thermal Receipts", "action": "1-Click Convert Order to GST Tax Invoice (INV-XXXX) & 58mm/80mm ESC/POS Thermal Print with UPI QR", "entity": "Invoice / InvoiceItem"},
+        {"step": 10, "module": "Payment Settlements", "action": "Record UPI/Cash Settlement (PAY-XXXX) & Reconcile Invoices", "entity": "Payment / Allocation"},
+        {"step": 11, "module": "Customer Ledger", "action": "Real-time running debit/credit statement timeline", "entity": "LedgerEntry"},
+        {"step": 12, "module": "Reports & Aging", "action": "Receivables Aging Buckets (0-15, 16-30, 31-60, 60+ days)", "entity": "AgingReport"},
+        {"step": 13, "module": "Semantic AI Assistant", "action": "Conversational tool execution for instant balance/pricing lookups", "endpoint": "/api/ai/query"}
     ]
 }
 
@@ -116,9 +120,9 @@ DATABASE_ENTITIES = [
         "table_name": "customers",
         "description": "B2B Restaurants, Cafes, and Wholesale Food Clients in Rayachoty & Region",
         "columns": [
-            "id (UUID, PK)", "code (VARCHAR, UNIQUE, e.g. CUST-0001)", "name (VARCHAR)", "contact_person (VARCHAR)",
-            "phone (VARCHAR)", "email (VARCHAR)", "address (TEXT)", "gstin (VARCHAR)",
-            "credit_limit (NUMERIC)", "payment_terms_days (INT)", "is_active (BOOLEAN)", "created_at (TIMESTAMP)"
+            "id (UUID, PK)", "customer_code (VARCHAR, UNIQUE, e.g. CUST-0001)", "business_name (VARCHAR)", "contact_person (VARCHAR)",
+            "phone (VARCHAR)", "email (VARCHAR)", "address_line1 (TEXT)", "city (VARCHAR)", "gstin (VARCHAR)",
+            "credit_limit (NUMERIC)", "status (VARCHAR)", "created_at (TIMESTAMP)"
         ],
         "relationships": [
             "Has many Orders (1:N)", "Has many Invoices (1:N)",
@@ -126,13 +130,46 @@ DATABASE_ENTITIES = [
         ]
     },
     {
+        "table_name": "monthly_targets",
+        "description": "Target revenue goals per month set by administration",
+        "columns": [
+            "id (UUID, PK)", "year_month (VARCHAR, UNIQUE, e.g. 2026-08)", "target_revenue (NUMERIC)", "set_by (UUID, FK -> users.id)", "created_at (TIMESTAMP)"
+        ],
+        "relationships": []
+    },
+    {
+        "table_name": "product_performance_snapshots",
+        "description": "Snapshots of SKU classifications (Winner, Steady, Declining, Zero-Mover) and dead stock values",
+        "columns": [
+            "id (UUID, PK)", "product_id (UUID, FK -> products.id)", "period (VARCHAR)", "revenue (NUMERIC)",
+            "units_sold (NUMERIC)", "stock_holding_value (NUMERIC)", "trend_pct (NUMERIC)", "classification (VARCHAR)"
+        ],
+        "relationships": ["Belongs to Product (N:1)"]
+    },
+    {
+        "table_name": "customer_health_snapshots",
+        "description": "Health traffic light scores, DSO, payment delay history, and risk reasons",
+        "columns": [
+            "id (UUID, PK)", "customer_id (UUID, FK -> customers.id)", "period (VARCHAR)", "dso_days (NUMERIC)",
+            "avg_days_late (NUMERIC)", "health_status (VARCHAR: HEALTHY, WATCH, AT_RISK)", "risk_reason (TEXT)"
+        ],
+        "relationships": ["Belongs to Customer (N:1)"]
+    },
+    {
+        "table_name": "printer_profiles",
+        "description": "Thermal printer hardware profiles (58mm/80mm ESC/POS Bluetooth and USB)",
+        "columns": [
+            "id (UUID, PK)", "user_id (UUID, FK -> users.id)", "name (VARCHAR)", "connection_type (VARCHAR)",
+            "paper_width (INT)", "device_name (VARCHAR)", "is_default (BOOLEAN)"
+        ],
+        "relationships": []
+    },
+    {
         "table_name": "stock_movements",
         "description": "Complete audit trail for stock receipts, adjustments, and order dispatches",
         "columns": [
             "id (UUID, PK)", "product_id (UUID, FK -> products.id)", "movement_type (ENUM: IN_PURCHASE, OUT_SALE, ADJUSTMENT, RETURN)",
-            "reference_number (VARCHAR, e.g. REC-XXXX, ADJ-XXXX, INV-XXXX)", "quantity (NUMERIC)",
-            "batch_number (VARCHAR)", "supplier_name (VARCHAR)", "purchase_cost (NUMERIC)",
-            "reason (TEXT)", "created_by (UUID, FK -> users.id)", "created_at (TIMESTAMP)"
+            "reference_number (VARCHAR, e.g. REC-XXXX, ADJ-XXXX, INV-XXXX)", "quantity (NUMERIC)", "created_at (TIMESTAMP)"
         ],
         "relationships": ["Belongs to Product (N:1)", "Belongs to User (N:1)"]
     },
@@ -141,32 +178,17 @@ DATABASE_ENTITIES = [
         "description": "Advance restaurant bookings and reservations prior to tax invoice generation",
         "columns": [
             "id (UUID, PK)", "order_number (VARCHAR, UNIQUE, e.g. ORD-202608-00001)",
-            "customer_id (UUID, FK -> customers.id)", "order_date (DATE)", "required_delivery_date (DATE)",
-            "status (ENUM: DRAFT, CONFIRMED, FULFILLED, CANCELLED)", "subtotal (NUMERIC)",
-            "tax_total (NUMERIC)", "grand_total (NUMERIC)", "notes (TEXT)", "created_at (TIMESTAMP)"
+            "customer_id (UUID, FK -> customers.id)", "order_date (DATE)", "total_amount (NUMERIC)", "status (VARCHAR)"
         ],
         "relationships": ["Belongs to Customer (N:1)", "Has many OrderItems (1:N)", "Linked to Invoice (1:1)"]
-    },
-    {
-        "table_name": "order_items",
-        "description": "Line items for customer advance orders",
-        "columns": [
-            "id (UUID, PK)", "order_id (UUID, FK -> orders.id)", "product_id (UUID, FK -> products.id)",
-            "quantity (NUMERIC)", "unit_price (NUMERIC)", "tax_rate (NUMERIC)",
-            "tax_amount (NUMERIC)", "line_total (NUMERIC)"
-        ],
-        "relationships": ["Belongs to Order (N:1)", "Belongs to Product (N:1)"]
     },
     {
         "table_name": "invoices",
         "description": "Official GST-Compliant B2B Tax Invoices with deterministic sequence numbers",
         "columns": [
             "id (UUID, PK)", "invoice_number (VARCHAR, UNIQUE, e.g. INV-202608-00001)",
-            "customer_id (UUID, FK -> customers.id)", "order_id (UUID, FK -> orders.id, NULLABLE)",
-            "invoice_date (DATE)", "due_date (DATE)", "subtotal (NUMERIC)", "tax_total (NUMERIC)",
-            "grand_total (NUMERIC)", "paid_amount (NUMERIC)", "outstanding_amount (NUMERIC)",
-            "status (ENUM: DRAFT, ISSUED, PARTIALLY_PAID, PAID, CANCELLED, OVERDUE)",
-            "notes (TEXT)", "created_at (TIMESTAMP)"
+            "customer_id (UUID, FK -> customers.id)", "total_amount (NUMERIC)", "tax_amount (NUMERIC)",
+            "paid_amount (NUMERIC)", "outstanding_amount (NUMERIC)", "status (VARCHAR)"
         ],
         "relationships": [
             "Belongs to Customer (N:1)", "Linked to Order (1:1)",
@@ -174,23 +196,11 @@ DATABASE_ENTITIES = [
         ]
     },
     {
-        "table_name": "invoice_items",
-        "description": "Line items for official tax invoices",
-        "columns": [
-            "id (UUID, PK)", "invoice_id (UUID, FK -> invoices.id)", "product_id (UUID, FK -> products.id)",
-            "quantity (NUMERIC)", "unit_price (NUMERIC)", "tax_rate (NUMERIC)",
-            "tax_amount (NUMERIC)", "line_total (NUMERIC)"
-        ],
-        "relationships": ["Belongs to Invoice (N:1)", "Belongs to Product (N:1)"]
-    },
-    {
         "table_name": "payments",
         "description": "Customer payments (UPI, Cash, Bank Transfer, Cheque) with UTR settlement tracking",
         "columns": [
             "id (UUID, PK)", "payment_number (VARCHAR, UNIQUE, e.g. PAY-202608-00001)",
-            "customer_id (UUID, FK -> customers.id)", "payment_date (DATE)", "amount (NUMERIC)",
-            "payment_mode (ENUM: CASH, UPI, BANK_TRANSFER, CHEQUE)", "reference_number (VARCHAR, UTR)",
-            "notes (TEXT)", "allocated_amount (NUMERIC)", "unallocated_amount (NUMERIC)", "created_at (TIMESTAMP)"
+            "customer_id (UUID, FK -> customers.id)", "amount (NUMERIC)", "payment_mode (VARCHAR)"
         ],
         "relationships": [
             "Belongs to Customer (N:1)", "Has many PaymentAllocations (1:N)",
@@ -198,43 +208,25 @@ DATABASE_ENTITIES = [
         ]
     },
     {
-        "table_name": "payment_allocations",
-        "description": "Reconciliation map distributing payment amounts against specific open invoices",
-        "columns": [
-            "id (UUID, PK)", "payment_id (UUID, FK -> payments.id)", "invoice_id (UUID, FK -> invoices.id)",
-            "amount (NUMERIC)", "allocated_at (TIMESTAMP)"
-        ],
-        "relationships": ["Belongs to Payment (N:1)", "Belongs to Invoice (N:1)"]
-    },
-    {
         "table_name": "customer_ledger",
         "description": "Immutable double-entry customer accounting statement with real-time balance tracking",
         "columns": [
             "id (UUID, PK)", "customer_id (UUID, FK -> customers.id)", "entry_date (DATE)",
-            "entry_type (ENUM: INVOICE, PAYMENT, CREDIT_NOTE, DEBIT_NOTE, OPENING_BALANCE)",
-            "reference_id (VARCHAR)", "description (TEXT)", "debit (NUMERIC)", "credit (NUMERIC)",
-            "running_balance (NUMERIC)", "created_at (TIMESTAMP)"
+            "debit (NUMERIC)", "credit (NUMERIC)", "running_balance (NUMERIC)"
         ],
         "relationships": ["Belongs to Customer (N:1)"]
     },
     {
         "table_name": "document_sequences",
         "description": "Collision-free deterministic monthly sequential number generator",
-        "columns": [
-            "id (UUID, PK)", "doc_type (VARCHAR, e.g. INV, ORD, REC, ADJ, PAY, CUST)",
-            "prefix (VARCHAR)", "year_month (VARCHAR, e.g. 202608)", "current_number (INT)", "updated_at (TIMESTAMP)"
-        ],
+        "columns": ["id (UUID, PK)", "doc_type (VARCHAR)", "prefix (VARCHAR)", "year_month (VARCHAR)", "current_number (INT)"],
         "relationships": []
     },
     {
         "table_name": "audit_logs",
         "description": "System-wide immutable change audit log capturing before/after states",
-        "columns": [
-            "id (UUID, PK)", "user_id (UUID, FK -> users.id)", "action (ENUM: CREATE, UPDATE, DELETE, CANCEL, STATUS_CHANGE)",
-            "entity_name (VARCHAR)", "entity_id (VARCHAR)", "before_state (JSONB)", "after_state (JSONB)",
-            "ip_address (VARCHAR)", "created_at (TIMESTAMP)"
-        ],
-        "relationships": ["Belongs to User (N:1)"]
+        "columns": ["id (UUID, PK)", "user_id (UUID)", "action (VARCHAR)", "entity_name (VARCHAR)", "created_at (TIMESTAMP)"],
+        "relationships": []
     }
 ]
 
@@ -243,11 +235,17 @@ DATABASE_ENTITIES = [
 # --------------------------------------------------------------------------------------
 
 API_ROUTER_DIRECTORY = {
+    "/api/analytics": [
+        "GET  /api/analytics/product-matrix -> 4-Quadrant product matrix & freezer dead stock value",
+        "GET  /api/analytics/customer-health -> Traffic-light health scores & proactive at-risk alerts",
+        "GET  /api/analytics/forecast -> Sales forecast vs actual, month-end projection & executive story",
+        "POST /api/analytics/targets -> Set or update monthly revenue target",
+        "GET  /api/analytics/receipt/{id} -> Structured 58mm/80mm ESC/POS thermal receipt & UPI QR payload",
+        "GET  /api/analytics/drilldown -> Multi-level progressive disclosure metric drilldown"
+    ],
     "/api/auth": [
         "POST /api/auth/login-json -> JSON credentials login returning JWT access token",
-        "GET  /api/auth/me -> Return current authenticated user profile and roles",
-        "GET  /api/auth/users -> Admin user management",
-        "POST /api/auth/users -> Create new operator/viewer account"
+        "GET  /api/auth/me -> Return current authenticated user profile and roles"
     ],
     "/api/customers": [
         "GET  /api/customers -> List all restaurant customers with balances and search",
@@ -260,7 +258,6 @@ API_ROUTER_DIRECTORY = {
         "GET  /api/catalogue/categories -> List active product categories with counts",
         "POST /api/catalogue/categories -> Create new product category",
         "GET  /api/catalogue/products -> List master SKUs with category, brand, stock, and price filters",
-        "GET  /api/catalogue/products/{id} -> Get single product SKU details",
         "POST /api/catalogue/products -> Create new master SKU with live GST preview",
         "PUT  /api/catalogue/products/{id} -> Update master SKU price, unit, or stock thresholds"
     ],
@@ -272,27 +269,22 @@ API_ROUTER_DIRECTORY = {
     ],
     "/api/orders": [
         "GET  /api/orders -> List all customer advance bookings and orders",
-        "GET  /api/orders/{id} -> Get order details with line items",
         "POST /api/orders -> Create new booking (ORD-XXXX) with live stock reservation check",
-        "PUT  /api/orders/{id} -> Update order status",
         "POST /api/orders/{id}/convert-to-invoice -> 1-Click convert order to tax invoice (INV-XXXX)"
     ],
     "/api/invoices": [
         "GET  /api/invoices -> List GST tax invoices with status and date filters",
         "GET  /api/invoices/{id} -> Get complete invoice details with items and payment allocations",
-        "POST /api/invoices -> Create standalone tax invoice (INV-XXXX)",
-        "PUT  /api/invoices/{id}/status -> Update invoice status (ISSUED, CANCELLED, OVERDUE)"
+        "POST /api/invoices -> Create standalone tax invoice (INV-XXXX)"
     ],
     "/api/payments": [
         "GET  /api/payments -> List payment settlements with customer and method filters",
-        "GET  /api/payments/{id} -> Get payment settlement with allocation breakdown",
         "POST /api/payments -> Record payment (PAY-XXXX), allocate to open invoices, and credit ledger"
     ],
     "/api/reports": [
         "GET  /api/reports/dashboard -> Commercial dashboard KPIs (Revenue, Receivables, Overdue)",
         "GET  /api/reports/aging -> Overall receivables aging buckets (0-15, 16-30, 31-60, 60+ days)",
-        "GET  /api/reports/aging/customers -> Per-customer aging breakdown and credit risk",
-        "GET  /api/reports/product-sales -> SKU sales velocity, volume, and gross margin"
+        "GET  /api/reports/aging/customers -> Per-customer aging breakdown and credit risk"
     ],
     "/api/ai": [
         "POST /api/ai/query -> Semantic business assistant answering questions via live analytical tools"
@@ -307,9 +299,9 @@ API_ROUTER_DIRECTORY = {
 # --------------------------------------------------------------------------------------
 
 FRONTEND_ARCHITECTURE = {
-    "root_layout": "App.jsx (Sidebar Navigation, Header with Live Rayachoty Hotline, Modal Mounts)",
+    "root_layout": "App.jsx (Sidebar Navigation on Desktop, MobileBottomNav on Phone, Header with Live Rayachoty Hotline, Modal Mounts)",
     "pages": {
-        "DashboardPage": "KPI stat cards, Monthly Revenue, Total Receivables, Overdue, Recent Invoices, High-Velocity SKUs",
+        "DashboardPage": "Executive Command Canvas: Global Slicers, Forecast Story Widget, 4-Quadrant Product Matrix with Cold Room Dead Stock Alert, Customer Health Traffic Lights, Clickable Drilldown KPI Tiles, Recent Invoices with 1-Click Thermal Print",
         "CustomersPage": "Directory, Search, Balance Badges, +New Customer Modal, CustomerProfileModal (Workspace with Ledger)",
         "CataloguePage": "Category Hero Bar (Fries, Nuggets, Momos, Burgers, Cheese, Sauces, Boxes, Mojitos, Spices), Grid/Table View, Live Stock Badges, Dual Rates (Base+GST), Partner Brands, WhatsApp Price Sheet, Flyer Modal, ProductModal",
         "InventoryPage": "Stock KPI Overview, Low Stock Alerts, ReceiveStockModal (+REC-XXXX), AdjustStockModal (-ADJ-XXXX), StockMovementsDrawer",
@@ -319,7 +311,15 @@ FRONTEND_ARCHITECTURE = {
         "ReportsPage": "Receivables Aging Buckets (0-15, 16-30, 31-60, 60+ days), Customer Credit Risk Table, Product Sales Velocity",
         "AuditPage": "System Audit Trail, Entity Change Logs, User Actions, Before/After JSON Diffs"
     },
-    "interactive_modals": [
+    "interactive_modals_and_widgets": [
+        "GlobalFilterBar.jsx -> Sticky slicers toolbar (Date range, Customer, Category, Baseline comparison)",
+        "ForecastStoryWidget.jsx -> Plain-language story, inline target editor, and predictive run-rate numbers",
+        "ProductPerformanceMatrix.jsx -> 4-Quadrant matrix with cold room dead stock capital risk banner",
+        "CustomerHealthCard.jsx -> Traffic light health scoring and 1-click WhatsApp payment reminders",
+        "DrillableMetricModal.jsx -> Power BI progressive disclosure panel with breadcrumb navigation",
+        "ThermalReceiptModal.jsx -> ESC/POS 58mm/80mm thermal receipt with dynamic UPI QR code generator",
+        "ResponsiveTable.jsx -> Reusable wrapper rendering desktop table and mobile touch cards",
+        "MobileBottomNav.jsx -> 1-Handed phone bottom navigation bar",
         "ProductModal.jsx -> Add/Edit SKU with live GST calculator, auto-SKU, and stock limits",
         "ReceiveStockModal.jsx -> Intake supplier shipments with batch, supplier hub, and purchase cost",
         "AdjustStockModal.jsx -> Record spoilage/transit damage with mandatory business reason",
@@ -340,11 +340,13 @@ def generate_mermaid_diagram() -> str:
     return """```mermaid
 graph TD
     %% User Layer
-    User([Business Operator / Admin]) -->|Interacts with GUI| Frontend[React 18 + Vite Frontend]
+    User([Business Operator / Owner / Admin]) -->|Interacts on Desktop or Phone| Frontend[React 18 + Vite Frontend :3000]
     
     %% Frontend Modals & Pages
-    subgraph Frontend Layer [Port: 3000]
-        Frontend --> Dash[Dashboard Page]
+    subgraph Frontend Architecture Layer [Port: 3000]
+        Frontend --> Slicers[GlobalFilterBar - Sticky Slicers]
+        Frontend --> Dash[Dashboard Page - Decision Canvas]
+        Frontend --> MobileNav[MobileBottomNav - 1-Handed Mobile Nav]
         Frontend --> Cust[Customers Page]
         Frontend --> Cat[Master Catalogue Page]
         Frontend --> Inv[Inventory Page]
@@ -353,6 +355,12 @@ graph TD
         Frontend --> Pay[Payments Page]
         Frontend --> Rep[Reports & Aging]
         Frontend --> AI_UI[AI Assistant Drawer]
+        
+        Dash --> ForecastWidget[ForecastStoryWidget - Pacing & Goal]
+        Dash --> ProdMatrix[ProductPerformanceMatrix - Winner/Dead Stock]
+        Dash --> CustHealth[CustomerHealthCard - DSO & Traffic Lights]
+        Dash --> DrillModal[DrillableMetricModal - Breadcrumbs Deep-Dive]
+        Dash --> ThermModal[ThermalReceiptModal - 58/80mm & UPI QR]
         
         Cat --> ProdModal[ProductModal - Add/Edit SKU]
         Cat --> FlyerModal[OfficialFlyerModal - Brochure]
@@ -368,6 +376,10 @@ graph TD
     Frontend -->|Axios REST / Bearer JWT| Backend[FastAPI Backend - Port: 8001]
     
     subgraph Backend Services Layer
+        Backend --> ForecastSvc[ForecastingService - 90d Velocity & WMA]
+        Backend --> ProdPerfSvc[ProductPerformanceService - Quadrant Intelligence]
+        Backend --> CustHealthSvc[CustomerHealthService - DSO & Punctuality]
+        Backend --> ThermPrintSvc[ThermalPrintService - ESC/POS & UPI QR]
         Backend --> AuthSvc[AuthService]
         Backend --> CustSvc[CustomerService]
         Backend --> CatSvc[CatalogueService]
@@ -383,6 +395,10 @@ graph TD
 
     %% Database Layer
     subgraph PostgreSQL Database Layer [Supabase Pooler : 6543]
+        ForecastSvc --> DB_Targets[(monthly_targets)]
+        ProdPerfSvc --> DB_ProdSnap[(product_performance_snapshots)]
+        CustHealthSvc --> DB_CustSnap[(customer_health_snapshots)]
+        ThermPrintSvc --> DB_Printers[(printer_profiles)]
         AuthSvc --> DB_Users[(users)]
         CustSvc --> DB_Cust[(customers)]
         CatSvc --> DB_Prod[(categories & products)]
@@ -394,17 +410,6 @@ graph TD
         SeqSvc --> DB_Seq[(document_sequences)]
         AuditSvc --> DB_Audit[(audit_logs)]
     end
-
-    %% Business Data Flows
-    RecModal -.->|Intake +REC-XXXX| InvSvc
-    AdjModal -.->|Damage -ADJ-XXXX| InvSvc
-    OrdModal -.->|Create ORD-XXXX| OrdSvc
-    OrdSvc -.->|1-Click Convert| BillSvc
-    BillSvc -.->|Generates INV-XXXX & Deducts Stock| DB_Inv
-    BillSvc -.->|Debits Ledger| DB_Ledger
-    PayModal -.->|Record PAY-XXXX| PaySvc
-    PaySvc -.->|Reconciles Invoices & Credits Ledger| DB_Ledger
-    AISvc -.->|Analytical Queries| RepSvc
 ```"""
 
 # --------------------------------------------------------------------------------------
@@ -413,24 +418,25 @@ graph TD
 
 def print_ascii_architecture():
     print("=" * 80)
-    print("RAIS AGENCIES BUSINESS MANAGEMENT & BILLING PLATFORM -- ARCHITECTURE GRAPH")
+    print("RAIS AGENCIES BUSINESS MANAGEMENT & BILLING PLATFORM -- v2 ARCHITECTURE GRAPH")
     print("=" * 80)
-    print(f"Project:     {SYSTEM_METADATA['project_name']}")
+    print(f"Project:     {SYSTEM_METADATA['project_name']} (v{SYSTEM_METADATA['version']})")
     print(f"Domain:      {SYSTEM_METADATA['industry']}")
     print(f"Location:    {SYSTEM_METADATA['location']}")
     print(f"Hotlines:    {', '.join(SYSTEM_METADATA['hotlines'])}")
     print(f"Target:      {SYSTEM_METADATA['target_users']}")
     print(f"Backend:     {SYSTEM_METADATA['tech_stack']['backend']}")
     print(f"Frontend:    {SYSTEM_METADATA['tech_stack']['frontend']}")
+    print(f"Hardware:    {SYSTEM_METADATA['tech_stack']['hardware_integration']}")
     print(f"Database:    {SYSTEM_METADATA['database']['engine']} @ {SYSTEM_METADATA['database']['host']}:{SYSTEM_METADATA['database']['port']}")
     print("-" * 80)
     print("\n[1] NON-TECHNICAL OPERATING PIPELINE:")
     for step in OPERATING_MODEL["workflow_pipeline"]:
-        print(f"  Step {step['step']:2d} | {step['module']:<20} -> {step['action']}")
+        print(f"  Step {step['step']:2d} | {step['module']:<24} -> {step['action']}")
     
     print("\n[2] DATABASE ENTITIES & RELATIONAL SCHEMA:")
     for entity in DATABASE_ENTITIES:
-        print(f"  * {entity['table_name']:<20} : {entity['description']}")
+        print(f"  * {entity['table_name']:<30} : {entity['description']}")
         print(f"    Columns: {', '.join(entity['columns'][:4])} ...")
         if entity['relationships']:
             print(f"    Relations: {', '.join(entity['relationships'])}")
@@ -448,9 +454,9 @@ def print_ascii_architecture():
     print("  Pages:")
     for page, desc in FRONTEND_ARCHITECTURE["pages"].items():
         print(f"    - {page:<20} : {desc}")
-    print("  Modals & Drawers:")
-    for modal in FRONTEND_ARCHITECTURE["interactive_modals"]:
-        print(f"    * {modal}")
+    print("\n  Modals, Slicers & Decision Widgets:")
+    for widget in FRONTEND_ARCHITECTURE["interactive_modals_and_widgets"]:
+        print(f"    * {widget}")
     print("=" * 80)
 
 def main():

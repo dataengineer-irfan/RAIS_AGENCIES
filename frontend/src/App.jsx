@@ -17,6 +17,7 @@ import { OrderBuilderModal } from './components/OrderBuilderModal';
 import { PaymentModal } from './components/PaymentModal';
 import { CustomerModal } from './components/CustomerModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
+import { MobileBottomNav } from './components/MobileBottomNav';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
@@ -73,7 +74,7 @@ export const App = () => {
           onGlobalSearch={setGlobalSearchTerm}
         />
 
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-8 overflow-y-auto max-w-7xl w-full mx-auto">
           {activeTab === 'dashboard' && (
             <DashboardPage
               onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
@@ -177,6 +178,13 @@ export const App = () => {
       <AIAssistantDrawer
         isOpen={aiDrawerOpen}
         onClose={() => setAiDrawerOpen(false)}
+      />
+
+      {/* Mobile Bottom Navigation Bar (Phone Screen < 768px) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onToggleAI={() => setAiDrawerOpen(!aiDrawerOpen)}
       />
     </div>
   );

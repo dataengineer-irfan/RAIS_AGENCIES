@@ -8,6 +8,13 @@ from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment, PaymentAllocation
 from app.models.inventory import StockMovement
 from app.models.system import AuditLog, SystemSetting, DocumentSequence, AITelemetry
+from app.models.analytics import (
+    MonthlyTarget,
+    ProductPerformanceSnapshot,
+    CustomerHealthSnapshot,
+    DashboardLayout,
+    PrinterProfile
+)
 
 __all__ = [
     "Base",
@@ -27,5 +34,10 @@ __all__ = [
     "AuditLog",
     "SystemSetting",
     "DocumentSequence",
-    "AITelemetry"
+    "AITelemetry",
+    "MonthlyTarget",
+    "ProductPerformanceSnapshot",
+    "CustomerHealthSnapshot",
+    "DashboardLayout",
+    "PrinterProfile"
 ]

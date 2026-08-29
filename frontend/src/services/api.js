@@ -236,4 +236,33 @@ export const auditApi = {
   }
 };
 
+export const analyticsApi = {
+  getProductMatrix: async () => {
+    const res = await api.get('/analytics/product-matrix');
+    return res.data;
+  },
+  getCustomerHealth: async () => {
+    const res = await api.get('/analytics/customer-health');
+    return res.data;
+  },
+  getForecast: async () => {
+    const res = await api.get('/analytics/forecast');
+    return res.data;
+  },
+  setMonthlyTarget: async (yearMonth, targetAmount) => {
+    const res = await api.post('/analytics/targets', { year_month: yearMonth, target_amount: targetAmount });
+    return res.data;
+  },
+  getThermalReceipt: async (invoiceId, paperWidth = 58) => {
+    const res = await api.get(`/analytics/receipt/${invoiceId}`, { params: { paper_width: paperWidth } });
+    return res.data;
+  },
+  getDrilldown: async (metric = 'revenue', level = 'category', categoryId = null) => {
+    const res = await api.get('/analytics/drilldown', {
+      params: { metric, level, category_id: categoryId }
+    });
+    return res.data;
+  }
+};
+
 export default api;
