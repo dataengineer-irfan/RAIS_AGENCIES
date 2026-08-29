@@ -4,13 +4,16 @@ import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardPage } from './pages/DashboardPage';
-import { BillingPage } from './pages/BillingPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { CataloguePage } from './pages/CataloguePage';
+import { InventoryPage } from './pages/InventoryPage';
+import { OrdersPage } from './pages/OrdersPage';
+import { BillingPage } from './pages/BillingPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditPage } from './pages/AuditPage';
 import { InvoiceBuilderModal } from './components/InvoiceBuilderModal';
+import { OrderBuilderModal } from './components/OrderBuilderModal';
 import { PaymentModal } from './components/PaymentModal';
 import { CustomerModal } from './components/CustomerModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
@@ -22,6 +25,7 @@ export const App = () => {
 
   // Modals state
   const [invoiceBuilderOpen, setInvoiceBuilderOpen] = useState(false);
+  const [orderBuilderOpen, setOrderBuilderOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
@@ -29,6 +33,7 @@ export const App = () => {
   // Contextual modal selections
   const [selectedCustForPayment, setSelectedCustForPayment] = useState(null);
   const [selectedInvForPayment, setSelectedInvForPayment] = useState(null);
+  const [selectedCustForOrder, setSelectedCustForOrder] = useState(null);
   const [customerToEdit, setCustomerToEdit] = useState(null);
 
   if (!isAuthenticated) {
@@ -44,6 +49,11 @@ export const App = () => {
   const handleOpenCustomerModal = (cust = null) => {
     setCustomerToEdit(cust);
     setCustomerModalOpen(true);
+  };
+
+  const handleOpenOrder = (cust = null) => {
+    setSelectedCustForOrder(cust ? cust.id : null);
+    setOrderBuilderOpen(true);
   };
 
   return (
@@ -72,22 +82,33 @@ export const App = () => {
             />
           )}
 
+          {activeTab === 'customers' && (
+            <CustomersPage
+              onOpenCustomerModal={handleOpenCustomerModal}
+              onOpenPaymentForCustomer={(cust) => handleOpenPayment(cust, null)}
+              onOpenInvoiceForCustomer={(cust) => setInvoiceBuilderOpen(true)}
+              onOpenOrderForCustomer={(cust) => handleOpenOrder(cust)}
+            />
+          )}
+
+          {activeTab === 'catalogue' && <CataloguePage />}
+
+          {activeTab === 'inventory' && <InventoryPage />}
+
+          {activeTab === 'orders' && (
+            <OrdersPage
+              onOpenBillingForInvoice={(inv) => {
+                setActiveTab('billing');
+              }}
+            />
+          )}
+
           {activeTab === 'billing' && (
             <BillingPage
               onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
               onOpenPaymentForInvoice={(inv) => handleOpenPayment(null, inv)}
             />
           )}
-
-          {activeTab === 'customers' && (
-            <CustomersPage
-              onOpenCustomerModal={handleOpenCustomerModal}
-              onOpenPaymentForCustomer={(cust) => handleOpenPayment(cust, null)}
-              onOpenInvoiceForCustomer={(cust) => setInvoiceBuilderOpen(true)}
-            />
-          )}
-
-          {activeTab === 'catalogue' && <CataloguePage />}
 
           {activeTab === 'payments' && (
             <PaymentsPage
@@ -121,9 +142,16 @@ export const App = () => {
         isOpen={invoiceBuilderOpen}
         onClose={() => setInvoiceBuilderOpen(false)}
         onInvoiceCreated={() => {
-          if (activeTab === 'billing' || activeTab === 'dashboard') {
-            window.location.reload();
-          }
+          // Modal triggers clean data refresh
+        }}
+      />
+
+      <OrderBuilderModal
+        isOpen={orderBuilderOpen}
+        onClose={() => setOrderBuilderOpen(false)}
+        preselectedCustomerId={selectedCustForOrder}
+        onOrderCreated={() => {
+          // Modal triggers clean data refresh
         }}
       />
 
@@ -133,9 +161,7 @@ export const App = () => {
         preselectedCustomer={selectedCustForPayment}
         preselectedInvoice={selectedInvForPayment}
         onPaymentRecorded={() => {
-          if (activeTab === 'payments' || activeTab === 'billing' || activeTab === 'dashboard') {
-            window.location.reload();
-          }
+          // Modal triggers clean data refresh
         }}
       />
 
@@ -144,9 +170,7 @@ export const App = () => {
         onClose={() => setCustomerModalOpen(false)}
         customerToEdit={customerToEdit}
         onCustomerSaved={() => {
-          if (activeTab === 'customers') {
-            window.location.reload();
-          }
+          // Modal triggers clean data refresh
         }}
       />
 

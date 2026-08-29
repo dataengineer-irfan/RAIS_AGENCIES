@@ -124,6 +124,44 @@ export const billingApi = {
   getPrintHtmlUrl: (id) => `/api/invoices/${id}/print-html`
 };
 
+export const orderApi = {
+  list: async (params = {}) => {
+    const res = await api.get('/orders', { params });
+    return res.data;
+  },
+  get: async (id) => {
+    const res = await api.get(`/orders/${id}`);
+    return res.data;
+  },
+  create: async (data) => {
+    const res = await api.post('/orders', data);
+    return res.data;
+  },
+  convertToInvoice: async (id) => {
+    const res = await api.post(`/orders/${id}/convert-to-invoice`);
+    return res.data;
+  }
+};
+
+export const inventoryApi = {
+  getOverview: async (params = {}) => {
+    const res = await api.get('/inventory/overview', { params });
+    return res.data;
+  },
+  receiveStock: async (data) => {
+    const res = await api.post('/inventory/receive', data);
+    return res.data;
+  },
+  adjustStock: async (data) => {
+    const res = await api.post('/inventory/adjust', data);
+    return res.data;
+  },
+  getMovements: async (params = {}) => {
+    const res = await api.get('/inventory/movements', { params });
+    return res.data;
+  }
+};
+
 export const quotationApi = {
   list: async (params = {}) => {
     const res = await api.get('/quotations', { params });

@@ -6,6 +6,7 @@ from app.models.quotation import Quotation, QuotationItem
 from app.models.order import Order, OrderItem
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment, PaymentAllocation
+from app.models.inventory import StockMovement
 from app.models.system import AuditLog, SystemSetting, DocumentSequence, AITelemetry
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "QuotationItem",
     "Order",
     "OrderItem",
+    "StockMovement",
     "Invoice",
     "InvoiceItem",
     "Payment",

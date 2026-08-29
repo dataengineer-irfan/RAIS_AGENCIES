@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
@@ -8,7 +8,7 @@ class CustomerBase(BaseModel):
     contact_person: str
     phone: str
     secondary_phone: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     address_line1: str
     address_line2: Optional[str] = None
     city: str = "Rayachoty"
@@ -26,7 +26,7 @@ class CustomerUpdate(BaseModel):
     contact_person: Optional[str] = None
     phone: Optional[str] = None
     secondary_phone: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     address_line1: Optional[str] = None
     address_line2: Optional[str] = None
     city: Optional[str] = None

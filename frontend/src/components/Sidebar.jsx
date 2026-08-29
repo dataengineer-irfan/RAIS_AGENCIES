@@ -3,14 +3,15 @@ import {
   LayoutDashboard, 
   FileText, 
   Users, 
-  Layers, 
   CreditCard, 
   BarChart3, 
   Sparkles, 
   ShieldCheck, 
   LogOut,
   PlusCircle,
-  Package
+  Package,
+  Boxes,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,9 +20,11 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenInvoiceBuilder }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'billing', label: 'Billing & Invoices', icon: FileText, highlight: true },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'catalogue', label: 'Catalogue', icon: Package },
+    { id: 'inventory', label: 'Inventory', icon: Boxes, highlight: true },
+    { id: 'orders', label: 'Orders & Bookings', icon: ShoppingBag },
+    { id: 'billing', label: 'Billing & Invoices', icon: FileText },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'reports', label: 'Reports & Aging', icon: BarChart3 },
     { id: 'ai', label: 'AI Assistant', icon: Sparkles, badge: 'AI' },
@@ -69,7 +72,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onOpenInvoiceBuilder }) => {
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold'
                   : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
               }`}
             >

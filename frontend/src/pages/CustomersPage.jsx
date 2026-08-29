@@ -9,22 +9,29 @@ import {
   FileText, 
   ArrowUpRight, 
   ArrowDownLeft, 
-  X, 
   Edit,
-  History
+  History,
+  Eye,
+  ShoppingBag
 } from 'lucide-react';
 import { customerApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import { CustomerProfileModal } from '../components/CustomerProfileModal';
+import { CustomerModal } from '../components/CustomerModal';
 
-export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, onOpenInvoiceForCustomer }) => {
+export const CustomersPage = ({ 
+  onOpenPaymentForCustomer, 
+  onOpenInvoiceForCustomer,
+  onOpenOrderForCustomer
+}) => {
   const { hasRole } = useAuth();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [ledgerEntries, setLedgerEntries] = useState([]);
-  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [selectedCustomerForProfile, setSelectedCustomerForProfile] = useState(null);
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [customerToEdit, setCustomerToEdit] = useState(null);
 
   useEffect(() => {
     loadCustomers();
@@ -39,19 +46,6 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
       console.error('Failed to load customers', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleViewLedger = async (cust) => {
-    setSelectedCustomer(cust);
-    setLedgerLoading(true);
-    try {
-      const ledger = await customerApi.getLedger(cust.id);
-      setLedgerEntries(ledger);
-    } catch (err) {
-      console.error('Failed to load ledger', err);
-    } finally {
-      setLedgerLoading(false);
     }
   };
 
@@ -82,11 +76,14 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
 
         {hasRole(['ADMIN', 'OPERATOR']) && (
           <button
-            onClick={() => onOpenCustomerModal(null)}
+            onClick={() => {
+              setCustomerToEdit(null);
+              setCustomerModalOpen(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all self-start sm:self-auto"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Add Customer</span>
+            <span>+ New Customer</span>
           </button>
         )}
       </div>
@@ -116,13 +113,14 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-500 text-xs">
-            No customers found.
+            No customers found. Click "+ New Customer" to add one.
           </div>
         ) : (
           filteredCustomers.map((cust) => (
             <div
               key={cust.id}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:border-slate-700 transition-all"
+              className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:border-slate-700 transition-all cursor-pointer group"
+              onClick={() => setSelectedCustomerForProfile(cust)}
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
@@ -130,7 +128,9 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
                     <span className="text-[10px] font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                       {cust.customer_code}
                     </span>
-                    <h3 className="font-bold text-sm text-white mt-1.5 leading-snug">{cust.business_name}</h3>
+                    <h3 className="font-bold text-sm text-white group-hover:text-amber-400 transition-colors mt-1.5 leading-snug">
+                      {cust.business_name}
+                    </h3>
                     <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                       <span>{cust.contact_person}</span>
                     </p>
@@ -150,14 +150,14 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
                 </div>
 
                 {/* Financial Health Box */}
-                <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/80 grid grid-cols-2 gap-2 text-xs">
+                <div className="p-3 bg-slate-950 rounded-lg border border-slate-800/80 grid grid-cols-2 gap-2 text-xs font-mono">
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold">Total Invoiced</span>
-                    <p className="font-mono font-bold text-slate-200 mt-0.5">₹{parseFloat(cust.total_invoiced).toFixed(2)}</p>
+                    <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Total Invoiced</span>
+                    <p className="font-bold text-slate-200 mt-0.5">₹{parseFloat(cust.total_invoiced).toFixed(2)}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold">Balance Due</span>
-                    <p className={`font-mono font-bold mt-0.5 ${parseFloat(cust.outstanding_balance) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Balance Due</span>
+                    <p className={`font-bold mt-0.5 ${parseFloat(cust.outstanding_balance) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                       ₹{parseFloat(cust.outstanding_balance).toFixed(2)}
                     </p>
                   </div>
@@ -165,18 +165,28 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
               </div>
 
               {/* Card Actions */}
-              <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-800">
+              <div 
+                className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-800"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
-                  onClick={() => handleViewLedger(cust)}
+                  onClick={() => setSelectedCustomerForProfile(cust)}
                   className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300"
                 >
-                  <History className="w-3.5 h-3.5" />
-                  <span>Ledger History</span>
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>View Workspace</span>
                 </button>
 
                 <div className="flex items-center gap-1.5">
                   {hasRole(['ADMIN', 'OPERATOR']) && (
                     <>
+                      <button
+                        onClick={() => onOpenOrderForCustomer(cust)}
+                        title="New Order"
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+                      </button>
                       <button
                         onClick={() => onOpenPaymentForCustomer(cust)}
                         title="Record Payment"
@@ -185,7 +195,10 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
                         <CreditCard className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => onOpenCustomerModal(cust)}
+                        onClick={() => {
+                          setCustomerToEdit(cust);
+                          setCustomerModalOpen(true);
+                        }}
                         title="Edit Customer"
                         className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
                       >
@@ -200,106 +213,32 @@ export const CustomersPage = ({ onOpenCustomerModal, onOpenPaymentForCustomer, o
         )}
       </div>
 
-      {/* Customer Ledger Drawer */}
-      {selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                  <History className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">{selectedCustomer.business_name}</h3>
-                  <p className="text-xs text-slate-400">Account Code: <span className="font-mono font-bold text-amber-400">{selectedCustomer.customer_code}</span></p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedCustomer(null)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Customer Workspace Modal */}
+      <CustomerProfileModal
+        isOpen={!!selectedCustomerForProfile}
+        onClose={() => setSelectedCustomerForProfile(null)}
+        customer={selectedCustomerForProfile}
+        onOpenOrder={(cust) => {
+          setSelectedCustomerForProfile(null);
+          onOpenOrderForCustomer(cust);
+        }}
+        onOpenInvoice={(cust) => {
+          setSelectedCustomerForProfile(null);
+          onOpenInvoiceForCustomer(cust);
+        }}
+        onOpenPayment={(cust) => {
+          setSelectedCustomerForProfile(null);
+          onOpenPaymentForCustomer(cust);
+        }}
+      />
 
-            {/* Balances Summary Banner */}
-            <div className="p-4 bg-slate-950 border-b border-slate-800 grid grid-cols-3 gap-4 text-xs">
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Total Invoiced</span>
-                <p className="font-mono font-bold text-slate-200 mt-0.5">₹{parseFloat(selectedCustomer.total_invoiced).toFixed(2)}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Total Paid</span>
-                <p className="font-mono font-bold text-emerald-400 mt-0.5">₹{parseFloat(selectedCustomer.total_paid).toFixed(2)}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Live Outstanding</span>
-                <p className="font-mono font-black text-amber-400 text-sm mt-0.5">₹{parseFloat(selectedCustomer.outstanding_balance).toFixed(2)}</p>
-              </div>
-            </div>
-
-            {/* Timeline Ledger Table */}
-            <div className="flex-1 p-5 overflow-y-auto space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Chronological Statement & Ledger Timeline
-              </h4>
-
-              {ledgerLoading ? (
-                <p className="text-xs text-slate-500 text-center py-8">Loading statement entries...</p>
-              ) : ledgerEntries.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-8">No billing or payment entries found.</p>
-              ) : (
-                <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
-                  <table className="w-full text-left text-xs">
-                    <thead className="border-b border-slate-800 bg-slate-900/60 text-[10px] uppercase font-bold text-slate-400">
-                      <tr>
-                        <th className="py-2.5 px-3">Date</th>
-                        <th className="py-2.5 px-3">Reference</th>
-                        <th className="py-2.5 px-3 text-right">Debit (₹)</th>
-                        <th className="py-2.5 px-3 text-right">Credit (₹)</th>
-                        <th className="py-2.5 px-3 text-right font-bold">Balance (₹)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/40 font-mono">
-                      {ledgerEntries.map((entry, idx) => (
-                        <tr key={idx} className="hover:bg-slate-900/30">
-                          <td className="py-2.5 px-3 font-sans text-slate-400 text-[11px]">{entry.date}</td>
-                          <td className="py-2.5 px-3">
-                            <span className={`inline-block font-bold ${entry.type === 'INVOICE' ? 'text-slate-200' : 'text-emerald-400'}`}>
-                              {entry.reference}
-                            </span>
-                            <p className="font-sans text-[10px] text-slate-500 font-normal">{entry.description}</p>
-                          </td>
-                          <td className="py-2.5 px-3 text-right text-slate-300">
-                            {parseFloat(entry.debit) > 0 ? `₹${parseFloat(entry.debit).toFixed(2)}` : '-'}
-                          </td>
-                          <td className="py-2.5 px-3 text-right text-emerald-400">
-                            {parseFloat(entry.credit) > 0 ? `₹${parseFloat(entry.credit).toFixed(2)}` : '-'}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-amber-400">
-                            ₹{parseFloat(entry.running_balance).toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex justify-end">
-              <button
-                onClick={() => setSelectedCustomer(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg uppercase tracking-wider"
-              >
-                Close Statement
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Add / Edit Customer Modal */}
+      <CustomerModal
+        isOpen={customerModalOpen}
+        onClose={() => setCustomerModalOpen(false)}
+        customerToEdit={customerToEdit}
+        onCustomerSaved={loadCustomers}
+      />
     </div>
   );
 };

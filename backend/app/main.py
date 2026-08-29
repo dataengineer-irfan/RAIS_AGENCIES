@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import engine, Base
 import app.models  # Ensures all models are registered in Base
-from app.api import auth, customers, catalogue, quotations, orders, invoices, payments, reports, audit, ai
+from app.api import auth, customers, catalogue, quotations, orders, invoices, payments, inventory, reports, audit, ai
 from app.core.exceptions import RaisAppException
 
 # Create database tables
@@ -40,6 +40,7 @@ async def rais_exception_handler(request: Request, exc: RaisAppException):
 app.include_router(auth.router, prefix="/api")
 app.include_router(customers.router, prefix="/api")
 app.include_router(catalogue.router, prefix="/api")
+app.include_router(inventory.router, prefix="/api")
 app.include_router(quotations.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(invoices.router, prefix="/api")

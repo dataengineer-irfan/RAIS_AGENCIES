@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
@@ -17,16 +17,21 @@ class OrderItemResponse(BaseModel):
     unit_price: Decimal
     line_total: Decimal
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class OrderCreate(BaseModel):
     customer_id: str
     quotation_id: Optional[str] = None
+    status: Optional[str] = "CONFIRMED"
+    order_date: Optional[date] = None
     expected_delivery_date: Optional[date] = None
     delivery_address: Optional[str] = None
     notes: Optional[str] = None
     items: List[OrderItemCreate]
+
+class OrderStatusUpdate(BaseModel):
+    status: str
+    notes: Optional[str] = None
 
 class OrderResponse(BaseModel):
     id: str
@@ -46,5 +51,4 @@ class OrderResponse(BaseModel):
     created_at: datetime
     items: List[OrderItemResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

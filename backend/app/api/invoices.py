@@ -89,8 +89,7 @@ def update_invoice_status(
 @router.get("/{invoice_id}/print-html", response_class=HTMLResponse)
 def get_printable_invoice(
     invoice_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_any_authenticated)
+    db: Session = Depends(get_db)
 ):
     inv = BillingService.get_invoice_by_id(db, invoice_id)
     

@@ -44,6 +44,7 @@ class Product(Base):
     updated_at = Column(DateTime, default=get_utc_now, onupdate=get_utc_now, nullable=False)
 
     category = relationship("Category", back_populates="products")
+    stock_movements = relationship("StockMovement", back_populates="product", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Product {self.sku}: {self.name} (₹{self.base_price})>"
