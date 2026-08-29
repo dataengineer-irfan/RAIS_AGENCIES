@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Package, 
   Search, 
@@ -9,6 +9,8 @@ import {
   List, 
   Filter, 
   ArrowUpDown, 
+  ArrowUp,
+  ArrowDown,
   CheckCircle2, 
   AlertTriangle, 
   XCircle,
@@ -16,14 +18,19 @@ import {
   ShieldCheck,
   Snowflake,
   Truck,
-  DollarSign
+  DollarSign,
+  Download,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { catalogueApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ProductModal } from '../components/ProductModal';
 import { WhatsAppPriceListModal } from '../components/WhatsAppPriceListModal';
 import { OfficialFlyerModal } from '../components/OfficialFlyerModal';
-import { getProductVisualIcon, CATEGORY_HERO_ITEMS, PARTNER_BRANDS } from '../utils/productIcons';
+import { getProductVisualIcon, PARTNER_BRANDS } from '../utils/productIcons';
 
 export const CataloguePage = ({ onOpenOrderForProduct }) => {
   const { hasRole } = useAuth();
@@ -31,10 +38,16 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedBrand, setSelectedBrand] = useState('ALL');
-  const [sortBy, setSortBy] = useState('name_asc');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('matrix'); // 'matrix' (hierarchical table) or 'grid' (cards)
   const [loading, setLoading] = useState(true);
+
+  // Multi-Column Sort State
+  const [sortField, setSortField] = useState('name');
+  const [sortAsc, setSortAsc] = useState(true);
+
+  // Collapsed Category Group IDs
+  const [collapsedCategories, setCollapsedCategories] = useState({});
 
   // Modals
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -53,8 +66,8 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
         catalogueApi.listCategories(),
         catalogueApi.listProducts({ limit: 500 })
       ]);
-      setCategories(cats);
-      setProducts(prods);
+      setCategories(Array.isArray(cats) ? cats : []);
+      setProducts(Array.isArray(prods) ? prods : (prods?.items || prods?.data || []));
     } catch (err) {
       console.error('Failed to load catalogue', err);
     } finally {
@@ -62,498 +75,437 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
     }
   };
 
-  // Distinct Brands
-  const uniqueBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
+  const toggleCategoryCollapse = (catId) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [catId]: !prev[catId]
+    }));
+  };
 
-  // Filter & Sort Logic
-  const filteredProducts = products.filter(p => {
-    let matchesCat = true;
-    if (selectedCategory !== 'ALL') {
-      // Check category_id or matching code from hero items
-      const selectedCatObj = categories.find(c => c.id === selectedCategory);
-      if (selectedCatObj) {
-        matchesCat = p.category_id === selectedCategory;
-      } else {
-        // Matched by hero code
-        const pName = (p.name || '').toLowerCase();
-        const pCat = (p.category_name || '').toLowerCase();
-        if (selectedCategory === 'VEG') matchesCat = pName.includes('fries') || pCat.includes('veg');
-        else if (selectedCategory === 'CHK') matchesCat = pName.includes('nugget') || pName.includes('popcorn') || pCat.includes('chicken');
-        else if (selectedCategory === 'MOM') matchesCat = pName.includes('momo') || pName.includes('tortilla');
-        else if (selectedCategory === 'BRG') matchesCat = pName.includes('patty') || pName.includes('burger');
-        else if (selectedCategory === 'CHS') matchesCat = pName.includes('cheese') || pName.includes('mozerolla') || pName.includes('paneer') || pCat.includes('cheese');
-        else if (selectedCategory === 'SAU') matchesCat = pName.includes('ketchup') || pName.includes('sauce') || pName.includes('mayo') || pCat.includes('ketchup');
-        else if (selectedCategory === 'BOX') matchesCat = pName.includes('box') || pCat.includes('box');
-        else if (selectedCategory === 'MOJ') matchesCat = pName.includes('bluecurco') || pName.includes('mint') || pCat.includes('mojito');
-        else if (selectedCategory === 'SPC') matchesCat = pName.includes('powder') || pName.includes('chilly') || pCat.includes('spice') || pCat.includes('bread');
-      }
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(true);
     }
-
-    const matchesBrand = selectedBrand === 'ALL' || p.brand === selectedBrand;
-    if (!matchesCat || !matchesBrand) return false;
-
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(term) ||
-      p.sku.toLowerCase().includes(term) ||
-      p.brand.toLowerCase().includes(term) ||
-      p.packaging_unit.toLowerCase().includes(term) ||
-      (p.hsn_code && p.hsn_code.toLowerCase().includes(term))
-    );
-  }).sort((a, b) => {
-    if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
-    if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
-    if (sortBy === 'price_asc') return parseFloat(a.base_price) - parseFloat(b.base_price);
-    if (sortBy === 'price_desc') return parseFloat(b.base_price) - parseFloat(a.base_price);
-    if (sortBy === 'stock_desc') return parseFloat(b.current_stock || 0) - parseFloat(a.current_stock || 0);
-    if (sortBy === 'stock_asc') return parseFloat(a.current_stock || 0) - parseFloat(b.current_stock || 0);
-    return 0;
-  });
-
-  const handleOpenAddModal = () => {
-    setProductToEdit(null);
-    setProductModalOpen(true);
   };
 
-  const handleOpenEditModal = (product) => {
-    setProductToEdit(product);
-    setProductModalOpen(true);
-  };
+  const uniqueBrands = useMemo(() => {
+    return Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
+  }, [products]);
 
-  const handleProductSaved = () => {
-    loadCatalogue();
-  };
+  // Filtered & Sorted Products
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesCat = selectedCategory === 'ALL' || p.category_id === selectedCategory;
+      const matchesBrand = selectedBrand === 'ALL' || p.brand === selectedBrand;
+      if (!matchesCat || !matchesBrand) return false;
 
-  // Stock status helper
-  const getStockStatus = (prod) => {
-    const current = parseFloat(prod.current_stock || 0);
-    const minAlert = parseFloat(prod.min_stock_alert || 10);
-    if (current <= 0) return { label: 'Out of Stock', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20', icon: XCircle };
-    if (current <= minAlert) return { label: `Low Stock (${current})`, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', icon: AlertTriangle };
-    return { label: `In Stock (${current})`, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 };
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (
+        (p.name || '').toLowerCase().includes(term) ||
+        (p.sku || '').toLowerCase().includes(term) ||
+        (p.brand || '').toLowerCase().includes(term) ||
+        (p.category_name || '').toLowerCase().includes(term)
+      );
+    }).sort((a, b) => {
+      let aVal = a[sortField] ?? '';
+      let bVal = b[sortField] ?? '';
+
+      if (['base_price', 'tax_rate', 'current_stock', 'min_stock_alert'].includes(sortField)) {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      } else {
+        aVal = String(aVal).toLowerCase();
+        bVal = String(bVal).toLowerCase();
+      }
+
+      if (aVal < bVal) return sortAsc ? -1 : 1;
+      if (aVal > bVal) return sortAsc ? 1 : -1;
+      return 0;
+    });
+  }, [products, selectedCategory, selectedBrand, searchTerm, sortField, sortAsc]);
+
+  // Grouped by Category for Hierarchical Matrix Cross-Tab
+  const groupedCategories = useMemo(() => {
+    const map = {};
+    categories.forEach(c => {
+      map[c.id] = { category: c, items: [] };
+    });
+    // Fallback category for unmapped
+    map['other'] = { category: { id: 'other', name: 'General / Uncategorized' }, items: [] };
+
+    filteredProducts.forEach(p => {
+      const catId = p.category_id && map[p.category_id] ? p.category_id : 'other';
+      map[catId].items.push(p);
+    });
+
+    return Object.values(map).filter(g => g.items.length > 0);
+  }, [categories, filteredProducts]);
+
+  const handleExportCSV = () => {
+    const headers = ['SKU', 'Product Name', 'Brand', 'Category', 'Base Price', 'GST Rate', 'Current Stock', 'Status'];
+    const rows = filteredProducts.map(p => [
+      `"${p.sku}"`,
+      `"${p.name}"`,
+      `"${p.brand || ''}"`,
+      `"${p.category_name || ''}"`,
+      p.base_price,
+      `${p.tax_rate}%`,
+      p.current_stock,
+      p.is_active ? 'ACTIVE' : 'INACTIVE'
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `RAIS_Catalogue_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-white flex items-center gap-2">
-            <Package className="w-5 h-5 text-amber-500" />
-            <span>Authoritative RAIS Agencies Catalogue</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Verified master inventory & wholesale pricing for frozen foods, sauces, dairy, spices, and packaging
-          </p>
+    <div className="flex flex-col h-full w-full overflow-hidden gap-2">
+      
+      {/* ─── TOP ACTION & TOOLBAR BAR ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <Package className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-black text-white">
+                Commercial Product Catalogue Matrix
+              </h1>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+                {products.length} Active SKUs
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Pattern #3 Hierarchical Matrix Cross-Tab with Multi-Column Sorting & Brand Grouping
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-          {/* View Official Brochure */}
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search SKU, name, brand..."
+              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-36 sm:w-48"
+            />
+          </div>
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[130px] truncate"
+          >
+            <option value="ALL">All Categories</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedBrand}
+            onChange={(e) => setSelectedBrand(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[110px] truncate"
+          >
+            <option value="ALL">All Brands</option>
+            {uniqueBrands.map(b => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+
+          {/* View Toggle */}
+          <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
+            <button
+              onClick={() => setViewMode('matrix')}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewMode === 'matrix' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              }`}
+              title="Hierarchical Matrix View"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewMode === 'grid' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              }`}
+              title="Product Cards Grid View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Action CTAs */}
+          <button
+            onClick={handleExportCSV}
+            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+            title="Export CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+
           <button
             onClick={() => setFlyerModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-lg text-xs uppercase tracking-wider transition-all border border-amber-500/20 shadow-sm"
-            title="View full official marketing brochure with QR codes & wholesale prices"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
+            title="Commercial Catalogue Flyer"
           >
-            <FileImage className="w-4 h-4 text-amber-400" />
-            <span>Official Flyer</span>
+            <FileImage className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Flyer</span>
           </button>
 
-          {/* WhatsApp Price List */}
-          <button
-            onClick={() => setPriceListModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-all border border-emerald-500/30 shadow-sm"
-            title="Generate formatted wholesale price sheet for WhatsApp"
-          >
-            <Share2 className="w-4 h-4 text-emerald-400" />
-            <span>WhatsApp Price List</span>
-          </button>
-
-          {/* Add Product Modal */}
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition-all"
+              onClick={() => {
+                setProductToEdit(null);
+                setProductModalOpen(true);
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ Add New Product</span>
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ SKU</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Visual Category Hero Carousel / Grid (Matching Flyer Top Row) */}
-      <div>
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Browse By Product Category
-          </p>
-          <span className="text-[11px] text-amber-400/90 font-mono font-bold">
-            {products.length} Active Master SKUs
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2.5">
-          {CATEGORY_HERO_ITEMS.map((item) => {
-            const isSelected = selectedCategory === item.code || (item.code === 'ALL' && selectedCategory === 'ALL');
-            return (
-              <button
-                key={item.id}
-                onClick={() => setSelectedCategory(item.code)}
-                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center text-center transition-all group relative overflow-hidden ${
-                  isSelected
-                    ? 'bg-amber-500/15 border-amber-500 text-amber-300 shadow-md shadow-amber-500/10'
-                    : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 text-slate-300 hover:bg-slate-800/80'
-                }`}
-              >
-                <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">
-                  {item.icon}
-                </div>
-                <span className="text-[11px] font-bold leading-tight line-clamp-1">
-                  {item.name}
-                </span>
-                <span className="text-[9px] text-slate-500 mt-0.5 line-clamp-1">
-                  {item.subtitle}
-                </span>
-                {isSelected && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Search, Filter Toolbar & View Toggle */}
-      <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by product name, SKU, brand, or packaging..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
-          />
-        </div>
-
-        {/* Controls (Brand, Sort, View) */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Brand Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL" className="bg-slate-900">All Partner Brands</option>
-              {uniqueBrands.map(b => (
-                <option key={b} value={b} className="bg-slate-900">{b}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Sort By */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-transparent border-none text-xs text-slate-200 focus:outline-none cursor-pointer"
-            >
-              <option value="name_asc" className="bg-slate-900">Name (A–Z)</option>
-              <option value="name_desc" className="bg-slate-900">Name (Z–A)</option>
-              <option value="price_asc" className="bg-slate-900">Price (Low to High)</option>
-              <option value="price_desc" className="bg-slate-900">Price (High to Low)</option>
-              <option value="stock_desc" className="bg-slate-900">Stock (Highest First)</option>
-              <option value="stock_asc" className="bg-slate-900">Stock (Lowest First)</option>
-            </select>
-          </div>
-
-          {/* View Switcher */}
-          <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
-              title="Card Grid View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
-              title="Master Spreadsheet Table View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <p className="text-xs text-slate-400 font-semibold pl-2 hidden lg:block">
-            Showing <span className="text-amber-400 font-bold">{filteredProducts.length}</span> SKUs
-          </p>
-        </div>
-      </div>
-
-      {/* Product Content: Grid Mode vs Table Mode */}
-      {loading ? (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 py-16 text-center text-slate-500 text-xs">
-          Loading master catalogue items...
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 py-16 text-center text-slate-500 text-xs">
-          No products found matching your search or filters.
-        </div>
-      ) : viewMode === 'grid' ? (
-        /* GRID VIEW (With Visual Food Icons) */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((p) => {
-            const base = parseFloat(p.base_price);
-            const tax = parseFloat(p.tax_rate || 0);
-            const finalPrice = base + (base * (tax / 100));
-            const stockStatus = getStockStatus(p);
-            const StockIcon = stockStatus.icon;
-
-            return (
-              <div
-                key={p.id}
-                className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between shadow-sm transition-all group relative overflow-hidden"
-              >
-                <div>
-                  {/* Top Header: Food Icon + Badges */}
-                  <div className="flex items-start justify-between gap-2.5 mb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      {getProductVisualIcon(p, "w-10 h-10")}
-                      <div>
-                        <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                          {p.sku}
-                        </span>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-                          {p.brand}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border ${stockStatus.color}`}>
-                      <StockIcon className="w-2.5 h-2.5 shrink-0" />
-                      <span>{stockStatus.label}</span>
-                    </span>
-                  </div>
-
-                  {/* Product Title */}
-                  <h3 className="font-bold text-xs text-white group-hover:text-amber-400 transition-colors leading-snug line-clamp-2">
-                    {p.name}
-                  </h3>
-
-                  {/* Packaging Unit & Category */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 font-medium">
-                    <span>Pack: <strong className="text-slate-300 font-semibold">{p.packaging_unit}</strong></span>
-                    <span className="text-[10px] text-slate-400 uppercase font-mono">{p.category_name}</span>
-                  </div>
-                </div>
-
-                {/* Pricing Breakdown & Quick Actions */}
-                <div className="mt-4 pt-3 border-t border-slate-800 flex items-end justify-between">
-                  <div>
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">Wholesale Base</span>
-                    <p className="text-base font-black font-mono text-amber-400">
-                      ₹{base.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] font-mono text-slate-400">
-                      +GST {tax}% = <span className="font-bold text-slate-300">₹{finalPrice.toFixed(2)}</span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {hasRole(['ADMIN', 'OPERATOR']) && (
-                      <button
-                        onClick={() => handleOpenEditModal(p)}
-                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 rounded-lg text-xs transition-colors"
-                        title="Edit Master SKU"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* SPREADSHEET TABLE VIEW (With Food Thumbnails) */
-        <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider">
+      {/* ─── HIERARCHICAL MATRIX CROSS-TAB CONTAINER (100% Viewport-Locked) ─── */}
+      <div className="flex-1 min-h-0 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden">
+        
+        {viewMode === 'matrix' ? (
+          /* MATRIX TABLE MODE */
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="sticky top-0 bg-slate-950 z-20 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
-                  <th className="py-3 px-3 text-center">Item</th>
-                  <th className="py-3 px-3">Master SKU</th>
-                  <th className="py-3 px-4">Product Description</th>
-                  <th className="py-3 px-3">Brand</th>
-                  <th className="py-3 px-3">Pack Unit</th>
-                  <th className="py-3 px-3 text-center">Live Stock</th>
-                  <th className="py-3 px-3 text-right">Base Rate (₹)</th>
-                  <th className="py-3 px-3 text-right">GST Rate</th>
-                  <th className="py-3 px-3 text-right">Bill Rate (₹)</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
+                  <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white" onClick={() => handleSort('sku')}>
+                    <div className="flex items-center gap-1">
+                      <span>SKU Code</span>
+                      {sortField === 'sku' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white" onClick={() => handleSort('name')}>
+                    <div className="flex items-center gap-1">
+                      <span>Product Description</span>
+                      {sortField === 'name' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white" onClick={() => handleSort('brand')}>
+                    <div className="flex items-center gap-1">
+                      <span>Brand</span>
+                      {sortField === 'brand' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-white" onClick={() => handleSort('base_price')}>
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Base Rate</span>
+                      {sortField === 'base_price' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-white" onClick={() => handleSort('tax_rate')}>
+                    <div className="flex items-center justify-end gap-1">
+                      <span>GST%</span>
+                      {sortField === 'tax_rate' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-white" onClick={() => handleSort('current_stock')}>
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Stock (Pk)</span>
+                      {sortField === 'current_stock' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-3 text-center">Status</th>
+                  <th className="py-2.5 px-3 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
-                {filteredProducts.map((p) => {
-                  const base = parseFloat(p.base_price);
-                  const tax = parseFloat(p.tax_rate || 0);
-                  const finalPrice = base + (base * (tax / 100));
-                  const stockStatus = getStockStatus(p);
-                  const StockIcon = stockStatus.icon;
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="8" className="py-12 text-center text-slate-500 text-xs">
+                      Loading hierarchical catalogue matrix...
+                    </td>
+                  </tr>
+                ) : groupedCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="py-12 text-center text-slate-500 text-xs">
+                      No matching product SKUs found.
+                    </td>
+                  </tr>
+                ) : (
+                  groupedCategories.map(group => {
+                    const isCollapsed = collapsedCategories[group.category.id];
+                    const catTotalStock = group.items.reduce((s, p) => s + (p.current_stock || 0), 0);
+                    const catTotalVal = group.items.reduce((s, p) => s + ((p.current_stock || 0) * (p.base_price || 0)), 0);
 
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2.5 px-3 text-center">
-                        <div className="flex justify-center">
-                          {getProductVisualIcon(p, "w-7 h-7")}
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-amber-400">
-                        {p.sku}
-                      </td>
-                      <td className="py-2.5 px-4">
-                        <p className="font-bold text-slate-200">{p.name}</p>
-                        <span className="text-[10px] text-slate-400">{p.category_name || 'General'}</span>
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-300 font-semibold">
-                        {p.brand}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-slate-400 text-[11px]">
-                        {p.packaging_unit}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${stockStatus.color}`}>
-                          <StockIcon className="w-2.5 h-2.5" />
-                          <span>{parseFloat(p.current_stock || 0).toFixed(0)}</span>
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-amber-400">
-                        ₹{base.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-400">
-                        {tax}%
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-200">
-                        ₹{finalPrice.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-4 text-center">
-                        {hasRole(['ADMIN', 'OPERATOR']) && (
-                          <button
-                            onClick={() => handleOpenEditModal(p)}
-                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 rounded-lg text-xs transition-colors"
-                            title="Edit Master SKU"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    return (
+                      <React.Fragment key={group.category.id}>
+                        {/* CATEGORY GROUP HEADER ROW */}
+                        <tr 
+                          onClick={() => toggleCategoryCollapse(group.category.id)}
+                          className="bg-slate-950/90 border-t-2 border-b border-slate-800 cursor-pointer select-none hover:bg-slate-850 transition-colors"
+                        >
+                          <td colSpan="8" className="py-2 px-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {isCollapsed ? (
+                                  <ChevronRight className="w-4 h-4 text-amber-400" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-amber-400" />
+                                )}
+                                <span className="font-bold text-white text-xs uppercase tracking-wider">
+                                  {group.category.name}
+                                </span>
+                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-slate-800 text-amber-400 font-mono">
+                                  {group.items.length} SKUs
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-4 text-[11px] font-mono text-slate-400">
+                                <span>Total Stock: <strong className="text-slate-200">{catTotalStock} pk</strong></span>
+                                <span>Inventory Val: <strong className="text-emerald-400">₹{catTotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* CHILD SKU ROWS */}
+                        {!isCollapsed && group.items.map(prod => {
+                          const gross = (prod.base_price || 0) * (1 + (prod.tax_rate || 0) / 100);
+                          const isLowStock = (prod.current_stock || 0) <= (prod.min_stock_alert || 5);
+
+                          return (
+                            <tr 
+                              key={prod.id} 
+                              className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors group"
+                            >
+                              <td className="py-2 px-3 font-mono font-bold text-amber-400 text-xs pl-6">
+                                {prod.sku}
+                              </td>
+                              <td className="py-2 px-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-200 text-xs group-hover:text-white">
+                                    {prod.name}
+                                  </span>
+                                  {prod.unit && (
+                                    <span className="text-[9px] text-slate-500 font-mono">({prod.unit})</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-slate-300 font-semibold text-xs">
+                                {prod.brand || 'RAIS'}
+                              </td>
+                              <td className="py-2 px-3 text-right font-mono font-bold text-white text-xs">
+                                ₹{parseFloat(prod.base_price || 0).toFixed(2)}
+                              </td>
+                              <td className="py-2 px-3 text-right font-mono text-slate-400 text-xs">
+                                {prod.tax_rate}%
+                              </td>
+                              <td className="py-2 px-3 text-right font-mono font-bold text-xs">
+                                <span className={isLowStock ? 'text-rose-400' : 'text-slate-200'}>
+                                  {prod.current_stock || 0}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                                  prod.is_active ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
+                                }`}>
+                                  {prod.is_active ? 'ACTIVE' : 'INACTIVE'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  {hasRole(['ADMIN', 'OPERATOR']) && (
+                                    <button
+                                      onClick={() => {
+                                        setProductToEdit(prod);
+                                        setProductModalOpen(true);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-white bg-slate-800 rounded transition-colors"
+                                      title="Edit SKU"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        ) : (
+          /* GRID CARDS MODE */
+          <div className="flex-1 min-h-0 overflow-y-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-1">
+            {filteredProducts.map(prod => (
+              <div 
+                key={prod.id}
+                className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/40 transition-all group"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] font-bold text-amber-400">{prod.sku}</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">{prod.brand}</span>
+                  </div>
+                  <h4 className="font-bold text-white text-xs mt-1 line-clamp-1 group-hover:text-amber-300">
+                    {prod.name}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{prod.category_name}</p>
+                </div>
 
-      {/* Official Authorized Partner Brands Footer (From Flyer) */}
-      <div className="pt-6 border-t border-slate-800/80 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Official Authorized Super Stockist & Partner Brands</span>
-            </h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Guaranteed cold-chain freshness & direct manufacturer distribution in Rayachoty & Annamayya District
-            </p>
-          </div>
-        </div>
-
-        {/* Brand Badges Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
-          {PARTNER_BRANDS.map((brand, idx) => (
-            <div
-              key={idx}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-slate-700 transition-all text-center"
-            >
-              <div>
-                <p className="font-black text-xs text-amber-400 font-mono tracking-wide">{brand.name}</p>
-                <p className="text-[9px] text-slate-400 mt-1 leading-tight">{brand.tag}</p>
+                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold block">Base Rate</span>
+                    <span className="text-sm font-black text-white font-mono">₹{parseFloat(prod.base_price || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold block">Stock</span>
+                    <span className="text-xs font-bold text-slate-300 font-mono">{prod.current_stock || 0} pk</span>
+                  </div>
+                </div>
               </div>
-              <span className="mt-2 text-[9px] font-bold text-slate-300 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                {brand.badge}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* 4 Pillars of Trust Bar (From Flyer Bottom Bar) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
-          <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-xl flex items-center gap-2.5">
-            <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
-            <div>
-              <p className="text-xs font-bold text-white">100% Quality Assured</p>
-              <p className="text-[10px] text-slate-400">Tested & certified batches</p>
-            </div>
+            ))}
           </div>
+        )}
 
-          <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-xl flex items-center gap-2.5">
-            <Snowflake className="w-5 h-5 text-cyan-400 shrink-0" />
-            <div>
-              <p className="text-xs font-bold text-white">Frozen & Fresh (-18°C)</p>
-              <p className="text-[10px] text-slate-400">Active temperature control</p>
-            </div>
-          </div>
-
-          <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-xl flex items-center gap-2.5">
-            <Truck className="w-5 h-5 text-emerald-400 shrink-0" />
-            <div>
-              <p className="text-xs font-bold text-white">On Time Delivery</p>
-              <p className="text-[10px] text-slate-400">Rayachoty & nearby hubs</p>
-            </div>
-          </div>
-
-          <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-xl flex items-center gap-2.5">
-            <DollarSign className="w-5 h-5 text-amber-400 shrink-0" />
-            <div>
-              <p className="text-xs font-bold text-white">Best Wholesale Prices</p>
-              <p className="text-[10px] text-slate-400">Direct B2B margins</p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Modals */}
+      {/* ─── PRODUCT EDIT / CREATE MODAL ─── */}
       <ProductModal
         isOpen={productModalOpen}
-        onClose={() => {
-          setProductModalOpen(false);
-          setProductToEdit(null);
-        }}
+        onClose={() => setProductModalOpen(false)}
         productToEdit={productToEdit}
-        categories={categories}
-        onProductSaved={handleProductSaved}
+        onProductSaved={() => {
+          setProductModalOpen(false);
+          loadCatalogue();
+        }}
       />
 
-      <WhatsAppPriceListModal
-        isOpen={priceListModalOpen}
-        onClose={() => setPriceListModalOpen(false)}
-        products={products}
-        categories={categories}
-      />
-
+      {/* ─── OFFICIAL FLYER MODAL ─── */}
       <OfficialFlyerModal
         isOpen={flyerModalOpen}
         onClose={() => setFlyerModalOpen(false)}
+        categories={categories}
+        products={products}
       />
+
     </div>
   );
 };
