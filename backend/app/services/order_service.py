@@ -144,7 +144,7 @@ class OrderService:
             order_id=order.id,
             invoice_date=date.today(),
             due_date=date.today(),
-            payment_terms="Payment due upon delivery / 15 days.",
+            payment_terms="Cash on Delivery / Immediate Settlement",
             notes=f"Generated from Customer Order {order.order_number}. {order.notes or ''}",
             items=[InvoiceItemCreate(**itm) for itm in invoice_items_payload],
             issue_immediately=True

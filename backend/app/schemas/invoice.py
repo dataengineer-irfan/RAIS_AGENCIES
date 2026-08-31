@@ -33,9 +33,9 @@ class InvoiceCreate(BaseModel):
     order_id: Optional[str] = None
     quotation_id: Optional[str] = None
     invoice_date: Optional[date] = None # Defaults to today
-    due_date: Optional[date] = None     # Defaults to +15 days
+    due_date: Optional[date] = None     # Defaults to invoice_date (Cash business)
     discount_amount: Decimal = Decimal("0.00") # Additional invoice-level discount
-    payment_terms: Optional[str] = "Payment due upon delivery / 15 days."
+    payment_terms: Optional[str] = "Cash on Delivery / Immediate Settlement"
     notes: Optional[str] = None
     auto_issue: bool = False # If True, mark as ISSUED immediately
     items: List[InvoiceItemCreate]

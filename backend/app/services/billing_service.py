@@ -133,7 +133,7 @@ class BillingService:
         
         inv_number = SequenceService.get_next_sequence(db, "INV")
         inv_date = data.invoice_date or date.today()
-        due_date = data.due_date or (inv_date + timedelta(days=15))
+        due_date = data.due_date or inv_date # Cash business: invoice date and due date are the same
         init_status = InvoiceStatus.ISSUED.value if data.auto_issue else InvoiceStatus.DRAFT.value
         qr_code = BillingService.generate_upi_qr_payload(inv_number, calc["total_amount"])
 
@@ -152,7 +152,7 @@ class BillingService:
             total_amount=calc["total_amount"],
             paid_amount=Decimal("0.00"),
             outstanding_amount=calc["total_amount"],
-            payment_terms=data.payment_terms,
+            payment_terms=data.payment_terms or "Cash on Delivery / Immediate Settlement",
             notes=data.notes,
             qr_payload=qr_code,
             created_by_id=user_id
