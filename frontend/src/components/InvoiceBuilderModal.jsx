@@ -179,38 +179,32 @@ export const InvoiceBuilderModal = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
-  // Live Calculations (Client preview, verified server-side)
+  // Live Calculations (Subtotal minus Discounts, No GST)
   const calculateTotals = () => {
     let subtotal = 0;
     let itemDiscounts = 0;
-    let totalTax = 0;
 
     items.forEach(itm => {
       const qty = parseFloat(itm.quantity) || 0;
       const rate = parseFloat(itm.unit_price) || 0;
       const disc = parseFloat(itm.discount_rate) || 0;
-      const tax = parseFloat(itm.tax_rate) || 0;
 
       const gross = qty * rate;
       const discAmt = gross * (disc / 100);
-      const taxable = Math.max(0, gross - discAmt);
-      const taxAmt = taxable * (tax / 100);
 
       subtotal += gross;
       itemDiscounts += discAmt;
-      totalTax += taxAmt;
     });
 
     const invDisc = parseFloat(invoiceDiscount) || 0;
     const totalDiscount = itemDiscounts + invDisc;
-    const taxableTotal = Math.max(0, subtotal - totalDiscount);
-    const grandTotal = taxableTotal + totalTax;
+    const grandTotal = Math.max(0, subtotal - totalDiscount);
 
     return {
       subtotal: subtotal.toFixed(2),
       discount: totalDiscount.toFixed(2),
-      taxable: taxableTotal.toFixed(2),
-      tax: totalTax.toFixed(2),
+      taxable: grandTotal.toFixed(2),
+      tax: '0.00',
       total: grandTotal.toFixed(2)
     };
   };
@@ -447,8 +441,6 @@ export const InvoiceBuilderModal = ({
                           </select>
                           {selProd && (
                             <div className="flex items-center gap-2 mt-1 px-1 text-[10px] text-slate-400 font-mono">
-                              <span>GST: {selProd.tax_rate}%</span>
-                              <span>•</span>
                               <span>SKU: {selProd.sku}</span>
                               <span>•</span>
                               <span className="text-emerald-400 font-semibold">Stock: {parseFloat(selProd.current_stock || 0)} {selProd.packaging_unit}</span>
@@ -578,8 +570,8 @@ export const InvoiceBuilderModal = ({
                     <Calculator className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-slate-200 font-semibold">Deterministic Server Valuation</span>
-                    <p className="text-[10px] text-slate-500">GST + Line Discounts Calculated Real-Time</p>
+                    <span className="text-slate-200 font-semibold">Wholesale Pricing Valuation</span>
+                    <p className="text-[10px] text-slate-500">Direct Pricing • No Tax Included</p>
                   </div>
                 </div>
 
@@ -588,10 +580,12 @@ export const InvoiceBuilderModal = ({
                     <span className="text-slate-500 block text-[10px] uppercase font-sans">Subtotal</span>
                     <span className="text-slate-300 font-bold text-sm">₹{totals.subtotal}</span>
                   </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-sans">GST Total</span>
-                    <span className="text-slate-300 font-bold text-sm">₹{totals.tax}</span>
-                  </div>
+                  {parseFloat(totals.discount) > 0 && (
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-sans">Total Discount</span>
+                      <span className="text-emerald-400 font-bold text-sm">-₹{totals.discount}</span>
+                    </div>
+                  )}
                   <div className="text-right pl-3 border-l border-slate-800">
                     <span className="text-amber-400 block text-[10px] uppercase font-bold font-sans">Grand Total Due</span>
                     <span className="text-amber-400 font-black text-lg">₹{totals.total}</span>

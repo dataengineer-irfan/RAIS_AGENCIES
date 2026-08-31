@@ -98,11 +98,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
 
   // Calculations
   const subtotal = items.reduce((acc, itm) => acc + (itm.quantity * itm.unit_price), 0);
-  const taxTotal = items.reduce((acc, itm) => {
-    const lineSub = itm.quantity * itm.unit_price;
-    return acc + (lineSub * (itm.tax_rate / 100));
-  }, 0);
-  const grandTotal = subtotal + taxTotal;
+  const grandTotal = subtotal;
 
   const handleSubmit = async (status = "CONFIRMED") => {
     setError('');
@@ -265,8 +261,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                       </div>
 
                       <div className="col-span-3 text-right">
-                        <span className="font-mono font-bold text-slate-200">₹{lineTotal.toFixed(2)}</span>
-                        <p className="text-[10px] text-slate-400">+ GST {item.tax_rate}%</p>
+                        <span className="font-mono font-bold text-slate-200">₹{(item.quantity * item.unit_price).toFixed(2)}</span>
                       </div>
 
                       <div className="col-span-1 text-right">
@@ -321,10 +316,8 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
           {/* Summary Box */}
           <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs font-mono">
             <div>
-              <span className="text-slate-400">Items Subtotal: </span>
-              <span className="text-slate-200 font-bold">₹{subtotal.toFixed(2)}</span>
-              <span className="text-slate-400 ml-3">Estimated GST: </span>
-              <span className="text-slate-200 font-bold">₹{taxTotal.toFixed(2)}</span>
+              <span className="text-slate-400">Total Items Subtotal: </span>
+              <span className="text-slate-200 font-bold text-sm">₹{subtotal.toFixed(2)}</span>
             </div>
             <div>
               <span className="text-slate-400">Total Order Value: </span>

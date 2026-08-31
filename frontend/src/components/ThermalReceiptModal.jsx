@@ -185,20 +185,18 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
 
               <div className="my-2 border-t border-dashed border-black"></div>
 
-              {/* Financials & GST Split */}
+              {/* Financials */}
               <div className="space-y-0.5 text-[10px]">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
                   <span>Rs. {receipt.financials.subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[9px] text-gray-700">
-                  <span>CGST (Split):</span>
-                  <span>Rs. {receipt.financials.cgst.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-[9px] text-gray-700">
-                  <span>SGST (Split):</span>
-                  <span>Rs. {receipt.financials.sgst.toFixed(2)}</span>
-                </div>
+                {receipt.financials.tax_total > 0 && (
+                  <div className="flex justify-between text-[9px] text-gray-700">
+                    <span>Tax:</span>
+                    <span>Rs. {receipt.financials.tax_total.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-black text-xs border-t border-black pt-1 mt-1">
                   <span>NET TOTAL:</span>
                   <span>Rs. {receipt.financials.grand_total.toFixed(2)}</span>

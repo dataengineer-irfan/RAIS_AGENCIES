@@ -360,16 +360,13 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                                 <span className="font-mono text-[10px] text-amber-400 font-bold">{item.product_sku || 'SKU'}</span>
                                 <h5 className="font-bold text-white text-xs truncate mt-0.5">{item.product_name}</h5>
                                 <p className="text-[10px] text-slate-400 font-mono">
-                                  {item.quantity} units @ ₹{parseFloat(item.unit_price || 0).toFixed(2)} (+{item.tax_rate || 5}% GST)
+                                  {item.quantity} units @ ₹{parseFloat(item.unit_price || 0).toFixed(2)}
                                 </p>
                               </div>
                               <div className="text-right shrink-0">
                                 <div className="font-mono font-bold text-white text-xs">
-                                  ₹{parseFloat(item.total_amount || 0).toFixed(2)}
+                                  ₹{parseFloat(item.line_total || item.total_amount || 0).toFixed(2)}
                                 </div>
-                                <span className="text-[9px] text-slate-500">
-                                  Tax: ₹{parseFloat(item.tax_amount || 0).toFixed(2)}
-                                </span>
                               </div>
                             </div>
                           ))}
@@ -378,9 +375,9 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                         {/* Order Subtotal & Total Banner */}
                         <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs">
                           <div>
-                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Tax Breakdown</span>
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Pricing Structure</span>
                             <span className="text-slate-300 font-mono">
-                              GST: ₹{parseFloat(selectedOrder.tax_amount || 0).toFixed(2)}
+                              Direct Wholesale • No Tax Added
                             </span>
                           </div>
                           <div className="text-right">
@@ -436,8 +433,8 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                         >
                           <FileText className="w-5 h-5" />
                           <div>
-                            <div className="font-bold text-xs text-white">Convert to GST Invoice</div>
-                            <span className="text-[10px] text-slate-400">Generate tax invoice & deduct warehouse stock</span>
+                            <div className="font-bold text-xs text-white">Convert to Invoice</div>
+                            <span className="text-[10px] text-slate-400">Generate invoice & deduct warehouse stock</span>
                           </div>
                         </button>
                       )}

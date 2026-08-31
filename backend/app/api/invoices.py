@@ -104,7 +104,6 @@ def get_printable_invoice(
             <td class="py-2.5 text-center font-bold">{itm.quantity}</td>
             <td class="py-2.5 text-right font-mono">₹{itm.unit_price:.2f}</td>
             <td class="py-2.5 text-right text-gray-600">{itm.discount_rate}%</td>
-            <td class="py-2.5 text-right text-gray-600 font-mono">₹{itm.tax_amount:.2f} <span class="text-xs">({itm.tax_rate}%)</span></td>
             <td class="py-2.5 text-right font-bold font-mono">₹{itm.line_total:.2f}</td>
         </tr>
         """
@@ -142,10 +141,9 @@ def get_printable_invoice(
                     </div>
                     <p class="text-xs text-gray-600 mt-2">{settings.COMPANY_ADDRESS}</p>
                     <p class="text-xs text-gray-600 font-semibold">Phone: {settings.COMPANY_PHONE_PRIMARY} | {settings.COMPANY_PHONE_SECONDARY}</p>
-                    <p class="text-xs text-gray-600">GSTIN: <span class="font-mono font-bold">{settings.COMPANY_GSTIN}</span></p>
                 </div>
                 <div class="text-right">
-                    <span class="inline-block px-3 py-1 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded mb-2">TAX INVOICE</span>
+                    <span class="inline-block px-3 py-1 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded mb-2">WHOLESALE INVOICE</span>
                     <h2 class="text-xl font-bold font-mono text-gray-900">{inv.invoice_number}</h2>
                     <p class="text-xs text-gray-500 mt-1">Date: <span class="font-medium text-gray-800">{inv.invoice_date}</span></p>
                     <p class="text-xs text-gray-500">Due Date: <span class="font-medium text-gray-800">{inv.due_date}</span></p>
@@ -162,7 +160,6 @@ def get_printable_invoice(
                     <p class="text-base font-bold text-gray-900">{inv.customer_name}</p>
                     <p class="text-gray-600 mt-0.5">{inv.customer_address}</p>
                     <p class="text-gray-600 mt-0.5">Phone: <span class="font-medium text-gray-800">{inv.customer_phone}</span></p>
-                    {f'<p class="text-gray-600 mt-0.5">GSTIN: <span class="font-mono font-bold text-gray-800">{inv.customer_gstin}</span></p>' if inv.customer_gstin else ''}
                 </div>
                 <div class="text-right flex flex-col justify-center">
                     <p class="text-gray-500">Customer Code: <span class="font-mono font-bold text-gray-800">{inv.customer_code}</span></p>
@@ -180,7 +177,6 @@ def get_printable_invoice(
                         <th class="py-2 text-center">Qty</th>
                         <th class="py-2 text-right">Rate</th>
                         <th class="py-2 text-right">Disc %</th>
-                        <th class="py-2 text-right">GST</th>
                         <th class="py-2 text-right">Total (₹)</th>
                     </tr>
                 </thead>
@@ -206,14 +202,6 @@ def get_printable_invoice(
                         <span>₹{inv.subtotal:.2f}</span>
                     </div>
                     {f'<div class="flex justify-between text-emerald-600"><span>Discount:</span><span>-₹{inv.discount_amount:.2f}</span></div>' if inv.discount_amount > 0 else ''}
-                    <div class="flex justify-between text-gray-600">
-                        <span>Taxable Amount:</span>
-                        <span>₹{inv.taxable_amount:.2f}</span>
-                    </div>
-                    <div class="flex justify-between text-gray-600">
-                        <span>GST / Tax:</span>
-                        <span>₹{inv.tax_amount:.2f}</span>
-                    </div>
                     <div class="flex justify-between text-base font-bold text-gray-900 border-t border-b border-gray-400 py-1 font-sans">
                         <span>Grand Total:</span>
                         <span class="font-mono">₹{inv.total_amount:.2f}</span>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Share2, Copy, CheckCircle2, FileText, Phone } from 'lucide-react';
 
-export const WhatsAppPriceListModal = ({ isOpen, onClose, products, categories }) => {
+export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categories = [] }) => {
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
@@ -13,15 +13,13 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products, categories }
     text += `📞 *Order Hotline: 9347453135*\n`;
     text += `─────────────────────────\n\n`;
 
-    categories.forEach(cat => {
-      const catProducts = products.filter(p => p.category_id === cat.id && p.is_active);
+    (categories || []).forEach(cat => {
+      const catProducts = (products || []).filter(p => p.category_id === cat.id && p.is_active);
       if (catProducts.length > 0) {
         text += `🔹 *${cat.name.toUpperCase()}*\n`;
         catProducts.forEach(p => {
           const base = parseFloat(p.base_price);
-          const tax = parseFloat(p.tax_rate);
-          const total = base + (base * (tax / 100));
-          text += `• ${p.name} (${p.packaging_unit})\n  Rate: *₹${base.toFixed(2)}* (+${tax}% GST = ₹${total.toFixed(2)})\n`;
+          text += `• ${p.name} (${p.packaging_unit})\n  Rate: *₹${base.toFixed(2)}*\n`;
         });
         text += `\n`;
       }

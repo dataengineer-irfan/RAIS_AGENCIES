@@ -49,10 +49,9 @@ class ThermalPrintService:
                 "line_total": float(item.line_total)
             })
 
-        # Calculate CGST/SGST 50-50 split
-        tax_total = float(invoice.tax_amount or 0.0)
-        cgst = tax_total / 2.0
-        sgst = tax_total / 2.0
+        tax_total = 0.0
+        cgst = 0.0
+        sgst = 0.0
 
         grand_total = float(invoice.total_amount)
         paid_amount = float(invoice.paid_amount or 0.0)
@@ -82,9 +81,9 @@ class ThermalPrintService:
             "line_items": line_items,
             "financials": {
                 "subtotal": float(invoice.subtotal),
-                "cgst": round(cgst, 2),
-                "sgst": round(sgst, 2),
-                "tax_total": round(tax_total, 2),
+                "cgst": 0.0,
+                "sgst": 0.0,
+                "tax_total": 0.0,
                 "grand_total": round(grand_total, 2),
                 "paid_amount": round(paid_amount, 2),
                 "outstanding_balance": round(outstanding, 2)

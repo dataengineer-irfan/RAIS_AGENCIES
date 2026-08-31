@@ -42,13 +42,14 @@ class BillingService:
             qty = Decimal(str(item["quantity"]))
             unit_price = Decimal(str(item["unit_price"]))
             discount_rate = Decimal(str(item.get("discount_rate", "0.00")))
-            tax_rate = Decimal(str(item.get("tax_rate", "0.00")))
+            # GST removed per business directive
+            tax_rate = Decimal("0.00")
 
             gross_line = quantize_amount(qty * unit_price)
             discount_line = quantize_amount(gross_line * (discount_rate / Decimal("100.00")))
             taxable_line = quantize_amount(gross_line - discount_line)
-            tax_line = quantize_amount(taxable_line * (tax_rate / Decimal("100.00")))
-            line_total = quantize_amount(taxable_line + tax_line)
+            tax_line = Decimal("0.00")
+            line_total = quantize_amount(taxable_line)
 
             subtotal += gross_line
             total_item_discounts += discount_line
@@ -69,13 +70,13 @@ class BillingService:
 
         net_discount = quantize_amount(total_item_discounts + invoice_level_discount)
         final_taxable = quantize_amount(subtotal - net_discount)
-        grand_total = quantize_amount(final_taxable + total_tax)
+        grand_total = quantize_amount(final_taxable) # Pure subtotal minus discount (No GST)
 
         return {
             "subtotal": subtotal,
             "discount_amount": net_discount,
             "taxable_amount": final_taxable,
-            "tax_amount": total_tax,
+            "tax_amount": Decimal("0.00"),
             "total_amount": grand_total,
             "items": calculated_items
         }

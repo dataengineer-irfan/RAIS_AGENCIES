@@ -146,14 +146,13 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
   }, [categories, filteredProducts]);
 
   const handleExportCSV = () => {
-    const headers = ['SKU', 'Product Name', 'Brand', 'Category', 'Base Price', 'GST Rate', 'Current Stock', 'Status'];
+    const headers = ['SKU', 'Product Name', 'Brand', 'Category', 'Wholesale Price (₹)', 'Current Stock', 'Status'];
     const rows = filteredProducts.map(p => [
       `"${p.sku}"`,
       `"${p.name}"`,
       `"${p.brand || ''}"`,
       `"${p.category_name || ''}"`,
       p.base_price,
-      `${p.tax_rate}%`,
       p.current_stock,
       p.is_active ? 'ACTIVE' : 'INACTIVE'
     ]);
@@ -311,14 +310,8 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                   </th>
                   <th className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-white" onClick={() => handleSort('base_price')}>
                     <div className="flex items-center justify-end gap-1">
-                      <span>Base Rate</span>
+                      <span>Wholesale Rate</span>
                       {sortField === 'base_price' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
-                    </div>
-                  </th>
-                  <th className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-white" onClick={() => handleSort('tax_rate')}>
-                    <div className="flex items-center justify-end gap-1">
-                      <span>GST%</span>
-                      {sortField === 'tax_rate' ? (sortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />) : <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />}
                     </div>
                   </th>
                   <th className="py-2.5 px-3 text-right cursor-pointer select-none hover:text-white" onClick={() => handleSort('current_stock')}>
@@ -334,13 +327,13 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="py-12 text-center text-slate-500 text-xs">
+                    <td colSpan="7" className="py-12 text-center text-slate-500 text-xs">
                       Loading hierarchical catalogue matrix...
                     </td>
                   </tr>
                 ) : groupedCategories.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="py-12 text-center text-slate-500 text-xs">
+                    <td colSpan="7" className="py-12 text-center text-slate-500 text-xs">
                       No matching product SKUs found.
                     </td>
                   </tr>
@@ -357,7 +350,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                           onClick={() => toggleCategoryCollapse(group.category.id)}
                           className="bg-slate-950/90 border-t-2 border-b border-slate-800 cursor-pointer select-none hover:bg-slate-850 transition-colors"
                         >
-                          <td colSpan="8" className="py-2 px-3">
+                          <td colSpan="7" className="py-2 px-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 {isCollapsed ? (
@@ -383,7 +376,6 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
                         {/* CHILD SKU ROWS */}
                         {!isCollapsed && group.items.map(prod => {
-                          const gross = (prod.base_price || 0) * (1 + (prod.tax_rate || 0) / 100);
                           const isLowStock = (prod.current_stock || 0) <= (prod.min_stock_alert || 5);
 
                           return (
@@ -409,9 +401,6 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                               </td>
                               <td className="py-2 px-3 text-right font-mono font-bold text-white text-xs">
                                 ₹{parseFloat(prod.base_price || 0).toFixed(2)}
-                              </td>
-                              <td className="py-2 px-3 text-right font-mono text-slate-400 text-xs">
-                                {prod.tax_rate}%
                               </td>
                               <td className="py-2 px-3 text-right font-mono font-bold text-xs">
                                 <span className={isLowStock ? 'text-rose-400' : 'text-slate-200'}>
@@ -492,6 +481,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
         isOpen={productModalOpen}
         onClose={() => setProductModalOpen(false)}
         productToEdit={productToEdit}
+        categories={categories}
         onProductSaved={() => {
           setProductModalOpen(false);
           loadCatalogue();

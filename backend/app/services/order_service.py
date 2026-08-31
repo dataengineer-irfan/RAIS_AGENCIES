@@ -39,12 +39,7 @@ class OrderService:
             price = Decimal(str(item_in.unit_price or product.base_price))
             line_sub = qty * price
             
-            # Line tax
-            tax_rate = Decimal(str(product.tax_rate or 0))
-            line_tax = line_sub * (tax_rate / Decimal("100"))
-
             subtotal += line_sub
-            tax_total += line_tax
 
             order_item = OrderItem(
                 product_id=product.id,
@@ -52,11 +47,11 @@ class OrderService:
                 packaging_unit=product.packaging_unit,
                 quantity=qty,
                 unit_price=price,
-                line_total=line_sub + line_tax
+                line_total=line_sub
             )
             order_items.append(order_item)
 
-        total_amount = subtotal + tax_total
+        total_amount = subtotal
 
         order = Order(
             order_number=order_number,
@@ -66,7 +61,7 @@ class OrderService:
             order_date=data.order_date or date.today(),
             expected_delivery_date=data.expected_delivery_date,
             subtotal=subtotal,
-            tax_amount=tax_total,
+            tax_amount=Decimal("0.00"),
             total_amount=total_amount,
             delivery_address=data.delivery_address or customer.address_line1,
             notes=data.notes,
@@ -130,7 +125,7 @@ class OrderService:
                 "quantity": float(itm.quantity),
                 "unit_price": float(itm.unit_price),
                 "discount_rate": 0.0,
-                "tax_rate": float(product.tax_rate if product else 0.0)
+                "tax_rate": 0.0
             })
 
             # Deduct stock for the ordered item
