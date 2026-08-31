@@ -143,7 +143,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Master-Detail Supply Reservation & 1-Click Tax Invoice Conversion
+              Route Delivery Bookings & Order Fulfillment Management
             </p>
           </div>
         </div>

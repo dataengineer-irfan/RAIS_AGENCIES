@@ -30,21 +30,27 @@ class SemanticAIEngine:
             intent = "PRODUCT_LOOKUP"
             tool_executed = "CatalogueService.list_products"
             
-            # Extract possible search terms
-            search_term = ""
-            for word in q_lower.split():
-                if word not in ["what", "is", "the", "price", "of", "how", "much", "for", "do", "we", "have", "in", "stock", "a", "an"]:
-                    search_term = word
-                    break
-                    
-            products = CatalogueService.list_products(db, search=search_term if search_term else None, limit=10)
-            if products:
+            # Extract keywords that match product categories or names
+            stopwords = {"what", "is", "the", "price", "wholesale", "rate", "cost", "of", "how", "much", "for", "do", "we", "have", "in", "stock", "a", "an", "and", "or", "tell", "me", "show"}
+            search_words = [w.strip("?,.!") for w in q_lower.split() if w.strip("?,.!") not in stopwords]
+            
+            matched_products = []
+            if search_words:
+                for sw in search_words:
+                    prods = CatalogueService.list_products(db, search=sw, limit=6)
+                    for p in prods:
+                        if p.id not in [mp.id for mp in matched_products]:
+                            matched_products.append(p)
+            else:
+                matched_products = CatalogueService.list_products(db, limit=8)
+
+            if matched_products:
                 prod_lines = [
-                    f"• **{p.name}** ({p.brand}) — SKU: `{p.sku}`, Unit: `{p.packaging_unit}`, Wholesale Price: **₹{p.base_price:.2f}** (GST: {p.tax_rate}%)"
-                    for p in products[:6]
+                    f"• **{p.name}** ({p.brand}) — SKU: `{p.sku}`, Pack: `{p.packaging_unit}`, Wholesale Rate: **₹{p.base_price:.2f}**"
+                    for p in matched_products[:8]
                 ]
-                answer = f"Here is the verified pricing from the RAIS Agencies catalogue:\n\n" + "\n".join(prod_lines)
-                context_data = [{"sku": p.sku, "name": p.name, "price": float(p.base_price)} for p in products[:6]]
+                answer = f"Here is the verified wholesale pricing from the RAIS Agencies catalogue:\n\n" + "\n".join(prod_lines)
+                context_data = [{"sku": p.sku, "name": p.name, "price": float(p.base_price)} for p in matched_products[:8]]
             else:
                 answer = f"No matching products found in the RAIS Agencies catalogue for '{query}'. Please check the spelling or view the full catalogue."
 
@@ -137,9 +143,11 @@ class SemanticAIEngine:
                 f"• **Phone Support**: {', '.join(profile['phones'])}\n"
                 f"• **Key Brands**: {', '.join(profile['partner_brands'][:8])}\n\n"
                 f"**Financial Calculation Standard**:\n"
-                f"• `Line Total = (Quantity × Unit Price - Line Discount) × (1 + GST Rate / 100)`\n"
+                f"• `Wholesale Line Total = (Quantity × Wholesale Rate) - Line Discount` (0% GST Direct Wholesale Cash Model)\n"
+                f"• `Settlement Terms`: Cash on Delivery / Immediate Settlement (Invoice Date = Due Date)\n"
+                f"• `UPI Payment`: 9347453135@ybl (RAIS Agencies, Rayachoty Depot)\n"
                 f"• `Outstanding Balance = Total Invoice Amount - Allocated Payments`\n"
-                f"• All monetary numbers use exact Decimal precision with deterministic server-side execution."
+                f"• All monetary calculations use exact Decimal precision with deterministic server-side execution."
             )
             context_data = RAIS_KNOWLEDGE_BASE
 
@@ -153,7 +161,7 @@ class SemanticAIEngine:
                 "• *'What is our total outstanding balance and overdue amount?'*\n"
                 "• *'Show me top selling products and revenue this month'* \n"
                 "• *'What is the customer status for registered accounts?'*\n"
-                "• *'Explain the billing calculation formula and GST rules'*"
+                "• *'Explain the billing calculation formula and cash settlement terms'*"
             )
 
         latency_ms = int((time.time() - start_time) * 1000)

@@ -23,7 +23,8 @@ import {
   ChevronDown,
   ChevronRight,
   Layers,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { catalogueApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -80,6 +81,20 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
       ...prev,
       [catId]: !prev[catId]
     }));
+  };
+
+  const handleToggleExpandAll = () => {
+    const isAnyCollapsed = Object.values(collapsedCategories).some(v => v === true);
+    if (isAnyCollapsed) {
+      // Expand all
+      setCollapsedCategories({});
+    } else {
+      // Collapse all
+      const newCollapsed = {};
+      categories.forEach(c => { newCollapsed[c.id] = true; });
+      newCollapsed['other'] = true;
+      setCollapsedCategories(newCollapsed);
+    }
   };
 
   const handleSort = (field) => {
@@ -179,15 +194,12 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm sm:text-base font-black text-white">
-                Commercial Product Catalogue Matrix
+                Product Catalogue
               </h1>
               <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
                 {products.length} Active SKUs
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Pattern #3 Hierarchical Matrix Cross-Tab with Multi-Column Sorting & Brand Grouping
-            </p>
           </div>
         </div>
 
@@ -248,6 +260,19 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             </button>
           </div>
 
+          {viewMode === 'matrix' && (
+            <button
+              onClick={handleToggleExpandAll}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+              title="Expand / Collapse All Categories"
+            >
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">
+                {Object.values(collapsedCategories).some(v => v === true) ? 'Expand All' : 'Collapse All'}
+              </span>
+            </button>
+          )}
+
           {/* Action CTAs */}
           <button
             onClick={handleExportCSV}
@@ -255,6 +280,15 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             title="Export CSV"
           >
             <Download className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={() => setPriceListModalOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
+            title="WhatsApp Wholesale Price List"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">WhatsApp Rates</span>
           </button>
 
           <button
@@ -340,8 +374,8 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 ) : (
                   groupedCategories.map(group => {
                     const isCollapsed = collapsedCategories[group.category.id];
-                    const catTotalStock = group.items.reduce((s, p) => s + (p.current_stock || 0), 0);
-                    const catTotalVal = group.items.reduce((s, p) => s + ((p.current_stock || 0) * (p.base_price || 0)), 0);
+                    const catTotalStock = group.items.reduce((s, p) => s + (parseFloat(p.current_stock) || 0), 0);
+                    const catTotalVal = group.items.reduce((s, p) => s + ((parseFloat(p.current_stock) || 0) * (parseFloat(p.base_price) || 0)), 0);
 
                     return (
                       <React.Fragment key={group.category.id}>
@@ -361,14 +395,14 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                 <span className="font-bold text-white text-xs uppercase tracking-wider">
                                   {group.category.name}
                                 </span>
-                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-slate-800 text-amber-400 font-mono">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 font-mono">
                                   {group.items.length} SKUs
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-4 text-[11px] font-mono text-slate-400">
-                                <span>Total Stock: <strong className="text-slate-200">{catTotalStock} pk</strong></span>
-                                <span>Inventory Val: <strong className="text-emerald-400">₹{catTotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                                <span>Total Stock: <strong className="text-slate-200">{catTotalStock.toLocaleString('en-IN')} pk</strong></span>
+                                <span>Inventory Val: <strong className="text-emerald-400">₹{catTotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
                               </div>
                             </div>
                           </td>

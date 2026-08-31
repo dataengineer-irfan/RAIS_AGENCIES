@@ -110,7 +110,7 @@ export const ReportsPage = () => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Pattern #1 Power BI Sliced Analytics Hub + Pattern #4 Multi-Level Drillthrough
+              Accounts Receivable Aging & Product Sales Velocity Analytics
             </p>
           </div>
         </div>

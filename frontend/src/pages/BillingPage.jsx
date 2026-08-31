@@ -149,14 +149,14 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm sm:text-base font-black text-white">
-                Billing & Tax Invoices Hub
+                Billing & Wholesale Invoices Hub
               </h1>
               <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
                 {invoices.length} Invoices
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Master-Detail Invoicing, 1-Click 58mm Thermal Print & Direct Wholesale Billing
+              Wholesale Invoicing, 58mm Thermal POS Print & Direct Settlement
             </p>
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PackagePlus, X, AlertCircle } from 'lucide-react';
 import { catalogueApi, inventoryApi } from '../services/api';
 
-export const ReceiveStockModal = ({ isOpen, onClose, onStockReceived }) => {
+export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, onStockReceived }) => {
   const [products, setProducts] = useState([]);
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -20,14 +20,17 @@ export const ReceiveStockModal = ({ isOpen, onClose, onStockReceived }) => {
       loadProducts();
       resetForm();
     }
-  }, [isOpen]);
+  }, [isOpen, initialProductId]);
 
   const loadProducts = async () => {
     try {
       const data = await catalogueApi.listProducts({ limit: 200 });
-      setProducts(data);
-      if (data.length > 0) {
-        setProductId(data[0].id);
+      const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
+      setProducts(items);
+      if (initialProductId) {
+        setProductId(initialProductId);
+      } else if (items.length > 0) {
+        setProductId(items[0].id);
       }
     } catch (err) {
       console.error(err);

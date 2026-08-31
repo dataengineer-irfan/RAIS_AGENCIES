@@ -109,7 +109,7 @@ export const AuditPage = () => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Master-Detail Security Diff Inspector & Immutable Data Mutation Journal
+              Security Logs & Immutable Activity Mutation Journal
             </p>
           </div>
         </div>
