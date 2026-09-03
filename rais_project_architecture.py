@@ -37,11 +37,11 @@ SYSTEM_METADATA = {
     "target_users": "3 Non-Technical Business Operators (Admin, Operator, Viewer)",
     "git_repository": "https://github.com/rais-agencies/Rais-Agencies.git",
     "database": {
-        "engine": "PostgreSQL 15+ (Hosted on Supabase Connection Pooler)",
-        "host": "aws-0-ap-northeast-1.pooler.supabase.com",
-        "port": 6543,
+        "engine": "PostgreSQL 15+ (Configured via DATABASE_URL environment variable)",
+        "host": "configured-via-env",
+        "port": 5432,
         "database": "postgres",
-        "user": "postgres.gdxuwquplzyktrclvezy"
+        "user": "postgres"
     },
     "tech_stack": {
         "backend": "Python 3.12 + FastAPI + SQLAlchemy ORM + Pydantic v2 + Uvicorn (Port 8001)",
