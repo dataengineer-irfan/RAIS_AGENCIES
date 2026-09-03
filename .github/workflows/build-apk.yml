@@ -43,13 +43,15 @@ jobs:
           mkdir -p frontend/android/app/src/main/assets/public
           cp -r frontend/dist/* frontend/android/app/src/main/assets/public/
 
-      - name: Grant Execute Permission for Gradlew
-        run: chmod +x frontend/android/gradlew
+      - name: Accept Android Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build Debug APK
         run: |
+          chmod +x frontend/android/gradlew
           cd frontend/android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Prepare APK Output
         run: |
