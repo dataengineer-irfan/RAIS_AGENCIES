@@ -221,8 +221,8 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           )}
         </div>
 
-        {/* Filter Controls Row */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* ─── DESKTOP FILTER CONTROLS ROW (md and above) ─── */}
+        <div className="hidden md:flex flex-wrap items-center gap-2">
           {/* Search Input */}
           <div className="relative flex-1 min-w-[150px]">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -314,11 +314,91 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             <button
               onClick={() => setFlyerModalOpen(true)}
               className="p-1.5 sm:px-2.5 sm:py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-              title="Commercial Catalogue Flyer"
+              title="Official PDF Flyer"
             >
               <FileImage className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Flyer</span>
             </button>
+          </div>
+        </div>
+
+        {/* ─── MOBILE FILTER & CHIP CONTROLS (< md) ─── */}
+        <div className="md:hidden flex flex-col gap-2">
+          {/* Mobile Search & View Switcher */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search SKU, name, brand..."
+                className="w-full pl-9 pr-7 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 shrink-0">
+              <button
+                onClick={() => setViewMode('matrix')}
+                className={`p-1.5 rounded-lg transition-all ${
+                  viewMode === 'matrix' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'
+                }`}
+                title="List View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${
+                  viewMode === 'grid' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'
+                }`}
+                title="Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* WhatsApp Price List Share Button */}
+            <button
+              onClick={() => setPriceListModalOpen(true)}
+              className="p-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl shrink-0"
+              title="WhatsApp Price List"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Swipeable Category Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
+            <button
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                selectedCategory === 'ALL'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                  : 'bg-slate-950 border border-slate-800 text-slate-400'
+              }`}
+            >
+              All SKUs ({products.length})
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCategory(selectedCategory === c.id ? 'ALL' : c.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                  selectedCategory === c.id
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'bg-slate-950 border border-slate-800 text-slate-400'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
           </div>
         </div>
       </div>

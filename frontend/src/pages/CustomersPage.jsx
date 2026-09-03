@@ -189,12 +189,10 @@ export const CustomersPage = ({
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
       
-      {/* ─── ROW 1: POWER BI PERSISTENT SLICER & FILTER RIBBON ─── */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex flex-wrap items-center justify-between gap-2 text-xs">
-        
+      {/* ─── ROW 1: DESKTOP PERSISTENT SLICER & FILTER RIBBON (md and above) ─── */}
+      <div className="hidden md:flex bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex-wrap items-center justify-between gap-2 text-xs">
         {/* Left: Search & Customer Quick Jump Slicer */}
         <div className="flex items-center gap-2 flex-1 min-w-[280px]">
-          
           {/* Customer Dropdown Quick Slicer */}
           <div className="relative min-w-[160px] sm:min-w-[200px]">
             <select
@@ -229,7 +227,6 @@ export const CustomersPage = ({
 
         {/* Center/Right: Route Slicer & Balance Slicer */}
         <div className="flex items-center gap-2 shrink-0">
-          
           {/* Territory / Route Slicer */}
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:inline">Route:</span>
@@ -300,9 +297,114 @@ export const CustomersPage = ({
         </div>
       </div>
 
-      {/* ─── ROW 2: EXECUTIVE CUSTOMER KPI METRIC RIBBON (4 Glowing Cards) ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
-        
+      {/* ─── ROW 1 (MOBILE): NATIVE MOBILE SEARCH & SWIPEABLE CHIPS (< md) ─── */}
+      <div className="md:hidden flex flex-col gap-2 shrink-0">
+        {/* Mobile Search & Sort Bar */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search outlets, contact, area..."
+              className="w-full pl-9 pr-7 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">
+                ✕
+              </button>
+            )}
+          </div>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none shrink-0"
+          >
+            <option value="NAME_ASC">A → Z</option>
+            <option value="BALANCE_DESC">Due ↓</option>
+            <option value="LIMIT_DESC">Limit ↓</option>
+          </select>
+        </div>
+
+        {/* Swipeable Horizontal Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
+          <button
+            onClick={() => { setAreaFilter('ALL'); setBalanceFilter('ALL'); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              areaFilter === 'ALL' && balanceFilter === 'ALL'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            All Outlets ({totalOutlets})
+          </button>
+
+          <button
+            onClick={() => setBalanceFilter(balanceFilter === 'HAS_DUE' ? 'ALL' : 'HAS_DUE')}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              balanceFilter === 'HAS_DUE'
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            🚨 Balance Due ({customersWithDues})
+          </button>
+
+          <button
+            onClick={() => setAreaFilter(areaFilter === 'RAYACHOTY_TOWN' ? 'ALL' : 'RAYACHOTY_TOWN')}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              areaFilter === 'RAYACHOTY_TOWN'
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            Rayachoty Town
+          </button>
+
+          <button
+            onClick={() => setAreaFilter(areaFilter === 'MADANAPALLE_RD' ? 'ALL' : 'MADANAPALLE_RD')}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              areaFilter === 'MADANAPALLE_RD'
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            Madanapalle Rd
+          </button>
+
+          <button
+            onClick={() => setAreaFilter(areaFilter === 'CHINNAMANDEM' ? 'ALL' : 'CHINNAMANDEM')}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              areaFilter === 'CHINNAMANDEM'
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            Chinnamandem
+          </button>
+        </div>
+
+        {/* Mobile Quick Metric Strip */}
+        <div className="grid grid-cols-3 gap-1.5 py-1">
+          <div className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Outlets</span>
+            <span className="text-xs font-black text-white font-mono">{filteredCount} / {totalOutlets}</span>
+          </div>
+          <div className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Receivables</span>
+            <span className="text-xs font-black text-emerald-400 font-mono">₹{totalReceivables.toFixed(0)}</span>
+          </div>
+          <div className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2.5 py-1.5 text-center">
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Credit Cap</span>
+            <span className="text-xs font-black text-blue-400 font-mono">₹{(totalCreditExposure / 100000).toFixed(1)}L</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── ROW 2: DESKTOP CUSTOMER KPI METRIC RIBBON (md and above) ─── */}
+      <div className="hidden md:grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
         {/* KPI 1: Active Accounts */}
         <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-amber-500 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between">
           <div>

@@ -19,6 +19,7 @@ import { PaymentModal } from './components/PaymentModal';
 import { CustomerModal } from './components/CustomerModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { MobileQuickActionFab } from './components/MobileQuickActionFab';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
@@ -156,7 +157,7 @@ export const App = () => {
           onGlobalSearch={setGlobalSearchTerm}
         />
 
-        <main className={`flex-1 overflow-hidden flex flex-col pb-16 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-hidden' : 'p-4 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
+        <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
           {activeTab === 'dashboard' && (
             <DashboardPage
               onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
@@ -237,11 +238,18 @@ export const App = () => {
         onClose={() => setAiDrawerOpen(false)}
       />
 
+      {/* Mobile Floating Action Button (Quick Actions) */}
+      <MobileQuickActionFab
+        onOpenInvoice={() => setInvoiceBuilderOpen(true)}
+        onOpenOrder={() => handleOpenOrder()}
+        onOpenCustomer={() => handleOpenCustomerModal()}
+        onOpenAI={() => setAiDrawerOpen(true)}
+      />
+
       {/* Mobile Bottom Navigation (Visible on mobile screens) */}
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenAI={() => setAiDrawerOpen(true)}
       />
     </div>
   );

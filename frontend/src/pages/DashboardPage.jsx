@@ -248,31 +248,60 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
      * ROOT: flex-col that fills the entire available height from App.jsx <main>.
      * overflow-hidden ensures ZERO window-level scrollbar.
      */
-    <div className="flex flex-col h-full w-full overflow-hidden gap-1.5">
+    <div className="flex flex-col h-full w-full overflow-y-auto md:overflow-hidden gap-1.5">
       
-      {/* ─── PERSISTENT SHELL ROW 1: INLINE SLICER BAR ─── */}
-      <InlineSlicerBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onResetFilters={handleResetFilters}
-        categories={categories}
-        customers={customers}
-      />
+      {/* ─── PERSISTENT SHELL ROW 1: INLINE SLICER BAR (Desktop Only) ─── */}
+      <div className="hidden md:block">
+        <InlineSlicerBar
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onResetFilters={handleResetFilters}
+          categories={categories}
+          customers={customers}
+        />
+      </div>
 
-      {/* ─── PERSISTENT SHELL ROW 2: PAGE TAB STRIP ─── */}
-      <DashboardTabStrip
-        activePage={activePage}
-        onSelectPage={setActivePage}
-      />
+      {/* ─── PERSISTENT SHELL ROW 2: PAGE TAB STRIP (Desktop Only) ─── */}
+      <div className="hidden md:block">
+        <DashboardTabStrip
+          activePage={activePage}
+          onSelectPage={setActivePage}
+        />
+      </div>
 
-      {/* ─── CANVAS VIEWPORT: flex-1 fills remaining height, overflow-hidden ─── */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      {/* ─── MOBILE PAGE TAB STRIP (< md) ─── */}
+      <div className="md:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 py-0.5 scroll-smooth">
+        {[
+          { id: 'overview', label: '📊 Overview' },
+          { id: 'forecast', label: '🎯 Targets' },
+          { id: 'receivables', label: '🛡️ Receivables' },
+          { id: 'products', label: '📦 Products' },
+          { id: 'activity', label: '⚡ Activity' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActivePage(tab.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              activePage === tab.id
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── CANVAS VIEWPORT: flex-1 fills remaining height ─── */}
+      <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         
         {/* ═══════════════════════════════════════════════════════════════════════
             PAGE 1: OVERVIEW
            ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'overview' && (
-          <div className="h-full flex flex-col gap-2 overflow-hidden animate-fadeIn">
+          <>
+            {/* ─── DESKTOP OVERVIEW CANVAS (md and up) ─── */}
+            <div className="hidden md:flex h-full flex-col gap-2 overflow-hidden animate-fadeIn">
             
             {/* Row 1: Action Header (compact) */}
             <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-lg shrink-0">
@@ -492,7 +521,205 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               </div>
             </div>
 
-          </div>
+            </div>
+
+            {/* ─── MOBILE NATIVE OVERVIEW CANVAS (< md) ─── */}
+            <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
+              
+              {/* Card 1: Executive Financial Hero Card */}
+              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rayachoty Depot Overview</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                    {kpis?.total_invoices_count || 0} Orders
+                  </span>
+                </div>
+
+                {/* Primary Metric: Total Revenue */}
+                <div className="mt-1">
+                  <span className="text-[11px] font-semibold text-slate-400">Total B2B Wholesale Revenue</span>
+                  <div className="text-3xl font-black text-white font-mono tracking-tight mt-0.5">
+                    ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                {/* Sub-Metrics Strip */}
+                <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                  <div 
+                    onClick={() => setActivePage('receivables')}
+                    className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Receivables</span>
+                    <p className="text-xs font-black text-amber-400 font-mono mt-0.5">
+                      ₹{outstandingVal >= 1000 ? `${(outstandingVal/1000).toFixed(1)}k` : outstandingVal.toFixed(0)}
+                    </p>
+                    <span className="text-[8px] text-slate-500">{kpis?.open_invoices_count || 0} unpaid</span>
+                  </div>
+                  
+                  <div 
+                    onClick={() => setActivePage('receivables')}
+                    className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
+                    <p className="text-xs font-black text-rose-400 font-mono mt-0.5">
+                      ₹{overdueVal >= 1000 ? `${(overdueVal/1000).toFixed(1)}k` : overdueVal.toFixed(0)}
+                    </p>
+                    <span className="text-[8px] text-rose-400/80">Risk Alert</span>
+                  </div>
+
+                  <div 
+                    onClick={() => onNavigate('customers')}
+                    className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Outlets</span>
+                    <p className="text-xs font-black text-white font-mono mt-0.5">
+                      {kpis?.active_customers_count || 0}
+                    </p>
+                    <span className="text-[8px] text-emerald-400 font-semibold">Active</span>
+                  </div>
+                </div>
+
+                {/* Direct Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 mt-3 pt-1">
+                  <button
+                    onClick={onOpenInvoiceBuilder}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>+ Invoice</span>
+                  </button>
+                  <button
+                    onClick={onOpenPaymentModal}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider border border-slate-700 active:scale-95 transition-all"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Payment</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2: Run-Rate & Target Pacing */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-md flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-white">Monthly Run-Rate</span>
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded">Day 3/30</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Pacing at <span className="text-amber-400 font-bold font-mono">₹2.31 Lakhs</span> this month
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActivePage('forecast')}
+                  className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-xl hover:bg-amber-500/20 shrink-0"
+                >
+                  Targets →
+                </button>
+              </div>
+
+              {/* Card 3: Recent Invoices List */}
+              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Recent Invoices</h3>
+                  </div>
+                  <button
+                    onClick={() => setActivePage('activity')}
+                    className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5"
+                  >
+                    View All →
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  {(kpis?.recent_invoices || []).slice(0, 5).map((inv) => (
+                    <div 
+                      key={inv.id}
+                      className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                          <StatusBadge status={inv.status} />
+                        </div>
+                        <p className="text-[11px] text-slate-300 font-medium truncate mt-0.5">{inv.customer_name}</p>
+                        <span className={`text-[9px] font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                          Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="font-mono font-black text-white text-right text-xs">
+                          ₹{parseFloat(inv.total_amount).toFixed(2)}
+                        </div>
+                        <button
+                          onClick={() => openThermalReceipt(inv.id)}
+                          className="p-1.5 bg-blue-600/20 text-blue-300 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                          title="Print Thermal Slip"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>Slip</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
+                    <div className="text-center py-4 text-slate-500 text-xs">
+                      No recent invoices found.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 4: Fast-Moving Depot SKUs */}
+              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Fast-Moving Items</h3>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('catalogue')}
+                    className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5"
+                  >
+                    Catalogue →
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  {(kpis?.top_selling_products || []).slice(0, 4).map((prod, idx) => (
+                    <div 
+                      key={idx}
+                      className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
+                        <span className="text-[10px] text-slate-400">{prod.quantity_sold} packs sold</span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue).toFixed(2)}</div>
+                        <span className="text-[8px] text-slate-500 font-bold uppercase">Revenue</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(!kpis?.top_selling_products || kpis.top_selling_products.length === 0) && (
+                    <div className="text-center py-4 text-slate-500 text-xs">
+                      No sales data available yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </>
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════════
