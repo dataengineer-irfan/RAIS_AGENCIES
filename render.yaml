@@ -26,7 +26,6 @@ services:
     name: rais-frontend
     runtime: static
     plan: free
-    region: singapore
     rootDir: frontend
     buildCommand: "npm install && npm run build"
     staticPublishPath: dist
