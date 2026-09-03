@@ -38,13 +38,13 @@ jobs:
           cd frontend
           npm run build
 
+      - name: Copy Web Assets to Android App
+        run: |
+          mkdir -p frontend/android/app/src/main/assets/public
+          cp -r frontend/dist/* frontend/android/app/src/main/assets/public/
+
       - name: Grant Execute Permission for Gradlew
         run: chmod +x frontend/android/gradlew
-
-      - name: Sync Native Android
-        run: |
-          cd frontend
-          npx --yes @capacitor/cli sync android
 
       - name: Build Debug APK
         run: |
