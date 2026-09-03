@@ -23,17 +23,25 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Node.js 18
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
-      - name: Install Frontend Dependencies & Build
+      - name: Install Frontend Dependencies
         run: |
           cd frontend
-          npm install
+          npm install --legacy-peer-deps
+
+      - name: Build Web App
+        run: |
+          cd frontend
           npm run build
-          npx cap sync android
+
+      - name: Sync Native Android
+        run: |
+          cd frontend
+          npx --yes @capacitor/cli sync android
 
       - name: Grant Execute Permission for Gradlew
         run: chmod +x frontend/android/gradlew
