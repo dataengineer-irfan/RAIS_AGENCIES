@@ -1,5 +1,6 @@
-import React from 'react';
-import { Sparkles, MapPin, Phone, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, MapPin, Phone, Search, PanelLeftClose, PanelLeftOpen, LogOut, User, X, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const Header = ({ 
   onToggleAI, 
@@ -10,7 +11,9 @@ export const Header = ({
   onHoverTopLeft,
   onLeaveTopLeft
 }) => {
-  const [mobileSearchExpanded, setMobileSearchExpanded] = React.useState(false);
+  const { user, logout } = useAuth();
+  const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   return (
     <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all">
@@ -117,6 +120,15 @@ export const Header = ({
             >
               <Sparkles className="w-4 h-4 animate-pulse" />
             </button>
+
+            {/* User Profile & Logout Avatar Button */}
+            <button
+              onClick={() => setProfileModalOpen(true)}
+              className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/80 text-amber-400 font-black text-xs flex items-center justify-center shadow-sm active:scale-95 transition-all hover:border-amber-500/50"
+              title="Profile & Sign Out"
+            >
+              {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'A'}
+            </button>
           </div>
         </div>
 
@@ -140,6 +152,70 @@ export const Header = ({
                 ✕
               </button>
             )}
+          </div>
+        )}
+
+        {/* ─── MOBILE USER PROFILE & SIGN OUT MODAL SHEET ─── */}
+        {profileModalOpen && (
+          <div 
+            onClick={() => setProfileModalOpen(false)}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="w-full sm:max-w-sm bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom-6 duration-200"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-base shadow-inner">
+                    {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'A'}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white">{user?.full_name || 'Admin User'}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 uppercase tracking-wider">
+                        {user?.role || 'ADMIN'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">@{user?.username || 'admin'}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setProfileModalOpen(false)}
+                  className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* System Info */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
+                  <span className="text-slate-400 text-xs">Assigned Depot</span>
+                  <span className="font-semibold text-slate-200 text-xs">Rayachoty Hub (516269)</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
+                  <span className="text-slate-400 text-xs">Cloud Server</span>
+                  <span className="font-mono text-emerald-400 text-[11px] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Live (Render)
+                  </span>
+                </div>
+              </div>
+
+              {/* Sign Out CTA Button */}
+              <button
+                onClick={() => {
+                  setProfileModalOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/40 text-rose-400 hover:text-rose-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-rose-950/40"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out of Workspace</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
