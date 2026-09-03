@@ -17,11 +17,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
 
       - name: Set up Node.js 20
@@ -35,14 +35,16 @@ jobs:
           npm install --legacy-peer-deps
 
       - name: Build Web App
+        env:
+          VITE_API_URL: https://rais-backend.onrender.com
         run: |
           cd frontend
           npm run build
 
-      - name: Copy Web Assets to Android App
+      - name: Sync Capacitor Assets
         run: |
-          mkdir -p frontend/android/app/src/main/assets/public
-          cp -r frontend/dist/* frontend/android/app/src/main/assets/public/
+          cd frontend
+          npx cap sync android
 
       - name: Accept Android Licenses
         run: |
