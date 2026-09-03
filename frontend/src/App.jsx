@@ -156,7 +156,7 @@ export const App = () => {
           onGlobalSearch={setGlobalSearchTerm}
         />
 
-        <main className={`flex-1 overflow-hidden flex flex-col ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-hidden' : 'p-4 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
+        <main className={`flex-1 overflow-hidden flex flex-col pb-16 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-hidden' : 'p-4 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
           {activeTab === 'dashboard' && (
             <DashboardPage
               onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
