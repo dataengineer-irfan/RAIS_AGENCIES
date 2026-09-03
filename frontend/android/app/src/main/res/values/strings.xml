@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RAIS Agencies</string>
+    <string name="title_activity_main">RAIS Agencies</string>
+    <string name="package_name">com.raisagencies.app</string>
+    <string name="custom_url_scheme">com.raisagencies.app</string>
+</resources>
