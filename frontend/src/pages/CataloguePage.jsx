@@ -184,42 +184,61 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
-      
-      {/* ─── TOP ACTION & TOOLBAR BAR ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <Package className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-black text-white">
-                Product Catalogue
-              </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                {products.length} Active SKUs
-              </span>
+           {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
+      <div className="flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-black text-white">
+                  Product Catalogue
+                </h1>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+                  {products.length} Active SKUs
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Rayachoty Depot Wholesale Master SKU Matrix & Cash Pricing
+              </p>
             </div>
           </div>
+
+          {/* Quick CTA on Mobile / Desktop */}
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <button
+              onClick={() => {
+                setProductToEdit(null);
+                setProductModalOpen(true);
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ SKU</span>
+            </button>
+          )}
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <div className="relative">
+        {/* Filter Controls Row */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[150px]">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search SKU, name, brand..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-36 sm:w-48"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
           </div>
 
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[130px] truncate"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer flex-1 sm:flex-initial max-w-[140px] truncate"
           >
             <option value="ALL">All Categories</option>
             {categories.map(c => (
@@ -230,7 +249,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           <select
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[110px] truncate"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer flex-1 sm:flex-initial max-w-[120px] truncate"
           >
             <option value="ALL">All Brands</option>
             {uniqueBrands.map(b => (
@@ -238,90 +257,198 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             ))}
           </select>
 
-          {/* View Toggle */}
-          <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
+          {/* Action Chips */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {/* View Toggle */}
+            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
+              <button
+                onClick={() => setViewMode('matrix')}
+                className={`p-1.5 rounded-lg transition-all ${
+                  viewMode === 'matrix' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                }`}
+                title="List / Matrix View"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${
+                  viewMode === 'grid' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Cards Grid View"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {viewMode === 'matrix' && (
+              <button
+                onClick={handleToggleExpandAll}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+                title="Expand / Collapse All Categories"
+              >
+                <Layers className="w-3.5 h-3.5 text-amber-400" />
+                <span>
+                  {Object.values(collapsedCategories).some(v => v === true) ? 'Expand' : 'Collapse'}
+                </span>
+              </button>
+            )}
+
             <button
-              onClick={() => setViewMode('matrix')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'matrix' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Hierarchical Matrix View"
+              onClick={handleExportCSV}
+              className="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+              title="Export CSV"
             >
-              <List className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5" />
             </button>
+
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'grid' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Product Cards Grid View"
+              onClick={() => setPriceListModalOpen(true)}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+              title="WhatsApp Wholesale Price List"
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">WhatsApp</span>
+            </button>
+
+            <button
+              onClick={() => setFlyerModalOpen(true)}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+              title="Commercial Catalogue Flyer"
+            >
+              <FileImage className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Flyer</span>
             </button>
           </div>
-
-          {viewMode === 'matrix' && (
-            <button
-              onClick={handleToggleExpandAll}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
-              title="Expand / Collapse All Categories"
-            >
-              <Layers className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">
-                {Object.values(collapsedCategories).some(v => v === true) ? 'Expand All' : 'Collapse All'}
-              </span>
-            </button>
-          )}
-
-          {/* Action CTAs */}
-          <button
-            onClick={handleExportCSV}
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
-            title="Export CSV"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            onClick={() => setPriceListModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
-            title="WhatsApp Wholesale Price List"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">WhatsApp Rates</span>
-          </button>
-
-          <button
-            onClick={() => setFlyerModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
-            title="Commercial Catalogue Flyer"
-          >
-            <FileImage className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Flyer</span>
-          </button>
-
-          {hasRole(['ADMIN', 'OPERATOR']) && (
-            <button
-              onClick={() => {
-                setProductToEdit(null);
-                setProductModalOpen(true);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ SKU</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* ─── HIERARCHICAL MATRIX CROSS-TAB CONTAINER (100% Viewport-Locked) ─── */}
-      <div className="flex-1 min-h-0 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden">
+      {/* ─── HIERARCHICAL MATRIX / CARDS CONTAINER ─── */}
+      <div className="flex-1 min-h-0 bg-slate-900 rounded-2xl border border-slate-800 p-2 sm:p-3 shadow-xl flex flex-col overflow-hidden">
         
         {viewMode === 'matrix' ? (
-          /* MATRIX TABLE MODE */
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          /* MATRIX MODE: Native mobile card layout on mobile, full scrollable table on tablet/desktop */
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            
+            {/* MOBILE-ONLY CARD LIST (< 640px) */}
+            <div className="sm:hidden flex-1 min-h-0 overflow-y-auto space-y-3 pr-0.5">
+              {loading ? (
+                <div className="space-y-2 p-2 animate-pulse">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-20 bg-slate-800/50 rounded-xl" />
+                  ))}
+                </div>
+              ) : groupedCategories.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 text-xs">
+                  No matching product SKUs found.
+                </div>
+              ) : (
+                groupedCategories.map(group => {
+                  const isCollapsed = collapsedCategories[group.category.id];
+                  const catTotalStock = group.items.reduce((s, p) => s + (parseFloat(p.current_stock) || 0), 0);
+                  const catTotalVal = group.items.reduce((s, p) => s + ((parseFloat(p.current_stock) || 0) * (parseFloat(p.base_price) || 0)), 0);
+
+                  return (
+                    <div key={group.category.id} className="rounded-xl border border-slate-800 bg-slate-950/60 overflow-hidden">
+                      {/* Mobile Category Banner */}
+                      <button
+                        onClick={() => toggleCategoryCollapse(group.category.id)}
+                        className="w-full py-2.5 px-3 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? (
+                            <ChevronRight className="w-4 h-4 text-amber-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-amber-400" />
+                          )}
+                          <span className="font-bold text-white text-xs uppercase tracking-wider">
+                            {group.category.name}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-800 text-amber-400 font-mono">
+                            {group.items.length}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                          ₹{catTotalVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </span>
+                      </button>
+
+                      {/* Mobile SKU Card Rows */}
+                      {!isCollapsed && (
+                        <div className="p-2 space-y-2 bg-slate-900/40">
+                          {group.items.map(prod => {
+                            const isLowStock = (prod.current_stock || 0) <= (prod.min_stock_alert || 5);
+                            return (
+                              <div 
+                                key={prod.id}
+                                className="p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/80 flex flex-col gap-1.5 shadow-sm"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono font-bold text-[11px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                      {prod.sku}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-slate-400">
+                                      {prod.brand || 'RAIS'}
+                                    </span>
+                                  </div>
+                                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
+                                    prod.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
+                                  }`}>
+                                    {prod.is_active ? 'ACTIVE' : 'INACTIVE'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <h4 className="font-bold text-white text-xs leading-snug">
+                                    {prod.name} {prod.unit ? <span className="text-[10px] text-slate-500 font-normal">({prod.unit})</span> : ''}
+                                  </h4>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 mt-0.5">
+                                  <div>
+                                    <span className="text-[10px] text-slate-400 block">Wholesale Rate</span>
+                                    <span className="font-mono font-black text-sm text-amber-400">
+                                      ₹{parseFloat(prod.base_price || 0).toFixed(2)}
+                                    </span>
+                                  </div>
+
+                                  <div className="text-right flex items-center gap-3">
+                                    <div>
+                                      <span className="text-[10px] text-slate-400 block">Depot Stock</span>
+                                      <span className={`font-mono font-bold text-xs ${isLowStock ? 'text-rose-400' : 'text-slate-200'}`}>
+                                        {prod.current_stock || 0} pk
+                                      </span>
+                                    </div>
+
+                                    {hasRole(['ADMIN', 'OPERATOR']) && (
+                                      <button
+                                        onClick={() => {
+                                          setProductToEdit(prod);
+                                          setProductModalOpen(true);
+                                        }}
+                                        className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                                        title="Edit SKU"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* DESKTOP/TABLET HORIZONTAL SCROLLABLE TABLE (>= 640px) */}
+            <div className="hidden sm:block flex-1 min-h-0 overflow-auto">
+              <table className="w-full min-w-[650px] text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-20 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
                   <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white" onClick={() => handleSort('sku')}>
@@ -473,6 +600,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         ) : (
           /* GRID CARDS MODE */

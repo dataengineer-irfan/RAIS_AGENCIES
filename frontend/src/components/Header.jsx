@@ -13,13 +13,13 @@ export const Header = ({
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 gap-3">
       {/* Left section: Top-Left Toggle Bar + Search */}
-      <div className="flex items-center gap-3 flex-1 max-w-xl">
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl">
         
-        {/* Top-Left Corner Toggle Bar Button */}
+        {/* Top-Left Corner Toggle Bar Button (Desktop only - mobile uses bottom nav) */}
         <div 
           onMouseEnter={onHoverTopLeft}
           onMouseLeave={onLeaveTopLeft}
-          className="relative group shrink-0"
+          className="hidden md:flex relative group shrink-0"
         >
           <button
             onClick={onToggleSidebar}
@@ -65,10 +65,11 @@ export const Header = ({
         {/* AI Assistant Quick Toggle */}
         <button
           onClick={onToggleAI}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 rounded-lg text-amber-400 text-xs font-bold transition-all shadow-sm"
+          className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 rounded-lg text-amber-400 text-xs font-bold transition-all shadow-sm shrink-0"
+          title="Executive AI Assistant"
         >
           <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-          <span>AI Assistant</span>
+          <span className="hidden sm:inline">AI Assistant</span>
         </button>
       </div>
     </header>

@@ -17,7 +17,8 @@ import {
   Sparkles,
   ExternalLink,
   MessageSquare,
-  DollarSign
+  DollarSign,
+  ArrowLeft
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
@@ -37,6 +38,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState('items'); // items, payment, print
   const [copiedCode, setCopiedCode] = useState(false);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Modals
   const [thermalModalOpen, setThermalModalOpen] = useState(false);
@@ -88,6 +90,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const handleSelectInvoice = (inv) => {
     setSelectedInvoiceId(inv.id);
     loadInvoiceDetails(inv.id);
+    setMobileView('detail');
   };
 
   const handleIssueDraft = async (invoiceId) => {
@@ -141,43 +144,55 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
       {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <FileText className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-black text-white">
-                Billing & Wholesale Invoices Hub
-              </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                {invoices.length} Invoices
-              </span>
+      <div className="flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <FileText className="w-4 h-4" />
             </div>
-            <p className="text-[11px] text-slate-400">
-              Wholesale Invoicing, 58mm Thermal POS Print & Direct Settlement
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-black text-white">
+                  Billing & Wholesale Invoices Hub
+                </h1>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+                  {invoices.length} Invoices
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Wholesale Invoicing, 58mm Thermal POS Print & Direct Settlement
+              </p>
+            </div>
           </div>
+
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <button
+              onClick={onOpenInvoiceBuilder}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Invoice</span>
+            </button>
+          )}
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative">
+        {/* Filter Controls Row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[150px]">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search invoice # or customer..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-44 sm:w-56"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
           </div>
 
           <select
             value={activeStatusFilter}
             onChange={(e) => setActiveStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer flex-1 sm:flex-initial max-w-[140px]"
           >
             <option value="ALL">All Status</option>
             <option value="ISSUED">Issued / Open</option>
@@ -186,24 +201,41 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
             <option value="OVERDUE">Overdue</option>
             <option value="DRAFT">Drafts</option>
           </select>
-
-          {hasRole(['ADMIN', 'OPERATOR']) && (
-            <button
-              onClick={onOpenInvoiceBuilder}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ Invoice</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* ─── MASTER-DETAIL SPLIT-PANE CONTAINER (100% Viewport-Locked) ─── */}
+      {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
+      <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+        <button
+          onClick={() => setMobileView('list')}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'list'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Invoices ({filteredInvoices.length})</span>
+        </button>
+        <button
+          onClick={() => setMobileView('detail')}
+          disabled={!selectedInvoice}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'detail'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white disabled:opacity-40'
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>Invoice Details</span>
+        </button>
+      </div>
+
+      {/* ─── MASTER-DETAIL SPLIT-PANE CONTAINER ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
         
-        {/* ─── LEFT MASTER PANE (42% Width = 5 cols) ─── */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+        {/* ─── LEFT MASTER PANE (Invoices List) ─── */}
+        <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
             <span>Tax Invoices ({filteredInvoices.length})</span>
             <span>Total / Due</span>
@@ -270,8 +302,21 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           </div>
         </div>
 
-        {/* ─── RIGHT DETAIL INSPECTOR (58% Width = 7 cols) ─── */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col overflow-hidden">
+        {/* ─── RIGHT DETAIL INSPECTOR ─── */}
+        <div className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 shadow-xl flex-col overflow-hidden`}>
+          {/* Mobile Back Button */}
+          <div className="lg:hidden pb-2 mb-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setMobileView('list')}
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold text-xs"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Invoices List</span>
+            </button>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {filteredInvoices.length} Invoices
+            </span>
+          </div>
           {selectedInvoice ? (
             <div className="h-full flex flex-col overflow-hidden">
               

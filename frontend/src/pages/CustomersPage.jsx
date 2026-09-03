@@ -26,7 +26,8 @@ import {
   RotateCcw,
   SlidersHorizontal,
   DollarSign,
-  Building2
+  Building2,
+  ArrowLeft
 } from 'lucide-react';
 import { customerApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
@@ -56,6 +57,7 @@ export const CustomersPage = ({
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState('overview'); // overview, ledger, actions
   const [copiedCode, setCopiedCode] = useState(false);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Modal
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -99,6 +101,7 @@ export const CustomersPage = ({
   const handleSelectCustomer = (customer) => {
     setSelectedCustomerId(customer.id);
     loadCustomerLedger(customer.id);
+    setMobileView('detail');
   };
 
   const handleCopyCode = (code) => {
@@ -358,11 +361,38 @@ export const CustomersPage = ({
         </div>
       </div>
 
+      {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
+      <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+        <button
+          onClick={() => setMobileView('list')}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'list'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Outlets ({filteredCustomers.length})</span>
+        </button>
+        <button
+          onClick={() => setMobileView('detail')}
+          disabled={!selectedCustomer}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'detail'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white disabled:opacity-40'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Outlet Detail</span>
+        </button>
+      </div>
+
       {/* ─── ROW 3: POWER BI MASTER-DETAIL SPLIT CANVAS ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
         
         {/* ─── LEFT MASTER PANE (38% Width = 5 cols) ─── */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-xl border border-slate-800 p-2.5 shadow-lg flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-xl border border-slate-800 p-2.5 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
             <span>Customer Accounts ({filteredCustomers.length})</span>
             <span>Balance Due</span>
@@ -442,7 +472,20 @@ export const CustomersPage = ({
         </div>
 
         {/* ─── RIGHT DETAIL INSPECTOR (62% Width = 7 cols) ─── */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-xl border border-slate-800 p-2.5 sm:p-3 shadow-xl flex-col overflow-hidden`}>
+          {/* Mobile Back to List button */}
+          <div className="lg:hidden pb-2 mb-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setMobileView('list')}
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold text-xs"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Outlets List</span>
+            </button>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {filteredCustomers.length} Outlets
+            </span>
+          </div>
           {selectedCustomer ? (
             <div className="h-full flex flex-col overflow-hidden">
               

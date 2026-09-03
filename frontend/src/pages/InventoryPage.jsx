@@ -29,7 +29,8 @@ import {
   Clock,
   Archive,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  ArrowLeft
 } from 'lucide-react';
 import { inventoryApi, catalogueApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +56,7 @@ export const InventoryPage = () => {
   const [activeInspectorTab, setActiveInspectorTab] = useState('dossier'); // dossier, lineage, velocity
   const [movementsData, setMovementsData] = useState([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Modals
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
@@ -109,6 +111,7 @@ export const InventoryPage = () => {
   const handleSelectProduct = (item) => {
     setSelectedProductId(item.product_id);
     loadMovementsForProduct(item.product_id);
+    setMobileView('detail');
   };
 
   const handleResetFilters = () => {
@@ -438,11 +441,38 @@ export const InventoryPage = () => {
 
       </div>
 
-      {/* ─── ROW 3: MASTER-DETAIL 2-COLUMN SPLIT CANVAS (100% Viewport-Locked) ─── */}
+      {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
+      <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+        <button
+          onClick={() => setMobileView('list')}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'list'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Boxes className="w-3.5 h-3.5" />
+          <span>Warehouse SKUs ({filteredItems.length})</span>
+        </button>
+        <button
+          onClick={() => setMobileView('detail')}
+          disabled={!selectedProduct}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'detail'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white disabled:opacity-40'
+          }`}
+        >
+          <Thermometer className="w-3.5 h-3.5" />
+          <span>SKU Intelligence</span>
+        </button>
+      </div>
+
+      {/* ─── ROW 3: MASTER-DETAIL 2-COLUMN SPLIT CANVAS ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
         
         {/* ─── LEFT COLUMN: VISUAL SKU DIRECTORY (42% Width = 5 cols) ─── */}
-        <div className="lg:col-span-5 bg-slate-900/95 rounded-xl border border-slate-800 p-2.5 shadow-lg flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900/95 rounded-xl border border-slate-800 p-2.5 shadow-lg flex-col overflow-hidden`}>
           
           {/* Header */}
           <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
@@ -541,7 +571,20 @@ export const InventoryPage = () => {
         </div>
 
         {/* ─── RIGHT COLUMN: 360° SKU INTELLIGENCE & ACTION CONSOLE (58% Width = 7 cols) ─── */}
-        <div className="lg:col-span-7 bg-slate-900/95 rounded-xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900/95 rounded-xl border border-slate-800 p-2.5 sm:p-3 shadow-lg flex-col overflow-hidden`}>
+          {/* Mobile Back Button */}
+          <div className="lg:hidden pb-2 mb-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setMobileView('list')}
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold text-xs"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Warehouse SKUs</span>
+            </button>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {filteredItems.length} SKUs
+            </span>
+          </div>
           {selectedProduct ? (
             <>
               {/* ─── SKU DOSSIER HEADER & 1-CLICK LAUNCHERS ─── */}
