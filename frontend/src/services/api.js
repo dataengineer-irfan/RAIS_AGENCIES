@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 let rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
-if (rawApiUrl && !rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
+// Only use VITE_API_URL if it is a full URL or domain with a dot (e.g. .onrender.com)
+// Internal Docker hostnames like 'rais-backend' do not resolve in public browsers
+if (!rawApiUrl || !rawApiUrl.includes('.')) {
+  rawApiUrl = '';
+} else if (!rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
   rawApiUrl = `https://${rawApiUrl}`;
 }
 

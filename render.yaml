@@ -34,7 +34,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: rais-backend
-          property: host
+        sync: false # Set in Render to your rais-backend onrender URL (e.g. https://rais-backend.onrender.com)
