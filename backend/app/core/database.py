@@ -9,6 +9,10 @@ from app.core.config import settings
 database_url = settings.DATABASE_URL
 connect_args = {}
 
+# Normalize Supabase / Cloud postgresql connection strings
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
 if database_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
     engine = create_engine(
