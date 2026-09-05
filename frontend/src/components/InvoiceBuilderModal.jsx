@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi } from '../services/api';
+import { SmartProductSearchPicker } from './SmartProductSearchPicker';
+import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -11,6 +13,7 @@ export const InvoiceBuilderModal = ({
 }) => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -42,16 +45,19 @@ export const InvoiceBuilderModal = ({
     setSuccessInvoice(null);
     setShowPreview(false);
     try {
-      const [custDataRaw, prodDataRaw] = await Promise.all([
+      const [custDataRaw, prodDataRaw, catDataRaw] = await Promise.all([
         customerApi.list({ limit: 100 }),
-        catalogueApi.listProducts({ limit: 200 })
+        catalogueApi.listProducts({ limit: 200 }),
+        catalogueApi.listCategories(true).catch(() => [])
       ]);
 
       const custData = Array.isArray(custDataRaw) ? custDataRaw : (custDataRaw?.items || []);
       const prodData = Array.isArray(prodDataRaw) ? prodDataRaw : (prodDataRaw?.items || []);
+      const catData = Array.isArray(catDataRaw) ? catDataRaw : (catDataRaw?.items || []);
 
       setCustomers(custData);
       setProducts(prodData);
+      setCategories(catData);
 
       // 1. Resolve initial customer
       if (preselectedCustomer) {
@@ -176,8 +182,62 @@ export const InvoiceBuilderModal = ({
     }
   };
 
+  const handleQuickAddProduct = (prod) => {
+    if (!prod) return;
+    const existingIdx = items.findIndex(i => i.product_id === prod.id);
+    if (existingIdx >= 0) {
+      const newItems = [...items];
+      newItems[existingIdx].quantity = (parseFloat(newItems[existingIdx].quantity) || 0) + 1;
+      setItems(newItems);
+    } else {
+      if (items.length === 1 && !items[0].product_id) {
+        setItems([
+          {
+            product_id: prod.id,
+            quantity: 1,
+            unit_price: parseFloat(prod.base_price || 0),
+            discount_rate: 0,
+            packaging_unit: prod.packaging_unit || 'PKT'
+          }
+        ]);
+      } else {
+        setItems([
+          ...items,
+          {
+            product_id: prod.id,
+            quantity: 1,
+            unit_price: parseFloat(prod.base_price || 0),
+            discount_rate: 0,
+            packaging_unit: prod.packaging_unit || 'PKT'
+          }
+        ]);
+      }
+    }
+  };
+
+  const handleAdjustQuantity = (index, delta) => {
+    const newItems = [...items];
+    const currentQty = parseFloat(newItems[index].quantity) || 0;
+    const nextQty = Math.max(1, currentQty + delta);
+    newItems[index].quantity = nextQty;
+    setItems(newItems);
+  };
+
+  const quantitiesByProductId = useMemo(() => {
+    const map = {};
+    items.forEach(itm => {
+      if (itm.product_id) {
+        map[itm.product_id] = (map[itm.product_id] || 0) + (parseFloat(itm.quantity) || 0);
+      }
+    });
+    return map;
+  }, [items]);
+
   const removeItemRow = (index) => {
-    if (items.length === 1) return;
+    if (items.length === 1) {
+      setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
+      return;
+    }
     setItems(items.filter((_, i) => i !== index));
   };
 
@@ -324,6 +384,19 @@ export const InvoiceBuilderModal = ({
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => shareInvoiceOnWhatsApp({
+                  invoice: successInvoice,
+                  customer: selectedCustomerObj || { business_name: successInvoice.customer_name },
+                  items: items,
+                  products: products
+                })}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Share on WhatsApp
+              </button>
               <a
                 href={`/api/invoices/${successInvoice.id}/print-html`}
                 target="_blank"
@@ -485,22 +558,41 @@ export const InvoiceBuilderModal = ({
                 Back to Edit Form
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => shareInvoiceOnWhatsApp({
+                    invoice: {
+                      invoice_number: 'PREVIEW',
+                      invoice_date: invoiceDate,
+                      total_amount: totals.total,
+                      payment_terms: paymentTerms
+                    },
+                    customer: selectedCustomerObj,
+                    items: items,
+                    products: products
+                  })}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="hidden sm:inline">Share Draft</span>
+                  <span className="sm:hidden">WhatsApp</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors border border-slate-700"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors border border-slate-700"
                 >
                   <Printer className="w-4 h-4" />
-                  Print Preview
+                  <span className="hidden sm:inline">Print Preview</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center gap-2 transition-all transform active:scale-95"
+                  className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center gap-2 transition-all transform active:scale-95"
                 >
-                  {submitting ? 'Generating...' : 'Confirm & Issue Invoice Now'}
+                  {submitting ? 'Generating...' : 'Confirm & Issue Invoice'}
                 </button>
               </div>
             </div>
@@ -599,12 +691,29 @@ export const InvoiceBuilderModal = ({
                 </div>
               </div>
 
+              {/* Smart Touch Product Search & Instant Picker */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Quick Product Search & 1-Tap Add</span>
+                  </h3>
+                  <span className="text-[10px] text-slate-400">Type product name (e.g. fre, nugget) or tap category</span>
+                </div>
+                <SmartProductSearchPicker
+                  products={products}
+                  categories={categories}
+                  onSelectProduct={handleQuickAddProduct}
+                  quantitiesByProductId={quantitiesByProductId}
+                />
+              </div>
+
               {/* Line Items Section */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                      Product Line Items
+                      Billed Line Items
                     </h3>
                     <span className="text-[11px] font-mono text-slate-500">
                       ({items.length} {items.length === 1 ? 'item' : 'items'})
@@ -616,7 +725,7 @@ export const InvoiceBuilderModal = ({
                     className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl border border-amber-500/20 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Add Product Row
+                    Manual Blank Row
                   </button>
                 </div>
 
@@ -659,7 +768,15 @@ export const InvoiceBuilderModal = ({
                         </div>
 
                         <div className="col-span-2">
-                          <div className="relative">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustQuantity(index, -1)}
+                              className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                              title="Decrease quantity"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
                             <input
                               type="number"
                               min="0.1"
@@ -668,11 +785,16 @@ export const InvoiceBuilderModal = ({
                               onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
                               placeholder="Qty"
                               required
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-xs text-center font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                              className="w-full min-w-[32px] bg-slate-900 border border-slate-800 rounded-md py-1 text-xs text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 font-mono"
                             />
-                            <span className="absolute right-2 top-2 text-[10px] text-slate-500 font-mono pointer-events-none">
-                              {item.packaging_unit || 'PKT'}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustQuantity(index, 1)}
+                              className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                              title="Increase quantity"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
 
