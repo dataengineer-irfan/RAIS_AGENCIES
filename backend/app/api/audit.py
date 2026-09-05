@@ -27,3 +27,48 @@ def list_audit_logs(
         query = query.filter(AuditLog.username == username)
 
     return query.order_by(AuditLog.created_at.desc()).offset(skip).limit(limit).all()
+
+@router.post("/reset-operational-data", dependencies=[Depends(require_admin)])
+def reset_operational_data(
+    db: Session = Depends(get_db)
+):
+    from sqlalchemy import text
+    clean_tables = [
+        'payment_allocations',
+        'payments',
+        'invoice_items',
+        'invoices',
+        'order_items',
+        'orders',
+        'quotation_items',
+        'quotations',
+        'audit_logs',
+        'customers'
+    ]
+    deleted_counts = {}
+    for tbl in clean_tables:
+        try:
+            res = db.execute(text(f"DELETE FROM {tbl}"))
+            deleted_counts[tbl] = res.rowcount
+        except Exception as e:
+            deleted_counts[tbl] = str(e)
+            
+    # Reset inventory stock levels to 0.00
+    try:
+        res = db.execute(text("UPDATE products SET current_stock = 0.00"))
+        deleted_counts["products_stock_reset"] = res.rowcount
+    except Exception as e:
+        deleted_counts["products_stock_reset"] = str(e)
+
+    # Reset sequences if present
+    try:
+        db.execute(text("UPDATE document_sequences SET current_sequence = 0"))
+    except Exception:
+        pass
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": "All dummy operational data wiped cleanly. Products and categories preserved with 0 stock.",
+        "deleted": deleted_counts
+    }

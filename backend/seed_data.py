@@ -177,7 +177,7 @@ def seed_database():
                     tax_rate=Decimal(p["tax"]),
                     hsn_code=p["hsn"],
                     description=f"{p['brand']} {p['name']} in {p['pack']}",
-                    current_stock=Decimal("150.00"),
+                    current_stock=Decimal("0.00"),
                     min_stock_alert=Decimal("15.00"),
                     is_active=True
                 )
@@ -186,128 +186,30 @@ def seed_database():
             seeded_products[p["sku"]] = prod
         print(f"  + Successfully verified and seeded all {len(products_data)} RAIS Agencies SKUs.")
 
-        # 4. SEED SAMPLE RAYACHOTY RESTAURANTS / CUSTOMERS
-        sample_customers = [
-            {
-                "code": "CUST-0001",
-                "name": "Royal Fast Food & Burgers",
-                "person": "Mohammed Riaz",
-                "phone": "9848012345",
-                "address": "Opp. RTC Bus Stand, Main Road",
-                "city": "Rayachoty",
-                "limit": "25000.00"
-            },
-            {
-                "code": "CUST-0002",
-                "name": "Cafe Delight Family Restaurant",
-                "person": "S. K. Reddy",
-                "phone": "9440156789",
-                "address": "Near Annamayya Circle",
-                "city": "Rayachoty",
-                "limit": "50000.00"
-            },
-            {
-                "code": "CUST-0003",
-                "name": "Al-Madina Fried Chicken & Momos",
-                "person": "Shaik Imran",
-                "phone": "9989045612",
-                "address": "Madanapalle Road, Reddies Colony Junction",
-                "city": "Rayachoty",
-                "limit": "15000.00"
-            },
-            {
-                "code": "CUST-0004",
-                "name": "Green Park Pizza & Bakery",
-                "person": "P. Venkat",
-                "phone": "9701023456",
-                "address": "Near Gandhi Statue, Kadapa Road",
-                "city": "Rayachoty",
-                "limit": "30000.00"
-            }
+        # 4. RESET INVENTORY STOCK TO 0.00 (Ready for fresh physical upload)
+        from sqlalchemy import text
+        db.execute(text("UPDATE products SET current_stock = 0.00"))
+
+        # 5. PURGE ANY DUMMY OPERATIONAL DATA (Customers, Invoices, Orders, Payments)
+        clean_tables = [
+            'payment_allocations',
+            'payments',
+            'invoice_items',
+            'invoices',
+            'order_items',
+            'orders',
+            'quotation_items',
+            'quotations',
+            'customers'
         ]
-
-        cust_objs = []
-        for c in sample_customers:
-            cust = db.query(Customer).filter(Customer.customer_code == c["code"]).first()
-            if not cust:
-                cust = Customer(
-                    customer_code=c["code"],
-                    business_name=c["name"],
-                    contact_person=c["person"],
-                    phone=c["phone"],
-                    address_line1=c["address"],
-                    city=c["city"],
-                    state="Andhra Pradesh",
-                    pincode="516269",
-                    credit_limit=Decimal(c["limit"]),
-                    status=CustomerStatus.ACTIVE.value
-                )
-                db.add(cust)
-                db.flush()
-                print(f"  + Created Customer: {c['name']} ({c['code']})")
-            cust_objs.append(cust)
-
-        # 5. CREATE INITIAL INVOICES & DEMONSTRATE WORKFLOW
-        c1 = cust_objs[0] # Royal Fast Food
-        c2 = cust_objs[1] # Cafe Delight
-
-        p_fries = seeded_products["RAIS-VEG-01"]  # Fries 9mm ₹310
-        p_nuggets = seeded_products["RAIS-CHK-05"] # Chicken Nuggets ₹355
-        p_cheese = seeded_products["RAIS-CHS-01"]  # Mozzarella 2KG ₹920
-        p_ketchup = seeded_products["RAIS-SAU-01"] # Del Monte Ketchup 1.1kg ₹120
-        p_boxes = seeded_products["RAIS-BOX-03"]   # Pizza Box 8x8 printed ₹650
-
-        # Invoice 1 for Royal Fast Food (Issued + Partially Paid)
-        inv1_create = InvoiceCreate(
-            customer_id=c1.id,
-            invoice_date=date.today() - timedelta(days=5),
-            due_date=date.today() + timedelta(days=10),
-            discount_amount=Decimal("50.00"),
-            payment_terms="Payment due in 15 days",
-            notes="Regular weekly restaurant restock",
-            auto_issue=True,
-            items=[
-                InvoiceItemCreate(product_id=p_fries.id, quantity=Decimal("4.00")),
-                InvoiceItemCreate(product_id=p_nuggets.id, quantity=Decimal("3.00")),
-                InvoiceItemCreate(product_id=p_ketchup.id, quantity=Decimal("5.00")),
-                InvoiceItemCreate(product_id=p_boxes.id, quantity=Decimal("2.00"))
-            ]
-        )
-        inv1 = BillingService.create_invoice(db, inv1_create, user_id=admin_user.id if admin_user else None)
-        print(f"  + Created Invoice: {inv1.invoice_number} (Total: Rs.{inv1.total_amount}) for {c1.business_name}")
-
-        # Record partial payment for Invoice 1
-        pay1_create = PaymentCreate(
-            customer_id=c1.id,
-            payment_date=date.today() - timedelta(days=2),
-            amount=Decimal("2000.00"),
-            payment_method="UPI",
-            reference_number="UPI/2026/89472198",
-            notes="Partial settlement via PhonePe",
-            allocations=[
-                PaymentAllocationCreate(invoice_id=inv1.id, amount=Decimal("2000.00"))
-            ]
-        )
-        pay1 = PaymentService.record_payment(db, pay1_create, user_id=admin_user.id if admin_user else None)
-        print(f"  + Recorded Payment: {pay1.payment_number} (Rs.2000) allocated to {inv1.invoice_number}")
-
-        # Invoice 2 for Cafe Delight (Issued - Open)
-        inv2_create = InvoiceCreate(
-            customer_id=c2.id,
-            invoice_date=date.today() - timedelta(days=1),
-            due_date=date.today() + timedelta(days=14),
-            auto_issue=True,
-            items=[
-                InvoiceItemCreate(product_id=p_cheese.id, quantity=Decimal("3.00")),
-                InvoiceItemCreate(product_id=p_fries.id, quantity=Decimal("5.00")),
-                InvoiceItemCreate(product_id=seeded_products["RAIS-MOJ-01"].id, quantity=Decimal("4.00"))
-            ]
-        )
-        inv2 = BillingService.create_invoice(db, inv2_create, user_id=admin_user.id if admin_user else None)
-        print(f"  + Created Invoice: {inv2.invoice_number} (Total: Rs.{inv2.total_amount}) for {c2.business_name}")
+        for tbl in clean_tables:
+            try:
+                db.execute(text(f"DELETE FROM {tbl}"))
+            except Exception as e:
+                pass
 
         db.commit()
-        print("[SUCCESS] RAIS Agencies Seed Complete! All 38 SKUs, Roles, Customers & Invoices successfully initialized.")
+        print("[SUCCESS] RAIS Agencies Clean Seed Complete! Catalogue preserved, stock set to 0, zero dummy customers/invoices.")
     except Exception as e:
         db.rollback()
         print(f"[ERROR] Error during seed: {e}")
