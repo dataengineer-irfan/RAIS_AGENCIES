@@ -107,6 +107,55 @@ class InventoryService:
         }
 
     @staticmethod
+    def batch_receive_stock(db: Session, items: List[ReceiveStockRequest], supplier: Optional[str] = None, notes: Optional[str] = None, user_id: Optional[str] = None) -> dict:
+        results = []
+        batch_rec_number = SequenceService.get_next_sequence(db, "REC")
+        
+        for item in items:
+            product = db.query(Product).filter(Product.id == item.product_id).with_for_update().first()
+            if not product:
+                continue
+            qty = Decimal(str(item.quantity))
+            if qty <= 0:
+                continue
+            prev_stock = Decimal(str(product.current_stock or 0))
+            new_stock = prev_stock + qty
+            product.current_stock = new_stock
+            
+            movement = StockMovement(
+                product_id=product.id,
+                movement_type="RECEIPT",
+                quantity_change=qty,
+                previous_stock=prev_stock,
+                new_stock=new_stock,
+                unit=product.packaging_unit or "1 KG PACKET",
+                purchase_cost=Decimal(str(item.purchase_cost)) if item.purchase_cost else None,
+                supplier=supplier or item.supplier,
+                batch_number=item.batch_number,
+                expiry_date=item.expiry_date,
+                reference_type="RECEIPT",
+                reference_number=batch_rec_number,
+                reason="Truck Arrival Batch Intake",
+                notes=notes or item.notes or "Truck Arrival Batch Intake",
+                created_by_id=user_id
+            )
+            db.add(movement)
+            results.append({
+                "product_id": product.id,
+                "name": product.name,
+                "received": float(qty),
+                "new_stock": float(new_stock)
+            })
+            
+        db.commit()
+        return {
+            "success": True,
+            "receipt_number": batch_rec_number,
+            "items_count": len(results),
+            "items": results
+        }
+
+    @staticmethod
     def adjust_stock(db: Session, req: AdjustStockRequest, user_id: Optional[str] = None) -> dict:
         product = db.query(Product).filter(Product.id == req.product_id).with_for_update().first()
         if not product:

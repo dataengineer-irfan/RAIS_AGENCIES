@@ -17,6 +17,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
   const [customSku, setCustomSku] = useState('');
   const [isManualSku, setIsManualSku] = useState(false);
 
+  const [formMode, setFormMode] = useState('FAST'); // 'FAST' or 'FULL'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState(null);
@@ -36,6 +37,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
     '1 KG PACKET',
     '1.2 KG PACKET',
     '2 KG PACKET',
+    '2.5 KG PACKET',
     '500 GM PACKET',
     '1 BOTTLE',
     '100 NOS',
@@ -59,6 +61,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
         setInternalCategories(cats);
 
         if (productToEdit) {
+          setFormMode('FULL');
           setName(productToEdit.name || '');
           setCategoryId(productToEdit.category_id || (cats[0]?.id || ''));
           setBrand(productToEdit.brand || 'RAIS Master');
@@ -67,20 +70,21 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           setTaxRate('0.00');
           setHsnCode(productToEdit.hsn_code || '');
           setDescription(productToEdit.description || '');
-          setCurrentStock(productToEdit.current_stock?.toString() || '50');
+          setCurrentStock(productToEdit.current_stock?.toString() || '0');
           setMinStockAlert(productToEdit.min_stock_alert?.toString() || '10');
           setCustomSku(productToEdit.sku || '');
           setIsManualSku(true);
         } else {
+          setFormMode('FAST');
           setName('');
           setCategoryId(cats[0]?.id || '');
-          setBrand('ITC Master Chef');
+          setBrand('RAIS Master');
           setPackagingUnit('1 KG PACKET');
           setBasePrice('');
           setTaxRate('0.00');
           setHsnCode('21069099');
           setDescription('');
-          setCurrentStock('50');
+          setCurrentStock('0');
           setMinStockAlert('10');
           setCustomSku('');
           setIsManualSku(false);
@@ -107,6 +111,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
 
   // Calculations (Direct Wholesale Price - No GST)
   const numericBasePrice = parseFloat(basePrice) || 0;
+  const numericTaxRate = parseFloat(taxRate) || 0;
   const finalPriceInclTax = numericBasePrice;
 
   const handleSubmit = async (e) => {
@@ -201,6 +206,34 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           </button>
         </div>
 
+        {/* Mode Selector Tabs (when adding new product) */}
+        {!productToEdit && (
+          <div className="px-5 pt-3 pb-0 flex items-center gap-2 border-b border-slate-800 bg-slate-950/40">
+            <button
+              type="button"
+              onClick={() => setFormMode('FAST')}
+              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+                formMode === 'FAST'
+                  ? 'border-amber-500 text-amber-400'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>⚡ Fast Add (3 Fields)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormMode('FULL')}
+              className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+                formMode === 'FULL'
+                  ? 'border-amber-500 text-amber-400'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>📋 Full Specifications</span>
+            </button>
+          </div>
+        )}
+
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {error && (
@@ -217,20 +250,122 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
             </div>
           )}
 
-          {/* Product Name */}
-          <div>
-            <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
-              Product Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. ITC Veg Crispy Fingers"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-semibold"
-            />
-          </div>
+          {/* CONDITIONAL RENDERING BASED ON MODE */}
+          {formMode === 'FAST' && !productToEdit ? (
+            <div className="space-y-4">
+              {/* Field 1: Name */}
+              <div>
+                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  1. Product Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. McCain French Fries 2.5kg, ITC Burger Patty"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                  autoFocus
+                />
+              </div>
+
+              {/* Field 2: Category Chips */}
+              <div>
+                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  2. Select Category *
+                </label>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                  {(internalCategories || []).map((c) => {
+                    const isSelected = categoryId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setCategoryId(c.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Field 3: Wholesale Rate & Pack Size */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    3. Wholesale Rate (₹) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-slate-500 font-black text-sm">₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={basePrice}
+                      onChange={(e) => setBasePrice(e.target.value)}
+                      placeholder="240.00"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-black text-amber-400 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Pack Size / Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={packagingUnit}
+                    onChange={(e) => setPackagingUnit(e.target.value)}
+                    placeholder="1 KG PACKET"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                  />
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {popularUnits.slice(0, 5).map(u => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => setPackagingUnit(u)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+                          packagingUnit === u ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto SKU Preview Strip */}
+              <div className="p-3 bg-slate-950 border border-slate-800/80 rounded-xl flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-400">Assigned SKU:</span>
+                <span className="text-amber-400 font-bold">{getSuggestedSku()}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Product Name */}
+              <div>
+                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. ITC Veg Crispy Fingers"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-semibold"
+                />
+              </div>
 
           {/* Category & Brand */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -413,6 +548,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-amber-400 font-mono font-bold uppercase focus:outline-none focus:border-amber-500 disabled:opacity-75 disabled:cursor-not-allowed"
             />
           </div>
+        </div>
+      )}
 
           {/* Footer Actions */}
           <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">

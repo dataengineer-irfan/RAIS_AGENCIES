@@ -7,6 +7,7 @@ from app.models.user import User
 from app.schemas.inventory import (
     StockOverviewItem, 
     ReceiveStockRequest, 
+    BatchReceiveStockRequest,
     AdjustStockRequest, 
     StockMovementResponse
 )
@@ -32,6 +33,21 @@ def receive_stock(
 ):
     """Receive inventory stock from supplier with cost, batch, and expiry tracking."""
     return InventoryService.receive_stock(db, data, user_id=current_user.id)
+
+@router.post("/batch-receive")
+def batch_receive_stock(
+    data: BatchReceiveStockRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    """Batch inward stock receipt from truck delivery with multiple items."""
+    return InventoryService.batch_receive_stock(
+        db, 
+        items=data.items, 
+        supplier=data.supplier, 
+        notes=data.notes, 
+        user_id=current_user.id
+    )
 
 @router.post("/adjust")
 def adjust_stock(

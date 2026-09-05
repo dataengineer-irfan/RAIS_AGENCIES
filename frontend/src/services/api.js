@@ -185,6 +185,10 @@ export const inventoryApi = {
     const res = await api.post('/inventory/receive', data);
     return res.data;
   },
+  batchReceiveStock: async (data) => {
+    const res = await api.post('/inventory/batch-receive', data);
+    return res.data;
+  },
   adjustStock: async (data) => {
     const res = await api.post('/inventory/adjust', data);
     return res.data;

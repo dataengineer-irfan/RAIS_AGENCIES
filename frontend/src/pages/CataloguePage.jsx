@@ -31,6 +31,8 @@ import { useAuth } from '../context/AuthContext';
 import { ProductModal } from '../components/ProductModal';
 import { WhatsAppPriceListModal } from '../components/WhatsAppPriceListModal';
 import { OfficialFlyerModal } from '../components/OfficialFlyerModal';
+import { QuickPriceModal } from '../components/QuickPriceModal';
+import { BulkPriceAdjustModal } from '../components/BulkPriceAdjustModal';
 import { getProductVisualIcon, PARTNER_BRANDS } from '../utils/productIcons';
 
 export const CataloguePage = ({ onOpenOrderForProduct }) => {
@@ -55,6 +57,8 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
   const [productToEdit, setProductToEdit] = useState(null);
   const [priceListModalOpen, setPriceListModalOpen] = useState(false);
   const [flyerModalOpen, setFlyerModalOpen] = useState(false);
+  const [quickPriceProduct, setQuickPriceProduct] = useState(null);
+  const [bulkPriceModalOpen, setBulkPriceModalOpen] = useState(false);
 
   useEffect(() => {
     loadCatalogue();
@@ -208,16 +212,28 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
           {/* Quick CTA on Mobile / Desktop */}
           {hasRole(['ADMIN', 'OPERATOR']) && (
-            <button
-              onClick={() => {
-                setProductToEdit(null);
-                setProductModalOpen(true);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ SKU</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => setBulkPriceModalOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all shrink-0"
+                title="Category Bulk Price Adjuster"
+              >
+                <DollarSign className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bulk Adjust</span>
+                <span className="sm:hidden">Bulk</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setProductToEdit(null);
+                  setProductModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ SKU</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -488,9 +504,19 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                 <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 mt-0.5">
                                   <div>
                                     <span className="text-[10px] text-slate-400 block">Wholesale Rate</span>
-                                    <span className="font-mono font-black text-sm text-amber-400">
-                                      ₹{parseFloat(prod.base_price || 0).toFixed(2)}
-                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => hasRole(['ADMIN', 'OPERATOR']) && setQuickPriceProduct(prod)}
+                                      className="inline-flex items-center gap-1 group/price hover:text-amber-300 transition-colors text-left"
+                                      title="1-Tap Quick Price Tweak"
+                                    >
+                                      <span className="font-mono font-black text-sm text-amber-400 group-hover/price:underline">
+                                        ₹{parseFloat(prod.base_price || 0).toFixed(2)}
+                                      </span>
+                                      {hasRole(['ADMIN', 'OPERATOR']) && (
+                                        <Edit3 className="w-3 h-3 text-slate-500 group-hover/price:text-amber-400 opacity-60 group-hover/price:opacity-100" />
+                                      )}
+                                    </button>
                                   </div>
 
                                   <div className="text-right flex items-center gap-3">
@@ -641,7 +667,19 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                 {prod.brand || 'RAIS'}
                               </td>
                               <td className="py-2 px-3 text-right font-mono font-bold text-white text-xs">
-                                ₹{parseFloat(prod.base_price || 0).toFixed(2)}
+                                <button
+                                  type="button"
+                                  onClick={() => hasRole(['ADMIN', 'OPERATOR']) && setQuickPriceProduct(prod)}
+                                  className="inline-flex items-center justify-end gap-1 group/price hover:text-amber-300 transition-colors ml-auto"
+                                  title="1-Tap Quick Price Tweak"
+                                >
+                                  <span className="font-mono font-bold text-amber-400 group-hover/price:underline">
+                                    ₹{parseFloat(prod.base_price || 0).toFixed(2)}
+                                  </span>
+                                  {hasRole(['ADMIN', 'OPERATOR']) && (
+                                    <Edit3 className="w-3 h-3 text-slate-500 group-hover/price:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  )}
+                                </button>
                               </td>
                               <td className="py-2 px-3 text-right font-mono font-bold text-xs">
                                 <span className={isLowStock ? 'text-rose-400' : 'text-slate-200'}>
@@ -704,7 +742,19 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
                   <div>
                     <span className="text-[9px] text-slate-500 uppercase font-bold block">Base Rate</span>
-                    <span className="text-sm font-black text-white font-mono">₹{parseFloat(prod.base_price || 0).toFixed(2)}</span>
+                    <button
+                      type="button"
+                      onClick={() => hasRole(['ADMIN', 'OPERATOR']) && setQuickPriceProduct(prod)}
+                      className="inline-flex items-center gap-1 group/price hover:text-amber-300 transition-colors text-left"
+                      title="1-Tap Quick Price Tweak"
+                    >
+                      <span className="text-sm font-black text-amber-400 font-mono group-hover/price:underline">
+                        ₹{parseFloat(prod.base_price || 0).toFixed(2)}
+                      </span>
+                      {hasRole(['ADMIN', 'OPERATOR']) && (
+                        <Edit3 className="w-3 h-3 text-slate-500 group-hover/price:text-amber-400" />
+                      )}
+                    </button>
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] text-slate-500 uppercase font-bold block">Stock</span>
@@ -717,6 +767,29 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
         )}
 
       </div>
+
+      {/* ─── QUICK PRICE TWEAK MODAL ─── */}
+      <QuickPriceModal
+        isOpen={Boolean(quickPriceProduct)}
+        onClose={() => setQuickPriceProduct(null)}
+        product={quickPriceProduct}
+        onPriceUpdated={() => {
+          setQuickPriceProduct(null);
+          loadCatalogue();
+        }}
+      />
+
+      {/* ─── BULK PRICE ADJUST MODAL ─── */}
+      <BulkPriceAdjustModal
+        isOpen={bulkPriceModalOpen}
+        onClose={() => setBulkPriceModalOpen(false)}
+        categories={categories}
+        products={products}
+        onPricesUpdated={() => {
+          setBulkPriceModalOpen(false);
+          loadCatalogue();
+        }}
+      />
 
       {/* ─── PRODUCT EDIT / CREATE MODAL ─── */}
       <ProductModal

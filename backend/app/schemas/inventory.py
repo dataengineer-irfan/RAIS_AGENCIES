@@ -42,6 +42,11 @@ class ReceiveStockRequest(BaseModel):
             return None
         return Decimal(str(v))
 
+class BatchReceiveStockRequest(BaseModel):
+    items: List[ReceiveStockRequest]
+    supplier: Optional[str] = None
+    notes: Optional[str] = None
+
 class AdjustStockRequest(BaseModel):
     product_id: str
     adjustment_type: str = Field(..., description="INCREASE or DECREASE")

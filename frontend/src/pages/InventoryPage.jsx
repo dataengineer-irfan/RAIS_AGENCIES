@@ -30,13 +30,17 @@ import {
   Archive,
   ArrowUpRight,
   ArrowDownLeft,
-  ArrowLeft
+  ArrowLeft,
+  Truck,
+  Camera
 } from 'lucide-react';
 import { inventoryApi, catalogueApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ReceiveStockModal } from '../components/ReceiveStockModal';
 import { AdjustStockModal } from '../components/AdjustStockModal';
 import { StockMovementsDrawer } from '../components/StockMovementsDrawer';
+import { TruckIntakeModal } from '../components/TruckIntakeModal';
+import { BarcodeScanModal } from '../components/BarcodeScanModal';
 
 export const InventoryPage = () => {
   const { hasRole } = useAuth();
@@ -61,6 +65,8 @@ export const InventoryPage = () => {
   // Modals
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
+  const [truckModalOpen, setTruckModalOpen] = useState(false);
+  const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
   const [targetProductForAction, setTargetProductForAction] = useState(null);
   const [movementsDrawerOpen, setMovementsDrawerOpen] = useState(false);
 
@@ -333,7 +339,7 @@ export const InventoryPage = () => {
         </div>
 
         {/* Right: Primary Action Launchers */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
           <button
             onClick={handleExportCSV}
             className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-all"
@@ -345,14 +351,34 @@ export const InventoryPage = () => {
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <>
               <button
+                onClick={() => setTruckModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 shrink-0"
+                title="Truck Arrival Batch Intake (Multiple SKUs)"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Truck Inward</span>
+              </button>
+
+              <button
+                onClick={() => setBarcodeModalOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 font-bold rounded-lg text-xs uppercase tracking-wider transition-all shrink-0"
+                title="Camera Barcode / SKU Scanner"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Camera Scan</span>
+                <span className="sm:hidden">Scan</span>
+              </button>
+
+              <button
                 onClick={() => {
                   setTargetProductForAction(selectedProductId);
                   setReceiveModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-all shrink-0"
+                title="Single SKU Intake"
               >
                 <PackagePlus className="w-3.5 h-3.5" />
-                <span>+ Intake</span>
+                <span className="hidden sm:inline">+ Single</span>
               </button>
 
               <button
@@ -360,14 +386,72 @@ export const InventoryPage = () => {
                   setTargetProductForAction(selectedProductId);
                   setAdjustModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-all shrink-0"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Adjust</span>
+                <span className="hidden sm:inline">Adjust</span>
               </button>
             </>
           )}
         </div>
+      </div>
+
+      {/* ─── 2026 TRAFFIC LIGHT FREEZER HEALTH FILTER BAR ─── */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 px-1">
+        <span className="text-[10px] uppercase font-bold text-slate-400 mr-1 hidden sm:inline">
+          Freezer Health:
+        </span>
+        
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'OUT_OF_STOCK' ? 'ALL' : 'OUT_OF_STOCK')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border ${
+            statusFilter === 'OUT_OF_STOCK'
+              ? 'bg-rose-500 text-white border-rose-400 shadow-md shadow-rose-500/30 ring-2 ring-rose-400/50'
+              : 'bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+          <span>🔴 Out of Stock ({outOfStockCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'LOW_STOCK' ? 'ALL' : 'LOW_STOCK')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border ${
+            statusFilter === 'LOW_STOCK'
+              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/50'
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-amber-400" />
+          <span>🟡 Low Stock ({lowStockCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'IN_STOCK' ? 'ALL' : 'IN_STOCK')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 border ${
+            statusFilter === 'IN_STOCK'
+              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/50'
+              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span>🟢 In Stock ({inStockCount})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter('ALL')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 border ${
+            statusFilter === 'ALL'
+              ? 'bg-slate-700 text-white border-slate-600'
+              : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+          }`}
+        >
+          All SKUs ({stockItems.length})
+        </button>
       </div>
 
       {/* ─── ROW 2: 4 POWER BI EXECUTIVE SUMMARY METRIC CARDS ─── */}
@@ -932,6 +1016,27 @@ export const InventoryPage = () => {
         preselectedProductId={targetProductForAction}
         onStockAdjusted={() => {
           setAdjustModalOpen(false);
+          loadInventory();
+        }}
+      />
+
+      {/* ─── 2026 TRUCK ARRIVAL INTAKE MODAL ─── */}
+      <TruckIntakeModal
+        isOpen={truckModalOpen}
+        onClose={() => setTruckModalOpen(false)}
+        products={stockItems}
+        onBatchReceived={() => {
+          setTruckModalOpen(false);
+          loadInventory();
+        }}
+      />
+
+      {/* ─── 2026 CAMERA BARCODE SCAN MODAL ─── */}
+      <BarcodeScanModal
+        isOpen={barcodeModalOpen}
+        onClose={() => setBarcodeModalOpen(false)}
+        products={stockItems}
+        onStockUpdated={() => {
           loadInventory();
         }}
       />
