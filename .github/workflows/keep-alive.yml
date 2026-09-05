@@ -1,0 +1,22 @@
+name: Keep Backend & Web Alive (24/7 Free)
+
+on:
+  schedule:
+    # Ping every 10 minutes to prevent Render free instance sleep
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    name: Ping Cloud Endpoints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend
+        run: |
+          echo "Pinging RAIS Backend..."
+          curl -sSf https://rais-backend.onrender.com/ || echo "Backend ping attempted"
+
+      - name: Ping Render Frontend
+        run: |
+          echo "Pinging RAIS Web Frontend..."
+          curl -sSf https://rais-frontend.onrender.com || echo "Frontend ping attempted"

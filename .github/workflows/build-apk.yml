@@ -68,3 +68,16 @@ jobs:
           name: RAIS_Agencies_APK
           path: build-output/RAIS_Agencies.apk
           retention-days: 30
+
+      - name: Publish Latest GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: latest
+          name: "RAIS Agencies Mobile App (Latest)"
+          body: |
+            ### 📱 RAIS Agencies Wholesale Mobile App
+            - **Depot**: Near Reddies Colony, Rayachoty - 516269
+            - **Direct Download**: Tap the `RAIS_Agencies.apk` asset below to install or update on your Android phone.
+          files: build-output/RAIS_Agencies.apk
+
