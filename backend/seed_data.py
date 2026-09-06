@@ -161,11 +161,13 @@ def seed_database():
             {"sku": "RAIS-MOJ-02", "cat": "MOJITOS", "name": "BLUECURCO", "brand": "RAIS Beverages", "pack": "1 BOTTLE", "price": "350.00", "tax": "12.00", "hsn": "2106"}
         ]
 
+        is_first_run = False
         seeded_products = {}
         for p in products_data:
             prod = db.query(Product).filter(Product.sku == p["sku"]).first()
             cat = category_map[p["cat"]]
             if not prod:
+                is_first_run = True
                 prod = Product(
                     sku=p["sku"],
                     category_id=cat.id,
@@ -186,30 +188,39 @@ def seed_database():
             seeded_products[p["sku"]] = prod
         print(f"  + Successfully verified and seeded all {len(products_data)} RAIS Agencies SKUs.")
 
-        # 4. RESET INVENTORY STOCK TO 0.00 (Ready for fresh physical upload)
         from sqlalchemy import text
-        db.execute(text("UPDATE products SET current_stock = 0.00"))
 
-        # 5. PURGE ANY DUMMY OPERATIONAL DATA (Customers, Invoices, Orders, Payments)
-        clean_tables = [
-            'payment_allocations',
-            'payments',
-            'invoice_items',
-            'invoices',
-            'order_items',
-            'orders',
-            'quotation_items',
-            'quotations',
-            'customers'
-        ]
-        for tbl in clean_tables:
-            try:
-                db.execute(text(f"DELETE FROM {tbl}"))
-            except Exception as e:
-                pass
+        # 4. RESET STOCK ONLY ON VERY FIRST RUN (new products were just created)
+        if is_first_run:
+            db.execute(text("UPDATE products SET current_stock = 0.00"))
+            print("  + First run: stock reset to 0 for all products.")
+        else:
+            print("  + Existing catalogue detected — stock levels preserved.")
+
+        # 5. PURGE DUMMY DATA ONLY ON FIRST RUN (never wipe real customer/invoice data)
+        if is_first_run:
+            clean_tables = [
+                'payment_allocations',
+                'payments',
+                'invoice_items',
+                'invoices',
+                'order_items',
+                'orders',
+                'quotation_items',
+                'quotations',
+                'customers'
+            ]
+            for tbl in clean_tables:
+                try:
+                    db.execute(text(f"DELETE FROM {tbl}"))
+                except Exception:
+                    pass
+            print("  + First run: cleared dummy operational data.")
+        else:
+            print("  + Existing data detected — customers, invoices, orders preserved.")
 
         db.commit()
-        print("[SUCCESS] RAIS Agencies Clean Seed Complete! Catalogue preserved, stock set to 0, zero dummy customers/invoices.")
+        print("[SUCCESS] RAIS Agencies Seed Complete! Catalogue ready, real data preserved.")
     except Exception as e:
         db.rollback()
         print(f"[ERROR] Error during seed: {e}")
