@@ -25,14 +25,13 @@ def seed_database():
 
     # Safe schema migrations — add columns if they don't exist yet
     from sqlalchemy import text as _text
-    from app.core.database import engine as _engine
-    with _engine.connect() as _conn:
-        try:
-            _conn.execute(_text("ALTER TABLE customers ADD COLUMN opening_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00"))
+    try:
+        with engine.connect() as _conn:
+            _conn.execute(_text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS opening_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00"))
             _conn.commit()
-            print("  + Migration: added opening_balance column to customers")
-        except Exception:
-            pass  # Column already exists — safe to ignore
+            print("  + Migration: opening_balance column ensured on customers table")
+    except Exception as _e:
+        print(f"  ~ Migration note: {_e}")
 
     db = SessionLocal()
 
