@@ -111,7 +111,7 @@ export const CustomersPage = ({
   };
 
   const handleSendWhatsApp = (cust) => {
-    const balance = cust.current_balance || 0;
+    const balance = cust.outstanding_balance || 0;
     const text = `*RAIS AGENCIES — Customer Statement*%0A%0ADear ${cust.business_name || cust.contact_person},%0AYour current account balance with RAIS Agencies is *₹${Number(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}*.%0A%0AFor wholesale order bookings, pricing or direct settlement, contact Rayachoty Depot: *9347453135*.%0A%0A*RAIS Agencies*, Reddies Colony, Rayachoty.`;
     window.open(`https://wa.me/91${cust.phone}?text=${text}`, '_blank');
   };
@@ -154,7 +154,7 @@ export const CustomersPage = ({
       }
 
       // 4. Financial Due Slicer
-      const bal = parseFloat(c.current_balance || 0);
+      const bal = parseFloat(c.outstanding_balance || 0);
       let matchesBalance = true;
       if (balanceFilter === 'HAS_DUE') {
         matchesBalance = bal > 0.01;
@@ -167,7 +167,7 @@ export const CustomersPage = ({
       if (sortBy === 'NAME_ASC') {
         return (a.business_name || '').localeCompare(b.business_name || '');
       } else if (sortBy === 'BALANCE_DESC') {
-        return parseFloat(b.current_balance || 0) - parseFloat(a.current_balance || 0);
+        return parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
       } else if (sortBy === 'LIMIT_DESC') {
         return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
       } else if (sortBy === 'CODE_ASC') {
@@ -180,9 +180,9 @@ export const CustomersPage = ({
   // Slicer Stats
   const totalOutlets = customers.length;
   const filteredCount = filteredCustomers.length;
-  const totalReceivables = customers.reduce((acc, c) => acc + parseFloat(c.current_balance || 0), 0);
+  const totalReceivables = customers.reduce((acc, c) => acc + parseFloat(c.outstanding_balance || 0), 0);
   const totalCreditExposure = customers.reduce((acc, c) => acc + parseFloat(c.credit_limit || 0), 0);
-  const customersWithDues = customers.filter(c => parseFloat(c.current_balance || 0) > 0.01).length;
+  const customersWithDues = customers.filter(c => parseFloat(c.outstanding_balance || 0) > 0.01).length;
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId) || filteredCustomers[0] || customers[0];
 
@@ -206,7 +206,7 @@ export const CustomersPage = ({
               <option value="">-- Jump to Customer --</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.customer_code} • {c.business_name} (₹{parseFloat(c.current_balance || 0).toFixed(0)})
+                  {c.customer_code} • {c.business_name} (₹{parseFloat(c.outstanding_balance || 0).toFixed(0)})
                 </option>
               ))}
             </select>
@@ -709,7 +709,7 @@ export const CustomersPage = ({
                       <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">Current Balance Due</span>
                         <div className="text-base font-black font-mono text-emerald-400 mt-0.5">
-                          ₹{parseFloat(selectedCustomer.current_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          ₹{parseFloat(selectedCustomer.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
 
@@ -734,13 +734,13 @@ export const CustomersPage = ({
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-400 font-semibold">Credit Exposure Rate</span>
                           <span className="font-mono font-bold text-amber-400">
-                            {Math.min(Math.round((parseFloat(selectedCustomer.current_balance || 0) / parseFloat(selectedCustomer.credit_limit || 1)) * 100), 100)}% utilized
+                            {Math.min(Math.round((parseFloat(selectedCustomer.outstanding_balance || 0) / parseFloat(selectedCustomer.credit_limit || 1)) * 100), 100)}% utilized
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
                           <div 
                             className="bg-amber-400 h-full rounded-full transition-all"
-                            style={{ width: `${Math.min(Math.round((parseFloat(selectedCustomer.current_balance || 0) / parseFloat(selectedCustomer.credit_limit || 1)) * 100), 100)}%` }}
+                            style={{ width: `${Math.min(Math.round((parseFloat(selectedCustomer.outstanding_balance || 0) / parseFloat(selectedCustomer.credit_limit || 1)) * 100), 100)}%` }}
                           />
                         </div>
                       </div>
@@ -903,3 +903,4 @@ export const CustomersPage = ({
     </div>
   );
 };
+
