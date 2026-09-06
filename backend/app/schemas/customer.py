@@ -16,6 +16,7 @@ class CustomerBase(BaseModel):
     pincode: str = "516269"
     gstin: Optional[str] = None
     credit_limit: Decimal = Decimal("0.00")
+    opening_balance: Decimal = Decimal("0.00")  # Pre-system outstanding (carried forward)
     notes: Optional[str] = None
 
 class CustomerCreate(CustomerBase):
@@ -34,6 +35,7 @@ class CustomerUpdate(BaseModel):
     pincode: Optional[str] = None
     gstin: Optional[str] = None
     credit_limit: Optional[Decimal] = None
+    opening_balance: Optional[Decimal] = None
     status: Optional[str] = None
     notes: Optional[str] = None
 
@@ -41,9 +43,10 @@ class CustomerResponse(CustomerBase):
     id: str
     customer_code: str
     status: str
+    opening_balance: Decimal = Decimal("0.00")
     total_invoiced: Decimal = Decimal("0.00")
     total_paid: Decimal = Decimal("0.00")
-    outstanding_balance: Decimal = Decimal("0.00")
+    outstanding_balance: Decimal = Decimal("0.00")  # = opening_balance + total_invoiced - total_paid
     created_at: datetime
     updated_at: datetime
 

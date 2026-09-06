@@ -14,6 +14,7 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
   const [pincode, setPincode] = useState('516269');
   const [gstin, setGstin] = useState('');
   const [creditLimit, setCreditLimit] = useState('25000');
+  const [openingBalance, setOpeningBalance] = useState('0');
   const [notes, setNotes] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,7 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
       setPincode(customerToEdit.pincode || '516269');
       setGstin(customerToEdit.gstin || '');
       setCreditLimit(customerToEdit.credit_limit || '25000');
+      setOpeningBalance(customerToEdit.opening_balance || '0');
       setNotes(customerToEdit.notes || '');
     } else {
       setBusinessName('');
@@ -45,6 +47,7 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
       setPincode('516269');
       setGstin('');
       setCreditLimit('25000');
+      setOpeningBalance('0');
       setNotes('');
     }
     setError('');
@@ -67,6 +70,7 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
       pincode: pincode,
       gstin: gstin || null,
       credit_limit: parseFloat(creditLimit) || 0,
+      opening_balance: parseFloat(openingBalance) || 0,
       notes: notes || null
     };
 
@@ -85,6 +89,7 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
       setLoading(false);
     }
   };
+
 
   if (!isOpen) return null;
 
@@ -237,6 +242,24 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">
+              Opening Balance (₹) — Pre-system Outstanding
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={openingBalance}
+              onChange={(e) => setOpeningBalance(e.target.value)}
+              placeholder="0"
+              className="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-3 py-2 text-sm text-amber-300 font-bold focus:outline-none focus:border-amber-500"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Amount this customer owed before they were added to the system. Counts in their outstanding balance.
+            </p>
           </div>
 
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-3">

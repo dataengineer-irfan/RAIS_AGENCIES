@@ -17,7 +17,11 @@ class CustomerService:
     def get_customer_balances(db: Session, customer_id: str) -> Tuple[Decimal, Decimal, Decimal]:
         """
         Calculates live total invoiced, total paid, and outstanding balance for a customer.
+        outstanding = opening_balance + total_invoiced - total_paid
         """
+        customer = db.query(Customer).filter(Customer.id == customer_id).first()
+        opening_balance = Decimal(str(customer.opening_balance or "0.00")) if customer else Decimal("0.00")
+
         valid_statuses = [
             InvoiceStatus.ISSUED.value,
             InvoiceStatus.PARTIALLY_PAID.value,
@@ -38,12 +42,8 @@ class CustomerService:
         ).scalar()
         total_paid = Decimal(str(paid_query or "0.00"))
 
-        # Outstanding calculation
-        outstanding_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
-            Invoice.customer_id == customer_id,
-            Invoice.status.in_(valid_statuses)
-        ).scalar()
-        outstanding_balance = Decimal(str(outstanding_query or "0.00"))
+        # Outstanding = opening_balance + invoiced - paid
+        outstanding_balance = opening_balance + total_invoiced - total_paid
 
         return total_invoiced, total_paid, outstanding_balance
 
@@ -106,9 +106,10 @@ class CustomerService:
 
         result = []
         for c in customers:
+            opening_balance = Decimal(str(c.opening_balance or "0.00"))
             total_invoiced = invoiced_map.get(c.id, Decimal("0.00"))
             total_paid = paid_map.get(c.id, Decimal("0.00"))
-            outstanding = outstanding_map.get(c.id, Decimal("0.00"))
+            outstanding = opening_balance + total_invoiced - total_paid
             c_resp = CustomerResponse(
                 id=c.id,
                 customer_code=c.customer_code,
@@ -124,6 +125,7 @@ class CustomerService:
                 pincode=c.pincode,
                 gstin=c.gstin,
                 credit_limit=c.credit_limit,
+                opening_balance=opening_balance,
                 status=c.status,
                 notes=c.notes,
                 total_invoiced=total_invoiced,
@@ -157,6 +159,7 @@ class CustomerService:
             pincode=c.pincode,
             gstin=c.gstin,
             credit_limit=c.credit_limit,
+            opening_balance=Decimal(str(c.opening_balance or "0.00")),
             status=c.status,
             notes=c.notes,
             total_invoiced=total_invoiced,
@@ -183,6 +186,7 @@ class CustomerService:
             pincode=data.pincode,
             gstin=data.gstin,
             credit_limit=data.credit_limit,
+            opening_balance=data.opening_balance,
             status=CustomerStatus.ACTIVE.value,
             notes=data.notes
         )
@@ -260,7 +264,22 @@ class CustomerService:
         timeline.sort(key=lambda x: (x["date"], x["created_at"]))
 
         ledger: List[CustomerLedgerEntry] = []
-        running_bal = Decimal("0.00")
+        opening_balance = Decimal(str(customer.opening_balance or "0.00"))
+
+        # First row: Opening Balance carried forward (pre-system balance)
+        if opening_balance != Decimal("0.00"):
+            from datetime import date as date_type
+            ledger.append(CustomerLedgerEntry(
+                date=customer.created_at.date(),
+                type="OPENING",
+                reference="OB",
+                description="Opening Balance (pre-system outstanding)",
+                debit=opening_balance,
+                credit=Decimal("0.00"),
+                running_balance=opening_balance
+            ))
+
+        running_bal = opening_balance
         for entry in timeline:
             running_bal = running_bal + entry["debit"] - entry["credit"]
             ledger.append(CustomerLedgerEntry(

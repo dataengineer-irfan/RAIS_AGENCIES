@@ -29,6 +29,7 @@ class Customer(Base):
     # Commercial attributes
     gstin = Column(String(20), nullable=True, index=True)
     credit_limit = Column(Numeric(12, 2), default=0.00, nullable=False)
+    opening_balance = Column(Numeric(12, 2), default=0.00, nullable=False)  # Pre-system outstanding balance
     status = Column(String(20), default=CustomerStatus.ACTIVE.value, nullable=False)
     notes = Column(Text, nullable=True)
     
