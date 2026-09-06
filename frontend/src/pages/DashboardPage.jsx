@@ -458,9 +458,9 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
-                          <div className="font-mono font-bold text-white text-[11px]">₹{parseFloat(inv.total_amount).toFixed(2)}</div>
+                          <div className="font-mono font-bold text-white text-[11px]">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</div>
                           <span className={`text-[9px] font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                            Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                            Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                           </span>
                         </div>
                         <button
@@ -507,7 +507,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                         <p className="text-[9px] text-slate-500 mt-0.5">{prod.quantity_sold} packs sold</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-emerald-400 text-[11px]">₹{parseFloat(prod.total_revenue).toFixed(2)}</div>
+                        <div className="font-mono font-bold text-emerald-400 text-[11px]">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
                         <span className="text-[8px] text-slate-500 font-bold uppercase">Revenue</span>
                       </div>
                     </div>
@@ -653,12 +653,12 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                         </div>
                         <p className="text-[11px] text-slate-300 font-medium truncate mt-0.5">{inv.customer_name}</p>
                         <span className={`text-[9px] font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                          Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                          Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="font-mono font-black text-white text-right text-xs">
-                          ₹{parseFloat(inv.total_amount).toFixed(2)}
+                          ₹{parseFloat(inv.total_amount || 0).toFixed(2)}
                         </div>
                         <button
                           onClick={() => openThermalReceipt(inv.id)}
@@ -705,7 +705,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                         <span className="text-[10px] text-slate-400">{prod.quantity_sold} packs sold</span>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue).toFixed(2)}</div>
+                        <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
                         <span className="text-[8px] text-slate-500 font-bold uppercase">Revenue</span>
                       </div>
                     </div>
@@ -806,9 +806,9 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                       <tr key={inv.id} className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors">
                         <td className="py-2 px-2 font-mono font-bold text-slate-200">{inv.invoice_number}</td>
                         <td className="py-2 px-2 text-white truncate max-w-[160px]">{inv.customer_name}</td>
-                        <td className="py-2 px-2 text-right font-mono text-slate-300 font-bold">₹{parseFloat(inv.total_amount).toFixed(2)}</td>
+                        <td className="py-2 px-2 text-right font-mono text-slate-300 font-bold">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</td>
                         <td className={`py-2 px-2 text-right font-mono font-black ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                          ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                          ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                         </td>
                         <td className="py-2 px-2 text-center"><StatusBadge status={inv.status} /></td>
                         <td className="py-2 px-2 text-center">
@@ -866,3 +866,4 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
     </div>
   );
 };
+

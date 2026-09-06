@@ -121,15 +121,15 @@ export const CustomerProfileModal = ({
         <div className="p-4 bg-slate-950 border-b border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
           <div>
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Total Invoiced</span>
-            <p className="text-sm font-black text-slate-200 mt-0.5">₹{parseFloat(customer.total_invoiced).toFixed(2)}</p>
+            <p className="text-sm font-black text-slate-200 mt-0.5">₹{parseFloat(customer.total_invoiced || 0).toFixed(2)}</p>
           </div>
           <div>
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Total Paid</span>
-            <p className="text-sm font-black text-emerald-400 mt-0.5">₹{parseFloat(customer.total_paid).toFixed(2)}</p>
+            <p className="text-sm font-black text-emerald-400 mt-0.5">₹{parseFloat(customer.total_paid || 0).toFixed(2)}</p>
           </div>
           <div>
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Outstanding Balance</span>
-            <p className="text-sm font-black text-amber-400 mt-0.5">₹{parseFloat(customer.outstanding_balance).toFixed(2)}</p>
+            <p className="text-sm font-black text-amber-400 mt-0.5">₹{parseFloat(customer.outstanding_balance || 0).toFixed(2)}</p>
           </div>
           <div>
             <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Credit Limit</span>
@@ -254,7 +254,7 @@ export const CustomerProfileModal = ({
                               {parseFloat(entry.credit) > 0 ? `₹${parseFloat(entry.credit).toFixed(2)}` : '-'}
                             </td>
                             <td className="py-2.5 px-3 text-right font-bold text-amber-400">
-                              ₹{parseFloat(entry.running_balance).toFixed(2)}
+                              ₹{parseFloat(entry.running_balance || 0).toFixed(2)}
                             </td>
                           </tr>
                         ))
@@ -276,8 +276,8 @@ export const CustomerProfileModal = ({
                           <p className="text-[11px] text-slate-400">Date: {inv.invoice_date} | Due: {inv.due_date}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-mono font-bold text-slate-200">₹{parseFloat(inv.total_amount).toFixed(2)}</p>
-                          <p className="text-[10px] text-amber-400 font-mono">Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}</p>
+                          <p className="font-mono font-bold text-slate-200">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</p>
+                          <p className="text-[10px] text-amber-400 font-mono">Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}</p>
                         </div>
                       </div>
                     ))
@@ -300,7 +300,7 @@ export const CustomerProfileModal = ({
                           <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                             {ord.status}
                           </span>
-                          <p className="font-mono font-bold text-slate-200 mt-1">₹{parseFloat(ord.total_amount).toFixed(2)}</p>
+                          <p className="font-mono font-bold text-slate-200 mt-1">₹{parseFloat(ord.total_amount || 0).toFixed(2)}</p>
                         </div>
                       </div>
                     ))
@@ -320,7 +320,7 @@ export const CustomerProfileModal = ({
                           <p className="text-[11px] text-slate-400">{pay.payment_date} • {pay.payment_method}</p>
                         </div>
                         <p className="font-mono font-black text-emerald-400 text-sm">
-                          ₹{parseFloat(pay.amount).toFixed(2)}
+                          ₹{parseFloat(pay.amount || 0).toFixed(2)}
                         </p>
                       </div>
                     ))
@@ -345,3 +345,4 @@ export const CustomerProfileModal = ({
     </div>
   );
 };
+
