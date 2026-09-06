@@ -522,7 +522,7 @@ export const CustomersPage = ({
             ) : (
               filteredCustomers.map(cust => {
                 const isSelected = cust.id === (selectedCustomer?.id || selectedCustomerId);
-                const balance = parseFloat(cust.current_balance || 0);
+                const balance = parseFloat(cust.outstanding_balance || 0);
                 const creditLimit = parseFloat(cust.credit_limit || 0);
                 const utilization = creditLimit > 0 ? Math.min(Math.round((balance / creditLimit) * 100), 100) : 0;
 
