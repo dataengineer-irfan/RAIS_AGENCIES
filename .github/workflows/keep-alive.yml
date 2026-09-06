@@ -14,9 +14,9 @@ jobs:
       - name: Ping Render Backend
         run: |
           echo "Pinging RAIS Backend..."
-          curl -sSf https://rais-backend.onrender.com/ || echo "Backend ping attempted"
+          curl -sf --max-time 55 https://rais-backend.onrender.com/api/health && echo "Backend: UP" || curl -sf --max-time 55 https://rais-backend.onrender.com/api/docs && echo "Backend: UP (docs)" || echo "Backend: warming up"
 
       - name: Ping Render Frontend
         run: |
           echo "Pinging RAIS Web Frontend..."
-          curl -sSf https://rais-frontend.onrender.com || echo "Frontend ping attempted"
+          curl -sf --max-time 30 https://rais-frontend.onrender.com && echo "Frontend: UP" || echo "Frontend: attempted"
