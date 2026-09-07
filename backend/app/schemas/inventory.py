@@ -10,11 +10,16 @@ class StockOverviewItem(BaseModel):
     category_name: str
     brand: str
     packaging_unit: str
+    unit_quantity: Optional[Decimal] = Decimal("1.00")
+    hsn_code: Optional[str] = None
     current_stock: Decimal
     min_stock_alert: Decimal
     stock_status: str # IN_STOCK, LOW_STOCK, OUT_OF_STOCK
     base_price: Decimal
     tax_rate: Decimal
+    purchase_cost: Optional[Decimal] = None
+    margin_amount: Optional[Decimal] = None
+    margin_percent: Optional[Decimal] = None
 
     model_config = ConfigDict(from_attributes=True)
 

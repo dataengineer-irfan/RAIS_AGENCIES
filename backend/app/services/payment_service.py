@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.payment import Payment, PaymentAllocation
 from app.models.invoice import Invoice
 from app.models.customer import Customer
-from app.schemas.payment import PaymentCreate, PaymentAllocationCreate, PaymentResponse, PaymentAllocationResponse
+from app.schemas.payment import (
+    PaymentCreate, PaymentUpdate, PaymentAllocationCreate, PaymentResponse, PaymentAllocationResponse
+)
 from app.core.exceptions import EntityNotFoundException, InvalidFinancialOperationException
 from app.services.sequence_service import SequenceService
 from app.services.audit_service import AuditService
@@ -223,3 +225,162 @@ class PaymentService:
 
         payments = query.order_by(Payment.payment_date.desc(), Payment.created_at.desc()).offset(skip).limit(limit).all()
         return [PaymentService._build_payment_response(p) for p in payments]
+
+    @staticmethod
+    def update_payment(
+        db: Session,
+        payment_id: str,
+        data: PaymentUpdate,
+        user_id: Optional[str] = None,
+        username: Optional[str] = None,
+        user_role: Optional[str] = None
+    ) -> PaymentResponse:
+        payment = db.query(Payment).options(
+            joinedload(Payment.customer),
+            joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
+        ).filter(Payment.id == payment_id).with_for_update().first()
+        if not payment:
+            raise EntityNotFoundException("Payment", payment_id)
+
+        before_state = {
+            "amount": str(payment.amount),
+            "payment_date": str(payment.payment_date),
+            "payment_method": payment.payment_method,
+            "reference_number": payment.reference_number,
+            "notes": payment.notes
+        }
+
+        if data.amount is not None:
+            new_amount = Decimal(str(data.amount))
+            if new_amount < Decimal("0.00"):
+                raise InvalidFinancialOperationException("Payment amount cannot be negative.")
+
+            if new_amount < payment.allocated_amount:
+                # De-allocate excess amount from invoices (latest allocations first)
+                excess = payment.allocated_amount - new_amount
+                for alloc in sorted(list(payment.allocations), key=lambda a: a.allocated_at or get_utc_now(), reverse=True):
+                    if excess <= Decimal("0.00"):
+                        break
+                    inv = alloc.invoice
+                    if alloc.allocated_amount <= excess:
+                        excess -= alloc.allocated_amount
+                        payment.allocated_amount -= alloc.allocated_amount
+                        if inv:
+                            inv.paid_amount -= alloc.allocated_amount
+                            inv.outstanding_amount += alloc.allocated_amount
+                            if inv.paid_amount <= Decimal("0.00"):
+                                inv.paid_amount = Decimal("0.00")
+                                inv.status = InvoiceStatus.ISSUED.value
+                            else:
+                                inv.status = InvoiceStatus.PARTIALLY_PAID.value
+                        db.delete(alloc)
+                    else:
+                        alloc.allocated_amount -= excess
+                        payment.allocated_amount -= excess
+                        if inv:
+                            inv.paid_amount -= excess
+                            inv.outstanding_amount += excess
+                            if inv.outstanding_amount > Decimal("0.00"):
+                                inv.status = InvoiceStatus.PARTIALLY_PAID.value
+                        excess = Decimal("0.00")
+
+                payment.amount = new_amount
+                payment.unallocated_amount = new_amount - payment.allocated_amount
+            else:
+                diff = new_amount - payment.amount
+                payment.amount = new_amount
+                payment.unallocated_amount += diff
+
+        if data.payment_date is not None:
+            payment.payment_date = data.payment_date
+
+        if data.payment_method is not None:
+            valid_methods = [m.value for m in PaymentMethod]
+            if data.payment_method not in valid_methods:
+                raise InvalidFinancialOperationException(f"Invalid payment method '{data.payment_method}'. Must be one of {valid_methods}.")
+            payment.payment_method = data.payment_method
+
+        if data.reference_number is not None:
+            payment.reference_number = data.reference_number
+
+        if data.notes is not None:
+            payment.notes = data.notes
+
+        db.flush()
+
+        AuditService.log(
+            db=db,
+            action=AuditAction.UPDATE,
+            entity_name="Payment",
+            entity_id=payment.id,
+            user_id=user_id,
+            username=username,
+            user_role=user_role,
+            before_state=before_state,
+            after_state={
+                "amount": str(payment.amount),
+                "payment_date": str(payment.payment_date),
+                "payment_method": payment.payment_method,
+                "reference_number": payment.reference_number,
+                "notes": payment.notes
+            }
+        )
+
+        db.commit()
+        db.refresh(payment)
+        return PaymentService._build_payment_response(payment)
+
+    @staticmethod
+    def delete_payment(
+        db: Session,
+        payment_id: str,
+        user_id: Optional[str] = None,
+        username: Optional[str] = None,
+        user_role: Optional[str] = None
+    ) -> dict:
+        payment = db.query(Payment).options(
+            joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
+        ).filter(Payment.id == payment_id).with_for_update().first()
+        if not payment:
+            raise EntityNotFoundException("Payment", payment_id)
+
+        # 1. Reverse all allocations on invoices
+        for alloc in list(payment.allocations):
+            inv = alloc.invoice
+            if inv:
+                inv.paid_amount -= alloc.allocated_amount
+                inv.outstanding_amount += alloc.allocated_amount
+                if inv.paid_amount <= Decimal("0.00"):
+                    inv.paid_amount = Decimal("0.00")
+                    inv.status = InvoiceStatus.ISSUED.value
+                else:
+                    inv.status = InvoiceStatus.PARTIALLY_PAID.value
+
+        db.flush()
+
+        # 2. Log audit event
+        AuditService.log(
+            db=db,
+            action=AuditAction.DELETE,
+            entity_name="Payment",
+            entity_id=payment.id,
+            user_id=user_id,
+            username=username,
+            user_role=user_role,
+            before_state={
+                "payment_number": payment.payment_number,
+                "customer_id": payment.customer_id,
+                "amount": str(payment.amount),
+                "allocated_amount": str(payment.allocated_amount)
+            }
+        )
+
+        # 3. Delete payment record
+        pay_number = payment.payment_number
+        db.delete(payment)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": f"Payment voucher '{pay_number}' deleted and allocations reversed successfully."
+        }

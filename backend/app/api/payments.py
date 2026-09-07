@@ -5,7 +5,9 @@ from datetime import date
 from decimal import Decimal
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.payment import PaymentCreate, PaymentAllocationCreate, PaymentResponse, PaymentAllocationResponse
+from app.schemas.payment import (
+    PaymentCreate, PaymentUpdate, PaymentAllocationCreate, PaymentResponse, PaymentAllocationResponse
+)
 from app.services.payment_service import PaymentService
 from app.api.deps import require_operator_or_admin, require_any_authenticated
 
@@ -75,4 +77,34 @@ def allocate_payment(
         invoice_number=alloc.invoice.invoice_number if alloc.invoice else None,
         allocated_amount=alloc.allocated_amount,
         allocated_at=alloc.allocated_at
+    )
+
+@router.put("/{payment_id}", response_model=PaymentResponse)
+def update_payment(
+    payment_id: str,
+    data: PaymentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    return PaymentService.update_payment(
+        db=db,
+        payment_id=payment_id,
+        data=data,
+        user_id=current_user.id,
+        username=current_user.username,
+        user_role=current_user.role
+    )
+
+@router.delete("/{payment_id}")
+def delete_payment(
+    payment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    return PaymentService.delete_payment(
+        db=db,
+        payment_id=payment_id,
+        user_id=current_user.id,
+        username=current_user.username,
+        user_role=current_user.role
     )

@@ -32,7 +32,8 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   Truck,
-  Camera
+  Camera,
+  FileUp
 } from 'lucide-react';
 import { inventoryApi, catalogueApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -41,6 +42,7 @@ import { AdjustStockModal } from '../components/AdjustStockModal';
 import { StockMovementsDrawer } from '../components/StockMovementsDrawer';
 import { TruckIntakeModal } from '../components/TruckIntakeModal';
 import { BarcodeScanModal } from '../components/BarcodeScanModal';
+import { UploadInvoiceModal } from '../components/UploadInvoiceModal';
 
 export const InventoryPage = () => {
   const { hasRole } = useAuth();
@@ -66,6 +68,7 @@ export const InventoryPage = () => {
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
   const [truckModalOpen, setTruckModalOpen] = useState(false);
+  const [uploadInvoiceModalOpen, setUploadInvoiceModalOpen] = useState(false);
   const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
   const [targetProductForAction, setTargetProductForAction] = useState(null);
   const [movementsDrawerOpen, setMovementsDrawerOpen] = useState(false);
@@ -200,6 +203,67 @@ export const InventoryPage = () => {
   const selectedMinAlert = parseFloat(selectedProduct?.min_stock_alert || 10);
   const selectedRate = parseFloat(selectedProduct?.base_price || 0);
   const selectedValuation = selectedStock * selectedRate;
+
+  // SKU Intelligence & Commercial Metrics
+  const purchaseCost = parseFloat(selectedProduct?.purchase_cost || (selectedRate * 0.75));
+  const marginAmt = parseFloat(selectedProduct?.margin_amount || (selectedRate - purchaseCost));
+  const marginPct = selectedRate > 0 ? (selectedProduct?.margin_percent ? parseFloat(selectedProduct.margin_percent).toFixed(1) : ((marginAmt / selectedRate) * 100).toFixed(1)) : '0.0';
+  const hsnCode = selectedProduct?.hsn_code || '1905';
+  const taxRate = parseFloat(selectedProduct?.tax_rate || 5);
+
+  const getBulkPackagingGuide = (prod) => {
+    const unit = (prod?.packaging_unit || '').toUpperCase();
+    const name = (prod?.name || '').toUpperCase();
+
+    if (unit.includes('2.5 KG') || name.includes('2.5KG') || name.includes('FRIES')) {
+      return {
+        unitSize: '2.5 KG per Packet',
+        casePacks: 25,
+        totalWeight: '62.50 KG (1 Wholesale Case)',
+        conversion: '62.50 KG Invoiced = 25 Depot Packets'
+      };
+    }
+    if (unit.includes('2 KG') || name.includes('2KG') || name.includes('MOZZARELLA') || name.includes('MOZEROLLA')) {
+      return {
+        unitSize: '2.0 KG per Packet',
+        casePacks: 5,
+        totalWeight: '10.00 KG (1 Master Box)',
+        conversion: '10.00 KG Invoiced = 5 Depot Packets'
+      };
+    }
+    if (name.includes('TORTILLA') || name.includes('TORTILLAH')) {
+      return {
+        unitSize: '10 Tortillas per Packet',
+        casePacks: 48,
+        totalWeight: '480 Pieces (1 Master Carton)',
+        conversion: '480 Nos Invoiced = 48 Depot Packets'
+      };
+    }
+    if (unit.includes('100 NOS')) {
+      return {
+        unitSize: '100 Pieces per Bundle',
+        casePacks: 5,
+        totalWeight: '500 Pieces (1 Master Bale)',
+        conversion: '500 Nos Invoiced = 5 Depot Bundles'
+      };
+    }
+    if (unit.includes('765') || name.includes('SLICE')) {
+      return {
+        unitSize: '765 Grams per Packet',
+        casePacks: 12,
+        totalWeight: '9.18 KG (1 Master Pack)',
+        conversion: '12 Packets = 9.18 KG Inward'
+      };
+    }
+    return {
+      unitSize: prod?.packaging_unit || '1 Packet',
+      casePacks: 10,
+      totalWeight: '10 Packets (1 Master Shipper)',
+      conversion: '10 Packets = 1 Wholesale Shipper'
+    };
+  };
+
+  const bulkGuide = getBulkPackagingGuide(selectedProduct);
 
   // Export CSV
   const handleExportCSV = () => {
@@ -350,6 +414,15 @@ export const InventoryPage = () => {
 
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <>
+              <button
+                onClick={() => setUploadInvoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+                title="Upload Supplier Purchase Invoice (Jubilee Enterprises Pre-Configured)"
+              >
+                <FileUp className="w-3.5 h-3.5" />
+                <span>Upload Invoice</span>
+              </button>
+
               <button
                 onClick={() => setTruckModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 shrink-0"
@@ -820,6 +893,82 @@ export const InventoryPage = () => {
                       </div>
                     </div>
 
+                    {/* ─── SKU COMMERCIAL INTELLIGENCE & PROFIT MARGIN ─── */}
+                    <div className="bg-slate-950/90 p-3.5 rounded-xl border border-amber-500/30 shadow-lg space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                              SKU Commercial Intelligence & Margin
+                            </h4>
+                            <span className="text-[10px] text-slate-400">HSN classification, inward rate & wholesale profitability</span>
+                          </div>
+                        </div>
+
+                        <span className="font-mono text-xs font-bold text-amber-400 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-700">
+                          HSN: {hsnCode} • {taxRate}% GST
+                        </span>
+                      </div>
+
+                      {/* Economics Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase block">Inward Purchase Rate</span>
+                          <p className="text-sm font-black font-mono text-slate-200 mt-0.5">
+                            ₹{purchaseCost.toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
+                          </p>
+                          <span className="text-[9px] text-slate-500">Recorded Inward</span>
+                        </div>
+
+                        <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase block">Wholesale Selling Rate</span>
+                          <p className="text-sm font-black font-mono text-white mt-0.5">
+                            ₹{selectedRate.toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
+                          </p>
+                          <span className="text-[9px] text-slate-500">B2B Outlet Price</span>
+                        </div>
+
+                        <div className="bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30">
+                          <span className="text-[9px] font-bold text-emerald-400 uppercase block">Profit / Packet</span>
+                          <p className="text-sm font-black font-mono text-emerald-400 mt-0.5">
+                            +₹{marginAmt.toFixed(2)}
+                          </p>
+                          <span className="text-[9px] text-emerald-500 font-semibold">Net Per Unit</span>
+                        </div>
+
+                        <div className="bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30">
+                          <span className="text-[9px] font-bold text-emerald-400 uppercase block">Gross Margin %</span>
+                          <p className="text-sm font-black font-mono text-emerald-400 mt-0.5">
+                            {marginPct}%
+                          </p>
+                          <span className="text-[9px] text-emerald-500 font-semibold">Margin Ratio</span>
+                        </div>
+                      </div>
+
+                      {/* Bulk Pack Breakdown & Conversion Guide */}
+                      <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <PackageCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                              Bulk Inward Pack Conversion Guide
+                            </span>
+                            <span className="font-semibold text-slate-200">
+                              {bulkGuide.conversion}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 font-mono text-[11px]">
+                          <span className="text-slate-400">Case Yield: </span>
+                          <strong className="text-amber-400">{bulkGuide.casePacks} Packets</strong>
+                          <span className="text-slate-500"> ({bulkGuide.totalWeight})</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Cold Storage & Warehouse Specifications */}
                     <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                       <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
@@ -1028,6 +1177,17 @@ export const InventoryPage = () => {
         onBatchReceived={() => {
           setTruckModalOpen(false);
           loadInventory();
+        }}
+      />
+
+      {/* ─── SUPPLIER PURCHASE INVOICE INWARD MODAL (Jubilee Enterprises Pre-Configured) ─── */}
+      <UploadInvoiceModal
+        isOpen={uploadInvoiceModalOpen}
+        onClose={() => setUploadInvoiceModalOpen(false)}
+        products={stockItems}
+        onSuccess={() => {
+          setUploadInvoiceModalOpen(false);
+          loadInventory(true);
         }}
       />
 

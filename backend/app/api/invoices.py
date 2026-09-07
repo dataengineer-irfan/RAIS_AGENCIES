@@ -86,6 +86,20 @@ def update_invoice_status(
     )
     return BillingService.get_invoice_by_id(db, inv.id)
 
+@router.delete("/{invoice_id}")
+def delete_invoice(
+    invoice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    return BillingService.delete_invoice(
+        db=db,
+        invoice_id=invoice_id,
+        user_id=current_user.id,
+        username=current_user.username,
+        user_role=current_user.role
+    )
+
 @router.get("/{invoice_id}/print-html", response_class=HTMLResponse)
 def get_printable_invoice(
     invoice_id: str,

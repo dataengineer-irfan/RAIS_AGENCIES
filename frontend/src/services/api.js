@@ -157,6 +157,10 @@ export const billingApi = {
     const res = await api.post(`/invoices/${id}/status`, { status, reason });
     return res.data;
   },
+  deleteInvoice: async (id) => {
+    const res = await api.delete(`/invoices/${id}`);
+    return res.data;
+  },
   getPrintHtmlUrl: (id) => `/api/invoices/${id}/print-html`
 };
 
@@ -228,6 +232,14 @@ export const paymentApi = {
       invoice_id: invoiceId,
       amount: parseFloat(amount)
     });
+    return res.data;
+  },
+  update: async (id, data) => {
+    const res = await api.put(`/payments/${id}`, data);
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/payments/${id}`);
     return res.data;
   }
 };

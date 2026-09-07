@@ -23,7 +23,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { DashboardTabStrip } from '../components/DashboardTabStrip';
 import { CompactForecastStrip } from '../components/CompactForecastStrip';
 import { ForecastStoryWidget } from '../components/ForecastStoryWidget';
-import { AgingBucketsCard } from '../components/AgingBucketsCard';
+import { TotalOutstandingSalesCard } from '../components/TotalOutstandingSalesCard';
 import { CustomerHealthCard } from '../components/CustomerHealthCard';
 import { ProductPerformanceMatrix } from '../components/ProductPerformanceMatrix';
 import { RecentPaymentsCard } from '../components/RecentPaymentsCard';
@@ -59,6 +59,9 @@ function applyClientFilters(rawKpis, filters) {
     .reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0);
   const openInvoices = invoices.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0);
 
+  const overallProfit = parseFloat(rawKpis?.overall_profit || 0);
+  const overallLoss = parseFloat(rawKpis?.overall_loss || 0);
+
   return {
     ...rawKpis,
     total_revenue_month: totalRevenue,
@@ -66,6 +69,8 @@ function applyClientFilters(rawKpis, filters) {
     total_overdue: totalOverdue,
     total_invoices_count: invoices.length,
     open_invoices_count: openInvoices.length,
+    overall_profit: overallProfit,
+    overall_loss: overallLoss,
     recent_invoices: invoices,
     top_selling_products: products,
   };
@@ -242,6 +247,8 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
   const revenueVal = parseFloat(kpis?.total_revenue_month || 0);
   const outstandingVal = parseFloat(kpis?.total_outstanding || 0);
   const overdueVal = parseFloat(kpis?.total_overdue || 0);
+  const profitVal = parseFloat(kpis?.overall_profit || 0);
+  const lossVal = parseFloat(kpis?.overall_loss || 0);
 
   return (
     /* 
@@ -331,8 +338,8 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               </div>
             </div>
 
-            {/* Row 2: 4 KPI Cards (fixed height) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+            {/* Row 2: 6 Executive KPI Cards (Desktop) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 shrink-0">
               {/* Revenue */}
               <div 
                 onClick={() => openDrilldown('revenue', 'Revenue by Category & SKU Breakdown')}
@@ -344,7 +351,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                     <TrendingUp className="w-3 h-3" />
                   </div>
                 </div>
-                <p className="text-lg font-black text-white mt-1 font-mono">
+                <p className="text-base lg:text-lg font-black text-white mt-1 font-mono truncate">
                   ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
                 <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
@@ -355,24 +362,64 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 </div>
               </div>
 
-              {/* Receivables */}
+              {/* Total Outstanding Sales Amount */}
               <div 
                 onClick={() => setActivePage('receivables')}
                 className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Receivables</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Outstanding</span>
                   <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-400 flex items-center justify-center">
                     <Clock className="w-3 h-3" />
                   </div>
                 </div>
-                <p className="text-lg font-black text-amber-400 mt-1 font-mono">
+                <p className="text-base lg:text-lg font-black text-amber-400 mt-1 font-mono truncate">
                   ₹{outstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
                 <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
                   <span>{kpis?.open_invoices_count || 0} unpaid</span>
                   <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                    Aging <ArrowUpRight className="w-2.5 h-2.5" />
+                    View <ArrowUpRight className="w-2.5 h-2.5" />
+                  </span>
+                </div>
+              </div>
+
+              {/* Overall Profit */}
+              <div 
+                className="bg-slate-900 p-3 rounded-xl border border-emerald-500/30 shadow-md transition-all hover:scale-[1.02] group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Overall Profit</span>
+                  <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <TrendingUp className="w-3 h-3" />
+                  </div>
+                </div>
+                <p className="text-base lg:text-lg font-black text-emerald-400 mt-1 font-mono truncate">
+                  ₹{profitVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </p>
+                <div className="flex items-center justify-between text-[9px] text-emerald-500 mt-1 pt-1 border-t border-slate-800/80">
+                  <span>Gross Margin</span>
+                  <span className="font-bold text-emerald-400">Net Pos</span>
+                </div>
+              </div>
+
+              {/* Overall Loss */}
+              <div 
+                className="bg-slate-900 p-3 rounded-xl border border-rose-500/30 shadow-md transition-all hover:scale-[1.02] group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">Overall Loss</span>
+                  <div className="w-6 h-6 rounded-md bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                    <AlertTriangle className="w-3 h-3" />
+                  </div>
+                </div>
+                <p className="text-base lg:text-lg font-black text-rose-400 mt-1 font-mono truncate">
+                  ₹{lossVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </p>
+                <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
+                  <span>Deficit</span>
+                  <span className={lossVal > 0 ? 'text-rose-400 font-bold' : 'text-slate-500'}>
+                    {lossVal > 0 ? 'Under' : 'None (₹0)'}
                   </span>
                 </div>
               </div>
@@ -388,7 +435,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                     <AlertTriangle className="w-3 h-3" />
                   </div>
                 </div>
-                <p className="text-lg font-black text-rose-400 mt-1 font-mono">
+                <p className="text-base lg:text-lg font-black text-rose-400 mt-1 font-mono truncate">
                   ₹{overdueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
                 <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
@@ -399,7 +446,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 </div>
               </div>
 
-              {/* Active B2B Clients */}
+              {/* Active Outlets */}
               <div 
                 onClick={() => onNavigate('customers')}
                 className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-emerald-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
@@ -410,7 +457,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                     <Users className="w-3 h-3" />
                   </div>
                 </div>
-                <p className="text-lg font-black text-white mt-1 font-mono">
+                <p className="text-base lg:text-lg font-black text-white mt-1 font-mono truncate">
                   {kpis?.active_customers_count || 0} <span className="text-[10px] font-normal text-slate-500">outlets</span>
                 </p>
                 <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
@@ -547,38 +594,47 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 </div>
 
                 {/* Sub-Metrics Strip */}
-                <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                <div className="grid grid-cols-4 gap-1.5 mt-4 pt-3 border-t border-slate-800/80">
                   <div 
                     onClick={() => setActivePage('receivables')}
                     className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
                   >
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Receivables</span>
-                    <p className="text-xs font-black text-amber-400 font-mono mt-0.5">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block truncate">Outstanding</span>
+                    <p className="text-xs font-black text-amber-400 font-mono mt-0.5 truncate">
                       ₹{outstandingVal >= 1000 ? `${(outstandingVal/1000).toFixed(1)}k` : outstandingVal.toFixed(0)}
                     </p>
-                    <span className="text-[8px] text-slate-500">{kpis?.open_invoices_count || 0} unpaid</span>
+                    <span className="text-[8px] text-slate-500 block truncate">{kpis?.open_invoices_count || 0} unpaid</span>
                   </div>
                   
                   <div 
-                    onClick={() => setActivePage('receivables')}
-                    className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
+                    className="bg-slate-950/60 rounded-xl p-2 border border-emerald-500/20 active:scale-95 transition-all"
                   >
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Overdue</span>
-                    <p className="text-xs font-black text-rose-400 font-mono mt-0.5">
-                      ₹{overdueVal >= 1000 ? `${(overdueVal/1000).toFixed(1)}k` : overdueVal.toFixed(0)}
+                    <span className="text-[8px] font-bold text-emerald-400 uppercase block truncate">Profit</span>
+                    <p className="text-xs font-black text-emerald-400 font-mono mt-0.5 truncate">
+                      ₹{profitVal >= 1000 ? `${(profitVal/1000).toFixed(1)}k` : profitVal.toFixed(0)}
                     </p>
-                    <span className="text-[8px] text-rose-400/80">Risk Alert</span>
+                    <span className="text-[8px] text-emerald-500 font-semibold block truncate">Net Pos</span>
+                  </div>
+
+                  <div 
+                    className="bg-slate-950/60 rounded-xl p-2 border border-rose-500/20 active:scale-95 transition-all"
+                  >
+                    <span className="text-[8px] font-bold text-rose-400 uppercase block truncate">Loss</span>
+                    <p className="text-xs font-black text-rose-400 font-mono mt-0.5 truncate">
+                      ₹{lossVal >= 1000 ? `${(lossVal/1000).toFixed(1)}k` : lossVal.toFixed(0)}
+                    </p>
+                    <span className="text-[8px] text-slate-500 block truncate">{lossVal > 0 ? 'Deficit' : '₹0'}</span>
                   </div>
 
                   <div 
                     onClick={() => onNavigate('customers')}
                     className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
                   >
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Outlets</span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block truncate">Outlets</span>
                     <p className="text-xs font-black text-white font-mono mt-0.5">
                       {kpis?.active_customers_count || 0}
                     </p>
-                    <span className="text-[8px] text-emerald-400 font-semibold">Active</span>
+                    <span className="text-[8px] text-emerald-400 font-semibold block truncate">Active</span>
                   </div>
                 </div>
 
@@ -736,9 +792,14 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
            ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'receivables' && (
           <div className="h-full flex flex-col gap-2 overflow-hidden animate-fadeIn">
-            {/* Aging Buckets (fixed height) */}
+            {/* Total Outstanding Sales Amount */}
             <div className="shrink-0">
-              <AgingBucketsCard onOpenDrilldown={() => onNavigate('reports')} />
+              <TotalOutstandingSalesCard 
+                totalOutstanding={outstandingVal}
+                totalOverdue={overdueVal}
+                openInvoicesCount={kpis?.open_invoices_count || 0}
+                onViewOutlets={() => onNavigate('customers')}
+              />
             </div>
             {/* Customer Health (fills remaining, internal scroll) */}
             <div className="flex-1 min-h-0 overflow-hidden">

@@ -16,6 +16,13 @@ class PaymentCreate(BaseModel):
     notes: Optional[str] = None
     allocations: List[PaymentAllocationCreate] = [] # Optional direct invoice allocations at payment creation
 
+class PaymentUpdate(BaseModel):
+    payment_date: Optional[date] = None
+    amount: Optional[Decimal] = None
+    payment_method: Optional[str] = None
+    reference_number: Optional[str] = None
+    notes: Optional[str] = None
+
 class PaymentAllocationResponse(BaseModel):
     id: str
     payment_id: str

@@ -148,6 +148,45 @@ class ReportingService:
             for p in recent_payments_query
         ]
 
+        # 11. Overall Profit & Loss calculation
+        from app.models.inventory import StockMovement
+        all_movements = db.query(
+            StockMovement.product_id,
+            StockMovement.purchase_cost
+        ).filter(StockMovement.purchase_cost.isnot(None))\
+         .order_by(StockMovement.created_at.desc()).all()
+        cost_map = {}
+        for row in all_movements:
+            if row.product_id not in cost_map and row.purchase_cost is not None:
+                cost_map[row.product_id] = Decimal(str(row.purchase_cost))
+
+        inv_items_sold = db.query(
+            InvoiceItem.product_id,
+            InvoiceItem.quantity,
+            InvoiceItem.line_total
+        ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+         .filter(Invoice.status.in_(valid_statuses)).all()
+
+        total_rev = Decimal("0.00")
+        total_cost = Decimal("0.00")
+
+        for prod_id, qty, line_total in inv_items_sold:
+            rev = Decimal(str(line_total or "0.00"))
+            total_rev += rev
+            p_cost = cost_map.get(prod_id)
+            if p_cost and p_cost > Decimal("0.00"):
+                total_cost += p_cost * Decimal(str(qty or "0.00"))
+            else:
+                total_cost += rev * Decimal("0.80")
+
+        net_profit_loss = total_rev - total_cost
+        if net_profit_loss >= Decimal("0.00"):
+            overall_profit = net_profit_loss.quantize(Decimal("0.01"))
+            overall_loss = Decimal("0.00")
+        else:
+            overall_profit = Decimal("0.00")
+            overall_loss = abs(net_profit_loss).quantize(Decimal("0.01"))
+
         kpis = DashboardKPIs(
             total_revenue_month=total_revenue_month,
             total_outstanding=total_outstanding,
@@ -156,6 +195,8 @@ class ReportingService:
             open_invoices_count=open_invoices_count,
             active_customers_count=active_customers,
             total_products_count=total_products,
+            overall_profit=overall_profit,
+            overall_loss=overall_loss,
             top_selling_products=top_products,
             recent_invoices=recent_invoices,
             recent_payments=recent_payments

@@ -17,6 +17,21 @@ class InventoryService:
             query = query.filter(Product.category_id == category_id)
         
         products = query.order_by(Product.name).all()
+
+        # Fetch last recorded purchase cost for each product from movements
+        last_movements = db.query(
+            StockMovement.product_id,
+            StockMovement.purchase_cost
+        ).filter(
+            StockMovement.movement_type == 'RECEIPT',
+            StockMovement.purchase_cost.isnot(None)
+        ).order_by(StockMovement.created_at.desc()).all()
+
+        last_cost_map = {}
+        for pid, cost in last_movements:
+            if pid not in last_cost_map and cost is not None:
+                last_cost_map[pid] = Decimal(str(cost))
+
         results = []
         for p in products:
             curr = Decimal(str(p.current_stock or 0))
@@ -34,6 +49,12 @@ class InventoryService:
                 if not (s in p.name.lower() or s in p.sku.lower() or s in p.brand.lower()):
                     continue
 
+            base_price = Decimal(str(p.base_price))
+            # If last purchase cost exists, use it; otherwise standard wholesale gross margin is ~22-25%
+            last_cost = last_cost_map.get(p.id, (base_price * Decimal("0.75")).quantize(Decimal("0.01")))
+            margin_amt = base_price - last_cost
+            margin_pct = ((margin_amt / base_price) * 100).quantize(Decimal("0.1")) if base_price > 0 else Decimal("0.0")
+
             results.append({
                 "product_id": p.id,
                 "sku": p.sku,
@@ -41,11 +62,16 @@ class InventoryService:
                 "category_name": p.category.name if p.category else "Uncategorized",
                 "brand": p.brand,
                 "packaging_unit": p.packaging_unit,
+                "unit_quantity": Decimal(str(p.unit_quantity or 1.00)),
+                "hsn_code": p.hsn_code or "1905",
                 "current_stock": curr,
                 "min_stock_alert": min_thresh,
                 "stock_status": status,
-                "base_price": Decimal(str(p.base_price)),
-                "tax_rate": Decimal(str(p.tax_rate))
+                "base_price": base_price,
+                "tax_rate": Decimal(str(p.tax_rate)),
+                "purchase_cost": last_cost,
+                "margin_amount": margin_amt,
+                "margin_percent": margin_pct
             })
         return results
 
@@ -276,6 +302,58 @@ class InventoryService:
             reference_type="ORDER",
             reference_number=order_number,
             reason=f"Customer Order {order_number}",
+            created_by_id=user_id
+        )
+        db.add(movement)
+
+    @staticmethod
+    def deduct_stock_for_invoice(db: Session, product_id: str, quantity: Decimal, invoice_number: str, user_id: Optional[str] = None):
+        product = db.query(Product).filter(Product.id == product_id).with_for_update().first()
+        if not product:
+            return
+        
+        qty = Decimal(str(quantity))
+        prev_stock = Decimal(str(product.current_stock or 0))
+        new_stock = prev_stock - qty
+        if new_stock < 0:
+            new_stock = Decimal("0.00")
+        product.current_stock = new_stock
+
+        movement = StockMovement(
+            product_id=product.id,
+            movement_type="ORDER_DEDUCTION",
+            quantity_change=-qty,
+            previous_stock=prev_stock,
+            new_stock=new_stock,
+            unit=product.packaging_unit,
+            reference_type="INVOICE",
+            reference_number=invoice_number,
+            reason=f"Sales Invoice {invoice_number}",
+            created_by_id=user_id
+        )
+        db.add(movement)
+
+    @staticmethod
+    def restore_stock_for_invoice(db: Session, product_id: str, quantity: Decimal, invoice_number: str, reason: Optional[str] = None, user_id: Optional[str] = None):
+        product = db.query(Product).filter(Product.id == product_id).with_for_update().first()
+        if not product:
+            return
+        
+        qty = Decimal(str(quantity))
+        prev_stock = Decimal(str(product.current_stock or 0))
+        new_stock = prev_stock + qty
+        product.current_stock = new_stock
+
+        movement = StockMovement(
+            product_id=product.id,
+            movement_type="ADJUSTMENT_INCREASE",
+            quantity_change=qty,
+            previous_stock=prev_stock,
+            new_stock=new_stock,
+            unit=product.packaging_unit,
+            reference_type="INVOICE_RESTORE",
+            reference_number=invoice_number,
+            reason=reason or f"Stock Restored on Invoice Cancellation ({invoice_number})",
             created_by_id=user_id
         )
         db.add(movement)

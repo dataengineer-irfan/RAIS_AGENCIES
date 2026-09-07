@@ -29,10 +29,12 @@ import {
   Building2,
   ArrowLeft
 } from 'lucide-react';
-import { customerApi } from '../services/api';
+import { customerApi, billingApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { CustomerModal } from '../components/CustomerModal';
+import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
+import { Printer } from 'lucide-react';
 
 export const CustomersPage = ({ 
   onOpenCustomerModal,
@@ -55,7 +57,10 @@ export const CustomersPage = ({
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [ledgerData, setLedgerData] = useState(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
-  const [activeInspectorTab, setActiveInspectorTab] = useState('overview'); // overview, ledger, actions
+  const [customerInvoices, setCustomerInvoices] = useState([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [thermalModal, setThermalModal] = useState({ isOpen: false, invoiceId: null });
+  const [activeInspectorTab, setActiveInspectorTab] = useState('overview'); // overview, invoices, ledger, actions
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
@@ -77,6 +82,7 @@ export const CustomersPage = ({
         const initialId = selectId || (selectedCustomerId && items.some(i => i.id === selectedCustomerId) ? selectedCustomerId : items[0].id);
         setSelectedCustomerId(initialId);
         loadCustomerLedger(initialId);
+        loadCustomerInvoices(initialId);
       }
     } catch (err) {
       console.error('Failed to load customers', err);
@@ -89,18 +95,35 @@ export const CustomersPage = ({
     setLedgerLoading(true);
     try {
       const ledger = await customerApi.getLedger(customerId);
-      setLedgerData(ledger);
+      setLedgerData(Array.isArray(ledger) ? ledger : (ledger?.entries || []));
     } catch (err) {
       console.error('Failed to load customer ledger:', err);
-      setLedgerData(null);
+      setLedgerData([]);
     } finally {
       setLedgerLoading(false);
     }
   };
 
-  const handleSelectCustomer = (customer) => {
+  const loadCustomerInvoices = async (customerId) => {
+    setInvoicesLoading(true);
+    try {
+      const invs = await billingApi.listInvoices({ customer_id: customerId });
+      setCustomerInvoices(Array.isArray(invs) ? invs : []);
+    } catch (err) {
+      console.error('Failed to load customer invoices:', err);
+      setCustomerInvoices([]);
+    } finally {
+      setInvoicesLoading(false);
+    }
+  };
+
+  const handleSelectCustomer = (customer, initialTab = null) => {
     setSelectedCustomerId(customer.id);
     loadCustomerLedger(customer.id);
+    loadCustomerInvoices(customer.id);
+    if (initialTab) {
+      setActiveInspectorTab(initialTab);
+    }
     setMobileView('detail');
   };
 
@@ -553,6 +576,31 @@ export const CustomersPage = ({
                       <p className="text-[10px] text-slate-400 truncate">
                         {cust.contact_person} • {cust.phone}
                       </p>
+
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectCustomer(cust, 'invoices');
+                          }}
+                          className="text-[9px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 transition-colors"
+                        >
+                          <FileText className="w-2.5 h-2.5" />
+                          <span>Invoices</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectCustomer(cust, 'ledger');
+                          }}
+                          className="text-[9px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1 transition-colors"
+                        >
+                          <History className="w-2.5 h-2.5" />
+                          <span>Ledger</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
@@ -622,6 +670,19 @@ export const CustomersPage = ({
                 {/* Primary Quick-Action Launchers */}
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                   <button
+                    onClick={() => setActiveInspectorTab('invoices')}
+                    className={`px-2.5 py-1.5 font-bold rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105 ${
+                      activeInspectorTab === 'invoices'
+                        ? 'bg-blue-600 text-white shadow-blue-500/20'
+                        : 'bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700'
+                    }`}
+                    title="View Customer Invoices"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Invoices ({customerInvoices.length})</span>
+                  </button>
+
+                  <button
                     onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
                     className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105"
                     title="Create Commercial Invoice"
@@ -672,11 +733,12 @@ export const CustomersPage = ({
               </div>
 
               {/* Inspector Tab Navigation Bar */}
-              <div className="flex items-center gap-1.5 pt-2 pb-2 border-b border-slate-800/80 shrink-0">
+              <div className="flex items-center gap-1.5 pt-2 pb-2 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
                 {[
-                  { id: 'overview', label: '360° Dossier & Exposure', icon: ShieldCheck },
-                  { id: 'ledger', label: 'Live Ledger Stream', icon: History },
-                  { id: 'actions', label: 'Operations Console', icon: SlidersHorizontal },
+                  { id: 'overview', label: '360° Dossier', icon: ShieldCheck },
+                  { id: 'invoices', label: `Invoices (${customerInvoices.length})`, icon: FileText },
+                  { id: 'ledger', label: `Ledger (${Array.isArray(ledgerData) ? ledgerData.length : 0})`, icon: History },
+                  { id: 'actions', label: 'Operations', icon: SlidersHorizontal },
                 ].map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeInspectorTab === tab.id;
@@ -775,7 +837,83 @@ export const CustomersPage = ({
                   </div>
                 )}
 
-                {/* ─── TAB 2: LIVE TRANSACTION LEDGER STREAM ─── */}
+                {/* ─── TAB 2: COMMERCIAL INVOICES STREAM ─── */}
+                {activeInspectorTab === 'invoices' && (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Invoices for {selectedCustomer.business_name} ({customerInvoices.length})
+                      </span>
+                      <button
+                        onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
+                        className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all"
+                      >
+                        <FileText className="w-3 h-3" />
+                        <span>+ New Invoice</span>
+                      </button>
+                    </div>
+
+                    {invoicesLoading ? (
+                      <div className="space-y-2 animate-pulse py-4">
+                        <div className="h-14 bg-slate-800 rounded-xl" />
+                        <div className="h-14 bg-slate-800 rounded-xl" />
+                        <div className="h-14 bg-slate-800 rounded-xl" />
+                      </div>
+                    ) : customerInvoices.length === 0 ? (
+                      <div className="text-center py-12 text-slate-500 text-xs space-y-2">
+                        <FileText className="w-8 h-8 mx-auto text-slate-600" />
+                        <p>No invoices created for this outlet yet.</p>
+                        <button
+                          onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
+                          className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold transition-all"
+                        >
+                          Create First Invoice
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {customerInvoices.map((inv) => (
+                          <div 
+                            key={inv.id}
+                            className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between text-xs hover:border-slate-700 transition-colors"
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-amber-400 text-xs">{inv.invoice_number}</span>
+                                <StatusBadge status={inv.status} />
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                Date: {inv.invoice_date} {inv.due_date ? `| Due: ${inv.due_date}` : ''} • {inv.items?.length || 0} Items
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              <div className="text-right">
+                                <div className="font-mono font-bold text-slate-200 text-xs">
+                                  ₹{parseFloat(inv.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </div>
+                                <span className={`text-[10px] font-mono block ${parseFloat(inv.outstanding_amount || 0) > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                                  Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => setThermalModal({ isOpen: true, invoiceId: inv.id })}
+                                className="p-1.5 bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                                title="Print Thermal Slip"
+                              >
+                                <Printer className="w-3 h-3" />
+                                <span className="hidden sm:inline">Slip</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── TAB 3: LIVE TRANSACTION LEDGER STREAM ─── */}
                 {activeInspectorTab === 'ledger' && (
                   <div className="space-y-2.5">
                     {ledgerLoading ? (
@@ -784,40 +922,60 @@ export const CustomersPage = ({
                         <div className="h-10 bg-slate-800 rounded-xl" />
                         <div className="h-10 bg-slate-800 rounded-xl" />
                       </div>
-                    ) : !ledgerData || !ledgerData.entries || ledgerData.entries.length === 0 ? (
+                    ) : !Array.isArray(ledgerData) || ledgerData.length === 0 ? (
                       <div className="text-center py-12 text-slate-500 text-xs space-y-2">
                         <History className="w-8 h-8 mx-auto text-slate-600" />
                         <p>No ledger transactions recorded for this customer yet.</p>
                       </div>
                     ) : (
                       <div className="space-y-1.5">
-                        {ledgerData.entries.map((entry, idx) => (
-                          <div 
-                            key={idx}
-                            className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs hover:border-slate-700 transition-colors"
-                          >
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-white text-xs">{entry.reference_number || 'TRX'}</span>
-                                <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
-                                  entry.type === 'INVOICE' ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
-                                }`}>
-                                  {entry.type}
+                        {ledgerData.map((entry, idx) => {
+                          const isOpening = entry.type === 'OPENING';
+                          const isInvoice = entry.type === 'INVOICE';
+                          const isPayment = entry.type === 'PAYMENT';
+                          const debitVal = parseFloat(entry.debit || 0);
+                          const creditVal = parseFloat(entry.credit || 0);
+
+                          return (
+                            <div 
+                              key={idx}
+                              className={`p-2.5 rounded-xl border text-xs transition-colors flex items-center justify-between ${
+                                isOpening 
+                                  ? 'bg-amber-500/10 border-amber-500/30' 
+                                  : 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-white text-xs">
+                                    {entry.reference || (isOpening ? 'OB' : 'TRX')}
+                                  </span>
+                                  <span className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded border ${
+                                    isOpening ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                                    isInvoice ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
+                                    'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  }`}>
+                                    {entry.type}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                                  {entry.date} • {entry.description}
+                                </p>
+                              </div>
+                              
+                              <div className="text-right shrink-0">
+                                <div className="font-mono font-bold text-xs">
+                                  {debitVal > 0 && <span className="text-rose-400">+₹{debitVal.toFixed(2)}</span>}
+                                  {creditVal > 0 && <span className="text-emerald-400">-₹{creditVal.toFixed(2)}</span>}
+                                  {debitVal === 0 && creditVal === 0 && <span className="text-slate-500">₹0.00</span>}
+                                </div>
+                                <span className="text-[9px] text-amber-400 font-mono font-semibold block">
+                                  Bal: ₹{parseFloat(entry.running_balance || 0).toFixed(2)}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-slate-400 mt-0.5">{entry.date} • {entry.description}</p>
                             </div>
-                            
-                            <div className="text-right">
-                              <div className={`font-mono font-bold text-xs ${entry.type === 'INVOICE' ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {entry.type === 'INVOICE' ? '+' : '-'}₹{parseFloat(entry.amount || 0).toFixed(2)}
-                              </div>
-                              <span className="text-[9px] text-slate-500 font-mono">
-                                Run: ₹{parseFloat(entry.running_balance || 0).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -899,6 +1057,15 @@ export const CustomersPage = ({
           loadCustomers(saved?.id);
         }}
       />
+
+      {/* ─── THERMAL RECEIPT SLIP MODAL ─── */}
+      {thermalModal.isOpen && (
+        <ThermalReceiptModal
+          isOpen={thermalModal.isOpen}
+          onClose={() => setThermalModal({ isOpen: false, invoiceId: null })}
+          invoiceId={thermalModal.invoiceId}
+        />
+      )}
 
     </div>
   );

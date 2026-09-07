@@ -18,7 +18,9 @@ import {
   ExternalLink,
   MessageSquare,
   DollarSign,
-  ArrowLeft
+  ArrowLeft,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
@@ -45,6 +47,12 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [statusToSet, setStatusToSet] = useState('CANCELLED');
   const [statusReason, setStatusReason] = useState('');
+
+  // Delete Invoice State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+  const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     loadInvoices();
@@ -126,6 +134,31 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     const due = parseFloat(inv.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const text = `*RAIS AGENCIES — Tax Invoice Receipt*%0A%0AInvoice #: *${inv.invoice_number}*%0ACustomer: *${inv.customer_name}*%0ADate: *${inv.invoice_date}*%0ATotal Amount: *₹${total}*%0ABalance Due: *₹${due}*%0A%0APlease arrange settlement via UPI (*9347453135@ybl*).%0A%0A*RAIS Agencies*, Rayachoty.`;
     window.open(`https://wa.me/91${inv.customer_phone || '9347453135'}?text=${text}`, '_blank');
+  };
+
+  const handleDeleteInvoice = async (inv) => {
+    if (!inv) return;
+    setIsDeletingInvoice(true);
+    try {
+      await billingApi.deleteInvoice(inv.id);
+      setDeleteModalOpen(false);
+      setInvoiceToDelete(null);
+      setNotification({
+        type: 'success',
+        message: `Invoice ${inv.invoice_number} deleted successfully. Stock restored to depot inventory.`
+      });
+      setTimeout(() => setNotification(null), 4000);
+      await loadInvoices();
+    } catch (err) {
+      console.error('Failed to delete invoice', err);
+      setNotification({
+        type: 'error',
+        message: err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to delete invoice.'
+      });
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setIsDeletingInvoice(false);
+    }
   };
 
   const filteredInvoices = invoices.filter(inv => {
@@ -372,6 +405,19 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                   </button>
+
+                  {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
+                    <button
+                      onClick={() => {
+                        setInvoiceToDelete(selectedInvoice);
+                        setDeleteModalOpen(true);
+                      }}
+                      className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all"
+                      title="Delete Invoice & Restore Stock"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -553,6 +599,22 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                           </div>
                         </button>
                       )}
+
+                      {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
+                        <button
+                          onClick={() => {
+                            setInvoiceToDelete(selectedInvoice);
+                            setDeleteModalOpen(true);
+                          }}
+                          className="p-3 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-600/30 rounded-xl flex items-center gap-2.5 text-left text-rose-400 transition-all hover:scale-[1.02]"
+                        >
+                          <Trash2 className="w-5 h-5 shrink-0" />
+                          <div>
+                            <div className="font-bold text-xs text-rose-300">Delete Invoice</div>
+                            <span className="text-[10px] text-rose-400/80">Permanent purge & restores warehouse stock</span>
+                          </div>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -611,6 +673,75 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ─── DELETE INVOICE CONFIRMATION MODAL ─── */}
+      {deleteModalOpen && invoiceToDelete && (
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+          onClick={(e) => { if (e.target === e.currentTarget && !isDeletingInvoice) setDeleteModalOpen(false); }}
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Delete Invoice {invoiceToDelete.invoice_number}</h3>
+                <p className="text-xs text-rose-400/90 font-medium">Permanent invoice deletion</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Customer:</span>
+                <span className="font-bold text-white">{invoiceToDelete.customer_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Total Invoice Amount:</span>
+                <span className="font-mono font-black text-rose-400 text-sm">
+                  ₹{parseFloat(invoiceToDelete.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300">
+              Deleting this invoice will <strong>automatically restore all deducted product stock</strong> back to the Rayachoty depot inventory and remove this bill from customer outstanding balance.
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={isDeletingInvoice}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteInvoice(invoiceToDelete)}
+                disabled={isDeletingInvoice}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 rounded-xl shadow-lg shadow-rose-600/30 transition-all flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingInvoice ? 'Restoring Stock & Deleting...' : 'Delete & Restore Stock'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Notification */}
+      {notification && (
+        <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-semibold animate-fadeIn ${
+          notification.type === 'success' 
+            ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' 
+            : 'bg-rose-950/90 border-rose-500/50 text-rose-300'
+        }`}>
+          {notification.type === 'success' ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-rose-400" />}
+          <span>{notification.message}</span>
         </div>
       )}
 

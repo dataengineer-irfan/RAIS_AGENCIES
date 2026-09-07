@@ -12,11 +12,14 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { customerApi, billingApi, orderApi, paymentApi } from '../services/api';
 import { StatusBadge } from './StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import { EditPaymentModal } from './EditPaymentModal';
 
 export const CustomerProfileModal = ({ 
   isOpen, 
@@ -33,6 +36,9 @@ export const CustomerProfileModal = ({
   const [payments, setPayments] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [deleteConfirmPayment, setDeleteConfirmPayment] = useState(null);
+  const [isDeletingPayment, setIsDeletingPayment] = useState(false);
 
   useEffect(() => {
     if (isOpen && customer) {
@@ -57,6 +63,21 @@ export const CustomerProfileModal = ({
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const executeDeletePayment = async (pay) => {
+    if (!pay) return;
+    setIsDeletingPayment(true);
+    try {
+      await paymentApi.delete(pay.id);
+      setDeleteConfirmPayment(null);
+      await loadCustomerWorkspace();
+    } catch (err) {
+      console.error('Failed to delete payment', err);
+      alert(err?.response?.data?.detail || err?.message || 'Failed to delete payment');
+    } finally {
+      setIsDeletingPayment(false);
     }
   };
 
@@ -319,9 +340,27 @@ export const CustomerProfileModal = ({
                           <p className="font-mono font-bold text-emerald-400">{pay.payment_number}</p>
                           <p className="text-[11px] text-slate-400">{pay.payment_date} • {pay.payment_method}</p>
                         </div>
-                        <p className="font-mono font-black text-emerald-400 text-sm">
-                          ₹{parseFloat(pay.amount || 0).toFixed(2)}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <p className="font-mono font-black text-emerald-400 text-sm">
+                            ₹{parseFloat(pay.amount || 0).toFixed(2)}
+                          </p>
+                          <div className="flex items-center gap-1 border-l border-slate-800 pl-2">
+                            <button
+                              onClick={() => setEditingPayment(pay)}
+                              className="p-1 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 rounded-lg transition-colors"
+                              title="Edit Payment"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmPayment(pay)}
+                              className="p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg transition-colors"
+                              title="Delete Payment"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ))
                   )}
@@ -342,6 +381,48 @@ export const CustomerProfileModal = ({
         </div>
 
       </div>
+
+      {/* Delete Payment Confirm */}
+      {deleteConfirmPayment && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span>Delete Payment {deleteConfirmPayment.payment_number}?</span>
+            </h4>
+            <p className="text-xs text-slate-300">
+              Amount: <strong className="text-rose-400">₹{parseFloat(deleteConfirmPayment.amount || 0).toFixed(2)}</strong>
+            </p>
+            <p className="text-[11px] text-slate-400">
+              This will restore unpaid balances on any linked invoices and update the customer ledger.
+            </p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setDeleteConfirmPayment(null)}
+                disabled={isDeletingPayment}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeDeletePayment(deleteConfirmPayment)}
+                disabled={isDeletingPayment}
+                className="px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg"
+              >
+                {isDeletingPayment ? 'Deleting...' : 'Confirm Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Modal */}
+      <EditPaymentModal
+        isOpen={!!editingPayment}
+        payment={editingPayment}
+        onClose={() => setEditingPayment(null)}
+        onSuccess={() => loadCustomerWorkspace()}
+      />
     </div>
   );
 };

@@ -201,34 +201,8 @@ def seed_database():
 
         from sqlalchemy import text
 
-        # 4. RESET STOCK ONLY ON VERY FIRST RUN (new products were just created)
-        if is_first_run:
-            db.execute(text("UPDATE products SET current_stock = 0.00"))
-            print("  + First run: stock reset to 0 for all products.")
-        else:
-            print("  + Existing catalogue detected — stock levels preserved.")
-
-        # 5. PURGE DUMMY DATA ONLY ON FIRST RUN (never wipe real customer/invoice data)
-        if is_first_run:
-            clean_tables = [
-                'payment_allocations',
-                'payments',
-                'invoice_items',
-                'invoices',
-                'order_items',
-                'orders',
-                'quotation_items',
-                'quotations',
-                'customers'
-            ]
-            for tbl in clean_tables:
-                try:
-                    db.execute(text(f"DELETE FROM {tbl}"))
-                except Exception:
-                    pass
-            print("  + First run: cleared dummy operational data.")
-        else:
-            print("  + Existing data detected — customers, invoices, orders preserved.")
+        # 4. PRESERVE ALL LIVE OPERATIONAL DATA (Customers, Invoices, Payments, Stock)
+        print("  + Production database protection: customers, invoices, orders and stock are permanently preserved.")
 
         db.commit()
         print("[SUCCESS] RAIS Agencies Seed Complete! Catalogue ready, real data preserved.")

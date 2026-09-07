@@ -11,6 +11,8 @@ class DashboardKPIs(BaseModel):
     open_invoices_count: int
     active_customers_count: int
     total_products_count: int
+    overall_profit: Decimal = Decimal("0.00")
+    overall_loss: Decimal = Decimal("0.00")
     recent_invoices: List[Dict[str, Any]]
     recent_payments: List[Dict[str, Any]]
     top_selling_products: List[Dict[str, Any]]

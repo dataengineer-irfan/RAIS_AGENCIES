@@ -178,6 +178,16 @@ class BillingService:
                 line_total=itm["line_total"]
             )
             db.add(inv_item)
+            
+            # Automatically deduct warehouse inventory for this commercial invoice item
+            from app.services.inventory_service import InventoryService
+            InventoryService.deduct_stock_for_invoice(
+                db=db,
+                product_id=itm["product_id"],
+                quantity=itm["quantity"],
+                invoice_number=invoice.invoice_number,
+                user_id=user_id
+            )
 
         AuditService.log(
             db=db,
@@ -238,6 +248,18 @@ class BillingService:
         invoice.notes = (invoice.notes or "") + f"\n[{target_status.upper()}: {reason or 'No reason provided'}]"
         invoice.outstanding_amount = Decimal("0.00")
         
+        # Restore warehouse inventory for all items in the cancelled/voided invoice
+        from app.services.inventory_service import InventoryService
+        for itm in invoice.items:
+            InventoryService.restore_stock_for_invoice(
+                db=db,
+                product_id=itm.product_id,
+                quantity=itm.quantity,
+                invoice_number=invoice.invoice_number,
+                reason=f"Restored on Invoice {target_status} ({reason or 'Cancelled'})",
+                user_id=user_id
+            )
+        
         db.flush()
         AuditService.log(
             db, AuditAction.STATUS_CHANGE, "Invoice", invoice.id,
@@ -248,6 +270,59 @@ class BillingService:
         db.commit()
         db.refresh(invoice)
         return invoice
+
+    @staticmethod
+    def delete_invoice(
+        db: Session,
+        invoice_id: str,
+        user_id: Optional[str] = None,
+        username: Optional[str] = None,
+        user_role: Optional[str] = None
+    ) -> dict:
+        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).with_for_update().first()
+        if not invoice:
+            raise EntityNotFoundException("Invoice", invoice_id)
+
+        if invoice.paid_amount > Decimal("0.00"):
+            raise InvalidFinancialOperationException(
+                f"Cannot delete invoice '{invoice.invoice_number}' because payments totaling ₹{invoice.paid_amount} are allocated to it. Delete or unallocate payments first."
+            )
+
+        # Restore stock if invoice was not already cancelled
+        if invoice.status not in [InvoiceStatus.CANCELLED.value, InvoiceStatus.VOID.value]:
+            from app.services.inventory_service import InventoryService
+            for itm in invoice.items:
+                InventoryService.restore_stock_for_invoice(
+                    db=db,
+                    product_id=itm.product_id,
+                    quantity=itm.quantity,
+                    invoice_number=invoice.invoice_number,
+                    reason=f"Stock Restored on Invoice Deletion ({invoice.invoice_number})",
+                    user_id=user_id
+                )
+
+        inv_number = invoice.invoice_number
+        AuditService.log(
+            db=db,
+            action=AuditAction.DELETE,
+            entity_name="Invoice",
+            entity_id=invoice.id,
+            user_id=user_id,
+            username=username,
+            user_role=user_role,
+            before_state={
+                "invoice_number": inv_number,
+                "total_amount": str(invoice.total_amount)
+            }
+        )
+
+        db.delete(invoice)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": f"Invoice '{inv_number}' deleted successfully."
+        }
 
     @staticmethod
     def get_invoice_by_id(db: Session, invoice_id: str) -> InvoiceResponse:

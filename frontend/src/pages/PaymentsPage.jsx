@@ -13,10 +13,14 @@ import {
   Sparkles,
   FileText,
   DollarSign,
-  Calendar
+  Calendar,
+  Pencil,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { paymentApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { EditPaymentModal } from '../components/EditPaymentModal';
 
 export const PaymentsPage = ({ onOpenPaymentModal }) => {
   const { hasRole } = useAuth();
@@ -28,6 +32,12 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [activeInspectorTab, setActiveInspectorTab] = useState('metadata'); // metadata, allocations, actions
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Edit and Delete State
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     loadPayments();
@@ -61,6 +71,30 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
     const amount = parseFloat(p.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const text = `*RAIS AGENCIES — Payment Settlement Receipt*%0A%0AReceipt #: *${p.payment_number}*%0ACustomer: *${p.customer_name}*%0AAmount Received: *₹${amount}*%0AMethod: *${p.payment_method}*%0ARef / UTR: *${p.reference_number || 'Cash Deposit'}*%0ADate: *${p.payment_date}*%0A%0AThank you for your timely settlement!%0A*RAIS Agencies*, Rayachoty.`;
     window.open(`https://wa.me/919347453135?text=${text}`, '_blank');
+  };
+
+  const executeDeletePayment = async (payment) => {
+    if (!payment) return;
+    setIsDeleting(true);
+    try {
+      await paymentApi.delete(payment.id);
+      setDeleteConfirmModal(null);
+      setNotification({
+        type: 'success',
+        message: `Payment voucher ${payment.payment_number} deleted. Allocations reversed and balances updated.`
+      });
+      setTimeout(() => setNotification(null), 4000);
+      await loadPayments();
+    } catch (err) {
+      console.error('Failed to delete payment', err);
+      setNotification({
+        type: 'error',
+        message: err?.response?.data?.detail || err?.message || 'Failed to delete payment voucher.'
+      });
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const filteredPayments = payments.filter(p => {
@@ -189,6 +223,31 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                           Alloc: ₹{parseFloat(p.allocated_amount || 0).toFixed(2)}
                         </span>
                       </div>
+
+                      {/* Quick Edit/Delete buttons */}
+                      <div className="flex items-center gap-1 pl-1 border-l border-slate-800">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPayment(p);
+                          }}
+                          className="p-1 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 rounded-lg transition-colors"
+                          title="Edit Payment"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmModal(p);
+                          }}
+                          className="p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg transition-colors"
+                          title="Delete Payment"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-emerald-400' : 'text-slate-600'}`} />
                     </div>
                   </div>
@@ -231,6 +290,24 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
 
                 {/* Direct Action Chips */}
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setEditingPayment(selectedPayment)}
+                    className="p-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+                    title="Edit Payment Voucher"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Edit</span>
+                  </button>
+
+                  <button
+                    onClick={() => setDeleteConfirmModal(selectedPayment)}
+                    className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+                    title="Delete / Reverse Payment"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </button>
+
                   <button
                     onClick={() => handleSendWhatsAppReceipt(selectedPayment)}
                     className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
@@ -354,12 +431,34 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                       Operations available for payment voucher <strong className="text-white">{selectedPayment.payment_number}</strong>:
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <button
+                        onClick={() => setEditingPayment(selectedPayment)}
+                        className="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center gap-2.5 text-left text-amber-400 transition-all hover:scale-[1.02]"
+                      >
+                        <Pencil className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-bold text-xs text-white">Edit Voucher</div>
+                          <span className="text-[10px] text-slate-400">Correct amount, date, method, notes</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setDeleteConfirmModal(selectedPayment)}
+                        className="p-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-left text-rose-400 transition-all hover:scale-[1.02]"
+                      >
+                        <Trash2 className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-bold text-xs text-rose-300">Delete / Reverse</div>
+                          <span className="text-[10px] text-rose-400/80">Reverses allocations & restores invoice</span>
+                        </div>
+                      </button>
+
                       <button
                         onClick={() => handleSendWhatsAppReceipt(selectedPayment)}
                         className="p-3 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 rounded-xl flex items-center gap-2.5 text-left text-emerald-400 transition-all hover:scale-[1.02]"
                       >
-                        <MessageSquare className="w-5 h-5" />
+                        <MessageSquare className="w-5 h-5 shrink-0" />
                         <div>
                           <div className="font-bold text-xs text-white">Send WhatsApp Receipt</div>
                           <span className="text-[10px] text-slate-400">Dispatch payment acknowledgement slip</span>
@@ -379,6 +478,84 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
         </div>
 
       </div>
+
+      {/* Floating Notification */}
+      {notification && (
+        <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-semibold animate-fadeIn ${
+          notification.type === 'success' 
+            ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' 
+            : 'bg-rose-950/90 border-rose-500/50 text-rose-300'
+        }`}>
+          {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertTriangle className="w-4 h-4 text-rose-400" />}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-white">Delete Payment Voucher</h3>
+                <p className="text-xs text-rose-400/90 font-medium">Permanent reversal action</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Voucher #:</span>
+                <span className="font-mono font-bold text-white">{deleteConfirmModal.payment_number}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Customer:</span>
+                <span className="font-bold text-white">{deleteConfirmModal.customer_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Amount:</span>
+                <span className="font-mono font-black text-rose-400 text-sm">
+                  ₹{parseFloat(deleteConfirmModal.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300">
+              Deleting this payment voucher will <strong>reverse all bill allocations</strong>, restore the outstanding balance on affected invoices, and update the customer's ledger.
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmModal(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => executeDeletePayment(deleteConfirmModal)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 rounded-xl shadow-lg shadow-rose-600/30 transition-all flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Reversing...' : 'Delete & Reverse'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Modal */}
+      <EditPaymentModal 
+        isOpen={!!editingPayment}
+        payment={editingPayment}
+        onClose={() => setEditingPayment(null)}
+        onSuccess={() => loadPayments(selectedPaymentId)}
+      />
 
     </div>
   );
