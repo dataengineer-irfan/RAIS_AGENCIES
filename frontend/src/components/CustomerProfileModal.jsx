@@ -20,6 +20,7 @@ import { customerApi, billingApi, orderApi, paymentApi } from '../services/api';
 import { StatusBadge } from './StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { EditPaymentModal } from './EditPaymentModal';
+import { InvoiceBuilderModal } from './InvoiceBuilderModal';
 
 export const CustomerProfileModal = ({ 
   isOpen, 
@@ -37,6 +38,7 @@ export const CustomerProfileModal = ({
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [deleteConfirmPayment, setDeleteConfirmPayment] = useState(null);
   const [isDeletingPayment, setIsDeletingPayment] = useState(false);
 
@@ -296,9 +298,20 @@ export const CustomerProfileModal = ({
                           <p className="font-mono font-bold text-amber-400">{inv.invoice_number}</p>
                           <p className="text-[11px] text-slate-400">Date: {inv.invoice_date} | Due: {inv.due_date}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-mono font-bold text-slate-200">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</p>
-                          <p className="text-[10px] text-amber-400 font-mono">Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <p className="font-mono font-bold text-slate-200">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</p>
+                            <p className="text-[10px] text-amber-400 font-mono">Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}</p>
+                          </div>
+                          {parseFloat(inv.paid_amount || 0) === 0 && hasRole(['ADMIN', 'OPERATOR']) && (
+                            <button
+                              onClick={() => setEditingInvoice(inv)}
+                              className="p-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold transition-all ml-1.5"
+                              title="Edit Bill / Change Customer or Items"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))
@@ -423,6 +436,19 @@ export const CustomerProfileModal = ({
         onClose={() => setEditingPayment(null)}
         onSuccess={() => loadCustomerWorkspace()}
       />
+
+      {/* Edit Bill Modal */}
+      {editingInvoice && (
+        <InvoiceBuilderModal
+          isOpen={Boolean(editingInvoice)}
+          invoiceToEdit={editingInvoice}
+          onClose={() => setEditingInvoice(null)}
+          onInvoiceCreated={() => {
+            setEditingInvoice(null);
+            loadCustomerWorkspace();
+          }}
+        />
+      )}
     </div>
   );
 };

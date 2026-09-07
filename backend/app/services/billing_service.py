@@ -209,6 +209,178 @@ class BillingService:
         return invoice
 
     @staticmethod
+    def update_invoice(
+        db: Session,
+        invoice_id: str,
+        data,  # InvoiceUpdate schema instance
+        user_id: Optional[str] = None,
+        username: Optional[str] = None,
+        user_role: Optional[str] = None
+    ) -> Invoice:
+        """
+        Edit an existing invoice:
+        - Change customer
+        - Change invoice date / due date / payment terms / notes
+        - Replace line items (with automatic warehouse stock diff reconciliation)
+        Guards: Cannot edit if payments are already allocated.
+        """
+        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).with_for_update().first()
+        if not invoice:
+            raise EntityNotFoundException("Invoice", invoice_id)
+
+        # Guard: Cannot edit if any payment has been settled against this invoice
+        if invoice.paid_amount > Decimal("0.00"):
+            raise InvalidFinancialOperationException(
+                f"Cannot edit invoice '{invoice.invoice_number}' — payments totaling "
+                f"₹{invoice.paid_amount} are already allocated. "
+                f"Please unallocate or delete payments first."
+            )
+
+        before_state = {
+            "invoice_number": invoice.invoice_number,
+            "customer_id": invoice.customer_id,
+            "total_amount": str(invoice.total_amount),
+            "items_count": len(invoice.items)
+        }
+
+        # ─── Update customer if provided ───
+        if data.customer_id and data.customer_id != invoice.customer_id:
+            new_customer = db.query(Customer).filter(Customer.id == data.customer_id).first()
+            if not new_customer:
+                raise EntityNotFoundException("Customer", data.customer_id)
+            invoice.customer_id = data.customer_id
+
+        # ─── Update simple scalar fields ───
+        if data.invoice_date is not None:
+            invoice.invoice_date = data.invoice_date
+        if data.due_date is not None:
+            invoice.due_date = data.due_date
+        if data.payment_terms is not None:
+            invoice.payment_terms = data.payment_terms
+        if data.notes is not None:
+            invoice.notes = data.notes
+
+        # ─── Replace line items if provided ───
+        if data.items is not None:
+            from app.services.inventory_service import InventoryService
+
+            # 1. Build previous items dict: product_id → quantity
+            prev_items = {itm.product_id: itm.quantity for itm in invoice.items}
+
+            # 2. Validate and prepare new items
+            prepared_items = []
+            for itm in data.items:
+                product = db.query(Product).filter(Product.id == itm.product_id).first()
+                if not product:
+                    raise EntityNotFoundException("Product", itm.product_id)
+                if not product.is_active:
+                    raise RaisAppException(detail=f"Product '{product.name}' is inactive.")
+                unit_price = itm.unit_price if itm.unit_price is not None else product.base_price
+                prepared_items.append({
+                    "product_id": product.id,
+                    "item_description": product.name,
+                    "brand": product.brand,
+                    "packaging_unit": product.packaging_unit,
+                    "hsn_code": product.hsn_code,
+                    "quantity": itm.quantity,
+                    "unit_price": unit_price,
+                    "discount_rate": itm.discount_rate,
+                    "tax_rate": product.tax_rate
+                })
+
+            # 3. Calculate new totals
+            inv_disc = data.discount_amount if data.discount_amount is not None else invoice.discount_amount
+            calc = BillingService.calculate_invoice_totals(prepared_items, inv_disc)
+
+            # 4. Reconcile stock: restore removed/reduced, deduct added/increased
+            new_items_dict = {itm["product_id"]: itm["quantity"] for itm in prepared_items}
+
+            # Restore stock for products removed or with reduced quantity
+            for prod_id, old_qty in prev_items.items():
+                new_qty = new_items_dict.get(prod_id, Decimal("0"))
+                diff = old_qty - new_qty
+                if diff > 0:
+                    InventoryService.restore_stock_for_invoice(
+                        db=db,
+                        product_id=prod_id,
+                        quantity=diff,
+                        invoice_number=invoice.invoice_number,
+                        reason=f"Edit: reduced qty by {diff} on {invoice.invoice_number}",
+                        user_id=user_id
+                    )
+
+            # Deduct stock for products added or with increased quantity
+            for prod_id, new_qty in new_items_dict.items():
+                old_qty = prev_items.get(prod_id, Decimal("0"))
+                diff = new_qty - old_qty
+                if diff > 0:
+                    InventoryService.deduct_stock_for_invoice(
+                        db=db,
+                        product_id=prod_id,
+                        quantity=diff,
+                        invoice_number=invoice.invoice_number,
+                        user_id=user_id
+                    )
+
+            # 5. Delete old invoice items and re-create
+            for old_item in list(invoice.items):
+                db.delete(old_item)
+            db.flush()
+
+            for itm in calc["items"]:
+                inv_item = InvoiceItem(
+                    invoice_id=invoice.id,
+                    product_id=itm["product_id"],
+                    item_description=itm["item_description"],
+                    brand=itm["brand"],
+                    packaging_unit=itm["packaging_unit"],
+                    hsn_code=itm["hsn_code"],
+                    quantity=itm["quantity"],
+                    unit_price=itm["unit_price"],
+                    discount_rate=itm["discount_rate"],
+                    discount_amount=itm["discount_amount"],
+                    taxable_amount=itm["taxable_amount"],
+                    tax_rate=itm["tax_rate"],
+                    tax_amount=itm["tax_amount"],
+                    line_total=itm["line_total"]
+                )
+                db.add(inv_item)
+
+            # 6. Update invoice financials
+            invoice.subtotal = calc["subtotal"]
+            invoice.discount_amount = calc["discount_amount"]
+            invoice.taxable_amount = calc["taxable_amount"]
+            invoice.tax_amount = calc["tax_amount"]
+            invoice.total_amount = calc["total_amount"]
+            invoice.outstanding_amount = calc["total_amount"] - invoice.paid_amount
+            invoice.qr_payload = BillingService.generate_upi_qr_payload(invoice.invoice_number, invoice.outstanding_amount)
+
+        elif data.discount_amount is not None:
+            # Only discount changed, no items replacement
+            invoice.discount_amount = data.discount_amount
+            invoice.outstanding_amount = invoice.total_amount - invoice.paid_amount
+
+        db.flush()
+        AuditService.log(
+            db=db,
+            action=AuditAction.UPDATE,
+            entity_name="Invoice",
+            entity_id=invoice.id,
+            user_id=user_id,
+            username=username,
+            user_role=user_role,
+            before_state=before_state,
+            after_state={
+                "customer_id": invoice.customer_id,
+                "total_amount": str(invoice.total_amount),
+                "invoice_number": invoice.invoice_number
+            }
+        )
+        db.commit()
+        db.refresh(invoice)
+        return invoice
+
+    @staticmethod
     def issue_invoice(db: Session, invoice_id: str, user_id: Optional[str] = None) -> Invoice:
         invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
         if not invoice:

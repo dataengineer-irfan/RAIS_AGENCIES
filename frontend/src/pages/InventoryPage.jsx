@@ -43,6 +43,7 @@ import { StockMovementsDrawer } from '../components/StockMovementsDrawer';
 import { TruckIntakeModal } from '../components/TruckIntakeModal';
 import { BarcodeScanModal } from '../components/BarcodeScanModal';
 import { UploadInvoiceModal } from '../components/UploadInvoiceModal';
+import { smartProductMatch, cleanProductName } from '../utils/productHelpers';
 
 export const InventoryPage = () => {
   const { hasRole } = useAuth();
@@ -147,14 +148,8 @@ export const InventoryPage = () => {
   // ─── POWER BI REACTIVE FILTERING & SLICING ───
   const filteredItems = useMemo(() => {
     return stockItems.filter(item => {
-      // 1. Search filter
-      const q = searchTerm.toLowerCase().trim();
-      const matchesSearch = !q || (
-        (item.name || '').toLowerCase().includes(q) ||
-        (item.sku || '').toLowerCase().includes(q) ||
-        (item.brand || '').toLowerCase().includes(q) ||
-        (item.category_name || '').toLowerCase().includes(q)
-      );
+      // 1. Search filter (smart multi-word + typo-tolerant)
+      const matchesSearch = smartProductMatch(item, searchTerm);
 
       // 2. Category Slicer
       const matchesCat = selectedCategory === 'ALL' || item.category_name === selectedCategory || item.category_id === selectedCategory;
@@ -318,7 +313,7 @@ export const InventoryPage = () => {
             >
               {stockItems.map(item => (
                 <option key={item.product_id} value={item.product_id}>
-                  {item.sku} • {item.name}
+                  {item.sku} • {cleanProductName(item.name || '', item.brand || '')}
                 </option>
               ))}
             </select>
@@ -403,7 +398,7 @@ export const InventoryPage = () => {
         </div>
 
         {/* Right: Primary Action Launchers */}
-        <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar touch-pan-x py-1">
           <button
             onClick={handleExportCSV}
             className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-all"

@@ -20,13 +20,15 @@ import {
   DollarSign,
   ArrowLeft,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
+import { InvoiceBuilderModal } from '../components/InvoiceBuilderModal';
 
 export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) => {
   const { hasRole } = useAuth();
@@ -54,6 +56,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
   const [notification, setNotification] = useState(null);
+
+  // Edit Bill State
+  const [editInvoiceModalOpen, setEditInvoiceModalOpen] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState(null);
 
   useEffect(() => {
     loadInvoices();
@@ -407,6 +413,20 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                     <MessageSquare className="w-3.5 h-3.5" />
                   </button>
 
+                  {parseFloat(selectedInvoice.paid_amount || 0) === 0 && hasRole(['ADMIN', 'OPERATOR']) && (
+                    <button
+                      onClick={() => {
+                        setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
+                        setEditInvoiceModalOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:scale-105"
+                      title="Edit Customer, Line Items, or Quantities (Stock Auto-Reconciled)"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Edit Bill</span>
+                    </button>
+                  )}
+
                   {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
                     <button
                       onClick={() => {
@@ -601,6 +621,22 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                         </button>
                       )}
 
+                      {parseFloat(selectedInvoice.paid_amount || 0) === 0 && hasRole(['ADMIN', 'OPERATOR']) && (
+                        <button
+                          onClick={() => {
+                            setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
+                            setEditInvoiceModalOpen(true);
+                          }}
+                          className="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center gap-2.5 text-left text-amber-400 transition-all hover:scale-[1.02]"
+                        >
+                          <Pencil className="w-5 h-5 shrink-0" />
+                          <div>
+                            <div className="font-bold text-xs text-white">Edit Bill / Change Customer</div>
+                            <span className="text-[10px] text-slate-400">Switch outlet, fix line items, auto-reconcile stock</span>
+                          </div>
+                        </button>
+                      )}
+
                       {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
                         <button
                           onClick={() => {
@@ -732,6 +768,28 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Bill Modal */}
+      {editInvoiceModalOpen && invoiceToEdit && (
+        <InvoiceBuilderModal
+          isOpen={editInvoiceModalOpen}
+          invoiceToEdit={invoiceToEdit}
+          onClose={() => {
+            setEditInvoiceModalOpen(false);
+            setInvoiceToEdit(null);
+          }}
+          onInvoiceCreated={(updatedInv) => {
+            setEditInvoiceModalOpen(false);
+            setInvoiceToEdit(null);
+            setNotification({
+              type: 'success',
+              message: `Bill ${updatedInv.invoice_number} updated successfully! Stock reconciled.`
+            });
+            setTimeout(() => setNotification(null), 4500);
+            loadInvoices(updatedInv.id);
+          }}
+        />
       )}
 
       {/* Floating Notification */}

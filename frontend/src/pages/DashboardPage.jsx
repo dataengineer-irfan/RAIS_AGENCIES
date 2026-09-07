@@ -35,15 +35,17 @@ import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 // Filters KPIs, invoices, and products by the active slicer selections.
 // Backend always returns the full dataset; slicers narrow the view instantly.
 // ─────────────────────────────────────────────────────────────────────────────
-function applyClientFilters(rawKpis, filters) {
+function applyClientFilters(rawKpis, filters, customers = []) {
   if (!rawKpis) return rawKpis;
 
   let invoices = rawKpis.recent_invoices || [];
   let products = rawKpis.top_selling_products || [];
 
   // Filter by customer
+  let filteredCustomers = customers;
   if (filters.customerId && filters.customerId !== 'ALL') {
     invoices = invoices.filter(inv => inv.customer_id === filters.customerId);
+    filteredCustomers = customers.filter(c => c.id === filters.customerId);
   }
 
   // Filter by category (products only — invoices don't carry category)
@@ -53,7 +55,12 @@ function applyClientFilters(rawKpis, filters) {
 
   // Recompute KPI totals from filtered invoices
   const totalRevenue = invoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0);
-  const totalOutstanding = invoices.reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0);
+  
+  // Total receivables: matches Outlets Page formula exactly (sum of customer outstanding_balance)
+  const totalOutstanding = filteredCustomers && filteredCustomers.length > 0
+    ? filteredCustomers.reduce((acc, c) => acc + parseFloat(c.outstanding_balance || 0), 0)
+    : parseFloat(rawKpis?.total_outstanding || 0);
+
   const totalOverdue = invoices
     .filter(inv => inv.status === 'OVERDUE' || parseFloat(inv.outstanding_amount || 0) > 0)
     .reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0);
@@ -210,7 +217,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
   };
 
   // ─── REACTIVE SLICER: useMemo re-computes filtered KPIs whenever filters change ───
-  const kpis = useMemo(() => applyClientFilters(rawKpis, filters), [rawKpis, filters]);
+  const kpis = useMemo(() => applyClientFilters(rawKpis, filters, customers), [rawKpis, filters, customers]);
 
   const handleFilterChange = useCallback((key, val) => {
     setFilters(prev => ({ ...prev, [key]: val }));
@@ -362,13 +369,13 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 </div>
               </div>
 
-              {/* Total Outstanding Sales Amount */}
+              {/* Total Outstanding / Outlets Receivables */}
               <div 
                 onClick={() => setActivePage('receivables')}
                 className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Outstanding</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Receivables</span>
                   <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-400 flex items-center justify-center">
                     <Clock className="w-3 h-3" />
                   </div>
@@ -377,7 +384,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                   ₹{outstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
                 <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
-                  <span>{kpis?.open_invoices_count || 0} unpaid</span>
+                  <span>Outlets Due</span>
                   <span className="text-amber-400 font-bold flex items-center gap-0.5">
                     View <ArrowUpRight className="w-2.5 h-2.5" />
                   </span>
@@ -599,11 +606,11 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                     onClick={() => setActivePage('receivables')}
                     className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
                   >
-                    <span className="text-[8px] font-bold text-slate-400 uppercase block truncate">Outstanding</span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase block truncate">Receivables</span>
                     <p className="text-xs font-black text-amber-400 font-mono mt-0.5 truncate">
                       ₹{outstandingVal >= 1000 ? `${(outstandingVal/1000).toFixed(1)}k` : outstandingVal.toFixed(0)}
                     </p>
-                    <span className="text-[8px] text-slate-500 block truncate">{kpis?.open_invoices_count || 0} unpaid</span>
+                    <span className="text-[8px] text-slate-500 block truncate">Outlets Due</span>
                   </div>
                   
                   <div 

@@ -3,14 +3,17 @@ import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles,
 import { customerApi, catalogueApi, billingApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
+import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
   onClose, 
   onInvoiceCreated,
   preselectedCustomer = null,
-  preselectedProduct = null
+  preselectedProduct = null,
+  invoiceToEdit = null   // Pass existing invoice object to enter Edit Bill mode
 }) => {
+  const isEditMode = Boolean(invoiceToEdit?.id);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -59,6 +62,34 @@ export const InvoiceBuilderModal = ({
       setProducts(prodData);
       setCategories(catData);
 
+      // ─── EDIT BILL MODE: Pre-populate from invoiceToEdit ───
+      if (isEditMode && invoiceToEdit) {
+        setCustomerId(invoiceToEdit.customer_id || (custData[0]?.id || ''));
+        setInvoiceDate(invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
+        setDueDate(invoiceToEdit.due_date || invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
+        setInvoiceDiscount(String(parseFloat(invoiceToEdit.discount_amount || 0)));
+        setPaymentTerms(invoiceToEdit.payment_terms || 'Cash on Delivery / Immediate Settlement');
+        setNotes(invoiceToEdit.notes || '');
+
+        // Map existing invoice items → editable line items
+        if (invoiceToEdit.items && invoiceToEdit.items.length > 0) {
+          setItems(invoiceToEdit.items.map(itm => {
+            const matched = prodData.find(p => p.id === itm.product_id);
+            return {
+              product_id: itm.product_id,
+              quantity: parseFloat(itm.quantity) || 1,
+              unit_price: parseFloat(itm.unit_price) || (matched ? parseFloat(matched.base_price) : 0),
+              discount_rate: parseFloat(itm.discount_rate) || 0,
+              packaging_unit: itm.packaging_unit || matched?.packaging_unit || 'PKT'
+            };
+          }));
+        } else {
+          setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
+        }
+        return;
+      }
+
+      // ─── CREATE MODE: Normal initialization ───
       // 1. Resolve initial customer
       if (preselectedCustomer) {
         setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
@@ -299,31 +330,51 @@ export const InvoiceBuilderModal = ({
 
     setSubmitting(true);
     try {
-      const payload = {
-        customer_id: customerId,
-        invoice_date: invoiceDate,
-        due_date: dueDate,
-        discount_amount: parseFloat(invoiceDiscount) || 0,
-        payment_terms: paymentTerms,
-        notes: notes.trim() || null,
-        auto_issue: autoIssue,
-        items: items.map(itm => ({
-          product_id: itm.product_id,
-          quantity: parseFloat(itm.quantity),
-          unit_price: parseFloat(itm.unit_price),
-          discount_rate: parseFloat(itm.discount_rate) || 0
-        }))
-      };
+      const itemsPayload = items.map(itm => ({
+        product_id: itm.product_id,
+        quantity: parseFloat(itm.quantity),
+        unit_price: parseFloat(itm.unit_price),
+        discount_rate: parseFloat(itm.discount_rate) || 0
+      }));
 
-      const res = await billingApi.createInvoice(payload);
-      setSuccessInvoice(res);
-      setShowPreview(false);
-      if (onInvoiceCreated) {
-        onInvoiceCreated(res);
+      let res;
+
+      if (isEditMode) {
+        // ─── EDIT BILL MODE ───
+        if (!invoiceToEdit?.id) throw new Error('Missing invoice ID for edit.');
+        const editPayload = {
+          customer_id: customerId,
+          invoice_date: invoiceDate,
+          due_date: dueDate,
+          discount_amount: parseFloat(invoiceDiscount) || 0,
+          payment_terms: paymentTerms,
+          notes: notes.trim() || null,
+          items: itemsPayload
+        };
+        res = await billingApi.updateInvoice(invoiceToEdit.id, editPayload);
+        setSuccessInvoice(res);
+        setShowPreview(false);
+        if (onInvoiceCreated) onInvoiceCreated(res);
+      } else {
+        // ─── CREATE BILL MODE ───
+        const payload = {
+          customer_id: customerId,
+          invoice_date: invoiceDate,
+          due_date: dueDate,
+          discount_amount: parseFloat(invoiceDiscount) || 0,
+          payment_terms: paymentTerms,
+          notes: notes.trim() || null,
+          auto_issue: autoIssue,
+          items: itemsPayload
+        };
+        res = await billingApi.createInvoice(payload);
+        setSuccessInvoice(res);
+        setShowPreview(false);
+        if (onInvoiceCreated) onInvoiceCreated(res);
       }
     } catch (err) {
-      console.error('Invoice creation error:', err);
-      const msg = err.response?.data?.message || err.response?.data?.detail || 'Failed to create invoice.';
+      console.error('Invoice submit error:', err);
+      const msg = err.response?.data?.message || err.response?.data?.detail || (isEditMode ? 'Failed to update invoice.' : 'Failed to create invoice.');
       setError(msg);
       setShowPreview(false);
     } finally {
@@ -346,16 +397,26 @@ export const InvoiceBuilderModal = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
-                  {showPreview ? 'Invoice Live Preview' : 'Create Commercial Wholesale Invoice'}
+                  {showPreview 
+                    ? 'Invoice Live Preview' 
+                    : isEditMode 
+                      ? `Edit Bill — ${invoiceToEdit?.invoice_number || ''}` 
+                      : 'Create Commercial Wholesale Invoice'}
                 </h2>
-                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                  DIRECT WHOLESALE
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full font-mono border ${
+                  isEditMode 
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }`}>
+                  {isEditMode ? 'EDIT MODE' : 'DIRECT WHOLESALE'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
                 {showPreview 
                   ? 'Review verified document layout before issuing' 
-                  : 'RAIS Agencies Wholesale Invoicing Engine • Cash / Immediate Settlement'}
+                  : isEditMode
+                    ? `Editing ${invoiceToEdit?.invoice_number} — Stock will be auto-reconciled on save`
+                    : 'RAIS Agencies Wholesale Invoicing Engine • Cash / Immediate Settlement'}
               </p>
             </div>
           </div>
@@ -752,11 +813,14 @@ export const InvoiceBuilderModal = ({
                             className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500 truncate"
                           >
                             <option value="">-- Choose Catalogue SKU --</option>
-                            {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name} ({p.packaging_unit || 'PKT'}) — ₹{parseFloat(p.base_price).toFixed(2)}
-                              </option>
-                            ))}
+                            {sortProductsByCleanName(products).map((p) => {
+                              const { cleanName, brandName } = formatProductDisplay(p);
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
+                                </option>
+                              );
+                            })}
                           </select>
                           {selProd && (
                             <div className="flex items-center gap-2 mt-1 px-1 text-[10px] text-slate-400 font-mono">
@@ -940,7 +1004,11 @@ export const InvoiceBuilderModal = ({
                   disabled={submitting}
                   className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center gap-2 transition-all transform active:scale-95"
                 >
-                  {submitting ? 'Generating...' : autoIssue ? 'Issue Invoice Now' : 'Save as Draft'}
+                  {submitting 
+                    ? (isEditMode ? 'Updating Bill...' : 'Generating...') 
+                    : isEditMode 
+                      ? `Update Bill (${invoiceToEdit?.invoice_number || 'Invoice'})` 
+                      : autoIssue ? 'Issue Invoice Now' : 'Save as Draft'}
                 </button>
               </div>
             </div>

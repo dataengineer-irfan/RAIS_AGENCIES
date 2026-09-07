@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.customer import Customer
 from app.models.invoice import Invoice
 from app.models.order import Order
+from app.models.payment import Payment
 
 # Simple 60-second in-memory response cache
 _HEALTH_CACHE = {"timestamp": 0, "data": None}
@@ -16,7 +17,7 @@ class CustomerHealthService:
     def get_customer_health_analysis(db: Session, force_refresh: bool = False) -> Dict[str, Any]:
         """
         High-Performance Customer Health Analysis:
-        Uses batched queries (3 SQL queries instead of 40+ N+1 loops) + in-memory grouping.
+        Uses batched queries (4 SQL queries instead of 40+ N+1 loops) + in-memory grouping.
         """
         now_ts = datetime.now(timezone.utc).timestamp()
         if not force_refresh and _HEALTH_CACHE["data"] and (now_ts - _HEALTH_CACHE["timestamp"] < CACHE_TTL_SECONDS):
@@ -39,6 +40,12 @@ class CustomerHealthService:
         for ord_item in all_orders:
             orders_by_customer[ord_item.customer_id].append(ord_item)
 
+        # Batch Query 4: All payments (1 round-trip)
+        all_payments = db.query(Payment).all()
+        payments_by_customer = defaultdict(list)
+        for pay in all_payments:
+            payments_by_customer[pay.customer_id].append(pay)
+
         healthy_count = 0
         watch_count = 0
         at_risk_count = 0
@@ -49,9 +56,11 @@ class CustomerHealthService:
             invoices = invoices_by_customer.get(c.id, [])
             orders = orders_by_customer.get(c.id, [])
 
-            # 1. Total Invoiced and Outstanding
-            total_invoiced = sum([inv.total_amount for inv in invoices]) or Decimal("0.00")
-            outstanding = sum([inv.outstanding_amount for inv in invoices if inv.status in ["ISSUED", "PARTIALLY_PAID", "OVERDUE", "DRAFT"]]) or Decimal("0.00")
+            # 1. Total Invoiced, Paid and Outstanding (matches Outlets page exactly)
+            total_invoiced = sum([inv.total_amount for inv in invoices if inv.status in ["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"]]) or Decimal("0.00")
+            total_paid = sum([pay.amount for pay in payments_by_customer.get(c.id, [])]) or Decimal("0.00")
+            cust_opening = Decimal(str(c.opening_balance or "0.00"))
+            outstanding = cust_opening + total_invoiced - total_paid
 
             # 2. Overdue calculation & punctuality
             overdue_invoices = [inv for inv in invoices if inv.outstanding_amount > 0 and inv.due_date and inv.due_date < today]

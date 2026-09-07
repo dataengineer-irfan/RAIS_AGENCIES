@@ -86,6 +86,29 @@ def update_invoice_status(
     )
     return BillingService.get_invoice_by_id(db, inv.id)
 
+@router.put("/{invoice_id}", response_model=InvoiceResponse)
+def update_invoice(
+    invoice_id: str,
+    data: InvoiceUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    """
+    Edit a generated invoice: change customer, dates, line items, quantities.
+    Stock is automatically reconciled (restored for removed/reduced items, 
+    deducted for added/increased items).
+    Guard: Cannot edit if payments are already allocated.
+    """
+    inv = BillingService.update_invoice(
+        db=db,
+        invoice_id=invoice_id,
+        data=data,
+        user_id=current_user.id,
+        username=current_user.username,
+        user_role=current_user.role
+    )
+    return BillingService.get_invoice_by_id(db, inv.id)
+
 @router.delete("/{invoice_id}")
 def delete_invoice(
     invoice_id: str,

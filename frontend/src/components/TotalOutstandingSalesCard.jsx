@@ -21,10 +21,10 @@ export const TotalOutstandingSalesCard = ({
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-black text-white tracking-wide">
-              Total Outstanding Sales Amount
+              Total Outlets Receivables
             </h3>
             <p className="text-xs text-slate-400">
-              Overall receivables credit balance due across all commercial outlets.
+              Current balance due across all commercial outlets (opening balances + invoices - settlements).
             </p>
           </div>
         </div>
@@ -45,13 +45,13 @@ export const TotalOutstandingSalesCard = ({
         {/* Total Outstanding Tile */}
         <div className="sm:col-span-2 p-4 bg-slate-950/70 border border-amber-500/30 rounded-2xl flex flex-col justify-between">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Total Outstanding Balance
+            Total Outlets Receivables
           </span>
           <div className="text-2xl sm:text-3xl font-black font-mono text-amber-400 mt-1">
             ₹{outstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
           <span className="text-[10px] text-slate-500 mt-1">
-            Accumulated unpaid commercial sales credit
+            Matches Outlets / Customers book receivables exactly
           </span>
         </div>
 

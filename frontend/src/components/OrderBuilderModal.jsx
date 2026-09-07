@@ -3,6 +3,7 @@ import { ShoppingBag, Plus, Trash2, X, AlertTriangle, CheckCircle, CheckCircle2,
 import { customerApi, catalogueApi, orderApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
+import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 
 export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselectedCustomerId }) => {
   const [customers, setCustomers] = useState([]);
@@ -396,11 +397,14 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                             className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium truncate"
                           >
                             <option value="">-- Choose Product SKU --</option>
-                            {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name} ({p.packaging_unit || 'PKT'}) — ₹{parseFloat(p.base_price).toFixed(2)}
-                              </option>
-                            ))}
+                            {sortProductsByCleanName(products).map((p) => {
+                              const { cleanName, brandName } = formatProductDisplay(p);
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
+                                </option>
+                              );
+                            })}
                           </select>
                         </div>
 

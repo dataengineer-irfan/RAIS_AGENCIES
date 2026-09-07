@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, Plus, Check, Package, Sparkles } from 'lucide-react';
+import { cleanProductName, formatProductDisplay, smartProductMatch, sortProductsByCleanName } from '../utils/productHelpers';
 
 export const SmartProductSearchPicker = ({
   products = [],
@@ -27,24 +28,19 @@ export const SmartProductSearchPicker = ({
     return [{ id: 'ALL', name: 'All SKUs' }, ...Array.from(catMap.values())];
   }, [products, categories]);
 
-  // Filter products by search term and selected category
+  // Filter products by smart multi-word search and selected category, sorted by clean name
   const filteredProducts = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return products.filter(p => {
+    const matched = products.filter(p => {
       const matchesCat = selectedCategory === 'ALL' || 
         String(p.category_id) === String(selectedCategory) ||
         p.category_name === selectedCategory ||
         p.category === selectedCategory;
 
       if (!matchesCat) return false;
-      if (!term) return true;
-
-      const nameMatch = (p.name || '').toLowerCase().includes(term);
-      const skuMatch = (p.sku || '').toLowerCase().includes(term);
-      const catMatch = ((p.category_name || (typeof p.category === 'string' ? p.category : p.category?.name)) || '').toLowerCase().includes(term);
-
-      return nameMatch || skuMatch || catMatch;
+      return smartProductMatch(p, searchTerm);
     });
+
+    return sortProductsByCleanName(matched);
   }, [products, searchTerm, selectedCategory]);
 
   return (
@@ -58,7 +54,7 @@ export const SmartProductSearchPicker = ({
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Type product name, e.g. fre, nugget, burger, cheese..."
+          placeholder="Search fries, burger, patty, nuggets, momos, cheese, ketchup..."
           className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-medium"
         />
         {searchTerm && (
@@ -116,6 +112,7 @@ export const SmartProductSearchPicker = ({
             const price = parseFloat(prod.base_price || 0);
             const stock = parseFloat(prod.current_stock ?? 0);
             const isAdded = currentQty > 0;
+            const { cleanName, brandName } = formatProductDisplay(prod);
 
             return (
               <div
@@ -129,10 +126,15 @@ export const SmartProductSearchPicker = ({
               >
                 {/* Left: Product Info */}
                 <div className="min-w-0 flex-1 pr-3">
-                  <div className="flex items-center gap-2">
-                    <p className={`text-xs font-bold truncate ${isAdded ? 'text-amber-300' : 'text-slate-100'}`}>
-                      {prod.name}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className={`text-xs font-bold ${isAdded ? 'text-amber-300' : 'text-slate-100'}`}>
+                      {cleanName}
                     </p>
+                    {brandName && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-slate-800 text-amber-400 border border-slate-700/80 shrink-0">
+                        {brandName}
+                      </span>
+                    )}
                     {isAdded && (
                       <span className="px-1.5 py-0.2 text-[9px] font-black rounded bg-amber-500 text-slate-950 shrink-0">
                         {currentQty} in bill

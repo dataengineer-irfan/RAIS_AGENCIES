@@ -41,10 +41,13 @@ class InvoiceCreate(BaseModel):
     items: List[InvoiceItemCreate]
 
 class InvoiceUpdate(BaseModel):
+    customer_id: Optional[str] = None
+    invoice_date: Optional[date] = None
     due_date: Optional[date] = None
     discount_amount: Optional[Decimal] = None
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
+    items: Optional[List[InvoiceItemCreate]] = None  # If provided, replaces all line items
 
 class InvoiceStatusUpdate(BaseModel):
     status: str

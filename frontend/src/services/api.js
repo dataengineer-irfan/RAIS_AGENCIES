@@ -174,6 +174,10 @@ export const billingApi = {
     const res = await api.delete(`/invoices/${id}`);
     return res.data;
   },
+  updateInvoice: async (id, data) => {
+    const res = await api.put(`/invoices/${id}`, data);
+    return res.data;
+  },
   getPrintHtmlUrl: (id) => `${API_BASE_URL}/invoices/${id}/print-html`
 };
 

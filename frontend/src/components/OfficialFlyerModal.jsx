@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Printer, Download, ExternalLink, Sparkles, Phone, MapPin } from 'lucide-react';
 
 export const OfficialFlyerModal = ({ isOpen, onClose }) => {
+  const [imgError, setImgError] = useState(false);
   if (!isOpen) return null;
 
   const handlePrint = () => {
@@ -72,12 +73,26 @@ export const OfficialFlyerModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Scrollable High-Res Image View */}
-        <div className="flex-1 overflow-y-auto p-4 flex justify-center bg-slate-950/90">
-          <img
-            src="/assets/brochure.jpg"
-            alt="RAIS Agencies Official Brochure"
-            className="rounded-xl border border-slate-800/80 shadow-2xl max-w-full h-auto object-contain"
-          />
+        <div className="flex-1 overflow-y-auto p-4 flex justify-center items-center bg-slate-950/90">
+          {imgError ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center text-slate-400">
+              <Sparkles className="w-12 h-12 text-amber-400 mb-3" />
+              <h3 className="font-bold text-white text-base">RAIS Agencies Official Price Flyer</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                Wholesale Product & Price Directory for Rayachoty Commercial Food Service.
+              </p>
+              <div className="mt-4 p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-amber-300">
+                Direct Orders: 9347453135 / 9573261696
+              </div>
+            </div>
+          ) : (
+            <img
+              src="/assets/brochure.jpg"
+              alt="RAIS Agencies Official Brochure"
+              onError={() => setImgError(true)}
+              className="rounded-xl border border-slate-800/80 shadow-2xl max-w-full h-auto object-contain"
+            />
+          )}
         </div>
 
         {/* Footer info */}

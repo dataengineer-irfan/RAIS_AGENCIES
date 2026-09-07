@@ -46,11 +46,14 @@ class ReportingService:
         ).scalar()
         total_revenue_month = Decimal(str(revenue_month_query or "0.00"))
 
-        # 2. Total Outstanding Balance
-        outstanding_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
-            Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value])
-        ).scalar()
-        total_outstanding = Decimal(str(outstanding_query or "0.00"))
+        # 2. Total Outstanding Balance across all commercial outlet accounts (Outlets Receivables)
+        # outstanding = opening_balance + total_invoiced - total_paid
+        total_opening = db.query(func.sum(Customer.opening_balance)).scalar() or Decimal("0.00")
+        total_invoiced_all = db.query(func.sum(Invoice.total_amount)).filter(
+            Invoice.status.in_(valid_statuses)
+        ).scalar() or Decimal("0.00")
+        total_paid_all = db.query(func.sum(Payment.amount)).scalar() or Decimal("0.00")
+        total_outstanding = Decimal(str(total_opening)) + Decimal(str(total_invoiced_all)) - Decimal(str(total_paid_all))
 
         # 3. Total Overdue Balance
         overdue_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
