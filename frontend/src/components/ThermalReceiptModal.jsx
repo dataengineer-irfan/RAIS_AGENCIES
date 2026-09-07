@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Printer, X, Bluetooth, QrCode, CheckCircle2, AlertCircle, RefreshCw, Copy, Download } from 'lucide-react';
 import { analyticsApi } from '../services/api';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
   const [receipt, setReceipt] = useState(null);
@@ -9,6 +10,8 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
   const [bluetoothStatus, setBluetoothStatus] = useState('DISCONNECTED'); // DISCONNECTED, CONNECTING, CONNECTED, PRINTING, ERROR
   const [errorMessage, setErrorMessage] = useState('');
   const receiptRef = useRef(null);
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (isOpen && invoiceId) {

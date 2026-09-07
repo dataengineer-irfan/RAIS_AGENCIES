@@ -13,6 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import { inventoryApi } from '../services/api';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 // Pre-configured Jubilee Enterprises Tax Invoice JE/12212/26-27 dated 31-Aug-26
 const JUBILEE_SAMPLE_ITEMS = [
@@ -117,6 +118,9 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Freeze background body scroll on mobile
+  useBodyScrollLock(isOpen);
 
   // Auto-populate Jubilee sample items on open
   useEffect(() => {
@@ -414,7 +418,7 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
                             {item?.supplierItem || 'Item'}
                           </p>
                           <span className="text-[10px] text-slate-500 font-mono">
-                            Batch: {item?.batchNumber || 'JE-01'}
+                            {item?.batchNumber ? `Batch: ${item.batchNumber}` : 'Standard Inward Lot'}
                           </span>
                         </td>
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, X, Plus, Check, Package, Sparkles } from 'lucide-react';
 import { cleanProductName, formatProductDisplay, smartProductMatch, sortProductsByCleanName } from '../utils/productHelpers';
 
@@ -10,7 +10,16 @@ export const SmartProductSearchPicker = ({
   compact = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+
+  // Debounce search term by 120ms for buttery-smooth mobile typing on low-end CPUs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Derive unique categories from products if category list is empty
   const categoryList = useMemo(() => {
@@ -18,7 +27,7 @@ export const SmartProductSearchPicker = ({
       return [{ id: 'ALL', name: 'All SKUs' }, ...categories];
     }
     const catMap = new Map();
-    products.forEach(p => {
+    (products || []).forEach(p => {
       const cName = p.category_name || (typeof p.category === 'object' ? p.category?.name : p.category) || 'General';
       const cId = p.category_id || cName;
       if (!catMap.has(cId)) {
@@ -30,18 +39,18 @@ export const SmartProductSearchPicker = ({
 
   // Filter products by smart multi-word search and selected category, sorted by clean name
   const filteredProducts = useMemo(() => {
-    const matched = products.filter(p => {
+    const matched = (products || []).filter(p => {
       const matchesCat = selectedCategory === 'ALL' || 
         String(p.category_id) === String(selectedCategory) ||
         p.category_name === selectedCategory ||
         p.category === selectedCategory;
 
       if (!matchesCat) return false;
-      return smartProductMatch(p, searchTerm);
+      return smartProductMatch(p, debouncedSearchTerm);
     });
 
     return sortProductsByCleanName(matched);
-  }, [products, searchTerm, selectedCategory]);
+  }, [products, debouncedSearchTerm, selectedCategory]);
 
   return (
     <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-4 space-y-3">
@@ -60,7 +69,10 @@ export const SmartProductSearchPicker = ({
         {searchTerm && (
           <button
             type="button"
-            onClick={() => setSearchTerm('')}
+            onClick={() => {
+              setSearchTerm('');
+              setDebouncedSearchTerm('');
+            }}
             className="absolute right-3 p-1 text-slate-400 hover:text-white rounded-md hover:bg-slate-800"
           >
             <X className="w-4 h-4" />

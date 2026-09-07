@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ChevronRight, Layers, ArrowLeft, ArrowUpRight, TrendingUp, DollarSign, Package, FileText, CheckCircle2 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { getProductVisualIcon } from '../utils/productIcons';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const DrillableMetricModal = ({ 
   isOpen, 
@@ -9,6 +10,8 @@ export const DrillableMetricModal = ({
   metricType = 'revenue', 
   title = 'Revenue Deep-Dive & Multi-Level Drilldown'
 }) => {
+  useBodyScrollLock(isOpen);
+
   // Breadcrumb Trail State: e.g. [ { level: 'ROOT', name: 'All Revenue' }, { level: 'CATEGORY', id: '...', name: 'Chicken Items' }, ... ]
   const [breadcrumbs, setBreadcrumbs] = useState([{ level: 'ROOT', name: 'All Categories' }]);
   const [items, setItems] = useState([]);

@@ -4,6 +4,7 @@ import { customerApi, catalogueApi, billingApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -13,6 +14,7 @@ export const InvoiceBuilderModal = ({
   preselectedProduct = null,
   invoiceToEdit = null   // Pass existing invoice object to enter Edit Bill mode
 }) => {
+  useBodyScrollLock(isOpen);
   const isEditMode = Boolean(invoiceToEdit?.id);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);

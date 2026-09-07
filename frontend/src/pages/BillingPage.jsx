@@ -30,6 +30,7 @@ import { useAuth } from '../context/AuthContext';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { InvoiceBuilderModal } from '../components/InvoiceBuilderModal';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) => {
   const { hasRole } = useAuth();
@@ -61,6 +62,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   // Edit Bill State
   const [editInvoiceModalOpen, setEditInvoiceModalOpen] = useState(false);
   const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+
+  // Lock body scroll on touch devices when modals are open
+  const anyModalOpen = thermalModalOpen || statusModalOpen || deleteModalOpen || editInvoiceModalOpen;
+  useBodyScrollLock(anyModalOpen);
 
   useEffect(() => {
     loadInvoices();
@@ -401,33 +406,34 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   </p>
                 </div>
 
-                {/* Direct Action Chips - Partitioned with Fitts's Law Touch Target Safety */}
+                {/* Direct Action Chips - Partitioned with Fitts's Law Touch Target Safety (Min 44-48px targets) */}
                 <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  {/* Dispatch Group: Thermal + WhatsApp */}
+                  {/* Primary Dispatch Action: High-contrast Thermal Slip */}
                   <button
                     onClick={() => setThermalModalOpen(true)}
-                    className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                    className="min-h-[44px] sm:min-h-[48px] px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-blue-600/20"
                     title="Print 58mm/80mm Thermal Receipt with UPI QR"
                   >
                     <Printer className="w-4 h-4" />
                     <span>Thermal Slip</span>
                   </button>
 
+                  {/* Secondary Dispatch Action: WhatsApp Bill */}
                   <button
                     onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
-                    className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                    className="min-h-[44px] sm:min-h-[48px] px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-sm"
                     title="Send Invoice via WhatsApp"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>WhatsApp</span>
+                    <span>WhatsApp Bill</span>
                   </button>
 
-                  {/* Secondary Group: PDF View + Edit */}
+                  {/* Secondary Utilities: A4 PDF & Edit Bill */}
                   <a
                     href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-xs font-bold transition-colors"
+                    className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex items-center justify-center p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-xs font-bold transition-colors"
                     title="Standard A4 Tax Invoice PDF"
                   >
                     <Eye className="w-4 h-4" />
@@ -439,7 +445,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                         setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
                         setEditInvoiceModalOpen(true);
                       }}
-                      className="px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+                      className="min-h-[44px] sm:min-h-[48px] px-3.5 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
                       title="Edit Customer, Line Items, or Quantities (Stock Auto-Reconciled)"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -447,15 +453,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                     </button>
                   )}
 
-                  {/* Partitioned Danger Group: Delete (Isolated to prevent accidental mis-taps) */}
+                  {/* Danger Group: Delete (Isolated border to prevent accidental mis-taps) */}
                   {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
-                    <div className="flex items-center pl-1 border-l border-slate-800">
+                    <div className="flex items-center pl-1.5 border-l border-slate-800">
                       <button
                         onClick={() => {
                           setInvoiceToDelete(selectedInvoice);
                           setDeleteModalOpen(true);
                         }}
-                        className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 rounded-xl text-xs font-bold transition-all active:scale-95"
+                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex items-center justify-center p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 rounded-xl text-xs font-bold transition-all active:scale-95"
                         title="Delete Invoice & Restore Stock"
                       >
                         <Trash2 className="w-4 h-4" />
