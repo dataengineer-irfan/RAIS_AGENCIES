@@ -29,6 +29,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { InvoiceBuilderModal } from '../components/InvoiceBuilderModal';
+import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 
 export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) => {
   const { hasRole } = useAuth();
@@ -137,9 +138,25 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   };
 
   const handleSendWhatsAppInvoice = (inv) => {
+    if (inv?.items && inv.items.length > 0) {
+      shareInvoiceOnWhatsApp({
+        invoice: inv,
+        customer: { business_name: inv.customer_name, phone: inv.customer_phone, outstanding_balance: inv.customer_outstanding_balance },
+        items: inv.items
+      });
+      return;
+    }
     const total = parseFloat(inv.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const due = parseFloat(inv.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Tax Invoice Receipt*\n\nInvoice #: *${inv.invoice_number}*\nCustomer: *${inv.customer_name}*\nDate: *${inv.invoice_date}*\nTotal Amount: *₹${total}*\nBalance Due: *₹${due}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n\n*RAIS Agencies*, Rayachoty.`;
+    const overallDue = parseFloat(inv.customer_outstanding_balance || 0);
+
+    let text = `*RAIS AGENCIES — Tax Invoice Receipt*\n\nInvoice #: *${inv.invoice_number}*\nCustomer: *${inv.customer_name}*\nDate: *${inv.invoice_date}*\n\n💵 *Bill Amount:* *₹${total}*`;
+    if (overallDue > 0) {
+      text += `\n⚠️ *Overall Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*`;
+    } else if (parseFloat(inv.outstanding_amount || 0) > 0) {
+      text += `\n⚠️ *Bill Balance Due:* *₹${due}*`;
+    }
+    text += `\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n\n*RAIS Agencies*, Rayachoty.`;
     openWhatsApp(inv.customer_phone || '9347453135', text);
   };
 

@@ -82,6 +82,7 @@ class InvoiceResponse(BaseModel):
     total_amount: Decimal
     paid_amount: Decimal
     outstanding_amount: Decimal
+    customer_outstanding_balance: Optional[Decimal] = None  # Live customer total account due balance
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
     qr_payload: Optional[str] = None

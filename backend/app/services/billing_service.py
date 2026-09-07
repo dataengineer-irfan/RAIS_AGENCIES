@@ -509,10 +509,18 @@ class BillingService:
                 db.commit()
                 db.refresh(inv)
 
-        return BillingService._build_invoice_response(inv)
+        return BillingService._build_invoice_response(inv, db)
 
     @staticmethod
-    def _build_invoice_response(inv: Invoice) -> InvoiceResponse:
+    def _build_invoice_response(inv: Invoice, db: Optional[Session] = None) -> InvoiceResponse:
+        cust_balance = None
+        if db and inv.customer_id:
+            try:
+                from app.services.customer_service import CustomerService
+                _, _, cust_balance = CustomerService.get_customer_balances(db, inv.customer_id)
+            except Exception:
+                cust_balance = None
+
         items_resp = [
             InvoiceItemResponse(
                 id=itm.id,
@@ -568,6 +576,7 @@ class BillingService:
             total_amount=inv.total_amount,
             paid_amount=inv.paid_amount,
             outstanding_amount=inv.outstanding_amount,
+            customer_outstanding_balance=cust_balance,
             payment_terms=inv.payment_terms,
             notes=inv.notes,
             qr_payload=inv.qr_payload,
@@ -611,7 +620,7 @@ class BillingService:
             )
         
         invoices = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()
-        return [BillingService._build_invoice_response(inv) for inv in invoices]
+        return [BillingService._build_invoice_response(inv, db) for inv in invoices]
 
     # ----------------------------------------------------
     # QUOTATION MANAGEMENT

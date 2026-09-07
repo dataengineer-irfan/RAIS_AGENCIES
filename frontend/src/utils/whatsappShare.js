@@ -11,11 +11,21 @@ export const shareInvoiceOnWhatsApp = ({
   const custName = customer?.business_name || invoice?.customer_name || 'Customer';
   const custPhone = customer?.phone || invoice?.customer_phone || '';
   const terms = invoice?.payment_terms || 'Cash on Delivery';
-  const totalAmt = parseFloat(invoice?.total_amount || 0).toFixed(2);
+  const billAmt = parseFloat(invoice?.total_amount || 0);
+  const totalAmtFormatted = billAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  const invOutstanding = parseFloat(invoice?.outstanding_amount !== undefined ? invoice.outstanding_amount : invoice?.total_amount || 0);
+
+  // Overall customer ledger due balance
+  let overallDue = null;
+  if (invoice?.customer_outstanding_balance !== undefined && invoice?.customer_outstanding_balance !== null) {
+    overallDue = parseFloat(invoice.customer_outstanding_balance);
+  } else if (customer?.outstanding_balance !== undefined && customer?.outstanding_balance !== null) {
+    overallDue = parseFloat(customer.outstanding_balance);
+  }
 
   let lines = (items || []).map((itm, idx) => {
     const p = products.find(prod => prod.id === itm.product_id);
-    const name = p?.name || itm.product_name || `Item ${idx + 1}`;
+    const name = p?.name || itm.item_description || itm.product_name || `Item ${idx + 1}`;
     const qty = itm.quantity || 1;
     const unit = itm.packaging_unit || p?.packaging_unit || 'PKT';
     const rate = parseFloat(itm.unit_price || 0).toFixed(2);
@@ -25,6 +35,13 @@ export const shareInvoiceOnWhatsApp = ({
 
   if (!lines) {
     lines = '• Wholesale products & supplies';
+  }
+
+  let dueSection = '';
+  if (overallDue !== null && overallDue > 0) {
+    dueSection = `⚠️ *Overall Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+  } else if (invOutstanding > 0) {
+    dueSection = `⚠️ *Balance Due on this Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
   }
 
   const message = 
@@ -38,8 +55,9 @@ ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━
 ${lines}
 
 ━━━━━━━━━━━━━━━━━━━━
-💰 *Grand Total:* *₹${totalAmt}*
-💳 *Terms:* ${terms}
+💵 *Bill Amount:* *₹${totalAmtFormatted}*
+${dueSection}💳 *Payment Terms:* ${terms}
+📲 *Pay via UPI:* 9347453135@ybl
 
 📍 _RAIS AGENCIES — Frozen Foods & Packaging_
 📍 _Near Reddies Colony, Rayachoty - 516269_

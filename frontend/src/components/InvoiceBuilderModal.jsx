@@ -447,12 +447,20 @@ export const InvoiceBuilderModal = ({
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => shareInvoiceOnWhatsApp({
-                  invoice: successInvoice,
-                  customer: selectedCustomerObj || { business_name: successInvoice.customer_name },
-                  items: items,
-                  products: products
-                })}
+                onClick={() => {
+                  const overallBal = (successInvoice?.customer_outstanding_balance !== undefined && successInvoice?.customer_outstanding_balance !== null)
+                    ? successInvoice.customer_outstanding_balance
+                    : (parseFloat(selectedCustomerObj?.outstanding_balance || 0) + parseFloat(successInvoice?.total_amount || 0));
+                  shareInvoiceOnWhatsApp({
+                    invoice: {
+                      ...successInvoice,
+                      customer_outstanding_balance: overallBal
+                    },
+                    customer: selectedCustomerObj || { business_name: successInvoice.customer_name },
+                    items: items,
+                    products: products
+                  });
+                }}
                 className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
               >
                 <MessageSquare className="w-4 h-4" />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Printer, Download, ExternalLink, Sparkles, Phone, MapPin } from 'lucide-react';
 
 export const OfficialFlyerModal = ({ isOpen, onClose }) => {
