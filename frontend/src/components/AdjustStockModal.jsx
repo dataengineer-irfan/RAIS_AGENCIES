@@ -23,11 +23,12 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
   const loadProducts = async () => {
     try {
       const data = await catalogueApi.listProducts({ limit: 200 });
-      setProducts(data);
+      const safeData = Array.isArray(data) ? data : (data?.items || []);
+      setProducts(safeData);
       if (preselectedProductId) {
         setProductId(preselectedProductId);
-      } else if (data.length > 0) {
-        setProductId(data[0].id);
+      } else if (safeData.length > 0) {
+        setProductId(safeData[0]?.id || '');
       }
     } catch (err) {
       console.error(err);
@@ -131,15 +132,15 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
               onChange={(e) => setProductId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
             >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.packaging_unit}) — Available: {p.current_stock}
+              {(products || []).map((p) => (
+                <option key={p?.id} value={p?.id}>
+                  {p?.name} ({p?.packaging_unit || 'PKT'}) — Available: {p?.current_stock ?? 0}
                 </option>
               ))}
             </select>
             {selectedProd && (
               <p className="text-[11px] text-slate-400 mt-1">
-                Current Stock: <span className="font-bold text-amber-400">{selectedProd.current_stock}</span> {selectedProd.packaging_unit}
+                Current Stock: <span className="font-bold text-amber-400">{selectedProd?.current_stock ?? 0}</span> {selectedProd?.packaging_unit || 'PKT'}
               </p>
             )}
           </div>

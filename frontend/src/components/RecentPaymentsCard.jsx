@@ -28,31 +28,31 @@ export const RecentPaymentsCard = ({ payments = [], onNavigateToPayments }) => {
 
         {/* Payments List */}
         <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-          {payments.length === 0 ? (
+          {(!payments || payments.length === 0) ? (
             <div className="text-center py-8 text-slate-500 text-xs">
               No recent payment settlements recorded.
             </div>
           ) : (
-            payments.map((p, idx) => (
+            (payments || []).map((p, idx) => (
               <div 
-                key={p.id || idx}
+                key={p?.id || idx}
                 className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3 flex items-center justify-between text-xs"
               >
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono font-bold text-white text-xs">{p.payment_number}</span>
+                    <span className="font-mono font-bold text-white text-xs">{p?.payment_number || 'REC'}</span>
                     <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                      {p.payment_method}
+                      {p?.payment_method || 'CASH'}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">{p.customer_name}</p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">{p?.customer_name || 'Customer'}</p>
                 </div>
 
                 <div className="text-right">
                   <div className="font-mono font-black text-emerald-400 text-sm">
-                    +₹{p.amount.toFixed(2)}
+                    +₹{parseFloat(p?.amount || 0).toFixed(2)}
                   </div>
-                  <span className="text-[10px] text-slate-500">{p.payment_date}</span>
+                  <span className="text-[10px] text-slate-500">{p?.payment_date || ''}</span>
                 </div>
               </div>
             ))

@@ -180,7 +180,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             <TrendingUp className="w-3.5 h-3.5" />
             Winners
           </div>
-          <div className="text-xl font-black text-emerald-400 mt-0.5">{data.winners_count}</div>
+          <div className="text-xl font-black text-emerald-400 mt-0.5">{data?.winners_count ?? 0}</div>
           <div className="text-[10px] text-slate-500 mt-1">High Sales & Growth</div>
         </button>
 
@@ -196,7 +196,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             <Layers className="w-3.5 h-3.5" />
             Steady
           </div>
-          <div className="text-xl font-black text-amber-400 mt-0.5">{data.steady_count}</div>
+          <div className="text-xl font-black text-amber-400 mt-0.5">{data?.steady_count ?? 0}</div>
           <div className="text-[10px] text-slate-500 mt-1">Consistent Movers</div>
         </button>
 
@@ -212,7 +212,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             <TrendingDown className="w-3.5 h-3.5" />
             Declining
           </div>
-          <div className="text-xl font-black text-orange-400 mt-0.5">{data.declining_count}</div>
+          <div className="text-xl font-black text-orange-400 mt-0.5">{data?.declining_count ?? 0}</div>
           <div className="text-[10px] text-slate-500 mt-1">Negative MoM Trend</div>
         </button>
 
@@ -228,7 +228,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             <Snowflake className="w-3.5 h-3.5" />
             Zero-Movers
           </div>
-          <div className="text-xl font-black text-red-400 mt-0.5">{data.zero_movers_count}</div>
+          <div className="text-xl font-black text-red-400 mt-0.5">{data?.zero_movers_count ?? 0}</div>
           <div className="text-[10px] text-slate-500 mt-1">Dead Stock in Freezer</div>
         </button>
       </div>
@@ -236,7 +236,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
       {/* MATRIX VIEW: Quadrant Cards */}
       {viewMode === 'MATRIX' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {filteredItems.map(item => {
+          {(filteredItems || []).map(item => {
             const visual = getProductVisualIcon(item);
             const isWinner = item.classification === 'WINNER';
             const isZeroMover = item.classification === 'ZERO_MOVER';
@@ -330,7 +330,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {filteredItems.map(item => {
+              {(filteredItems || []).map(item => {
                 const visual = getProductVisualIcon(item);
                 return (
                   <tr key={item.product_id} className="hover:bg-slate-800/40 transition-colors">

@@ -21,7 +21,7 @@ export const QuickPriceModal = ({ isOpen, onClose, product, onPriceUpdated }) =>
   const handleAdjust = (delta) => {
     const cur = parseFloat(price) || 0;
     const next = Math.max(0, cur + delta);
-    setPrice(next.toFixed(2));
+    setPrice(parseFloat(next || 0).toFixed(2));
   };
 
   const handleSave = async () => {
@@ -109,11 +109,11 @@ export const QuickPriceModal = ({ isOpen, onClose, product, onPriceUpdated }) =>
             {priceDiff !== 0 && (
               <div className="text-[11px] font-mono">
                 {priceDiff > 0 ? (
-                  <span className="text-emerald-400 font-bold">▲ +₹{priceDiff.toFixed(2)} increase</span>
+                  <span className="text-emerald-400 font-bold">▲ +₹{parseFloat(priceDiff || 0).toFixed(2)} increase</span>
                 ) : (
-                  <span className="text-rose-400 font-bold">▼ -₹{Math.abs(priceDiff).toFixed(2)} reduction</span>
+                  <span className="text-rose-400 font-bold">▼ -₹{parseFloat(Math.abs(priceDiff || 0)).toFixed(2)} reduction</span>
                 )}
-                <span className="text-slate-500 ml-1.5">(was ₹{currentPrice.toFixed(2)})</span>
+                <span className="text-slate-500 ml-1.5">(was ₹{parseFloat(currentPrice || 0).toFixed(2)})</span>
               </div>
             )}
           </div>

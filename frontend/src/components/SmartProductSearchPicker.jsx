@@ -101,22 +101,22 @@ export const SmartProductSearchPicker = ({
 
       {/* ─── Product Results Scrollable List ─── */}
       <div className="max-h-56 sm:max-h-64 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
-        {filteredProducts.length === 0 ? (
+        {(!filteredProducts || filteredProducts.length === 0) ? (
           <div className="p-6 text-center text-slate-500 text-xs">
             <Package className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
             No products found matching <strong className="text-slate-300">"{searchTerm}"</strong>
           </div>
         ) : (
-          filteredProducts.map(prod => {
-            const currentQty = quantitiesByProductId[prod.id] || 0;
-            const price = parseFloat(prod.base_price || 0);
-            const stock = parseFloat(prod.current_stock ?? 0);
+          (filteredProducts || []).map(prod => {
+            const currentQty = quantitiesByProductId?.[prod?.id] || 0;
+            const price = parseFloat(prod?.base_price || 0);
+            const stock = parseFloat(prod?.current_stock ?? 0);
             const isAdded = currentQty > 0;
             const { cleanName, brandName } = formatProductDisplay(prod);
 
             return (
               <div
-                key={prod.id}
+                key={prod?.id}
                 onClick={() => onSelectProduct(prod)}
                 className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.99] ${
                   isAdded
@@ -142,9 +142,9 @@ export const SmartProductSearchPicker = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                    <span className="font-mono text-slate-500">{prod.sku}</span>
+                    <span className="font-mono text-slate-500">{prod?.sku || ''}</span>
                     <span>•</span>
-                    <span className="font-medium text-slate-300">{prod.packaging_unit || 'PKT'}</span>
+                    <span className="font-medium text-slate-300">{prod?.packaging_unit || 'PKT'}</span>
                     <span>•</span>
                     <span className={stock > 10 ? 'text-emerald-400 font-medium' : stock > 0 ? 'text-amber-400 font-medium' : 'text-rose-400 font-medium'}>
                       {stock > 0 ? `${stock} in stock` : 'Low / 0 Stock'}
@@ -156,7 +156,7 @@ export const SmartProductSearchPicker = ({
                 <div className="flex items-center gap-2.5 shrink-0">
                   <div className="text-right">
                     <div className="text-xs font-black font-mono text-white">
-                      ₹{price.toFixed(2)}
+                      ₹{parseFloat(price || 0).toFixed(2)}
                     </div>
                   </div>
 

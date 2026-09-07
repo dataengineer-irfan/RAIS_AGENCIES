@@ -57,12 +57,12 @@ export const CustomerProfileModal = ({
         paymentApi.list({ customer_id: customer.id }),
         customerApi.getLedger(customer.id)
       ]);
-      setInvoices(invs);
-      setOrders(ords);
-      setPayments(pays);
-      setLedger(led);
+      setInvoices(Array.isArray(invs) ? invs : (invs?.items || invs?.data || []));
+      setOrders(Array.isArray(ords) ? ords : (ords?.items || ords?.data || []));
+      setPayments(Array.isArray(pays) ? pays : (pays?.items || pays?.data || []));
+      setLedger(Array.isArray(led) ? led : (led?.entries || led?.items || led?.data || []));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load customer workspace:', err);
     } finally {
       setLoading(false);
     }
@@ -260,10 +260,10 @@ export const CustomerProfileModal = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/40">
-                      {ledger.length === 0 ? (
+                      {(ledger || []).length === 0 ? (
                         <tr><td colSpan="5" className="py-8 text-center text-slate-500 font-sans">No statement records found.</td></tr>
                       ) : (
-                        ledger.map((entry, idx) => (
+                        (ledger || []).map((entry, idx) => (
                           <tr key={idx} className="hover:bg-slate-900/30">
                             <td className="py-2.5 px-3 text-slate-400 font-sans text-[11px]">{entry.date}</td>
                             <td className="py-2.5 px-3 font-sans">
@@ -271,10 +271,10 @@ export const CustomerProfileModal = ({
                               <p className="text-[10px] text-slate-500">{entry.description}</p>
                             </td>
                             <td className="py-2.5 px-3 text-right text-slate-300">
-                              {parseFloat(entry.debit) > 0 ? `₹${parseFloat(entry.debit).toFixed(2)}` : '-'}
+                              {parseFloat(entry.debit || 0) > 0 ? `₹${parseFloat(entry.debit || 0).toFixed(2)}` : '-'}
                             </td>
                             <td className="py-2.5 px-3 text-right text-emerald-400">
-                              {parseFloat(entry.credit) > 0 ? `₹${parseFloat(entry.credit).toFixed(2)}` : '-'}
+                              {parseFloat(entry.credit || 0) > 0 ? `₹${parseFloat(entry.credit || 0).toFixed(2)}` : '-'}
                             </td>
                             <td className="py-2.5 px-3 text-right font-bold text-amber-400">
                               ₹{parseFloat(entry.running_balance || 0).toFixed(2)}
@@ -289,10 +289,10 @@ export const CustomerProfileModal = ({
 
               {activeTab === 'invoices' && (
                 <div className="space-y-2">
-                  {invoices.length === 0 ? (
+                  {(invoices || []).length === 0 ? (
                     <p className="text-slate-500 text-center py-8">No invoices found for this customer.</p>
                   ) : (
-                    invoices.map(inv => (
+                    (invoices || []).map(inv => (
                       <div key={inv.id} className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
                         <div>
                           <p className="font-mono font-bold text-amber-400">{inv.invoice_number}</p>
@@ -321,10 +321,10 @@ export const CustomerProfileModal = ({
 
               {activeTab === 'orders' && (
                 <div className="space-y-2">
-                  {orders.length === 0 ? (
+                  {(orders || []).length === 0 ? (
                     <p className="text-slate-500 text-center py-8">No orders placed by this customer yet.</p>
                   ) : (
-                    orders.map(ord => (
+                    (orders || []).map(ord => (
                       <div key={ord.id} className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
                         <div>
                           <p className="font-mono font-bold text-amber-400">{ord.order_number}</p>
@@ -344,10 +344,10 @@ export const CustomerProfileModal = ({
 
               {activeTab === 'payments' && (
                 <div className="space-y-2">
-                  {payments.length === 0 ? (
+                  {(payments || []).length === 0 ? (
                     <p className="text-slate-500 text-center py-8">No payments recorded from this customer yet.</p>
                   ) : (
-                    payments.map(pay => (
+                    (payments || []).map(pay => (
                       <div key={pay.id} className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
                         <div>
                           <p className="font-mono font-bold text-emerald-400">{pay.payment_number}</p>

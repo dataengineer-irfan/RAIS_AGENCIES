@@ -404,31 +404,31 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50 font-mono">
-                  {items.map((item, idx) => {
-                    const lineTotal = (parseFloat(item.packets) || 0) * (parseFloat(item.purchaseCost) || 0);
+                  {(items || []).map((item, idx) => {
+                    const lineTotal = (parseFloat(item?.packets || 0)) * (parseFloat(item?.purchaseCost || 0));
                     return (
-                      <tr key={item.id || idx} className="hover:bg-slate-900/30">
+                      <tr key={item?.id || idx} className="hover:bg-slate-900/30">
                         {/* Supplier Item */}
                         <td className="py-2 px-3 font-sans">
                           <p className="font-bold text-white text-xs truncate max-w-[180px]">
-                            {item.supplierItem}
+                            {item?.supplierItem || 'Item'}
                           </p>
                           <span className="text-[10px] text-slate-500 font-mono">
-                            Batch: {item.batchNumber || 'JE-01'}
+                            Batch: {item?.batchNumber || 'JE-01'}
                           </span>
                         </td>
 
                         {/* Mapped SKU */}
                         <td className="py-2 px-3 font-sans">
                           <select
-                            value={item.productId}
+                            value={item?.productId || ''}
                             onChange={(e) => handleUpdateItem(idx, 'productId', e.target.value)}
                             className="bg-slate-900 border border-slate-700 text-amber-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500 max-w-[200px] truncate"
                           >
                             <option value="">-- Select SKU --</option>
-                            {products.map(p => (
-                              <option key={p.product_id} value={p.product_id}>
-                                {p.sku} • {p.name}
+                            {(products || []).map(p => (
+                              <option key={p?.product_id || p?.id} value={p?.product_id || p?.id}>
+                                {p?.sku} • {p?.name}
                               </option>
                             ))}
                           </select>
@@ -436,12 +436,12 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
 
                         {/* Invoiced Qty */}
                         <td className="py-2 px-3 text-center text-slate-300">
-                          {item.invoicedQty}
+                          {item?.invoicedQty ?? 0}
                         </td>
 
                         {/* Unit Conversion */}
                         <td className="py-2 px-3 text-center text-slate-400 text-[11px] font-sans">
-                          {item.unitDescription || '1 Pack'}
+                          {item?.unitDescription || '1 Pack'}
                         </td>
 
                         {/* Inward Packets (Calculated / Editable) */}
@@ -450,7 +450,7 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
                             type="number"
                             step="1"
                             min="1"
-                            value={item.packets}
+                            value={item?.packets ?? ''}
                             onChange={(e) => handleUpdateItem(idx, 'packets', e.target.value)}
                             className="w-16 px-2 py-1 bg-slate-900 border border-amber-500/40 rounded-lg text-amber-400 font-bold text-center focus:outline-none focus:border-amber-400 font-mono"
                           />
@@ -462,7 +462,7 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
                             type="number"
                             step="0.01"
                             min="0.01"
-                            value={item.purchaseCost}
+                            value={item?.purchaseCost ?? ''}
                             onChange={(e) => handleUpdateItem(idx, 'purchaseCost', e.target.value)}
                             className="w-20 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-bold text-right focus:outline-none focus:border-emerald-400 font-mono"
                           />
@@ -470,7 +470,7 @@ export const UploadInvoiceModal = ({ isOpen, onClose, products = [], onSuccess }
 
                         {/* Line Total */}
                         <td className="py-2 px-3 text-right font-bold text-white">
-                          ₹{lineTotal.toFixed(2)}
+                          ₹{parseFloat(lineTotal || 0).toFixed(2)}
                         </td>
 
                         {/* Remove */}

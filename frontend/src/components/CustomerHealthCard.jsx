@@ -25,8 +25,10 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
   };
 
   const handleSendWhatsAppReminder = (customer) => {
-    const text = `*RAIS AGENCIES — Payment Statement Reminder*\n\nDear ${customer.name},\nYour current outstanding balance is *₹${customer.outstanding_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (Overdue: *₹${customer.overdue_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*).\n\nPlease arrange settlement to maintain uninterrupted frozen supplies.\n\n*RAIS Agencies*, Rayachoty\nHotline: 9347453135`;
-    openWhatsApp(customer.phone, text);
+    const bal = parseFloat(customer?.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const overdue = parseFloat(customer?.overdue_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const text = `*RAIS AGENCIES — Payment Statement Reminder*\n\nDear ${customer?.name || 'Customer'},\nYour current outstanding balance is *₹${bal}* (Overdue: *₹${overdue}*).\n\nPlease arrange settlement to maintain uninterrupted frozen supplies.\n\n*RAIS Agencies*, Rayachoty\nHotline: 9347453135`;
+    openWhatsApp(customer?.phone, text);
   };
 
   if (loading) {
@@ -40,9 +42,9 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
 
   if (!healthData) return null;
 
-  const displayCustomers = healthData.customers.filter(c => {
+  const displayCustomers = (healthData?.customers || []).filter(c => {
     if (filter === 'ALL') return true;
-    return c.health_status === filter;
+    return c?.health_status === filter;
   });
 
   return (
@@ -72,7 +74,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
               filter === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
-            All ({healthData.total_customers})
+            All ({healthData?.total_customers ?? 0})
           </button>
           <button
             onClick={() => setFilter('AT_RISK')}
@@ -80,7 +82,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
               filter === 'AT_RISK' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'text-red-400/80 hover:text-red-400'
             }`}
           >
-            🔴 At Risk ({healthData.at_risk_count})
+            🔴 At Risk ({healthData?.at_risk_count ?? 0})
           </button>
           <button
             onClick={() => setFilter('WATCH')}
@@ -88,7 +90,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
               filter === 'WATCH' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-amber-400/80 hover:text-amber-400'
             }`}
           >
-            🟡 Watch ({healthData.watch_count})
+            🟡 Watch ({healthData?.watch_count ?? 0})
           </button>
           <button
             onClick={() => setFilter('HEALTHY')}
@@ -96,7 +98,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
               filter === 'HEALTHY' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-emerald-400/80 hover:text-emerald-400'
             }`}
           >
-            🟢 Healthy ({healthData.healthy_count})
+            🟢 Healthy ({healthData?.healthy_count ?? 0})
           </button>
         </div>
       </div>
@@ -104,25 +106,25 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
       {/* Summary Banner */}
       <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="text-xs text-slate-300 font-semibold">
-          {healthData.insight_summary}
+          {healthData?.insight_summary || 'Customer health tracking active.'}
         </div>
-        {healthData.total_overdue_risk > 0 && (
+        {(healthData?.total_overdue_risk || 0) > 0 && (
           <div className="text-xs font-black text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 whitespace-nowrap">
-            Overdue Capital: ₹{healthData.total_overdue_risk.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            Overdue Capital: ₹{parseFloat(healthData?.total_overdue_risk || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
         )}
       </div>
 
       {/* Customer Health Cards List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1">
-        {displayCustomers.map(c => {
-          const isAtRisk = c.health_status === 'AT_RISK';
-          const isWatch = c.health_status === 'WATCH';
-          const isHealthy = c.health_status === 'HEALTHY';
+        {(displayCustomers || []).map(c => {
+          const isAtRisk = c?.health_status === 'AT_RISK';
+          const isWatch = c?.health_status === 'WATCH';
+          const isHealthy = c?.health_status === 'HEALTHY';
 
           return (
             <div
-              key={c.customer_id}
+              key={c?.customer_id || Math.random()}
               className={`bg-slate-950/80 border rounded-2xl p-3.5 flex flex-col justify-between gap-3 transition-all ${
                 isAtRisk ? 'border-red-500/40 bg-red-950/10' :
                 isWatch ? 'border-amber-500/30 bg-amber-950/10' :
@@ -137,10 +139,10 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                       isWatch ? 'bg-amber-400' :
                       'bg-emerald-400'
                     }`}></span>
-                    <h4 className="text-xs font-bold text-white line-clamp-1">{c.name}</h4>
+                    <h4 className="text-xs font-bold text-white line-clamp-1">{c?.name || 'Customer'}</h4>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                    {c.code} • {c.contact_person} ({c.phone})
+                    {c?.code || ''} • {c?.contact_person || ''} ({c?.phone || ''})
                   </p>
                 </div>
 
@@ -149,7 +151,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                   isWatch ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
                   'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                 }`}>
-                  {c.health_status.replace('_', ' ')}
+                  {(c?.health_status || 'HEALTHY').replace('_', ' ')}
                 </span>
               </div>
 
@@ -158,19 +160,19 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                 <div>
                   <span className="text-slate-500">Balance:</span>
                   <div className="font-bold text-white font-mono mt-0.5">
-                    ₹{c.outstanding_balance.toLocaleString('en-IN')}
+                    ₹{parseFloat(c?.outstanding_balance || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
                 <div>
                   <span className="text-slate-500">Overdue:</span>
-                  <div className={`font-bold font-mono mt-0.5 ${c.overdue_balance > 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                    ₹{c.overdue_balance.toLocaleString('en-IN')}
+                  <div className={`font-bold font-mono mt-0.5 ${(c?.overdue_balance || 0) > 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                    ₹{parseFloat(c?.overdue_balance || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
                 <div>
                   <span className="text-slate-500">DSO / Delay:</span>
                   <div className="font-bold text-slate-300 font-mono mt-0.5">
-                    {c.dso_days}d / {c.avg_days_late}d late
+                    {c?.dso_days ?? 0}d / {c?.avg_days_late ?? 0}d late
                   </div>
                 </div>
               </div>

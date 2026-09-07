@@ -54,8 +54,8 @@ export const GlobalFilterBar = ({
               className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[140px] truncate"
             >
               <option value="ALL" className="bg-slate-900">All Customers</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id} className="bg-slate-900">{c.business_name || c.name}</option>
+              {(customers || []).map(c => (
+                <option key={c?.id} value={c?.id} className="bg-slate-900">{c?.business_name || c?.name || 'Customer'}</option>
               ))}
             </select>
           </div>
@@ -64,13 +64,13 @@ export const GlobalFilterBar = ({
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
             <Package className="w-3.5 h-3.5 text-amber-500 mr-2 shrink-0" />
             <select
-              value={filters.categoryId || 'ALL'}
+              value={filters?.categoryId || 'ALL'}
               onChange={(e) => onFilterChange('categoryId', e.target.value)}
               className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[130px] truncate"
             >
               <option value="ALL" className="bg-slate-900">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id} className="bg-slate-900">{cat.name}</option>
+              {(categories || []).map(cat => (
+                <option key={cat?.id} value={cat?.id} className="bg-slate-900">{cat?.name || 'Category'}</option>
               ))}
             </select>
           </div>

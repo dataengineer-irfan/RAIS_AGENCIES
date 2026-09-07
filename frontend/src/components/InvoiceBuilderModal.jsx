@@ -73,12 +73,12 @@ export const InvoiceBuilderModal = ({
 
         // Map existing invoice items → editable line items
         if (invoiceToEdit.items && invoiceToEdit.items.length > 0) {
-          setItems(invoiceToEdit.items.map(itm => {
+          setItems((invoiceToEdit.items || []).map(itm => {
             const matched = prodData.find(p => p.id === itm.product_id);
             return {
               product_id: itm.product_id,
               quantity: parseFloat(itm.quantity) || 1,
-              unit_price: parseFloat(itm.unit_price) || (matched ? parseFloat(matched.base_price) : 0),
+              unit_price: parseFloat(itm.unit_price) || (matched ? parseFloat(matched.base_price || 0) : 0),
               discount_rate: parseFloat(itm.discount_rate) || 0,
               packaging_unit: itm.packaging_unit || matched?.packaging_unit || 'PKT'
             };
@@ -294,9 +294,9 @@ export const InvoiceBuilderModal = ({
     const grandTotal = Math.max(0, subtotal - totalDiscount);
 
     return {
-      subtotal: subtotal.toFixed(2),
-      discount: totalDiscount.toFixed(2),
-      total: grandTotal.toFixed(2)
+      subtotal: parseFloat(subtotal || 0).toFixed(2),
+      discount: parseFloat(totalDiscount || 0).toFixed(2),
+      total: parseFloat(grandTotal || 0).toFixed(2)
     };
   };
 
@@ -330,11 +330,11 @@ export const InvoiceBuilderModal = ({
 
     setSubmitting(true);
     try {
-      const itemsPayload = items.map(itm => ({
-        product_id: itm.product_id,
-        quantity: parseFloat(itm.quantity),
-        unit_price: parseFloat(itm.unit_price),
-        discount_rate: parseFloat(itm.discount_rate) || 0
+      const itemsPayload = (items || []).map(itm => ({
+        product_id: itm?.product_id,
+        quantity: parseFloat(itm?.quantity || 1),
+        unit_price: parseFloat(itm?.unit_price || 0),
+        discount_rate: parseFloat(itm?.discount_rate || 0)
       }));
 
       let res;
@@ -571,8 +571,8 @@ export const InvoiceBuilderModal = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((itm, idx) => {
-                      const prod = products.find(p => p.id === itm.product_id);
+                    {(items || []).map((itm, idx) => {
+                      const prod = (products || []).find(p => p?.id === itm?.product_id);
                       const qty = parseFloat(itm.quantity) || 0;
                       const rate = parseFloat(itm.unit_price) || 0;
                       const disc = parseFloat(itm.discount_rate) || 0;
@@ -587,9 +587,9 @@ export const InvoiceBuilderModal = ({
                           </td>
                           <td className="py-2 text-center text-gray-600">{itm.packaging_unit || prod?.packaging_unit || 'PKT'}</td>
                           <td className="py-2 text-center font-bold font-mono">{qty}</td>
-                          <td className="py-2 text-right font-mono">₹{rate.toFixed(2)}</td>
+                          <td className="py-2 text-right font-mono">₹{parseFloat(rate || 0).toFixed(2)}</td>
                           <td className="py-2 text-right text-gray-600">{disc}%</td>
-                          <td className="py-2 text-right font-bold font-mono text-gray-900">₹{lineTotal.toFixed(2)}</td>
+                          <td className="py-2 text-right font-bold font-mono text-gray-900">₹{parseFloat(lineTotal || 0).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -702,9 +702,9 @@ export const InvoiceBuilderModal = ({
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-medium"
                   >
                     <option value="">-- Select Customer --</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.business_name} ({c.customer_code})
+                    {(customers || []).map((c) => (
+                      <option key={c?.id} value={c?.id}>
+                        {c?.business_name || 'Customer'} ({c?.customer_code || ''})
                       </option>
                     ))}
                   </select>
@@ -819,8 +819,8 @@ export const InvoiceBuilderModal = ({
                 </div>
 
                 <div className="space-y-2">
-                  {items.map((item, index) => {
-                    const selProd = products.find(p => p.id === item.product_id);
+                  {(items || []).map((item, index) => {
+                    const selProd = (products || []).find(p => p?.id === item?.product_id);
 
                     return (
                       <div key={index} className="grid grid-cols-12 gap-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">

@@ -311,14 +311,14 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                 No matching invoices found.
               </div>
             ) : (
-              filteredInvoices.map(inv => {
-                const isSelected = inv.id === selectedInvoiceId;
-                const total = parseFloat(inv.total_amount || 0);
-                const outstanding = parseFloat(inv.outstanding_amount || 0);
+              (filteredInvoices || []).map(inv => {
+                const isSelected = inv?.id === selectedInvoiceId;
+                const total = parseFloat(inv?.total_amount || 0);
+                const outstanding = parseFloat(inv?.outstanding_amount || 0);
 
                 return (
                   <div
-                    key={inv.id}
+                    key={inv?.id}
                     onClick={() => handleSelectInvoice(inv)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                       isSelected
@@ -329,25 +329,25 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                     <div className="overflow-hidden pr-2">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-bold text-xs text-amber-400">
-                          {inv.invoice_number}
+                          {inv?.invoice_number || 'INV'}
                         </span>
-                        <StatusBadge status={inv.status} />
+                        <StatusBadge status={inv?.status} />
                       </div>
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
-                        {inv.customer_name}
+                        {inv?.customer_name || 'Customer'}
                       </h4>
                       <p className="text-xs text-slate-400 truncate">
-                        {inv.invoice_date} • {inv.items_count || (inv.items ? inv.items.length : 0)} line items
+                        {inv?.invoice_date || '-'} • {inv?.items_count || (inv?.items ? inv.items.length : 0)} line items
                       </p>
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
                         <div className="font-mono font-bold text-xs text-white">
-                          ₹{total.toFixed(2)}
+                          ₹{parseFloat(total || 0).toFixed(2)}
                         </div>
                         <span className={`text-xs font-mono ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
-                          Due: ₹{outstanding.toFixed(2)}
+                          Due: ₹{parseFloat(outstanding || 0).toFixed(2)}
                         </span>
                       </div>
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-600'}`} />

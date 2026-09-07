@@ -226,24 +226,24 @@ export const ReportsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomerAging.map(c => {
-                  const total = parseFloat(c.total_outstanding || 0);
-                  const isSevere = parseFloat(c.aging_60_plus_days || 0) > 0;
+                {(filteredCustomerAging || []).map(c => {
+                  const total = parseFloat(c?.total_outstanding || 0);
+                  const isSevere = parseFloat(c?.aging_60_plus_days || 0) > 0;
 
                   return (
-                    <tr key={c.customer_id} className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors">
+                    <tr key={c?.customer_id} className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors">
                       <td className="py-2 px-2">
-                        <span className="font-bold text-white block text-xs truncate max-w-[140px]">{c.customer_name}</span>
-                        <span className="text-[9px] text-slate-500 font-mono">{c.customer_code}</span>
+                        <span className="font-bold text-white block text-xs truncate max-w-[140px]">{c?.customer_name || 'Customer'}</span>
+                        <span className="text-[9px] text-slate-500 font-mono">{c?.customer_code || ''}</span>
                       </td>
-                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{parseFloat(c.current_0_15_days || 0).toFixed(0)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{parseFloat(c.aging_16_30_days || 0).toFixed(0)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-amber-400">₹{parseFloat(c.aging_31_60_days || 0).toFixed(0)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{parseFloat(c?.current_0_15_days || 0).toFixed(0)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{parseFloat(c?.aging_16_30_days || 0).toFixed(0)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-amber-400">₹{parseFloat(c?.aging_31_60_days || 0).toFixed(0)}</td>
                       <td className={`py-2 px-2 text-right font-mono font-bold ${isSevere ? 'text-rose-400' : 'text-slate-500'}`}>
-                        ₹{parseFloat(c.aging_60_plus_days || 0).toFixed(0)}
+                        ₹{parseFloat(c?.aging_60_plus_days || 0).toFixed(0)}
                       </td>
                       <td className="py-2 px-2 text-right font-mono font-black text-amber-400">
-                        ₹{total.toFixed(2)}
+                        ₹{parseFloat(total || 0).toFixed(2)}
                       </td>
                       <td className="py-2 px-2 text-center">
                         <button

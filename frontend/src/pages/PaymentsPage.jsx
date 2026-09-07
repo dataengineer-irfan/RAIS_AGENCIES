@@ -186,15 +186,15 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                 No matching payment settlements found.
               </div>
             ) : (
-              filteredPayments.map(p => {
-                const isSelected = p.id === selectedPaymentId;
-                const amount = parseFloat(p.amount || 0);
+              (filteredPayments || []).map(p => {
+                const isSelected = p?.id === selectedPaymentId;
+                const amount = parseFloat(p?.amount || 0);
 
                 return (
                   <div
-                    key={p.id}
+                    key={p?.id}
                     onClick={() => {
-                      setSelectedPaymentId(p.id);
+                      setSelectedPaymentId(p?.id);
                       setMobileView('detail');
                     }}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
@@ -206,27 +206,27 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                     <div className="overflow-hidden pr-2">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-bold text-[11px] text-emerald-400">
-                          {p.payment_number}
+                          {p?.payment_number || 'REC'}
                         </span>
                         <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
-                          {p.payment_method}
+                          {p?.payment_method || 'CASH'}
                         </span>
                       </div>
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
-                        {p.customer_name}
+                        {p?.customer_name || 'Customer'}
                       </h4>
                       <p className="text-[10px] text-slate-400 truncate">
-                        {p.payment_date} {p.reference_number ? `• UTR: ${p.reference_number}` : ''}
+                        {p?.payment_date || '-'} {p?.reference_number ? `• UTR: ${p.reference_number}` : ''}
                       </p>
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
                         <div className="font-mono font-black text-xs text-emerald-400">
-                          +₹{amount.toFixed(2)}
+                          +₹{parseFloat(amount || 0).toFixed(2)}
                         </div>
                         <span className="text-[9px] text-slate-500">
-                          Alloc: ₹{parseFloat(p.allocated_amount || 0).toFixed(2)}
+                          Alloc: ₹{parseFloat(p?.allocated_amount || 0).toFixed(2)}
                         </span>
                       </div>
 

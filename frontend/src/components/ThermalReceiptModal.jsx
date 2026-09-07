@@ -168,17 +168,17 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
               <div className="my-2 border-t border-dashed border-black"></div>
 
               {/* Line Items Table */}
-              <div className="space-y-1 text-[10px]">
-                <div className="flex justify-between font-bold text-[9px] uppercase border-b border-black pb-0.5">
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between font-bold text-xs uppercase border-b border-black pb-0.5">
                   <span className="w-3/5">Item</span>
                   <span className="w-1/5 text-center">Qty</span>
                   <span className="w-1/5 text-right">Amt</span>
                 </div>
-                {receipt.line_items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-[9px]">
-                    <span className="w-3/5 truncate">{item.short_name}</span>
-                    <span className="w-1/5 text-center">{item.quantity}</span>
-                    <span className="w-1/5 text-right font-bold">{item.line_total.toFixed(2)}</span>
+                {(receipt?.line_items || []).map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-xs">
+                    <span className="w-3/5 truncate">{item.short_name || item.name || 'Item'}</span>
+                    <span className="w-1/5 text-center">{item.quantity || 1}</span>
+                    <span className="w-1/5 text-right font-bold">{parseFloat(item.line_total || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -186,50 +186,52 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
               <div className="my-2 border-t border-dashed border-black"></div>
 
               {/* Financials */}
-              <div className="space-y-0.5 text-[10px]">
+              <div className="space-y-0.5 text-xs">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>Rs. {receipt.financials.subtotal.toFixed(2)}</span>
+                  <span>Rs. {parseFloat(receipt?.financials?.subtotal || 0).toFixed(2)}</span>
                 </div>
-                {receipt.financials.tax_total > 0 && (
-                  <div className="flex justify-between text-[9px] text-gray-700">
+                {parseFloat(receipt?.financials?.tax_total || 0) > 0 && (
+                  <div className="flex justify-between text-[11px] text-gray-700">
                     <span>Tax:</span>
-                    <span>Rs. {receipt.financials.tax_total.toFixed(2)}</span>
+                    <span>Rs. {parseFloat(receipt?.financials?.tax_total || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-black text-xs border-t border-black pt-1 mt-1">
                   <span>NET TOTAL:</span>
-                  <span>Rs. {receipt.financials.grand_total.toFixed(2)}</span>
+                  <span>Rs. {parseFloat(receipt?.financials?.grand_total || 0).toFixed(2)}</span>
                 </div>
-                {receipt.financials.paid_amount > 0 && (
-                  <div className="flex justify-between text-[9px]">
+                {parseFloat(receipt?.financials?.paid_amount || 0) > 0 && (
+                  <div className="flex justify-between text-[11px]">
                     <span>Paid:</span>
-                    <span>Rs. {receipt.financials.paid_amount.toFixed(2)}</span>
+                    <span>Rs. {parseFloat(receipt?.financials?.paid_amount || 0).toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-[10px] text-black">
+                <div className="flex justify-between font-bold text-xs text-black">
                   <span>BALANCE DUE:</span>
-                  <span>Rs. {receipt.financials.outstanding_balance.toFixed(2)}</span>
+                  <span>Rs. {parseFloat(receipt?.financials?.outstanding_balance || 0).toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="my-2 border-t border-dashed border-black"></div>
 
               {/* UPI QR Payment Code Block */}
-              <div className="text-center space-y-1">
-                <div className="text-[9px] font-bold uppercase tracking-wider">
-                  Scan & Pay via UPI
+              {receipt?.upi?.upi_qr_string ? (
+                <div className="text-center space-y-1">
+                  <div className="text-xs font-bold uppercase tracking-wider">
+                    Scan & Pay via UPI
+                  </div>
+                  <div className="flex justify-center p-1 bg-white">
+                    {/* Generated Dynamic UPI QR Code Image via quickchart */}
+                    <img 
+                      src={`https://quickchart.io/qr?text=${encodeURIComponent(receipt.upi.upi_qr_string)}&size=120&margin=1`}
+                      alt="UPI QR Code"
+                      className="w-24 h-24 border border-black p-0.5"
+                    />
+                  </div>
+                  <div className="text-[10px] font-bold text-gray-900">UPI: {receipt.upi.upi_id || '9347453135@ybl'}</div>
                 </div>
-                <div className="flex justify-center p-1 bg-white">
-                  {/* Generated Dynamic UPI QR Code Image via quickchart */}
-                  <img 
-                    src={`https://quickchart.io/qr?text=${encodeURIComponent(receipt.upi.upi_qr_string)}&size=120&margin=1`}
-                    alt="UPI QR Code"
-                    className="w-24 h-24 border border-black p-0.5"
-                  />
-                </div>
-                <div className="text-[10px] font-bold text-gray-900">UPI: {receipt.upi.upi_id}</div>
-              </div>
+              ) : null}
 
               <div className="my-2 border-t border-dashed border-black"></div>
 

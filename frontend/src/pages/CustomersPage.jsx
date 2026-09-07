@@ -418,11 +418,11 @@ export const CustomersPage = ({
           </div>
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
             <span className="text-[11px] uppercase font-bold text-slate-400 block">Receivables</span>
-            <span className="text-xs sm:text-sm font-extrabold text-emerald-400 font-mono">₹{totalReceivables.toFixed(0)}</span>
+            <span className="text-xs sm:text-sm font-extrabold text-emerald-400 font-mono">₹{parseFloat(totalReceivables || 0).toFixed(0)}</span>
           </div>
           <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
             <span className="text-[11px] uppercase font-bold text-slate-400 block">Credit Cap</span>
-            <span className="text-xs sm:text-sm font-extrabold text-blue-400 font-mono">₹{(totalCreditExposure / 100000).toFixed(1)}L</span>
+            <span className="text-xs sm:text-sm font-extrabold text-blue-400 font-mono">₹{(parseFloat(totalCreditExposure || 0) / 100000).toFixed(1)}L</span>
           </div>
         </div>
       </div>
@@ -966,8 +966,8 @@ export const CustomersPage = ({
                               
                               <div className="text-right shrink-0">
                                 <div className="font-mono font-bold text-xs">
-                                  {debitVal > 0 && <span className="text-rose-400">+₹{debitVal.toFixed(2)}</span>}
-                                  {creditVal > 0 && <span className="text-emerald-400">-₹{creditVal.toFixed(2)}</span>}
+                                  {debitVal > 0 && <span className="text-rose-400">+₹{parseFloat(debitVal || 0).toFixed(2)}</span>}
+                                  {creditVal > 0 && <span className="text-emerald-400">-₹{parseFloat(creditVal || 0).toFixed(2)}</span>}
                                   {debitVal === 0 && creditVal === 0 && <span className="text-slate-500">₹0.00</span>}
                                 </div>
                                 <span className="text-[9px] text-amber-400 font-mono font-semibold block">

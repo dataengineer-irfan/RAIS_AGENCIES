@@ -471,9 +471,9 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
                 <span className="text-slate-400 text-[11px]">Pricing Valuation:</span>
               </div>
               <div className="flex items-center gap-4 text-xs">
-                <span>Wholesale Unit Rate: <b className="text-slate-200 font-bold">₹{numericBasePrice.toFixed(2)}</b></span>
+                <span>Wholesale Unit Rate: <b className="text-slate-200 font-bold">₹{parseFloat(numericBasePrice || 0).toFixed(2)}</b></span>
                 <span className="text-amber-400 font-bold border-l border-slate-800 pl-3">
-                  Billed Price: ₹{finalPriceInclTax.toFixed(2)} (Direct)
+                  Billed Price: ₹{parseFloat(finalPriceInclTax || 0).toFixed(2)} (Direct)
                 </span>
               </div>
             </div>

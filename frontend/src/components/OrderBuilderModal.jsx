@@ -183,10 +183,10 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
         order_date: orderDate,
         expected_delivery_date: expectedDeliveryDate || null,
         notes: notes || null,
-        items: items.map(i => ({
-          product_id: i.product_id,
-          quantity: parseFloat(i.quantity),
-          unit_price: parseFloat(i.unit_price)
+        items: (items || []).map(i => ({
+          product_id: i?.product_id,
+          quantity: parseFloat(i?.quantity || 1),
+          unit_price: parseFloat(i?.unit_price || 0)
         }))
       };
 
@@ -317,9 +317,9 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
                 >
                   <option value="">-- Select Customer --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.business_name} ({c.customer_code})
+                  {(customers || []).map((c) => (
+                    <option key={c?.id} value={c?.id}>
+                      {c?.business_name || 'Customer'} ({c?.customer_code || ''})
                     </option>
                   ))}
                 </select>
@@ -371,7 +371,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
             <div className="space-y-2 pt-2 border-t border-slate-800">
               <div className="flex items-center justify-between">
                 <label className="font-bold uppercase tracking-wider text-slate-300">
-                  Booked Line Items ({items.length})
+                  Booked Line Items ({items?.length || 0})
                 </label>
                 <button
                   type="button"
@@ -384,8 +384,8 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
               </div>
 
               <div className="space-y-2">
-                {items.map((item, idx) => {
-                  const isStockLow = item.quantity > item.current_stock;
+                {(items || []).map((item, idx) => {
+                  const isStockLow = (parseFloat(item?.quantity || 0)) > (parseFloat(item?.current_stock || 0));
 
                   return (
                     <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
@@ -495,11 +495,11 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
             <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs font-mono">
               <div>
                 <span className="text-slate-400">Total Items Subtotal: </span>
-                <span className="text-slate-200 font-bold text-sm">₹{subtotal.toFixed(2)}</span>
+                <span className="text-slate-200 font-bold text-sm">₹{parseFloat(subtotal || 0).toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-slate-400">Total Order Value: </span>
-                <span className="text-base font-black text-amber-400">₹{grandTotal.toFixed(2)}</span>
+                <span className="text-base font-black text-amber-400">₹{parseFloat(grandTotal || 0).toFixed(2)}</span>
               </div>
             </div>
 

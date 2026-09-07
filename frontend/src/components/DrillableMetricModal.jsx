@@ -96,18 +96,18 @@ export const DrillableMetricModal = ({
 
         {/* Interactive Breadcrumb Navigation Trail */}
         <div className="px-6 py-3 bg-slate-950 border-b border-slate-800/80 flex items-center gap-2 overflow-x-auto text-xs">
-          {breadcrumbs.map((b, idx) => (
+          {(breadcrumbs || []).map((b, idx) => (
             <React.Fragment key={idx}>
               {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />}
               <button
                 onClick={() => handleBreadcrumbClick(idx)}
                 className={`font-bold transition-colors whitespace-nowrap ${
-                  idx === breadcrumbs.length - 1 
+                  idx === (breadcrumbs?.length || 0) - 1 
                     ? 'text-amber-400 cursor-default font-black' 
                     : 'text-slate-400 hover:text-white underline decoration-slate-700'
                 }`}
               >
-                {b.name}
+                {b?.name}
               </button>
             </React.Fragment>
           ))}
@@ -128,10 +128,10 @@ export const DrillableMetricModal = ({
                 <span>Category Name</span>
                 <span>Invoiced Value & Breakdown</span>
               </div>
-              {items.map(cat => (
+              {(items || []).map(cat => (
                 <div
-                  key={cat.id}
-                  onClick={() => loadLevel('CATEGORY', cat.id, cat.name)}
+                  key={cat?.id}
+                  onClick={() => loadLevel('CATEGORY', cat?.id, cat?.name)}
                   className="bg-slate-950/70 border border-slate-800 hover:border-amber-500/60 rounded-2xl p-4 flex items-center justify-between transition-all hover:scale-[1.01] cursor-pointer group shadow-sm"
                 >
                   <div className="flex items-center gap-3.5">
@@ -140,10 +140,10 @@ export const DrillableMetricModal = ({
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
-                        {cat.name}
+                        {cat?.name}
                       </h4>
                       <p className="text-xs text-slate-500 font-mono">
-                        {cat.products_count} active product SKU(s)
+                        {cat?.products_count ?? 0} active product SKU(s)
                       </p>
                     </div>
                   </div>
@@ -151,7 +151,7 @@ export const DrillableMetricModal = ({
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="text-sm font-black text-white font-mono">
-                        ₹{cat.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        ₹{parseFloat(cat?.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
                       <div className="text-[10px] text-emerald-400 font-semibold flex items-center justify-end gap-1">
                         <TrendingUp className="w-3 h-3" />
@@ -175,15 +175,15 @@ export const DrillableMetricModal = ({
                   Back to All Categories
                 </button>
                 <span className="text-xs text-slate-500 font-semibold">
-                  {items.length} SKUs in {selectedCategory?.name}
+                  {items?.length || 0} SKUs in {selectedCategory?.name || 'Category'}
                 </span>
               </div>
 
-              {items.map(prod => {
+              {(items || []).map(prod => {
                 const visual = getProductVisualIcon(prod);
                 return (
                   <div
-                    key={prod.id}
+                    key={prod?.id}
                     className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3.5">
@@ -191,19 +191,19 @@ export const DrillableMetricModal = ({
                         {visual.icon}
                       </div>
                       <div>
-                        <h4 className="text-xs font-bold text-white">{prod.name}</h4>
+                        <h4 className="text-xs font-bold text-white">{prod?.name}</h4>
                         <p className="text-[10px] text-slate-500 font-mono">
-                          {prod.sku} • {prod.brand || 'Wholesale'} • Stock: {prod.current_stock}
+                          {prod?.sku} • {prod?.brand || 'Wholesale'} • Stock: {prod?.current_stock ?? 0}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="text-xs font-black text-amber-400 font-mono">
-                        Base Rate: ₹{prod.base_price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        Base Rate: ₹{parseFloat(prod?.base_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
                       <div className="text-[10px] text-slate-400 mt-0.5">
-                        Holding: ₹{prod.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        Holding: ₹{parseFloat(prod?.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>

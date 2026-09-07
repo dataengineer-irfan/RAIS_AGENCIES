@@ -19,8 +19,8 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
       if (catProducts.length > 0) {
         text += `🔹 *${cat.name.toUpperCase()}*\n`;
         catProducts.forEach(p => {
-          const base = parseFloat(p.base_price);
-          text += `• ${p.name} (${p.packaging_unit})\n  Rate: *₹${base.toFixed(2)}*\n`;
+          const base = parseFloat(p?.base_price || 0);
+          text += `• ${p?.name || 'Item'} (${p?.packaging_unit || 'PKT'})\n  Rate: *₹${parseFloat(base || 0).toFixed(2)}*\n`;
         });
         text += `\n`;
       }

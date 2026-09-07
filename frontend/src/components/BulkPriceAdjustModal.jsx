@@ -17,8 +17,8 @@ export const BulkPriceAdjustModal = ({ isOpen, onClose, categories = [], product
 
   const previewList = useMemo(() => {
     const val = parseFloat(adjustValue) || 0;
-    return categoryProducts.map(p => {
-      const cur = parseFloat(p.base_price || 0);
+    return (categoryProducts || []).map(p => {
+      const cur = parseFloat(p?.base_price || 0);
       let next = cur;
       if (adjustType === 'FLAT') {
         next = Math.max(0, cur + val);
@@ -102,7 +102,7 @@ export const BulkPriceAdjustModal = ({ isOpen, onClose, categories = [], product
               Select Category
             </label>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {categories.map(cat => {
+              {(categories || []).map(cat => {
                 const isSelected = selectedCategoryId === cat.id;
                 return (
                   <button
@@ -172,29 +172,29 @@ export const BulkPriceAdjustModal = ({ isOpen, onClose, categories = [], product
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-slate-300">
-                Preview Changes ({previewList.length} SKUs in {currentCat?.name || 'Category'})
+                Preview Changes ({previewList?.length || 0} SKUs in {currentCat?.name || 'Category'})
               </span>
               <span className="text-[11px] text-slate-500">Live preview</span>
             </div>
 
             <div className="max-h-48 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
-              {previewList.length === 0 ? (
+              {!previewList || previewList.length === 0 ? (
                 <div className="p-4 text-center text-slate-500">No active products in this category</div>
               ) : (
-                previewList.map(p => (
+                (previewList || []).map(p => (
                   <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs">
                     <div className="min-w-0 flex-1 pr-2">
                       <p className="font-medium text-slate-200 truncate">{p.name}</p>
                       <span className="text-[10px] text-slate-500 font-mono">{p.packaging_unit}</span>
                     </div>
                     <div className="flex items-center gap-2 font-mono shrink-0">
-                      <span className="text-slate-500 line-through">₹{p.currentPrice.toFixed(2)}</span>
+                      <span className="text-slate-500 line-through">₹{parseFloat(p?.currentPrice || 0).toFixed(2)}</span>
                       <ArrowRight className="w-3 h-3 text-slate-600" />
-                      <span className="text-white font-bold">₹{p.newPrice.toFixed(2)}</span>
+                      <span className="text-white font-bold">₹{parseFloat(p?.newPrice || 0).toFixed(2)}</span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        p.diff > 0 ? 'bg-emerald-500/10 text-emerald-400' : p.diff < 0 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-400'
+                        (p?.diff || 0) > 0 ? 'bg-emerald-500/10 text-emerald-400' : (p?.diff || 0) < 0 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-400'
                       }`}>
-                        {p.diff > 0 ? `+₹${p.diff.toFixed(2)}` : p.diff < 0 ? `-₹${Math.abs(p.diff).toFixed(2)}` : '0'}
+                        {(p?.diff || 0) > 0 ? `+₹${parseFloat(p.diff || 0).toFixed(2)}` : (p?.diff || 0) < 0 ? `-₹${parseFloat(Math.abs(p.diff || 0)).toFixed(2)}` : '0'}
                       </span>
                     </div>
                   </div>

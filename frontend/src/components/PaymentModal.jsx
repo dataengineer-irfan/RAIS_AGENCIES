@@ -40,9 +40,10 @@ export const PaymentModal = ({
     setSuccessMsg('');
     try {
       const custList = await customerApi.list();
-      setCustomers(custList);
+      const safeCustomers = Array.isArray(custList) ? custList : (custList?.items || []);
+      setCustomers(safeCustomers);
 
-      const targetCustId = activeCustomer?.id || (custList.length > 0 ? custList[0].id : '');
+      const targetCustId = activeCustomer?.id || (safeCustomers.length > 0 ? safeCustomers[0].id : '');
       setCustomerId(targetCustId);
 
       if (targetCustId) {
@@ -50,8 +51,8 @@ export const PaymentModal = ({
       }
 
       if (activeInvoice) {
-        setSelectedInvoiceId(activeInvoice.id);
-        setAmount(activeInvoice.outstanding_amount.toString());
+        setSelectedInvoiceId(activeInvoice?.id || '');
+        setAmount(String(activeInvoice?.outstanding_amount ?? '0'));
       }
     } catch (err) {
       setError('Failed to load customers.');
@@ -63,11 +64,12 @@ export const PaymentModal = ({
   const loadCustomerInvoices = async (cId) => {
     try {
       const invs = await billingApi.listInvoices({ customer_id: cId });
-      const open = invs.filter(i => ['ISSUED', 'PARTIALLY_PAID', 'OVERDUE'].includes(i.status) && parseFloat(i.outstanding_amount) > 0);
+      const rawInvs = Array.isArray(invs) ? invs : (invs?.items || []);
+      const open = rawInvs.filter(i => ['ISSUED', 'PARTIALLY_PAID', 'OVERDUE'].includes(i?.status) && parseFloat(i?.outstanding_amount || 0) > 0);
       setOpenInvoices(open);
       if (open.length > 0 && !preselectedInvoice) {
-        setSelectedInvoiceId(open[0].id);
-        setAmount(open[0].outstanding_amount.toString());
+        setSelectedInvoiceId(open[0]?.id || '');
+        setAmount(String(open[0]?.outstanding_amount ?? '0'));
       } else if (open.length === 0) {
         setSelectedInvoiceId('');
       }
@@ -102,7 +104,7 @@ export const PaymentModal = ({
       };
 
       const result = await paymentApi.record(payload);
-      setSuccessMsg(`Payment ${result.payment_number} of ₹${amtNum.toFixed(2)} recorded successfully!`);
+      setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${parseFloat(amtNum || 0).toFixed(2)} recorded successfully!`);
       if (onPaymentRecorded) {
         onPaymentRecorded(result);
       }
@@ -168,9 +170,9 @@ export const PaymentModal = ({
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
             >
               <option value="">-- Choose Customer --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.business_name} (Balance: ₹{parseFloat(c.outstanding_balance).toFixed(2)})
+              {(customers || []).map((c) => (
+                <option key={c?.id} value={c?.id}>
+                  {c?.business_name || 'Customer'} (Balance: ₹{parseFloat(c?.outstanding_balance || 0).toFixed(2)})
                 </option>
               ))}
             </select>
@@ -184,15 +186,15 @@ export const PaymentModal = ({
               value={selectedInvoiceId}
               onChange={(e) => {
                 setSelectedInvoiceId(e.target.value);
-                const inv = openInvoices.find(i => i.id === e.target.value);
-                if (inv) setAmount(inv.outstanding_amount.toString());
+                const inv = (openInvoices || []).find(i => i?.id === e.target.value);
+                if (inv) setAmount(String(inv?.outstanding_amount ?? '0'));
               }}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
             >
               <option value="">-- No Direct Allocation (Add to Unallocated Pool) --</option>
-              {openInvoices.map((inv) => (
-                <option key={inv.id} value={inv.id}>
-                  {inv.invoice_number} ({inv.invoice_date}) — Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+              {(openInvoices || []).map((inv) => (
+                <option key={inv?.id} value={inv?.id}>
+                  {inv?.invoice_number || 'INV'} ({inv?.invoice_date || '-'}) — Due: ₹{parseFloat(inv?.outstanding_amount || 0).toFixed(2)}
                 </option>
               ))}
             </select>

@@ -700,8 +700,8 @@ export const InventoryPage = () => {
                     {/* Bottom Row: Valuation & Progress */}
                     <div className="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400 font-mono">Rate: ₹{rate.toFixed(2)}</span>
-                        <span className="text-emerald-400 font-mono font-bold">Val: ₹{(lineVal >= 100000 ? `${(lineVal/100000).toFixed(2)}L` : lineVal.toLocaleString('en-IN', { maximumFractionDigits: 0 }))}</span>
+                        <span className="text-slate-400 font-mono">Rate: ₹{parseFloat(rate || 0).toFixed(2)}</span>
+                        <span className="text-emerald-400 font-mono font-bold">Val: ₹{(parseFloat(lineVal || 0) >= 100000 ? `${(parseFloat(lineVal || 0)/100000).toFixed(2)}L` : parseFloat(lineVal || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 }))}</span>
                       </div>
 
                       <div className="flex items-center gap-1.5">
@@ -876,14 +876,14 @@ export const InventoryPage = () => {
                       <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Wholesale Rate</span>
                         <p className="text-base font-black text-emerald-400 font-mono mt-0.5">
-                          ₹{selectedRate.toFixed(2)}
+                          ₹{parseFloat(selectedRate || 0).toFixed(2)}
                         </p>
                       </div>
 
                       <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Line Valuation</span>
                         <p className="text-base font-black text-amber-300 font-mono mt-0.5">
-                          ₹{selectedValuation.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₹{parseFloat(selectedValuation || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>
@@ -913,7 +913,7 @@ export const InventoryPage = () => {
                         <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
                           <span className="text-[9px] font-bold text-slate-400 uppercase block">Inward Purchase Rate</span>
                           <p className="text-sm font-black font-mono text-slate-200 mt-0.5">
-                            ₹{purchaseCost.toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
+                            ₹{parseFloat(purchaseCost || 0).toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
                           </p>
                           <span className="text-[9px] text-slate-500">Recorded Inward</span>
                         </div>
@@ -921,7 +921,7 @@ export const InventoryPage = () => {
                         <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
                           <span className="text-[9px] font-bold text-slate-400 uppercase block">Wholesale Selling Rate</span>
                           <p className="text-sm font-black font-mono text-white mt-0.5">
-                            ₹{selectedRate.toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
+                            ₹{parseFloat(selectedRate || 0).toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
                           </p>
                           <span className="text-[9px] text-slate-500">B2B Outlet Price</span>
                         </div>
@@ -929,7 +929,7 @@ export const InventoryPage = () => {
                         <div className="bg-slate-900/80 p-2 rounded-lg border border-emerald-500/30">
                           <span className="text-[9px] font-bold text-emerald-400 uppercase block">Profit / Packet</span>
                           <p className="text-sm font-black font-mono text-emerald-400 mt-0.5">
-                            +₹{marginAmt.toFixed(2)}
+                            +₹{parseFloat(marginAmt || 0).toFixed(2)}
                           </p>
                           <span className="text-[9px] text-emerald-500 font-semibold">Net Per Unit</span>
                         </div>

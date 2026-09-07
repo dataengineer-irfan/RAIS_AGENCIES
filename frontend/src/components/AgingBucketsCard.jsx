@@ -67,21 +67,21 @@ export const AgingBucketsCard = ({ onOpenDrilldown }) => {
         <div className="text-right">
           <span className="text-[10px] text-slate-500 uppercase font-bold">Total Receivables</span>
           <div className="text-base font-black text-amber-400 font-mono">
-            ₹{totalOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            ₹{parseFloat(totalOutstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
         </div>
       </div>
 
       {/* 4 Buckets Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        {buckets.map((b, idx) => (
+        {(buckets || []).map((b, idx) => (
           <div 
             key={idx}
             className={`p-3 rounded-2xl border ${b.border} ${b.bg} flex flex-col justify-between`}
           >
             <span className="text-[10px] font-bold text-slate-400 truncate">{b.label}</span>
             <div className={`text-base font-black font-mono mt-2 ${b.color}`}>
-              ₹{b.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              ₹{parseFloat(b?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
           </div>
         ))}
