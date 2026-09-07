@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { auditApi } from '../services/api';
+import { copyToClipboard } from '../utils/mobileHelpers';
 
 export const AuditPage = () => {
   const [logs, setLogs] = useState([]);
@@ -54,8 +55,8 @@ export const AuditPage = () => {
     }
   };
 
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(typeof text === 'object' ? JSON.stringify(text, null, 2) : text);
+  const handleCopy = async (text) => {
+    await copyToClipboard(text);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };

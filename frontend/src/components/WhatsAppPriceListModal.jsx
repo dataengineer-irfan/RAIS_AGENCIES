@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Share2, Copy, CheckCircle2, FileText, Phone } from 'lucide-react';
+import { copyToClipboard } from '../utils/mobileHelpers';
 
 export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categories = [] }) => {
   const [copied, setCopied] = useState(false);
@@ -33,8 +34,8 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
 
   const priceText = generatePriceText();
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(priceText);
+  const handleCopy = async () => {
+    await copyToClipboard(priceText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };

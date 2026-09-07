@@ -21,6 +21,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { orderApi } from '../services/api';
+import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { useAuth } from '../context/AuthContext';
 import { OrderBuilderModal } from '../components/OrderBuilderModal';
 import { StatusBadge } from '../components/StatusBadge';
@@ -103,16 +104,16 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
     }
   };
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code);
+  const handleCopyCode = async (code) => {
+    await copyToClipboard(code);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleSendWhatsAppConfirmation = (ord) => {
     const total = parseFloat(ord.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Order Booking Confirmation*%0A%0AOrder Ref: *${ord.order_number}*%0ACustomer: *${ord.customer_name}*%0ATotal Amount: *₹${total}*%0AStatus: *${ord.status}*%0A%0AThank you for ordering with RAIS Agencies, Rayachoty.`;
-    window.open(`https://wa.me/91${ord.customer_phone || '9347453135'}?text=${text}`, '_blank');
+    const text = `*RAIS AGENCIES — Order Booking Confirmation*\n\nOrder Ref: *${ord.order_number}*\nCustomer: *${ord.customer_name}*\nTotal Amount: *₹${total}*\nStatus: *${ord.status}*\n\nThank you for ordering with RAIS Agencies, Rayachoty.`;
+    openWhatsApp(ord.customer_phone || '9347453135', text);
   };
 
   const filteredOrders = orders.filter(o => {

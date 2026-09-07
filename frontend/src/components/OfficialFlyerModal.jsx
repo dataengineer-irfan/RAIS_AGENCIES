@@ -5,11 +5,22 @@ export const OfficialFlyerModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const handlePrint = () => {
-    const printWin = window.open('/assets/brochure.jpg', '_blank');
-    if (printWin) {
-      printWin.onload = () => {
-        printWin.print();
-      };
+    try {
+      const printWin = window.open('/assets/brochure.jpg', '_blank');
+      if (printWin) {
+        printWin.onload = () => {
+          try {
+            printWin.print();
+          } catch (e) {
+            console.warn('printWin.print failed:', e);
+          }
+        };
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.warn('handlePrint error:', err);
+      window.print();
     }
   };
 

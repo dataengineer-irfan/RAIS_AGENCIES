@@ -18,7 +18,7 @@ import {
   Calendar,
   Filter as FilterIcon
 } from 'lucide-react';
-import { reportApi, customerApi, catalogueApi } from '../services/api';
+import { reportApi, customerApi, catalogueApi, billingApi } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { DashboardTabStrip } from '../components/DashboardTabStrip';
 import { CompactForecastStrip } from '../components/CompactForecastStrip';
@@ -882,7 +882,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                               Thermal
                             </button>
                             <a
-                              href={`/api/invoices/${inv.id}/print-html`}
+                              href={billingApi.getPrintHtmlUrl(inv.id)}
                               target="_blank"
                               rel="noreferrer"
                               className="p-1 text-slate-400 hover:text-white bg-slate-800 rounded transition-colors"

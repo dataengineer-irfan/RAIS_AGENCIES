@@ -1,7 +1,4 @@
-/**
- * WhatsApp Direct Sharing Utilities for RAIS Agencies
- * Enables instant 1-tap sharing of Invoices and Orders to any WhatsApp contact.
- */
+import { openWhatsApp } from './mobileHelpers';
 
 export const shareInvoiceOnWhatsApp = ({
   invoice,
@@ -98,14 +95,5 @@ ${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n` : ''}
 };
 
 const openWhatsAppMessage = (phone, text) => {
-  const encoded = encodeURIComponent(text);
-  const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
-  
-  let url = `https://api.whatsapp.com/send?text=${encoded}`;
-  if (cleanPhone.length >= 10) {
-    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encoded}`;
-  }
-  
-  window.open(url, '_blank');
+  openWhatsApp(phone, text);
 };

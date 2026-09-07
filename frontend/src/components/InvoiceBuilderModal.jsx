@@ -398,7 +398,7 @@ export const InvoiceBuilderModal = ({
                 Share on WhatsApp
               </button>
               <a
-                href={`/api/invoices/${successInvoice.id}/print-html`}
+                href={billingApi.getPrintHtmlUrl(successInvoice.id)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-blue-600/20 transition-all hover:scale-105"

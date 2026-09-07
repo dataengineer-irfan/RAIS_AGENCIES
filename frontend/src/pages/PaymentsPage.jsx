@@ -20,6 +20,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { paymentApi } from '../services/api';
+import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { useAuth } from '../context/AuthContext';
 import { EditPaymentModal } from '../components/EditPaymentModal';
 
@@ -63,16 +64,16 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
     }
   };
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code);
+  const handleCopyCode = async (code) => {
+    await copyToClipboard(code);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleSendWhatsAppReceipt = (p) => {
     const amount = parseFloat(p.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Payment Settlement Receipt*%0A%0AReceipt #: *${p.payment_number}*%0ACustomer: *${p.customer_name}*%0AAmount Received: *₹${amount}*%0AMethod: *${p.payment_method}*%0ARef / UTR: *${p.reference_number || 'Cash Deposit'}*%0ADate: *${p.payment_date}*%0A%0AThank you for your timely settlement!%0A*RAIS Agencies*, Rayachoty.`;
-    window.open(`https://wa.me/919347453135?text=${text}`, '_blank');
+    const text = `*RAIS AGENCIES — Payment Settlement Receipt*\n\nReceipt #: *${p.payment_number}*\nCustomer: *${p.customer_name}*\nAmount Received: *₹${amount}*\nMethod: *${p.payment_method}*\nRef / UTR: *${p.reference_number || 'Cash Deposit'}*\nDate: *${p.payment_date}*\n\nThank you for your timely settlement!\n*RAIS Agencies*, Rayachoty.`;
+    openWhatsApp('9347453135', text);
   };
 
   const executeDeletePayment = async (payment) => {

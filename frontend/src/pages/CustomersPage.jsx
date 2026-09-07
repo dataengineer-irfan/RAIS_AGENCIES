@@ -30,6 +30,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { customerApi, billingApi } from '../services/api';
+import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { CustomerModal } from '../components/CustomerModal';
@@ -127,16 +128,16 @@ export const CustomersPage = ({
     setMobileView('detail');
   };
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code);
+  const handleCopyCode = async (code) => {
+    await copyToClipboard(code);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleSendWhatsApp = (cust) => {
     const balance = cust.outstanding_balance || 0;
-    const text = `*RAIS AGENCIES — Customer Statement*%0A%0ADear ${cust.business_name || cust.contact_person},%0AYour current account balance with RAIS Agencies is *₹${Number(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}*.%0A%0AFor wholesale order bookings, pricing or direct settlement, contact Rayachoty Depot: *9347453135*.%0A%0A*RAIS Agencies*, Reddies Colony, Rayachoty.`;
-    window.open(`https://wa.me/91${cust.phone}?text=${text}`, '_blank');
+    const text = `*RAIS AGENCIES — Customer Statement*\n\nDear ${cust.business_name || cust.contact_person},\nYour current account balance with RAIS Agencies is *₹${Number(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}*.\n\nFor wholesale order bookings, pricing or direct settlement, contact Rayachoty Depot: *9347453135*.\n\n*RAIS Agencies*, Reddies Colony, Rayachoty.`;
+    openWhatsApp(cust.phone, text);
   };
 
   const handleResetFilters = () => {

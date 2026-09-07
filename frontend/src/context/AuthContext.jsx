@@ -5,8 +5,14 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('rais_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('rais_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.warn('Failed to parse cached user, resetting storage:', e);
+      localStorage.removeItem('rais_user');
+      return null;
+    }
   });
   const [token, setToken] = useState(() => localStorage.getItem('rais_token'));
   const [loading, setLoading] = useState(false);

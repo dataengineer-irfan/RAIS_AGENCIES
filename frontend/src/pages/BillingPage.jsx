@@ -23,6 +23,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
+import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
@@ -123,8 +124,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     }
   };
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code);
+  const handleCopyCode = async (code) => {
+    await copyToClipboard(code);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
@@ -132,8 +133,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const handleSendWhatsAppInvoice = (inv) => {
     const total = parseFloat(inv.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const due = parseFloat(inv.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Tax Invoice Receipt*%0A%0AInvoice #: *${inv.invoice_number}*%0ACustomer: *${inv.customer_name}*%0ADate: *${inv.invoice_date}*%0ATotal Amount: *₹${total}*%0ABalance Due: *₹${due}*%0A%0APlease arrange settlement via UPI (*9347453135@ybl*).%0A%0A*RAIS Agencies*, Rayachoty.`;
-    window.open(`https://wa.me/91${inv.customer_phone || '9347453135'}?text=${text}`, '_blank');
+    const text = `*RAIS AGENCIES — Tax Invoice Receipt*\n\nInvoice #: *${inv.invoice_number}*\nCustomer: *${inv.customer_name}*\nDate: *${inv.invoice_date}*\nTotal Amount: *₹${total}*\nBalance Due: *₹${due}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n\n*RAIS Agencies*, Rayachoty.`;
+    openWhatsApp(inv.customer_phone || '9347453135', text);
   };
 
   const handleDeleteInvoice = async (inv) => {
@@ -389,7 +390,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   </button>
 
                   <a
-                    href={`/api/invoices/${selectedInvoice.id}/print-html`}
+                    href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
                     target="_blank"
                     rel="noreferrer"
                     className="p-1.5 text-slate-300 hover:text-white bg-slate-800 rounded-xl text-xs font-bold transition-colors"
@@ -562,7 +563,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                       </button>
 
                       <a
-                        href={`/api/invoices/${selectedInvoice.id}/print-html`}
+                        href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
                         target="_blank"
                         rel="noreferrer"
                         className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl flex items-center gap-2.5 text-left text-slate-300 transition-all hover:scale-[1.02]"

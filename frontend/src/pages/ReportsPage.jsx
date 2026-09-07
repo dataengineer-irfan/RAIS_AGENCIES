@@ -15,6 +15,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { reportApi } from '../services/api';
+import { openWhatsApp } from '../utils/mobileHelpers';
 import { DrillableMetricModal } from '../components/DrillableMetricModal';
 
 export const ReportsPage = () => {
@@ -52,8 +53,8 @@ export const ReportsPage = () => {
   const handleSendWhatsAppReminder = (cust) => {
     const total = parseFloat(cust.total_outstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const over60 = parseFloat(cust.aging_60_plus_days || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Payment Aging Statement*%0A%0ACustomer: *${cust.customer_name}*%0ATotal Outstanding: *₹${total}*%0AOverdue (>60 Days): *₹${over60}*%0A%0APlease arrange settlement via UPI (*9347453135@ybl*).%0A*RAIS Agencies*, Rayachoty.`;
-    window.open(`https://wa.me/91${cust.phone || '9347453135'}?text=${text}`, '_blank');
+    const text = `*RAIS AGENCIES — Payment Aging Statement*\n\nCustomer: *${cust.customer_name}*\nTotal Outstanding: *₹${total}*\nOverdue (>60 Days): *₹${over60}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n*RAIS Agencies*, Rayachoty.`;
+    openWhatsApp(cust.phone || '9347453135', text);
   };
 
   const handleExportCSV = () => {

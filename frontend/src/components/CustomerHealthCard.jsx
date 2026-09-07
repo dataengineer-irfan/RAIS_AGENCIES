@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, AlertTriangle, AlertCircle, Phone, MessageSquare, ChevronRight, UserCheck, Clock } from 'lucide-react';
 import { analyticsApi } from '../services/api';
+import { openWhatsApp } from '../utils/mobileHelpers';
 
 export const CustomerHealthCard = ({ onSelectCustomer }) => {
   const [healthData, setHealthData] = useState(null);
@@ -24,8 +25,8 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
   };
 
   const handleSendWhatsAppReminder = (customer) => {
-    const text = `*RAIS AGENCIES — Payment Statement Reminder*%0A%0ADear ${customer.name},%0AYour current outstanding balance is *₹${customer.outstanding_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (Overdue: *₹${customer.overdue_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*).%0A%0APlease arrange settlement to maintain uninterrupted frozen supplies.%0A%0A*RAIS Agencies*, Rayachoty%0AHotline: 9347453135`;
-    window.open(`https://wa.me/91${customer.phone}?text=${text}`, '_blank');
+    const text = `*RAIS AGENCIES — Payment Statement Reminder*\n\nDear ${customer.name},\nYour current outstanding balance is *₹${customer.outstanding_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (Overdue: *₹${customer.overdue_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*).\n\nPlease arrange settlement to maintain uninterrupted frozen supplies.\n\n*RAIS Agencies*, Rayachoty\nHotline: 9347453135`;
+    openWhatsApp(customer.phone, text);
   };
 
   if (loading) {

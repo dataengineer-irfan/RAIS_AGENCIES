@@ -1,17 +1,29 @@
 import axios from 'axios';
 
+const DEFAULT_PROD_API = 'https://rais-backend.onrender.com';
 let rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
-// Only use VITE_API_URL if it is a full URL or domain with a dot (e.g. .onrender.com)
-// Internal Docker hostnames like 'rais-backend' do not resolve in public browsers
-if (!rawApiUrl || !rawApiUrl.includes('.')) {
-  rawApiUrl = '';
+
+// Detect native Capacitor Android/iOS WebView
+const isNativePlatform = typeof window !== 'undefined' && (
+  window.Capacitor?.isNativePlatform?.() || 
+  window.location.protocol === 'capacitor:' || 
+  (window.location.hostname === 'localhost' && !import.meta.env.DEV)
+);
+
+// Fallback to production cloud backend if running in native mobile shell without env
+if (!rawApiUrl) {
+  rawApiUrl = isNativePlatform ? DEFAULT_PROD_API : '';
+} else if (!rawApiUrl.includes('.')) {
+  rawApiUrl = isNativePlatform ? DEFAULT_PROD_API : '';
 } else if (!rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
   rawApiUrl = `https://${rawApiUrl}`;
 }
 
-const API_BASE_URL = rawApiUrl 
+export const API_BASE_URL = rawApiUrl 
   ? `${rawApiUrl.replace(/\/$/, '')}/api` 
   : '/api';
+
+export const getInvoicePrintUrl = (id) => `${API_BASE_URL}/invoices/${id}/print-html`;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -19,6 +31,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
 
 // ─── HIGH-PERFORMANCE IN-MEMORY CLIENT RESPONSE CACHE ───
 const _CLIENT_CACHE = new Map();
@@ -161,7 +174,7 @@ export const billingApi = {
     const res = await api.delete(`/invoices/${id}`);
     return res.data;
   },
-  getPrintHtmlUrl: (id) => `/api/invoices/${id}/print-html`
+  getPrintHtmlUrl: (id) => `${API_BASE_URL}/invoices/${id}/print-html`
 };
 
 export const orderApi = {
