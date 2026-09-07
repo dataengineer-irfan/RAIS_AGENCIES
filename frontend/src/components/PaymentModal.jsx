@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2 } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
 
-export const PaymentModal = ({ isOpen, onClose, preselectedCustomer, preselectedInvoice, onPaymentRecorded }) => {
+export const PaymentModal = ({ 
+  isOpen, 
+  onClose, 
+  preselectedCustomer, 
+  preselectedInvoice,
+  initialCustomer,
+  initialInvoice,
+  onPaymentRecorded 
+}) => {
+  const activeCustomer = preselectedCustomer || initialCustomer;
+  const activeInvoice = preselectedInvoice || initialInvoice;
+
   const [customers, setCustomers] = useState([]);
   const [openInvoices, setOpenInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,7 +32,7 @@ export const PaymentModal = ({ isOpen, onClose, preselectedCustomer, preselected
     if (isOpen) {
       loadInitialData();
     }
-  }, [isOpen, preselectedCustomer, preselectedInvoice]);
+  }, [isOpen, activeCustomer, activeInvoice]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -31,16 +42,16 @@ export const PaymentModal = ({ isOpen, onClose, preselectedCustomer, preselected
       const custList = await customerApi.list();
       setCustomers(custList);
 
-      const targetCustId = preselectedCustomer?.id || (custList.length > 0 ? custList[0].id : '');
+      const targetCustId = activeCustomer?.id || (custList.length > 0 ? custList[0].id : '');
       setCustomerId(targetCustId);
 
       if (targetCustId) {
         await loadCustomerInvoices(targetCustId);
       }
 
-      if (preselectedInvoice) {
-        setSelectedInvoiceId(preselectedInvoice.id);
-        setAmount(preselectedInvoice.outstanding_amount.toString());
+      if (activeInvoice) {
+        setSelectedInvoiceId(activeInvoice.id);
+        setAmount(activeInvoice.outstanding_amount.toString());
       }
     } catch (err) {
       setError('Failed to load customers.');
@@ -109,17 +120,17 @@ export const PaymentModal = ({ isOpen, onClose, preselectedCustomer, preselected
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Record Settlement / Payment</h2>
+              <h2 className="text-sm sm:text-base font-bold text-white">Record Settlement / Payment</h2>
               <p className="text-xs text-slate-400">Allocate Cash, UPI, or Bank settlement to Invoice</p>
             </div>
           </div>
@@ -132,7 +143,7 @@ export const PaymentModal = ({ isOpen, onClose, preselectedCustomer, preselected
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs font-semibold">
               {error}

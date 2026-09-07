@@ -26,3 +26,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Mobile Safe Area & Touch Utilities */
+.safe-area-pb {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.safe-area-pt {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+/* Hide scrollbars for clean swipeable chips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -16,7 +16,8 @@ import {
   Calendar,
   Pencil,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft
 } from 'lucide-react';
 import { paymentApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +33,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [activeInspectorTab, setActiveInspectorTab] = useState('metadata'); // metadata, allocations, actions
   const [copiedCode, setCopiedCode] = useState(false);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Edit and Delete State
   const [editingPayment, setEditingPayment] = useState(null);
@@ -164,7 +166,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
         
         {/* ─── LEFT MASTER PANE (42% Width = 5 cols) ─── */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
             <span>Payment Vouchers ({filteredPayments.length})</span>
             <span>Amount Received</span>
@@ -190,7 +192,10 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                 return (
                   <div
                     key={p.id}
-                    onClick={() => setSelectedPaymentId(p.id)}
+                    onClick={() => {
+                      setSelectedPaymentId(p.id);
+                      setMobileView('detail');
+                    }}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                       isSelected
                         ? 'bg-emerald-500/10 border-emerald-500/50 shadow-md shadow-emerald-500/10'
@@ -258,7 +263,21 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
         </div>
 
         {/* ─── RIGHT DETAIL INSPECTOR (58% Width = 7 cols) ─── */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 shadow-xl flex-col overflow-hidden`}>
+          {/* Mobile Back to List button */}
+          <div className="lg:hidden pb-2 mb-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setMobileView('list')}
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold text-xs"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Vouchers List</span>
+            </button>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {filteredPayments.length} Vouchers
+            </span>
+          </div>
+
           {selectedPayment ? (
             <div className="h-full flex flex-col overflow-hidden">
               

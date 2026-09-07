@@ -17,7 +17,8 @@ import {
   Sparkles,
   Package,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { orderApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +39,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   const [activeInspectorTab, setActiveInspectorTab] = useState('items'); // items, details, actions
   const [copiedCode, setCopiedCode] = useState(false);
   const [convertingId, setConvertingId] = useState(null);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Modal
   const [orderModalOpen, setOrderModalOpen] = useState(false);
@@ -83,6 +85,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   const handleSelectOrder = (order) => {
     setSelectedOrderId(order.id);
     loadOrderDetails(order.id);
+    setMobileView('detail');
   };
 
   const handleConvertToInvoice = async (orderId) => {
@@ -189,7 +192,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
         
         {/* ─── LEFT MASTER PANE (42% Width = 5 cols) ─── */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
             <span>Advance Orders ({filteredOrders.length})</span>
             <span>Total Value</span>
@@ -256,7 +259,21 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
         </div>
 
         {/* ─── RIGHT DETAIL INSPECTOR (58% Width = 7 cols) ─── */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 shadow-xl flex flex-col overflow-hidden`}>
+          {/* Mobile Back to List button */}
+          <div className="lg:hidden pb-2 mb-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setMobileView('list')}
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold text-xs"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Orders List</span>
+            </button>
+            <span className="text-[10px] text-slate-500 font-mono">
+              {filteredOrders.length} Orders
+            </span>
+          </div>
+
           {selectedOrder ? (
             <div className="h-full flex flex-col overflow-hidden">
               

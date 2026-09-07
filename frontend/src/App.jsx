@@ -42,7 +42,13 @@ export const App = () => {
   const [selectedCustForPayment, setSelectedCustForPayment] = useState(null);
   const [selectedInvForPayment, setSelectedInvForPayment] = useState(null);
   const [selectedCustForOrder, setSelectedCustForOrder] = useState(null);
+  const [selectedCustForInvoice, setSelectedCustForInvoice] = useState(null);
   const [customerToEdit, setCustomerToEdit] = useState(null);
+
+  const handleOpenInvoice = (cust = null) => {
+    setSelectedCustForInvoice(cust);
+    setInvoiceBuilderOpen(true);
+  };
 
   // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar
   useEffect(() => {
@@ -155,12 +161,14 @@ export const App = () => {
           onToggleAI={() => setAiDrawerOpen(!aiDrawerOpen)}
           globalSearchTerm={globalSearchTerm}
           onGlobalSearch={setGlobalSearchTerm}
+          activeTab={activeTab}
+          onNavigate={(tab) => setActiveTab(tab)}
         />
 
         <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
           {activeTab === 'dashboard' && (
             <DashboardPage
-              onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
+              onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentModal={() => handleOpenPayment()}
               onNavigate={(tab) => setActiveTab(tab)}
             />
@@ -170,7 +178,7 @@ export const App = () => {
             <CustomersPage
               onOpenCustomerModal={handleOpenCustomerModal}
               onOpenPaymentForCustomer={(cust) => handleOpenPayment(cust, null)}
-              onOpenInvoiceForCustomer={(cust) => setInvoiceBuilderOpen(true)}
+              onOpenInvoiceForCustomer={(cust) => handleOpenInvoice(cust)}
               onOpenOrderForCustomer={(cust) => handleOpenOrder(cust)}
             />
           )}
@@ -189,7 +197,7 @@ export const App = () => {
 
           {activeTab === 'billing' && (
             <BillingPage
-              onOpenInvoiceBuilder={() => setInvoiceBuilderOpen(true)}
+              onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentForInvoice={(inv) => handleOpenPayment(null, inv)}
             />
           )}
@@ -212,6 +220,7 @@ export const App = () => {
       <InvoiceBuilderModal
         isOpen={invoiceBuilderOpen}
         onClose={() => setInvoiceBuilderOpen(false)}
+        preselectedCustomer={selectedCustForInvoice}
       />
 
       <OrderBuilderModal
@@ -223,6 +232,8 @@ export const App = () => {
       <PaymentModal
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+        preselectedCustomer={selectedCustForPayment}
+        preselectedInvoice={selectedInvForPayment}
         initialCustomer={selectedCustForPayment}
         initialInvoice={selectedInvForPayment}
       />
@@ -240,7 +251,7 @@ export const App = () => {
 
       {/* Mobile Floating Action Button (Quick Actions) */}
       <MobileQuickActionFab
-        onOpenInvoice={() => setInvoiceBuilderOpen(true)}
+        onOpenInvoice={() => handleOpenInvoice(null)}
         onOpenOrder={() => handleOpenOrder()}
         onOpenCustomer={() => handleOpenCustomerModal()}
         onOpenAI={() => setAiDrawerOpen(true)}

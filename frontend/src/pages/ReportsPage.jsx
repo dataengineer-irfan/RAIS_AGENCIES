@@ -211,8 +211,8 @@ export const ReportsPage = () => {
             <span className="text-[10px] text-slate-500">1-Click WhatsApp reminder</span>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="flex-1 min-h-0 overflow-auto">
+            <table className="min-w-[550px] w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
                   <th className="py-2 px-2">Customer</th>

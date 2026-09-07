@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { paymentApi } from '../services/api';
 
@@ -60,11 +60,11 @@ export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col my-auto max-h-[90vh]">
         
         {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <CreditCard className="w-4 h-4" />
@@ -85,7 +85,7 @@ export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+        <form onSubmit={handleSubmit} className="p-4 space-y-3.5 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2 text-rose-400 text-xs">
               <AlertTriangle className="w-4 h-4 shrink-0" />

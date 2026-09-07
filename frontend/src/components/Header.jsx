@@ -1,5 +1,26 @@
 import React, { useState } from 'react';
-import { Sparkles, MapPin, Phone, Search, PanelLeftClose, PanelLeftOpen, LogOut, User, X, ShieldCheck } from 'lucide-react';
+import { 
+  Sparkles, 
+  MapPin, 
+  Phone, 
+  Search, 
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  LogOut, 
+  User, 
+  X, 
+  ShieldCheck,
+  Menu,
+  LayoutDashboard,
+  Users,
+  Package,
+  Boxes,
+  FileText,
+  CreditCard,
+  ShoppingBag,
+  BarChart3,
+  ChevronRight
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Header = ({ 
@@ -9,11 +30,14 @@ export const Header = ({
   sidebarOpen = true,
   onToggleSidebar,
   onHoverTopLeft,
-  onLeaveTopLeft
+  onLeaveTopLeft,
+  activeTab = 'dashboard',
+  onNavigate
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [mobileNavDrawerOpen, setMobileNavDrawerOpen] = useState(false);
 
   return (
     <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all">
@@ -83,9 +107,17 @@ export const Header = ({
       {/* ─── NATIVE MOBILE APP BAR (< md) ─── */}
       <div className="md:hidden flex flex-col px-3 py-2">
         <div className="flex items-center justify-between gap-2 h-11">
-          {/* Brand & Depot Identity */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20">
+          {/* Brand & Depot Identity + Menu Button */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileNavDrawerOpen(true)}
+              className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-slate-300 hover:text-white active:scale-95 transition-all flex items-center justify-center shrink-0"
+              title="All App Sections"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20 shrink-0">
               R
             </div>
             <div>
@@ -215,6 +247,85 @@ export const Header = ({
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out of Workspace</span>
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── MOBILE FULL NAVIGATION DRAWER (< md) ─── */}
+        {mobileNavDrawerOpen && (
+          <div 
+            onClick={() => setMobileNavDrawerOpen(false)}
+            className="md:hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200 flex"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="w-4/5 max-w-xs bg-slate-900 border-r border-slate-800 h-full flex flex-col p-4 shadow-2xl animate-in slide-in-from-left duration-200"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20">
+                    R
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black tracking-wider text-white">RAIS AGENCIES</h3>
+                    <p className="text-[10px] text-amber-400 font-semibold">Rayachoty Depot</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileNavDrawerOpen(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Menu Items */}
+              <div className="flex-1 overflow-y-auto py-3 space-y-1">
+                {[
+                  { id: 'dashboard', label: 'Home Dashboard', icon: LayoutDashboard },
+                  { id: 'customers', label: 'Outlets & Customers', icon: Users },
+                  { id: 'catalogue', label: 'Product Catalogue', icon: Package },
+                  { id: 'inventory', label: 'Inventory & Stock', icon: Boxes },
+                  { id: 'billing', label: 'Billing & Invoices', icon: FileText },
+                  { id: 'payments', label: 'Payment Settlements', icon: CreditCard, highlight: true },
+                  { id: 'orders', label: 'Orders & Bookings', icon: ShoppingBag },
+                  { id: 'reports', label: 'Financial Reports & Aging', icon: BarChart3 },
+                  { id: 'ai', label: 'Executive AI Co-Pilot', icon: Sparkles },
+                  ...(hasRole && hasRole('ADMIN') ? [{ id: 'audit', label: 'Audit & System Logs', icon: ShieldCheck }] : [])
+                ].map(item => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (onNavigate) onNavigate(item.id);
+                        setMobileNavDrawerOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all ${
+                        isActive 
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' 
+                          : item.highlight 
+                            ? 'text-emerald-400 hover:text-white hover:bg-emerald-500/10'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-slate-950' : item.highlight ? 'text-emerald-400' : 'text-slate-400'}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : 'text-slate-600'}`} />
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between shrink-0">
+                <span>Near Reddies Colony</span>
+                <span className="font-mono text-emerald-400">Hub Online</span>
+              </div>
             </div>
           </div>
         )}
