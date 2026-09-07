@@ -84,33 +84,104 @@ function applyClientFilters(rawKpis, filters, customers = []) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INLINE SLICER BAR (Compact, no external component)
+// EXECUTIVE OPERATIONAL PULSE BANNER (High-Contrast Anomaly Detection)
+// ─────────────────────────────────────────────────────────────────────────────
+const ExecutivePulseBanner = ({ customers, kpis, onNavigate, onOpenPaymentModal }) => {
+  const sortedDebtors = useMemo(() => {
+    return (customers || [])
+      .map(c => ({
+        id: c.id,
+        name: c.business_name || c.contact_person,
+        phone: c.phone,
+        balance: parseFloat(c.outstanding_balance || 0)
+      }))
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance);
+  }, [customers]);
+
+  const totalOutstanding = sortedDebtors.reduce((sum, c) => sum + c.balance, 0);
+  const top3Sum = sortedDebtors.slice(0, 3).reduce((sum, c) => sum + c.balance, 0);
+  const concentrationPct = totalOutstanding > 0 ? Math.round((top3Sum / totalOutstanding) * 100) : 0;
+  const topDebtor = sortedDebtors[0];
+
+  return (
+    <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3 sm:p-3.5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 transition-all">
+      <div className="flex items-start gap-3">
+        <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shrink-0 mt-0.5">
+          <AlertTriangle className="w-4 h-4" />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              Operational Pulse & Risk Watch
+            </span>
+            {concentrationPct > 0 && (
+              <span className="text-xs font-mono font-semibold px-2 py-0.5 bg-amber-500/15 text-amber-300 rounded-full border border-amber-500/30">
+                {concentrationPct}% in Top 3 Outlets
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+            {topDebtor ? (
+              <>
+                Highest risk exposure: <strong className="text-white">{topDebtor.name}</strong> at{' '}
+                <strong className="text-amber-400 font-mono">₹{topDebtor.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>. Prioritize collection before releasing morning dispatch.
+              </>
+            ) : (
+              'All customer credit exposures are clear. Delivery routes operating with standard terms.'
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+        {topDebtor && (
+          <button
+            onClick={() => onNavigate('customers')}
+            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
+          >
+            Review Outlets →
+          </button>
+        )}
+        <button
+          onClick={onOpenPaymentModal}
+          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 transition-all active:scale-95"
+        >
+          + Collect Cash
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INLINE SLICER RIBBON (Compact, 12px sunlight-readable touch targets)
 // ─────────────────────────────────────────────────────────────────────────────
 const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, customers }) => {
   const isFiltered = filters.customerId !== 'ALL' || filters.categoryId !== 'ALL' || filters.dateRange !== 'THIS_MONTH';
 
   return (
-    <div className="flex items-center justify-between gap-2 bg-slate-900/95 backdrop-blur-sm border border-slate-800/80 rounded-xl px-3 py-1.5 shrink-0">
+    <div className="flex items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-sm border border-slate-800 rounded-xl px-3 py-2 shrink-0">
       {/* Left label */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">Slicers</span>
+      <div className="flex items-center gap-2 shrink-0">
+        <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-300 hidden sm:inline">Filters</span>
         {isFiltered && (
-          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30 animate-pulse">
+          <span className="text-xs font-bold uppercase px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
             Active
           </span>
         )}
       </div>
 
       {/* Slicer dropdowns */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
         {/* Date Range */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 shrink-0">
-          <Calendar className="w-3 h-3 text-amber-500 mr-1.5 shrink-0" />
+        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 shrink-0 transition-colors">
+          <Calendar className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0" />
           <select
             value={filters.dateRange}
             onChange={(e) => onFilterChange('dateRange', e.target.value)}
-            className="bg-transparent text-[11px] font-semibold text-white focus:outline-none cursor-pointer"
+            className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
           >
             <option value="TODAY" className="bg-slate-900">Today</option>
             <option value="THIS_WEEK" className="bg-slate-900">This Week</option>
@@ -121,14 +192,14 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
         </div>
 
         {/* Customer */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 shrink-0">
-          <Users className="w-3 h-3 text-amber-500 mr-1.5 shrink-0" />
+        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 shrink-0 transition-colors">
+          <Users className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0" />
           <select
             value={filters.customerId}
             onChange={(e) => onFilterChange('customerId', e.target.value)}
-            className="bg-transparent text-[11px] font-semibold text-white focus:outline-none cursor-pointer max-w-[120px]"
+            className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[130px] truncate"
           >
-            <option value="ALL" className="bg-slate-900">All Customers</option>
+            <option value="ALL" className="bg-slate-900">All Outlets</option>
             {customers.map(c => (
               <option key={c.id} value={c.id} className="bg-slate-900">{c.business_name || c.name}</option>
             ))}
@@ -136,12 +207,12 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
         </div>
 
         {/* Category */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 shrink-0">
-          <Package className="w-3 h-3 text-amber-500 mr-1.5 shrink-0" />
+        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 shrink-0 transition-colors">
+          <Package className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0" />
           <select
             value={filters.categoryId}
             onChange={(e) => onFilterChange('categoryId', e.target.value)}
-            className="bg-transparent text-[11px] font-semibold text-white focus:outline-none cursor-pointer max-w-[120px]"
+            className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[130px] truncate"
           >
             <option value="ALL" className="bg-slate-900">All Categories</option>
             {categories.map(cat => (
@@ -155,13 +226,13 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
       <button
         onClick={onResetFilters}
         disabled={!isFiltered}
-        className={`flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-lg border transition-all shrink-0 ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all shrink-0 ${
           isFiltered
-            ? 'text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 cursor-pointer'
+            ? 'text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 cursor-pointer active:scale-95'
             : 'text-slate-600 bg-slate-950 border-slate-800 cursor-default'
         }`}
       >
-        <RefreshCw className="w-3 h-3" />
+        <RefreshCw className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">Reset</span>
       </button>
     </div>
@@ -320,51 +391,59 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             {/* Row 1: Action Header (compact) */}
             <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-lg shrink-0">
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                  Rayachoty Hub
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                  Rayachoty Depot Hub
                 </span>
-                <h1 className="text-sm sm:text-base font-black text-white tracking-tight">
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   Executive Command & Decision Overview
                 </h1>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={onOpenInvoiceBuilder}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
                 >
-                  <PlusCircle className="w-3 h-3" />
-                  <span className="hidden sm:inline">New Invoice</span>
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>New Invoice</span>
                 </button>
                 <button
                   onClick={onOpenPaymentModal}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10px] uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95"
                 >
-                  <CreditCard className="w-3 h-3" />
-                  <span className="hidden sm:inline">Payment</span>
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Collect Payment</span>
                 </button>
               </div>
             </div>
 
-            {/* Row 2: 6 Executive KPI Cards (Desktop) */}
+            {/* Row 1.5: Executive Pulse Banner (Anomaly Detection & Operational Storytelling) */}
+            <ExecutivePulseBanner
+              kpis={kpis}
+              customers={customers}
+              onNavigate={onNavigate}
+              onOpenPaymentModal={onOpenPaymentModal}
+            />
+
+            {/* Row 2: 6 Executive KPI Cards (Desktop Power BI Fabric Standard) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 shrink-0">
               {/* Revenue */}
               <div 
                 onClick={() => openDrilldown('revenue', 'Revenue by Category & SKU Breakdown')}
-                className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
+                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Revenue</span>
-                  <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-400 flex items-center justify-center">
-                    <TrendingUp className="w-3 h-3" />
+                  <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Revenue</span>
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <p className="text-base lg:text-lg font-black text-white mt-1 font-mono truncate">
+                <p className="text-base lg:text-lg font-extrabold text-white mt-1.5 font-mono truncate">
                   ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
-                <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
-                  <span>{kpis?.total_invoices_count || 0} orders</span>
+                <div className="flex items-center justify-between text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800/80">
+                  <span className="font-medium">{kpis?.total_invoices_count || 0} orders</span>
                   <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                    Drill <ArrowUpRight className="w-2.5 h-2.5" />
+                    Drill <ArrowUpRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>
@@ -372,39 +451,39 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               {/* Total Outstanding / Outlets Receivables */}
               <div 
                 onClick={() => setActivePage('receivables')}
-                className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
+                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Receivables</span>
-                  <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                    <Clock className="w-3 h-3" />
+                  <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Receivables</span>
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <p className="text-base lg:text-lg font-black text-amber-400 mt-1 font-mono truncate">
+                <p className="text-base lg:text-lg font-extrabold text-amber-400 mt-1.5 font-mono truncate">
                   ₹{outstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
-                <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
-                  <span>Outlets Due</span>
+                <div className="flex items-center justify-between text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800/80">
+                  <span className="font-medium">Outlets Due</span>
                   <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                    View <ArrowUpRight className="w-2.5 h-2.5" />
+                    View <ArrowUpRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>
 
               {/* Overall Profit */}
               <div 
-                className="bg-slate-900 p-3 rounded-xl border border-emerald-500/30 shadow-md transition-all hover:scale-[1.02] group"
+                className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 shadow-md transition-all hover:scale-[1.01] group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Overall Profit</span>
-                  <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                    <TrendingUp className="w-3 h-3" />
+                  <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Overall Profit</span>
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <p className="text-base lg:text-lg font-black text-emerald-400 mt-1 font-mono truncate">
+                <p className="text-base lg:text-lg font-extrabold text-emerald-400 mt-1.5 font-mono truncate">
                   ₹{profitVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
-                <div className="flex items-center justify-between text-[9px] text-emerald-500 mt-1 pt-1 border-t border-slate-800/80">
+                <div className="flex items-center justify-between text-xs text-emerald-500/90 mt-1.5 pt-1.5 border-t border-slate-800/80 font-medium">
                   <span>Gross Margin</span>
                   <span className="font-bold text-emerald-400">Net Pos</span>
                 </div>
@@ -412,20 +491,20 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
 
               {/* Overall Loss */}
               <div 
-                className="bg-slate-900 p-3 rounded-xl border border-rose-500/30 shadow-md transition-all hover:scale-[1.02] group"
+                className="bg-slate-900 p-3 rounded-2xl border border-rose-500/30 shadow-md transition-all hover:scale-[1.01] group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">Overall Loss</span>
-                  <div className="w-6 h-6 rounded-md bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                    <AlertTriangle className="w-3 h-3" />
+                  <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">Overall Loss</span>
+                  <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                    <AlertTriangle className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <p className="text-base lg:text-lg font-black text-rose-400 mt-1 font-mono truncate">
+                <p className="text-base lg:text-lg font-extrabold text-rose-400 mt-1.5 font-mono truncate">
                   ₹{lossVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
-                <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
+                <div className="flex items-center justify-between text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800/80 font-medium">
                   <span>Deficit</span>
-                  <span className={lossVal > 0 ? 'text-rose-400 font-bold' : 'text-slate-500'}>
+                  <span className={lossVal > 0 ? 'text-rose-400 font-bold' : 'text-slate-400'}>
                     {lossVal > 0 ? 'Under' : 'None (₹0)'}
                   </span>
                 </div>
@@ -434,21 +513,21 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               {/* Overdue */}
               <div 
                 onClick={() => setActivePage('receivables')}
-                className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-rose-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
+                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-rose-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Overdue</span>
-                  <div className="w-6 h-6 rounded-md bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                    <AlertTriangle className="w-3 h-3" />
+                  <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Overdue</span>
+                  <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                    <AlertTriangle className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <p className="text-base lg:text-lg font-black text-rose-400 mt-1 font-mono truncate">
+                <p className="text-base lg:text-lg font-extrabold text-rose-400 mt-1.5 font-mono truncate">
                   ₹{overdueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
-                <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
-                  <span className={overdueVal > 0 ? 'text-rose-400/80 font-semibold' : ''}>{overdueVal > 0 ? 'Outreach Due' : 'Clear'}</span>
+                <div className="flex items-center justify-between text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800/80">
+                  <span className={overdueVal > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}>{overdueVal > 0 ? 'Follow-up Due' : 'All Clear'}</span>
                   <span className="text-rose-400 font-bold flex items-center gap-0.5">
-                    Risk <ArrowUpRight className="w-2.5 h-2.5" />
+                    Risk <ArrowUpRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>
@@ -456,21 +535,21 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               {/* Active Outlets */}
               <div 
                 onClick={() => onNavigate('customers')}
-                className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-emerald-500/60 shadow-md transition-all hover:scale-[1.02] cursor-pointer group"
+                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-emerald-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Food Clients</span>
-                  <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                    <Users className="w-3 h-3" />
+                  <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Food Clients</span>
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <Users className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <p className="text-base lg:text-lg font-black text-white mt-1 font-mono truncate">
-                  {kpis?.active_customers_count || 0} <span className="text-[10px] font-normal text-slate-500">outlets</span>
+                <p className="text-base lg:text-lg font-extrabold text-white mt-1.5 font-mono truncate">
+                  {kpis?.active_customers_count || 0} <span className="text-xs font-normal text-slate-400">outlets</span>
                 </p>
-                <div className="flex items-center justify-between text-[9px] text-slate-500 mt-1 pt-1 border-t border-slate-800/80">
-                  <span>{kpis?.total_products_count || 0} SKUs</span>
+                <div className="flex items-center justify-between text-xs text-slate-400 mt-1.5 pt-1.5 border-t border-slate-800/80">
+                  <span className="font-medium">{kpis?.total_products_count || 0} SKUs</span>
                   <span className="text-emerald-400 font-bold flex items-center gap-0.5">
-                    View <ArrowUpRight className="w-2.5 h-2.5" />
+                    View <ArrowUpRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>
@@ -483,52 +562,52 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
               
               {/* Recent Invoices (7 cols, internal scroll) */}
-              <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-2 shrink-0">
+              <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-lg flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 shrink-0">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-amber-500" />
-                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-white">Recent Invoices</h3>
+                    <FileText className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Recent Invoices</h3>
                   </div>
                   <button
                     onClick={() => setActivePage('activity')}
-                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-0.5"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
                   >
-                    View All <ArrowRight className="w-3 h-3" />
+                    View All <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-0.5">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
                   {(kpis?.recent_invoices || []).slice(0, 5).map((inv) => (
                     <div 
                       key={inv.id}
-                      className="bg-slate-950/60 border border-slate-800/80 rounded-lg p-2 flex items-center justify-between text-[11px]"
+                      className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
                     >
                       <div className="overflow-hidden pr-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-white text-[11px]">{inv.invoice_number}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
                           <StatusBadge status={inv.status} />
                         </div>
-                        <p className="text-[10px] text-slate-400 truncate mt-0.5">{inv.customer_name}</p>
+                        <p className="text-xs text-slate-300 truncate mt-0.5 font-medium">{inv.customer_name}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2.5 shrink-0">
                         <div className="text-right">
-                          <div className="font-mono font-bold text-white text-[11px]">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</div>
-                          <span className={`text-[9px] font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                          <div className="font-mono font-bold text-white text-xs">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</div>
+                          <span className={`text-xs font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
                             Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                           </span>
                         </div>
                         <button
                           onClick={() => openThermalReceipt(inv.id)}
-                          className="p-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded text-[9px] font-bold flex items-center gap-0.5 transition-colors"
+                          className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
                         >
-                          <Printer className="w-2.5 h-2.5" />
+                          <Printer className="w-3 h-3" />
                           <span>Slip</span>
                         </button>
                       </div>
                     </div>
                   ))}
                   {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
-                    <div className="flex items-center justify-center h-20 text-slate-500 text-[11px]">
+                    <div className="flex items-center justify-center h-20 text-slate-400 text-xs">
                       No invoices match current slicer filters.
                     </div>
                   )}
@@ -536,38 +615,38 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               </div>
 
               {/* Top Moving Products (5 cols, internal scroll) */}
-              <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-2 shrink-0">
+              <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-lg flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 shrink-0">
                   <div className="flex items-center gap-2">
-                    <Package className="w-3.5 h-3.5 text-emerald-500" />
-                    <h3 className="text-[11px] font-bold uppercase tracking-wider text-white">Fast-Moving Items</h3>
+                    <Package className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Fast-Moving Items</h3>
                   </div>
                   <button
                     onClick={() => setActivePage('products')}
-                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-0.5"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
                   >
-                    Matrix <ArrowRight className="w-3 h-3" />
+                    Matrix <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-0.5">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
                   {(kpis?.top_selling_products || []).slice(0, 5).map((prod, idx) => (
                     <div 
                       key={idx}
-                      className="bg-slate-950/60 border border-slate-800/80 rounded-lg p-2 flex items-center justify-between text-[11px]"
+                      className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
                     >
                       <div className="overflow-hidden pr-2">
-                        <p className="font-bold text-slate-200 truncate text-[11px]">{prod.product_name}</p>
-                        <p className="text-[9px] text-slate-500 mt-0.5">{prod.quantity_sold} packs sold</p>
+                        <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{prod.quantity_sold} packs sold</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-emerald-400 text-[11px]">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
-                        <span className="text-[8px] text-slate-500 font-bold uppercase">Revenue</span>
+                        <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
+                        <span className="text-[11px] text-slate-400 font-semibold uppercase">Revenue</span>
                       </div>
                     </div>
                   ))}
                   {(!kpis?.top_selling_products || kpis.top_selling_products.length === 0) && (
-                    <div className="flex items-center justify-center h-20 text-slate-500 text-[11px]">
+                    <div className="flex items-center justify-center h-20 text-slate-400 text-xs">
                       No products match current slicer filters.
                     </div>
                   )}
@@ -580,68 +659,76 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             {/* ─── MOBILE NATIVE OVERVIEW CANVAS (< md) ─── */}
             <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
               
+              {/* Executive Pulse Banner (Mobile anomaly & concentration callout) */}
+              <ExecutivePulseBanner
+                kpis={kpis}
+                customers={customers}
+                onNavigate={onNavigate}
+                onOpenPaymentModal={onOpenPaymentModal}
+              />
+
               {/* Card 1: Executive Financial Hero Card */}
               <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rayachoty Depot Overview</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Rayachoty Depot Overview</span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
                     {kpis?.total_invoices_count || 0} Orders
                   </span>
                 </div>
 
                 {/* Primary Metric: Total Revenue */}
                 <div className="mt-1">
-                  <span className="text-[11px] font-semibold text-slate-400">Total B2B Wholesale Revenue</span>
-                  <div className="text-3xl font-black text-white font-mono tracking-tight mt-0.5">
+                  <span className="text-xs font-medium text-slate-400">Total B2B Wholesale Revenue</span>
+                  <div className="text-3xl font-extrabold text-white font-mono tracking-tight mt-0.5">
                     ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
                 {/* Sub-Metrics Strip */}
-                <div className="grid grid-cols-4 gap-1.5 mt-4 pt-3 border-t border-slate-800/80">
+                <div className="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-800/80">
                   <div 
                     onClick={() => setActivePage('receivables')}
-                    className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
+                    className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
                   >
-                    <span className="text-[8px] font-bold text-slate-400 uppercase block truncate">Receivables</span>
-                    <p className="text-xs font-black text-amber-400 font-mono mt-0.5 truncate">
+                    <span className="text-[11px] font-bold text-slate-300 uppercase block truncate">Receivables</span>
+                    <p className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono mt-0.5 truncate">
                       ₹{outstandingVal >= 1000 ? `${(outstandingVal/1000).toFixed(1)}k` : outstandingVal.toFixed(0)}
                     </p>
-                    <span className="text-[8px] text-slate-500 block truncate">Outlets Due</span>
+                    <span className="text-[11px] text-slate-400 block truncate font-medium">Outlets Due</span>
                   </div>
                   
                   <div 
-                    className="bg-slate-950/60 rounded-xl p-2 border border-emerald-500/20 active:scale-95 transition-all"
+                    className="bg-slate-950/60 rounded-xl p-2.5 border border-emerald-500/20 active:scale-95 transition-all"
                   >
-                    <span className="text-[8px] font-bold text-emerald-400 uppercase block truncate">Profit</span>
-                    <p className="text-xs font-black text-emerald-400 font-mono mt-0.5 truncate">
+                    <span className="text-[11px] font-bold text-emerald-400 uppercase block truncate">Profit</span>
+                    <p className="text-xs sm:text-sm font-extrabold text-emerald-400 font-mono mt-0.5 truncate">
                       ₹{profitVal >= 1000 ? `${(profitVal/1000).toFixed(1)}k` : profitVal.toFixed(0)}
                     </p>
-                    <span className="text-[8px] text-emerald-500 font-semibold block truncate">Net Pos</span>
+                    <span className="text-[11px] text-emerald-400/80 font-medium block truncate">Net Pos</span>
                   </div>
 
                   <div 
-                    className="bg-slate-950/60 rounded-xl p-2 border border-rose-500/20 active:scale-95 transition-all"
+                    className="bg-slate-950/60 rounded-xl p-2.5 border border-rose-500/20 active:scale-95 transition-all"
                   >
-                    <span className="text-[8px] font-bold text-rose-400 uppercase block truncate">Loss</span>
-                    <p className="text-xs font-black text-rose-400 font-mono mt-0.5 truncate">
+                    <span className="text-[11px] font-bold text-rose-400 uppercase block truncate">Loss</span>
+                    <p className="text-xs sm:text-sm font-extrabold text-rose-400 font-mono mt-0.5 truncate">
                       ₹{lossVal >= 1000 ? `${(lossVal/1000).toFixed(1)}k` : lossVal.toFixed(0)}
                     </p>
-                    <span className="text-[8px] text-slate-500 block truncate">{lossVal > 0 ? 'Deficit' : '₹0'}</span>
+                    <span className="text-[11px] text-slate-400 block truncate font-medium">{lossVal > 0 ? 'Deficit' : '₹0'}</span>
                   </div>
 
                   <div 
                     onClick={() => onNavigate('customers')}
-                    className="bg-slate-950/60 rounded-xl p-2 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
+                    className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/60 active:scale-95 transition-all cursor-pointer"
                   >
-                    <span className="text-[8px] font-bold text-slate-400 uppercase block truncate">Outlets</span>
-                    <p className="text-xs font-black text-white font-mono mt-0.5">
+                    <span className="text-[11px] font-bold text-slate-300 uppercase block truncate">Outlets</span>
+                    <p className="text-xs sm:text-sm font-extrabold text-white font-mono mt-0.5">
                       {kpis?.active_customers_count || 0}
                     </p>
-                    <span className="text-[8px] text-emerald-400 font-semibold block truncate">Active</span>
+                    <span className="text-[11px] text-emerald-400 font-medium block truncate">Active</span>
                   </div>
                 </div>
 
@@ -649,93 +736,93 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 <div className="grid grid-cols-2 gap-2 mt-3 pt-1">
                   <button
                     onClick={onOpenInvoiceBuilder}
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
                   >
-                    <PlusCircle className="w-3.5 h-3.5" />
+                    <PlusCircle className="w-4 h-4" />
                     <span>+ Invoice</span>
                   </button>
                   <button
                     onClick={onOpenPaymentModal}
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider border border-slate-700 active:scale-95 transition-all"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider border border-slate-700 active:scale-95 transition-all"
                   >
-                    <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                    <CreditCard className="w-4 h-4 text-emerald-400" />
                     <span>Payment</span>
                   </button>
                 </div>
               </div>
 
               {/* Card 2: Run-Rate & Target Pacing */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-md flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-md flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-bold text-white">Monthly Run-Rate</span>
-                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded">Day 3/30</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white">Monthly Run-Rate</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-lg">Day 3/30</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-300 mt-0.5">
                       Pacing at <span className="text-amber-400 font-bold font-mono">₹2.31 Lakhs</span> this month
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setActivePage('forecast')}
-                  className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-xl hover:bg-amber-500/20 shrink-0"
+                  className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl hover:bg-amber-500/20 shrink-0"
                 >
                   Targets →
                 </button>
               </div>
 
               {/* Card 3: Recent Invoices List */}
-              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col gap-2">
+              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-lg flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Recent Invoices</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Recent Invoices</h3>
                   </div>
                   <button
                     onClick={() => setActivePage('activity')}
-                    className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5"
+                    className="text-xs font-bold text-amber-400 flex items-center gap-1"
                   >
                     View All →
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   {(kpis?.recent_invoices || []).slice(0, 5).map((inv) => (
                     <div 
                       key={inv.id}
-                      className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                      className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center justify-between text-xs transition-colors"
                     >
                       <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
                           <StatusBadge status={inv.status} />
                         </div>
-                        <p className="text-[11px] text-slate-300 font-medium truncate mt-0.5">{inv.customer_name}</p>
-                        <span className={`text-[9px] font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                        <p className="text-xs text-slate-200 font-medium truncate mt-1">{inv.customer_name}</p>
+                        <span className={`text-xs font-mono block mt-0.5 ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
                           Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="font-mono font-black text-white text-right text-xs">
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="font-mono font-extrabold text-white text-right text-xs sm:text-sm">
                           ₹{parseFloat(inv.total_amount || 0).toFixed(2)}
                         </div>
                         <button
                           onClick={() => openThermalReceipt(inv.id)}
-                          className="p-1.5 bg-blue-600/20 text-blue-300 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                          className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
                           title="Print Thermal Slip"
                         >
-                          <Printer className="w-3 h-3" />
+                          <Printer className="w-3.5 h-3.5" />
                           <span>Slip</span>
                         </button>
                       </div>
                     </div>
                   ))}
                   {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
-                    <div className="text-center py-4 text-slate-500 text-xs">
+                    <div className="text-center py-4 text-slate-400 text-xs">
                       No recent invoices found.
                     </div>
                   )}
@@ -743,38 +830,38 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               </div>
 
               {/* Card 4: Fast-Moving Depot SKUs */}
-              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col gap-2">
+              <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-lg flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-emerald-400" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Fast-Moving Items</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Fast-Moving Items</h3>
                   </div>
                   <button
                     onClick={() => onNavigate('catalogue')}
-                    className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5"
+                    className="text-xs font-bold text-amber-400 flex items-center gap-1"
                   >
                     Catalogue →
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   {(kpis?.top_selling_products || []).slice(0, 4).map((prod, idx) => (
                     <div 
                       key={idx}
-                      className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                      className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center justify-between text-xs transition-colors"
                     >
                       <div className="min-w-0 pr-2">
                         <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
-                        <span className="text-[10px] text-slate-400">{prod.quantity_sold} packs sold</span>
+                        <span className="text-xs text-slate-400">{prod.quantity_sold} packs sold</span>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
-                        <span className="text-[8px] text-slate-500 font-bold uppercase">Revenue</span>
+                        <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
+                        <span className="text-[11px] text-slate-400 font-semibold uppercase">Revenue</span>
                       </div>
                     </div>
                   ))}
                   {(!kpis?.top_selling_products || kpis.top_selling_products.length === 0) && (
-                    <div className="text-center py-4 text-slate-500 text-xs">
+                    <div className="text-center py-4 text-slate-400 text-xs">
                       No sales data available yet.
                     </div>
                   )}
@@ -860,41 +947,42 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               <div className="flex-1 min-h-0 overflow-y-auto">
                 <table className="w-full text-[11px]">
                   <thead className="sticky top-0 bg-slate-900 z-10">
-                    <tr className="border-b border-slate-800">
-                      <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2 px-2">Invoice #</th>
-                      <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2 px-2">Customer</th>
-                      <th className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2 px-2">Total</th>
-                      <th className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2 px-2">Balance</th>
-                      <th className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2 px-2">Status</th>
-                      <th className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2 px-2">Print</th>
+                    <tr className="border-b border-slate-800 text-xs">
+                      <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Invoice #</th>
+                      <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Customer</th>
+                      <th className="text-right font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Total</th>
+                      <th className="text-right font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Balance</th>
+                      <th className="text-center font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Status</th>
+                      <th className="text-center font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Print</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-800/60 text-xs">
                     {(kpis?.recent_invoices || []).map((inv) => (
-                      <tr key={inv.id} className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors">
-                        <td className="py-2 px-2 font-mono font-bold text-slate-200">{inv.invoice_number}</td>
-                        <td className="py-2 px-2 text-white truncate max-w-[160px]">{inv.customer_name}</td>
-                        <td className="py-2 px-2 text-right font-mono text-slate-300 font-bold">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</td>
-                        <td className={`py-2 px-2 text-right font-mono font-black ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                      <tr key={inv.id} className="hover:bg-slate-950/50 transition-colors">
+                        <td className="py-2.5 px-3 font-mono font-bold text-white">{inv.invoice_number}</td>
+                        <td className="py-2.5 px-3 text-slate-200 font-medium truncate max-w-[180px]">{inv.customer_name}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-white font-bold">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</td>
+                        <td className={`py-2.5 px-3 text-right font-mono font-bold ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-extrabold' : 'text-slate-400'}`}>
                           ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                         </td>
-                        <td className="py-2 px-2 text-center"><StatusBadge status={inv.status} /></td>
-                        <td className="py-2 px-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                        <td className="py-2.5 px-3 text-center"><StatusBadge status={inv.status} /></td>
+                        <td className="py-2.5 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => openThermalReceipt(inv.id)}
-                              className="p-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded text-[9px] font-bold flex items-center gap-0.5"
+                              className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
                             >
-                              <Printer className="w-3 h-3" />
-                              Thermal
+                              <Printer className="w-3.5 h-3.5" />
+                              <span>Thermal</span>
                             </button>
                             <a
                               href={billingApi.getPrintHtmlUrl(inv.id)}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-1 text-slate-400 hover:text-white bg-slate-800 rounded transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-lg transition-colors"
+                              title="View PDF"
                             >
-                              <Eye className="w-3 h-3" />
+                              <Eye className="w-3.5 h-3.5" />
                             </a>
                           </div>
                         </td>

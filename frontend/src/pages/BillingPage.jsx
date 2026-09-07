@@ -328,7 +328,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   >
                     <div className="overflow-hidden pr-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-[11px] text-amber-400">
+                        <span className="font-mono font-bold text-xs text-amber-400">
                           {inv.invoice_number}
                         </span>
                         <StatusBadge status={inv.status} />
@@ -336,7 +336,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
                         {inv.customer_name}
                       </h4>
-                      <p className="text-[10px] text-slate-400 truncate">
+                      <p className="text-xs text-slate-400 truncate">
                         {inv.invoice_date} • {inv.items_count || (inv.items ? inv.items.length : 0)} line items
                       </p>
                     </div>
@@ -346,7 +346,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                         <div className="font-mono font-bold text-xs text-white">
                           ₹{total.toFixed(2)}
                         </div>
-                        <span className={`text-[9px] font-mono ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                        <span className={`text-xs font-mono ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
                           Due: ₹{outstanding.toFixed(2)}
                         </span>
                       </div>
@@ -370,7 +370,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Invoices List</span>
             </button>
-            <span className="text-[10px] text-slate-500 font-mono">
+            <span className="text-xs text-slate-400 font-mono">
               {filteredInvoices.length} Invoices
             </span>
           </div>
@@ -378,7 +378,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
             <div className="h-full flex flex-col overflow-hidden">
               
               {/* Inspector Header */}
-              <div className="flex items-start justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-slate-800 shrink-0">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
@@ -393,7 +393,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                     </span>
                     <StatusBadge status={selectedInvoice.status} />
                   </div>
-                  <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                  <h2 className="text-base sm:text-lg font-bold text-white mt-1">
                     {selectedInvoice.customer_name}
                   </h2>
                   <p className="text-xs text-slate-400">
@@ -401,34 +401,37 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   </p>
                 </div>
 
-                {/* Direct Action Chips */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                {/* Direct Action Chips - Partitioned with Fitts's Law Touch Target Safety */}
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  {/* Dispatch Group: Thermal + WhatsApp */}
                   <button
                     onClick={() => setThermalModalOpen(true)}
-                    className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+                    className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
                     title="Print 58mm/80mm Thermal Receipt with UPI QR"
                   >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>Thermal</span>
+                    <Printer className="w-4 h-4" />
+                    <span>Thermal Slip</span>
                   </button>
 
+                  <button
+                    onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
+                    className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                    title="Send Invoice via WhatsApp"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>WhatsApp</span>
+                  </button>
+
+                  {/* Secondary Group: PDF View + Edit */}
                   <a
                     href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-1.5 text-slate-300 hover:text-white bg-slate-800 rounded-xl text-xs font-bold transition-colors"
+                    className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-xs font-bold transition-colors"
                     title="Standard A4 Tax Invoice PDF"
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-4 h-4" />
                   </a>
-
-                  <button
-                    onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
-                    className="p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
-                    title="Send Invoice via WhatsApp"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                  </button>
 
                   {parseFloat(selectedInvoice.paid_amount || 0) === 0 && hasRole(['ADMIN', 'OPERATOR']) && (
                     <button
@@ -436,25 +439,28 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                         setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
                         setEditInvoiceModalOpen(true);
                       }}
-                      className="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:scale-105"
+                      className="px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
                       title="Edit Customer, Line Items, or Quantities (Stock Auto-Reconciled)"
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Edit Bill</span>
+                      <span className="hidden sm:inline">Edit</span>
                     </button>
                   )}
 
+                  {/* Partitioned Danger Group: Delete (Isolated to prevent accidental mis-taps) */}
                   {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
-                    <button
-                      onClick={() => {
-                        setInvoiceToDelete(selectedInvoice);
-                        setDeleteModalOpen(true);
-                      }}
-                      className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all"
-                      title="Delete Invoice & Restore Stock"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center pl-1 border-l border-slate-800">
+                      <button
+                        onClick={() => {
+                          setInvoiceToDelete(selectedInvoice);
+                          setDeleteModalOpen(true);
+                        }}
+                        className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 rounded-xl text-xs font-bold transition-all active:scale-95"
+                        title="Delete Invoice & Restore Stock"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -48,13 +48,13 @@ export const DashboardTabStrip = ({ activePage, onSelectPage }) => {
             <button
               key={page.id}
               onClick={() => onSelectPage(page.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                 isActive
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 scale-[1.02]'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <Icon className={`w-3 h-3 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
               <span>{page.label}</span>
             </button>
           );
@@ -62,11 +62,11 @@ export const DashboardTabStrip = ({ activePage, onSelectPage }) => {
       </div>
 
       {/* Keyboard Shortcut Hint */}
-      <div className="hidden lg:flex items-center gap-1.5 text-[9px] text-slate-500 font-mono shrink-0">
-        <span className="bg-slate-950 px-1 py-0.5 rounded border border-slate-800">←</span>
-        <span className="bg-slate-950 px-1 py-0.5 rounded border border-slate-800">→</span>
+      <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400 font-mono shrink-0">
+        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">←</span>
+        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">→</span>
         <span>flip</span>
-        <span className="text-slate-600 font-bold">({currentIndex + 1}/{DASHBOARD_PAGES.length})</span>
+        <span className="text-slate-500 font-bold">({currentIndex + 1}/{DASHBOARD_PAGES.length})</span>
       </div>
 
       {/* Mobile Dot Navigation */}

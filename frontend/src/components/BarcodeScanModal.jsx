@@ -243,7 +243,7 @@ export const BarcodeScanModal = ({ isOpen, onClose, products = [], onStockUpdate
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               <div className="w-48 h-32 border-2 border-dashed border-cyan-400/80 rounded-xl relative flex items-center justify-center">
                 <div className="w-full h-0.5 bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" />
-                <span className="absolute bottom-1 text-[9px] font-mono font-bold text-cyan-300 uppercase tracking-widest bg-slate-950/80 px-2 rounded">
+                <span className="absolute bottom-1.5 text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider bg-slate-950/90 px-2.5 py-0.5 rounded-lg border border-cyan-500/20">
                   Align Barcode
                 </span>
               </div>

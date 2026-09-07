@@ -411,18 +411,18 @@ export const CustomersPage = ({
         </div>
 
         {/* Mobile Quick Metric Strip */}
-        <div className="grid grid-cols-3 gap-1.5 py-1">
-          <div className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2.5 py-1.5 text-center">
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Outlets</span>
-            <span className="text-xs font-black text-white font-mono">{filteredCount} / {totalOutlets}</span>
+        <div className="grid grid-cols-3 gap-2 py-1">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
+            <span className="text-[11px] uppercase font-bold text-slate-400 block">Outlets</span>
+            <span className="text-xs sm:text-sm font-extrabold text-white font-mono">{filteredCount} / {totalOutlets}</span>
           </div>
-          <div className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2.5 py-1.5 text-center">
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Receivables</span>
-            <span className="text-xs font-black text-emerald-400 font-mono">₹{totalReceivables.toFixed(0)}</span>
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
+            <span className="text-[11px] uppercase font-bold text-slate-400 block">Receivables</span>
+            <span className="text-xs sm:text-sm font-extrabold text-emerald-400 font-mono">₹{totalReceivables.toFixed(0)}</span>
           </div>
-          <div className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2.5 py-1.5 text-center">
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Credit Cap</span>
-            <span className="text-xs font-black text-blue-400 font-mono">₹{(totalCreditExposure / 100000).toFixed(1)}L</span>
+          <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
+            <span className="text-[11px] uppercase font-bold text-slate-400 block">Credit Cap</span>
+            <span className="text-xs sm:text-sm font-extrabold text-blue-400 font-mono">₹{(totalCreditExposure / 100000).toFixed(1)}L</span>
           </div>
         </div>
       </div>
@@ -562,10 +562,10 @@ export const CustomersPage = ({
                   >
                     <div className="overflow-hidden pr-2 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                        <span className="font-mono font-bold text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                           {cust.customer_code}
                         </span>
-                        <span className="text-[9px] text-slate-400 font-mono truncate">
+                        <span className="text-xs text-slate-400 font-mono truncate">
                           📍 {cust.city || 'Rayachoty'}
                         </span>
                       </div>
@@ -574,7 +574,7 @@ export const CustomersPage = ({
                         {cust.business_name}
                       </h4>
                       
-                      <p className="text-[10px] text-slate-400 truncate">
+                      <p className="text-xs text-slate-400 truncate">
                         {cust.contact_person} • {cust.phone}
                       </p>
 
@@ -585,9 +585,9 @@ export const CustomersPage = ({
                             e.stopPropagation();
                             handleSelectCustomer(cust, 'invoices');
                           }}
-                          className="text-[9px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1 transition-colors"
+                          className="text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-1 rounded-lg border border-blue-500/20 flex items-center gap-1 transition-colors"
                         >
-                          <FileText className="w-2.5 h-2.5" />
+                          <FileText className="w-3 h-3" />
                           <span>Invoices</span>
                         </button>
                         <button

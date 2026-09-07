@@ -65,8 +65,8 @@ export const Sidebar = ({
             R
           </div>
           <div className="overflow-hidden">
-            <h1 className="font-black tracking-wider text-sm text-white leading-none truncate">RAIS AGENCIES</h1>
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-amber-400 mt-1 truncate">Frozen Foods • B2B</p>
+            <h1 className="font-extrabold tracking-wider text-sm text-white leading-none truncate">RAIS AGENCIES</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-400 mt-0.5 truncate">Frozen Foods • B2B</p>
           </div>
         </div>
 
@@ -85,9 +85,9 @@ export const Sidebar = ({
         <div className="p-3 border-b border-slate-800/60 shrink-0">
           <button
             onClick={onOpenInvoiceBuilder}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition-all shadow-md shadow-amber-500/20 text-xs tracking-wide uppercase"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-amber-500/20 text-xs tracking-wide uppercase active:scale-95"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
+            <PlusCircle className="w-4 h-4" />
             <span>Create Invoice</span>
           </button>
         </div>
@@ -95,7 +95,7 @@ export const Sidebar = ({
 
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
-        <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Main Navigation</p>
+        <p className="px-3 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Main Navigation</p>
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -105,7 +105,7 @@ export const Sidebar = ({
               onClick={() => {
                 setActiveTab(item.id);
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 isActive
                   ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold'
                   : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
@@ -116,7 +116,7 @@ export const Sidebar = ({
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="px-1.5 py-0.2 text-[9px] font-black rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+                <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
                   {item.badge}
                 </span>
               )}
@@ -128,13 +128,13 @@ export const Sidebar = ({
       {/* User Footer */}
       <div className="p-3 border-t border-slate-800 bg-slate-950/50 shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 overflow-hidden">
+          <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-amber-400 shrink-0">
               {user?.full_name?.charAt(0) || 'U'}
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-bold text-slate-200 truncate">{user?.full_name}</p>
-              <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-amber-400/90 truncate">
+              <span className="inline-block text-xs font-semibold uppercase tracking-wider text-amber-400/90 truncate">
                 {user?.role}
               </span>
             </div>

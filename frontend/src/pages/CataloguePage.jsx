@@ -730,35 +730,35 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] font-bold text-amber-400">{prod.sku}</span>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase">{prod.brand}</span>
+                    <span className="font-mono text-xs font-bold text-amber-400">{prod.sku}</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase">{prod.brand}</span>
                   </div>
                   <h4 className="font-bold text-white text-xs mt-1 line-clamp-1 group-hover:text-amber-300">
                     {prod.name}
                   </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{prod.category_name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{prod.category_name}</p>
                 </div>
 
                 <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block">Base Rate</span>
+                    <span className="text-[11px] text-slate-400 uppercase font-bold block">Base Rate</span>
                     <button
                       type="button"
                       onClick={() => hasRole(['ADMIN', 'OPERATOR']) && setQuickPriceProduct(prod)}
                       className="inline-flex items-center gap-1 group/price hover:text-amber-300 transition-colors text-left"
                       title="1-Tap Quick Price Tweak"
                     >
-                      <span className="text-sm font-black text-amber-400 font-mono group-hover/price:underline">
+                      <span className="text-sm font-extrabold text-amber-400 font-mono group-hover/price:underline">
                         ₹{parseFloat(prod.base_price || 0).toFixed(2)}
                       </span>
                       {hasRole(['ADMIN', 'OPERATOR']) && (
-                        <Edit3 className="w-3 h-3 text-slate-500 group-hover/price:text-amber-400" />
+                        <Edit3 className="w-3.5 h-3.5 text-slate-400 group-hover/price:text-amber-400" />
                       )}
                     </button>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block">Stock</span>
-                    <span className="text-xs font-bold text-slate-300 font-mono">{prod.current_stock || 0} pk</span>
+                    <span className="text-[11px] text-slate-400 uppercase font-bold block">Stock</span>
+                    <span className="text-xs font-bold text-slate-200 font-mono">{prod.current_stock || 0} pk</span>
                   </div>
                 </div>
               </div>

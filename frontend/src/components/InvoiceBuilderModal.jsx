@@ -403,7 +403,7 @@ export const InvoiceBuilderModal = ({
                       ? `Edit Bill — ${invoiceToEdit?.invoice_number || ''}` 
                       : 'Create Commercial Wholesale Invoice'}
                 </h2>
-                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full font-mono border ${
+                <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full font-mono border ${
                   isEditMode 
                     ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                     : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -411,7 +411,7 @@ export const InvoiceBuilderModal = ({
                   {isEditMode ? 'EDIT MODE' : 'DIRECT WHOLESALE'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 {showPreview 
                   ? 'Review verified document layout before issuing' 
                   : isEditMode
@@ -422,29 +422,34 @@ export const InvoiceBuilderModal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* ─── CASE A: INVOICE CREATED SUCCESS SCREEN ─── */}
+        {/* ─── CASE A: INVOICE CREATED SUCCESS SCREEN (Singular CTA Hierarchy) ─── */}
         {successInvoice ? (
-          <div className="p-8 flex flex-col items-center justify-center text-center space-y-4 my-auto">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <CheckCircle2 className="w-8 h-8" />
+          <div className="p-8 sm:p-10 flex flex-col items-center justify-center text-center space-y-4 my-auto">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+              <CheckCircle2 className="w-9 h-9" />
             </div>
-            <h3 className="text-lg font-bold text-white">
-              Invoice #{successInvoice.invoice_number} Generated!
-            </h3>
-            <p className="text-xs text-slate-400">
-              Grand Total: <b className="text-amber-400 font-mono">₹{parseFloat(successInvoice.total_amount).toFixed(2)}</b> | Billed to {successInvoice.customer_name}
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono">Document Confirmed</span>
+              <h3 className="text-xl font-bold text-white mt-1">
+                Invoice #{successInvoice.invoice_number} Generated!
+              </h3>
+            </div>
+            <p className="text-sm text-slate-300">
+              Grand Total: <strong className="text-amber-400 font-mono font-bold">₹{parseFloat(successInvoice.total_amount).toFixed(2)}</strong> | Billed to <strong className="text-white">{successInvoice.customer_name}</strong>
             </p>
-            <p className="text-[11px] text-slate-500 font-mono">
+            <p className="text-xs text-slate-400 font-mono">
               Date: {successInvoice.invoice_date} • Terms: {successInvoice.payment_terms || 'Cash on Delivery'}
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+            {/* Action Buttons: Singular Emerald Primary CTA + Subtle Secondary Options */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 w-full max-w-lg">
+              {/* PRIMARY CTA: WhatsApp Share */}
               <button
                 type="button"
                 onClick={() => {
@@ -461,29 +466,35 @@ export const InvoiceBuilderModal = ({
                     products: products
                   });
                 }}
-                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
               >
                 <MessageSquare className="w-4 h-4" />
-                Share on WhatsApp
+                <span>Share on WhatsApp</span>
               </button>
+
+              {/* SECONDARY ACTION: Print PDF */}
               <a
                 href={billingApi.getPrintHtmlUrl(successInvoice.id)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-blue-600/20 transition-all hover:scale-105"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
               >
                 <Printer className="w-4 h-4" />
-                Print / Save A4 PDF
+                <span>Print PDF</span>
               </a>
+
+              {/* SECONDARY ACTION: Create Another */}
               <button
                 onClick={resetForm}
-                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
+                className="w-full sm:w-auto px-4 py-3 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
               >
-                Create Another Invoice
+                Create Another
               </button>
+
+              {/* SECONDARY ACTION: Done */}
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs uppercase tracking-wider transition-colors shadow-lg shadow-amber-500/20"
+                className="w-full sm:w-auto px-4 py-3 text-slate-400 hover:text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
               >
                 Done
               </button>

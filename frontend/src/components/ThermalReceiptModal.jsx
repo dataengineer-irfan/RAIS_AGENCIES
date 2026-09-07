@@ -228,15 +228,15 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
                     className="w-24 h-24 border border-black p-0.5"
                   />
                 </div>
-                <div className="text-[8px] font-bold text-gray-700">UPI: {receipt.upi.upi_id}</div>
+                <div className="text-[10px] font-bold text-gray-900">UPI: {receipt.upi.upi_id}</div>
               </div>
 
               <div className="my-2 border-t border-dashed border-black"></div>
 
               {/* Footer */}
-              <div className="text-center text-[9px] font-bold text-gray-800">
+              <div className="text-center text-[10px] font-bold text-gray-900">
                 {receipt.footer_message}
-                <div className="text-[8px] font-normal text-gray-600 mt-0.5">*** Computer Generated Slip ***</div>
+                <div className="text-[9px] font-medium text-gray-700 mt-0.5">*** Computer Generated Slip ***</div>
               </div>
             </div>
           ) : null}
