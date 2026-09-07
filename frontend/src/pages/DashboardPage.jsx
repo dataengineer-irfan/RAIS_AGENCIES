@@ -378,17 +378,6 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
     setThermalReceiptModal({ isOpen: true, invoiceId });
   };
 
-  if (loading && !rawKpis) {
-    return (
-      <div className="flex flex-col items-center justify-center flex-1 text-slate-400 text-xs animate-pulse space-y-3">
-        <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-          <Sparkles className="w-5 h-5 animate-spin" />
-        </div>
-        <p className="font-bold tracking-wide">Loading Executive Canvas...</p>
-      </div>
-    );
-  }
-
   const revenueVal = parseFloat(kpis?.total_revenue_month || 0);
   const outstandingVal = parseFloat(kpis?.total_outstanding || 0);
   const overdueVal = parseFloat(kpis?.total_overdue || 0);
@@ -396,6 +385,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
   const lossVal = parseFloat(kpis?.overall_loss || 0);
 
   // ─── 7-Day Micro-Trend Sparkline Series (Power BI Fabric Telemetry) ───
+  // Declared BEFORE early returns to strictly honor React Rules of Hooks
   const revenueTrend = useMemo(() => {
     const base = revenueVal || 1000;
     return [base * 0.65, base * 0.72, base * 0.68, base * 0.82, base * 0.89, base * 0.92, base];
@@ -427,6 +417,17 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
     const count = kpis?.active_customers_count || 1;
     return [Math.max(1, count - 3), Math.max(1, count - 3), Math.max(1, count - 2), Math.max(1, count - 2), Math.max(1, count - 1), count, count];
   }, [kpis?.active_customers_count]);
+
+  if (loading && !rawKpis) {
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 text-slate-400 text-xs animate-pulse space-y-3">
+        <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <Sparkles className="w-5 h-5 animate-spin" />
+        </div>
+        <p className="font-bold tracking-wide">Loading Executive Canvas...</p>
+      </div>
+    );
+  }
 
   return (
     /* 
