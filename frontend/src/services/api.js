@@ -115,11 +115,18 @@ export const customerApi = {
     return cachedGet(`/customers/${id}`);
   },
   create: async (data) => {
+    clearApiCache();
     const res = await api.post('/customers', data);
     return res.data;
   },
   update: async (id, data) => {
+    clearApiCache();
     const res = await api.put(`/customers/${id}`, data);
+    return res.data;
+  },
+  delete: async (id) => {
+    clearApiCache();
+    const res = await api.delete(`/customers/${id}`);
     return res.data;
   },
   getLedger: async (id) => {

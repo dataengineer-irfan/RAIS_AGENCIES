@@ -155,13 +155,18 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     const due = parseFloat(inv.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const overallDue = parseFloat(inv.customer_outstanding_balance || 0);
 
+    const baseUrl = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http'))
+      ? window.location.origin
+      : 'https://rais-backend.onrender.com';
+    const pdfUrl = `${baseUrl}/api/invoices/${inv.id}/print-html`;
+
     let text = `*RAIS AGENCIES — Tax Invoice Receipt*\n\nInvoice #: *${inv.invoice_number}*\nCustomer: *${inv.customer_name}*\nDate: *${inv.invoice_date}*\n\n💵 *Bill Amount:* *₹${total}*`;
     if (overallDue > 0) {
       text += `\n⚠️ *Overall Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*`;
     } else if (parseFloat(inv.outstanding_amount || 0) > 0) {
       text += `\n⚠️ *Bill Balance Due:* *₹${due}*`;
     }
-    text += `\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n\n*RAIS Agencies*, Rayachoty.`;
+    text += `\n\n📄 *Official Tax Invoice Receipt (PDF):*\n${pdfUrl}\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n\n*RAIS Agencies*, Rayachoty.`;
     openWhatsApp(inv.customer_phone || '9347453135', text);
   };
 

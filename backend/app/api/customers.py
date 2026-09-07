@@ -55,3 +55,12 @@ def get_customer_ledger(
     current_user: User = Depends(require_any_authenticated)
 ):
     return CustomerService.get_customer_ledger(db, customer_id)
+
+@router.delete("/{customer_id}")
+def delete_customer(
+    customer_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    return CustomerService.delete_customer(db, customer_id, user_id=current_user.id)
+

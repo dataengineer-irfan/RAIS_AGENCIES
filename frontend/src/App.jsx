@@ -118,12 +118,12 @@ export const App = () => {
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-950 flex relative">
       
-      {/* ─── TOP-LEFT CORNER HOVER TRIGGER HOTSPOT (Active when collapsed) ─── */}
+      {/* ─── TOP-LEFT CORNER HOVER TRIGGER HOTSPOT (Active when collapsed on desktop) ─── */}
       {!sidebarOpen && (
         <div 
           onMouseEnter={handleTopLeftHover}
           onMouseLeave={handleTopLeftLeave}
-          className="fixed top-0 left-0 w-20 h-16 z-50 pointer-events-auto cursor-pointer"
+          className="hidden md:block fixed top-0 left-0 w-20 h-16 z-50 pointer-events-auto cursor-pointer"
           title="Hover or Click Top-Left Corner to Peek Navigation"
         />
       )}

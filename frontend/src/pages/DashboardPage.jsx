@@ -87,7 +87,7 @@ function applyClientFilters(rawKpis, filters, customers = []) {
 // ─────────────────────────────────────────────────────────────────────────────
 // EXECUTIVE OPERATIONAL PULSE BANNER (5-Second Storytelling & Cash Realization)
 // ─────────────────────────────────────────────────────────────────────────────
-const ExecutivePulseBanner = ({ customers, kpis, onNavigate, onOpenPaymentModal }) => {
+const ExecutivePulseBanner = ({ customers, kpis, onNavigate, onOpenPaymentModal, compact = false }) => {
   const sortedDebtors = useMemo(() => {
     return (customers || [])
       .map(c => ({
@@ -128,6 +128,31 @@ const ExecutivePulseBanner = ({ customers, kpis, onNavigate, onOpenPaymentModal 
       })
       .slice(0, 2);
   }, [kpis?.top_selling_products]);
+
+  // Ultra-compact 1-line mobile pulse chip (zero cognitive clutter at start of screen)
+  if (compact) {
+    return (
+      <div 
+        onClick={() => onNavigate('receivables')}
+        className="bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-sm active:scale-98 transition-all cursor-pointer"
+      >
+        <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${cashRealizationPct >= 70 ? 'bg-emerald-400' : cashRealizationPct >= 40 ? 'bg-amber-400' : 'bg-rose-400'}`} />
+          <span className="text-xs font-bold text-white truncate">
+            {cashRealizationPct >= 70 ? '🟢 High Cash Velocity' : cashRealizationPct >= 40 ? '🟡 Moderate Intake' : '🔴 Credit Heavy'} ({cashRealizationPct}% Realized)
+          </span>
+          {topDebtor && (
+            <span className="text-[11px] text-slate-400 truncate hidden sm:inline">
+              • Top Due: {topDebtor.name}
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] font-bold text-amber-400 flex items-center gap-0.5 shrink-0">
+          Pulse →
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col gap-3 shrink-0 transition-all">
@@ -772,15 +797,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             {/* ─── MOBILE NATIVE OVERVIEW CANVAS (< md) ─── */}
             <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
               
-              {/* Executive Pulse Banner (Mobile anomaly & concentration callout) */}
-              <ExecutivePulseBanner
-                kpis={kpis}
-                customers={customers}
-                onNavigate={onNavigate}
-                onOpenPaymentModal={onOpenPaymentModal}
-              />
-
-              {/* Card 1: Executive Financial Hero Card */}
+              {/* Card 1: Executive Financial Hero Card (Instant Numbers & Actions at Top of Screen) */}
               <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -886,6 +903,15 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                   </button>
                 </div>
               </div>
+
+              {/* Compact Executive Pulse Chip (1-Line Status, Tap for Full Details) */}
+              <ExecutivePulseBanner
+                kpis={kpis}
+                customers={customers}
+                onNavigate={onNavigate}
+                onOpenPaymentModal={onOpenPaymentModal}
+                compact={true}
+              />
 
               {/* Card 2: Run-Rate & Target Pacing */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-md flex items-center justify-between">

@@ -471,7 +471,7 @@ export const InvoiceBuilderModal = ({
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>Share on WhatsApp</span>
+                <span>Share WhatsApp & PDF</span>
               </button>
 
               {/* SECONDARY ACTION: Print PDF */}
@@ -657,8 +657,8 @@ export const InvoiceBuilderModal = ({
                   className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span className="hidden sm:inline">Share Draft</span>
-                  <span className="sm:hidden">WhatsApp</span>
+                  <span className="hidden sm:inline">WhatsApp & PDF</span>
+                  <span className="sm:hidden">Share & PDF</span>
                 </button>
                 <button
                   type="button"

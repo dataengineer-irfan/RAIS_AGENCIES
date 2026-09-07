@@ -107,16 +107,8 @@ export const Header = ({
       {/* ─── NATIVE MOBILE APP BAR (< md) ─── */}
       <div className="md:hidden flex flex-col px-3 py-2">
         <div className="flex items-center justify-between gap-2 h-11">
-          {/* Brand & Depot Identity + Menu Button */}
+          {/* Brand & Depot Identity */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setMobileNavDrawerOpen(true)}
-              className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-slate-300 hover:text-white active:scale-95 transition-all flex items-center justify-center shrink-0"
-              title="All App Sections"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
-
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20 shrink-0">
               R
             </div>

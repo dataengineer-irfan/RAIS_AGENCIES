@@ -27,7 +27,9 @@ import {
   SlidersHorizontal,
   DollarSign,
   Building2,
-  ArrowLeft
+  ArrowLeft,
+  Trash2,
+  X
 } from 'lucide-react';
 import { customerApi, billingApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -68,6 +70,12 @@ export const CustomersPage = ({
   // Modal
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    isOpen: false,
+    customer: null,
+    isDeleting: false,
+    error: null
+  });
 
   useEffect(() => {
     loadCustomers();
@@ -138,6 +146,20 @@ export const CustomersPage = ({
     const balance = cust.outstanding_balance || 0;
     const text = `*RAIS AGENCIES — Customer Statement*\n\nDear ${cust.business_name || cust.contact_person},\nYour current account balance with RAIS Agencies is *₹${Number(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}*.\n\nFor wholesale order bookings, pricing or direct settlement, contact Rayachoty Depot: *9347453135*.\n\n*RAIS Agencies*, Reddies Colony, Rayachoty.`;
     openWhatsApp(cust.phone, text);
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!deleteConfirmModal.customer) return;
+    setDeleteConfirmModal(prev => ({ ...prev, isDeleting: true, error: null }));
+    try {
+      await customerApi.delete(deleteConfirmModal.customer.id);
+      setDeleteConfirmModal({ isOpen: false, customer: null, isDeleting: false, error: null });
+      await loadCustomers();
+      setMobileView('list');
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Failed to delete customer';
+      setDeleteConfirmModal(prev => ({ ...prev, isDeleting: false, error: msg }));
+    }
   };
 
   const handleResetFilters = () => {
@@ -323,7 +345,7 @@ export const CustomersPage = ({
 
       {/* ─── ROW 1 (MOBILE): NATIVE MOBILE SEARCH & SWIPEABLE CHIPS (< md) ─── */}
       <div className="md:hidden flex flex-col gap-2 shrink-0">
-        {/* Mobile Search & Sort Bar */}
+        {/* Mobile Search & + Outlet Bar */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -341,15 +363,57 @@ export const CustomersPage = ({
             )}
           </div>
 
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2.5 py-2 focus:outline-none shrink-0"
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <button
+              onClick={() => {
+                setCustomerToEdit(null);
+                setCustomerModalOpen(true);
+              }}
+              className="flex items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 shrink-0"
+              title="Add New Customer Outlet"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>+ Outlet</span>
+            </button>
+          )}
+        </div>
+
+        {/* Touch-Friendly Mobile Sort Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">Sort:</span>
+          <button
+            type="button"
+            onClick={() => setSortBy('BALANCE_DESC')}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
+              sortBy === 'BALANCE_DESC'
+                ? 'bg-rose-500 text-white shadow-sm ring-1 ring-rose-400'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'
+            }`}
           >
-            <option value="NAME_ASC">A → Z</option>
-            <option value="BALANCE_DESC">Due ↓</option>
-            <option value="LIMIT_DESC">Limit ↓</option>
-          </select>
+            🚨 Overdue (Due ↓)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortBy('NAME_ASC')}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
+              sortBy === 'NAME_ASC'
+                ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'
+            }`}
+          >
+            🔤 Name (A → Z)
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortBy('LIMIT_DESC')}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
+              sortBy === 'LIMIT_DESC'
+                ? 'bg-blue-500 text-white shadow-sm ring-1 ring-blue-400'
+                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'
+            }`}
+          >
+            💳 Limit ↓
+          </button>
         </div>
 
         {/* Swipeable Horizontal Filter Chips */}
@@ -719,16 +783,33 @@ export const CustomersPage = ({
                   </button>
 
                   {hasRole(['ADMIN', 'OPERATOR']) && (
-                    <button
-                      onClick={() => {
-                        setCustomerToEdit(selectedCustomer);
-                        setCustomerModalOpen(true);
-                      }}
-                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-all"
-                      title="Edit Customer Profile"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setCustomerToEdit(selectedCustomer);
+                          setCustomerModalOpen(true);
+                        }}
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-all"
+                        title="Edit Customer Profile"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setDeleteConfirmModal({
+                            isOpen: true,
+                            customer: selectedCustomer,
+                            isDeleting: false,
+                            error: null
+                          });
+                        }}
+                        className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold transition-all"
+                        title="Delete Outlet Account"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -1033,6 +1114,24 @@ export const CustomersPage = ({
                           <span className="text-[10px] text-slate-400">Instant dispatch via 9347453135</span>
                         </div>
                       </button>
+
+                      {hasRole(['ADMIN', 'OPERATOR']) && (
+                        <button
+                          onClick={() => setDeleteConfirmModal({
+                            isOpen: true,
+                            customer: selectedCustomer,
+                            isDeleting: false,
+                            error: null
+                          })}
+                          className="p-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-left text-rose-400 transition-all hover:scale-[1.02]"
+                        >
+                          <Trash2 className="w-5 h-5 shrink-0" />
+                          <div>
+                            <div className="font-bold text-xs text-rose-300">Delete Outlet Account</div>
+                            <span className="text-[10px] text-slate-400">Permanently remove customer from system</span>
+                          </div>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1066,6 +1165,96 @@ export const CustomersPage = ({
           onClose={() => setThermalModal({ isOpen: false, invoiceId: null })}
           invoiceId={thermalModal.invoiceId}
         />
+      )}
+
+      {/* ─── DELETE CUSTOMER CONFIRMATION MODAL ─── */}
+      {deleteConfirmModal.isOpen && deleteConfirmModal.customer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">Delete Customer Outlet</h3>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {deleteConfirmModal.customer.customer_code}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setDeleteConfirmModal({ isOpen: false, customer: null, isDeleting: false, error: null })}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <p>
+                Are you sure you want to delete outlet <strong className="text-white">{deleteConfirmModal.customer.business_name}</strong>?
+              </p>
+              
+              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-1.5 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Contact:</span>
+                  <span className="text-slate-200">{deleteConfirmModal.customer.contact_person || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Phone:</span>
+                  <span className="text-slate-200">{deleteConfirmModal.customer.phone || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Outstanding Due:</span>
+                  <span className={parseFloat(deleteConfirmModal.customer.outstanding_balance || 0) > 0 ? "text-amber-400 font-bold" : "text-emerald-400 font-bold"}>
+                    ₹{parseFloat(deleteConfirmModal.customer.outstanding_balance || 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {deleteConfirmModal.error && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{deleteConfirmModal.error}</span>
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-400 italic">
+                ⚠️ Note: Customers with active balance dues or GST invoices cannot be deleted to preserve accounting compliance.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmModal({ isOpen: false, customer: null, isDeleting: false, error: null })}
+                disabled={deleteConfirmModal.isDeleting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCustomer}
+                disabled={deleteConfirmModal.isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/20 transition-all flex items-center gap-1.5"
+              >
+                {deleteConfirmModal.isDeleting ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

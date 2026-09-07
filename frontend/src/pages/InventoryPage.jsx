@@ -295,7 +295,7 @@ export const InventoryPage = () => {
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
       
       {/* ─── ROW 1: POWER BI PERSISTENT SLICER & CONTROL RIBBON ─── */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex-wrap items-center justify-between gap-2 text-xs`}>
         
         {/* Left: Quick Jump SKU Selector & Slicers */}
         <div className="flex items-center gap-2 flex-1 min-w-[280px]">
@@ -465,7 +465,7 @@ export const InventoryPage = () => {
       </div>
 
       {/* ─── 2026 TRAFFIC LIGHT FREEZER HEALTH FILTER BAR ─── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 px-1">
+      <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 px-1`}>
         <span className="text-[10px] uppercase font-bold text-slate-400 mr-1 hidden sm:inline">
           Freezer Health:
         </span>
@@ -523,7 +523,7 @@ export const InventoryPage = () => {
       </div>
 
       {/* ─── ROW 2: 4 POWER BI EXECUTIVE SUMMARY METRIC CARDS ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+      <div className={`${mobileView === 'detail' ? 'hidden lg:grid' : 'grid'} grid-cols-2 lg:grid-cols-4 gap-2 shrink-0`}>
         
         {/* Card 1: Total Warehouse Valuation */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 shadow-sm flex items-center justify-between">
@@ -811,10 +811,10 @@ export const InventoryPage = () => {
                 </div>
 
                 {/* 3 Inspector Tabs */}
-                <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-800/80 overflow-x-auto no-scrollbar shrink-0">
                   <button
                     onClick={() => setActiveInspectorTab('dossier')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'dossier'
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -826,7 +826,7 @@ export const InventoryPage = () => {
 
                   <button
                     onClick={() => setActiveInspectorTab('lineage')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'lineage'
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -838,7 +838,7 @@ export const InventoryPage = () => {
 
                   <button
                     onClick={() => setActiveInspectorTab('velocity')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'velocity'
                         ? 'bg-amber-500 text-slate-950 shadow-sm'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -850,8 +850,11 @@ export const InventoryPage = () => {
                 </div>
               </div>
 
-              {/* ─── TAB CONTENT (Scrollable) ─── */}
-              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+              {/* ─── TAB CONTENT (Scrollable with Momentum Touch & Bottom Navigation Buffer) ─── */}
+              <div 
+                className="flex-1 min-h-0 overflow-y-auto pr-1 pb-28 lg:pb-4 custom-scrollbar touch-pan-y"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
                 
                 {/* ─── TAB 1: 360° STOCK DOSSIER ─── */}
                 {activeInspectorTab === 'dossier' && (

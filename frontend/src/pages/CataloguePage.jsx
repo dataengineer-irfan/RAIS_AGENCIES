@@ -200,12 +200,13 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 <h1 className="text-sm sm:text-base font-black text-white">
                   Product Catalogue
                 </h1>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                  {products.length} Active SKUs
+                <span className="text-[10px] font-bold px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 font-mono flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>{products.length === 55 ? 'All 55 SKUs Live & Categorized' : `${products.length} Active SKUs`}</span>
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Rayachoty Depot Wholesale Master SKU Matrix & Cash Pricing
+                Rayachoty Depot Wholesale Master SKU Matrix & Cash Pricing (0 Uncategorized)
               </p>
             </div>
           </div>

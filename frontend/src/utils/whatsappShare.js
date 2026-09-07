@@ -44,6 +44,18 @@ export const shareInvoiceOnWhatsApp = ({
     dueSection = `⚠️ *Balance Due on this Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
   }
 
+  // Official Tax Invoice PDF Receipt Link
+  const baseUrl = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http'))
+    ? window.location.origin
+    : 'https://rais-backend.onrender.com';
+  
+  let pdfUrl = '';
+  let pdfSection = '';
+  if (invoice?.id) {
+    pdfUrl = `${baseUrl}/api/invoices/${invoice.id}/print-html`;
+    pdfSection = `📄 *Official Tax Invoice Receipt (PDF):*\n${pdfUrl}\n\n`;
+  }
+
   const message = 
 `🧾 *RAIS AGENCIES — INVOICE*
 ━━━━━━━━━━━━━━━━━━━━
@@ -59,12 +71,12 @@ ${lines}
 ${dueSection}💳 *Payment Terms:* ${terms}
 📲 *Pay via UPI:* 9347453135@ybl
 
-📍 _RAIS AGENCIES — Frozen Foods & Packaging_
+${pdfSection}📍 _RAIS AGENCIES — Frozen Foods & Packaging_
 📍 _Near Reddies Colony, Rayachoty - 516269_
 📞 _Hotline: 9347453135 | 9573261696_
 🙏 _Thank you for your business!_`;
 
-  openWhatsAppMessage(custPhone, message);
+  openWhatsAppMessage(custPhone, message, pdfUrl);
 };
 
 export const shareOrderOnWhatsApp = ({
@@ -112,6 +124,23 @@ ${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n` : ''}
   openWhatsAppMessage(custPhone, message);
 };
 
-const openWhatsAppMessage = (phone, text) => {
+const openWhatsAppMessage = async (phone, text, url = null) => {
+  // If native navigator.share is available on mobile touch devices
+  if (typeof navigator !== 'undefined' && navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent || '')) {
+    try {
+      await navigator.share({
+        title: 'RAIS Agencies Invoice Receipt',
+        text: text,
+        url: url || undefined
+      });
+      return;
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.warn('Native share failed, falling back to WhatsApp direct link', e);
+      } else {
+        return; // User cancelled share dialog
+      }
+    }
+  }
   openWhatsApp(phone, text);
 };

@@ -292,3 +292,51 @@ class CustomerService:
                 running_balance=running_bal
             ))
         return ledger
+
+    @staticmethod
+    def delete_customer(db: Session, customer_id: str, user_id: Optional[str] = None) -> dict:
+        customer = db.query(Customer).filter(Customer.id == customer_id).first()
+        if not customer:
+            raise EntityNotFoundException("Customer", customer_id)
+
+        # 1. Outstanding Balance Check
+        _, _, outstanding = CustomerService.get_customer_balances(db, customer_id)
+        if outstanding > Decimal("0.01"):
+            raise RaisAppException(
+                f"Cannot delete customer '{customer.business_name}' because they have an active outstanding balance of ₹{outstanding:,.2f}. Please settle all dues before deleting."
+            )
+        if outstanding < Decimal("-0.01"):
+            raise RaisAppException(
+                f"Cannot delete customer '{customer.business_name}' because they have an active credit/advance balance of ₹{abs(outstanding):,.2f}. Please refund or adjust credit before deleting."
+            )
+
+        # 2. Historical Accounting Records Check (Invoices & Payments)
+        invoice_count = db.query(Invoice).filter(Invoice.customer_id == customer_id).count()
+        payment_count = db.query(Payment).filter(Payment.customer_id == customer_id).count()
+        if invoice_count > 0 or payment_count > 0:
+            raise RaisAppException(
+                f"Cannot delete customer '{customer.business_name}' because they have {invoice_count} invoice(s) and {payment_count} payment record(s) on file. For GST and tax audit compliance, accounts with billed transactions cannot be permanently deleted. You can mark them as Inactive."
+            )
+
+        cust_code = customer.customer_code
+        cust_name = customer.business_name
+
+        # Audit Log
+        AuditService.log(
+            db=db,
+            action=AuditAction.DELETE,
+            entity_name="Customer",
+            entity_id=customer.id,
+            user_id=user_id,
+            before_state={"customer_code": cust_code, "business_name": cust_name}
+        )
+
+        db.delete(customer)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": f"Customer '{cust_name}' ({cust_code}) deleted successfully.",
+            "customer_id": customer_id
+        }
+
