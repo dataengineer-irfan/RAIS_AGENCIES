@@ -323,4 +323,40 @@ export const analyticsApi = {
   }
 };
 
+export const backupApi = {
+  getStatus: async () => {
+    return cachedGet('/backup/status');
+  },
+  downloadExport: async () => {
+    const response = await api.get('/backup/export', {
+      responseType: 'blob'
+    });
+    
+    // Extract filename from Content-Disposition header if available
+    const disposition = response.headers['content-disposition'] || '';
+    let filename = `rais_backup_${new Date().toISOString().slice(0, 10)}.json.gz`;
+    const filenameMatch = disposition.match(/filename="?([^";]+)"?/);
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1];
+    }
+    
+    // Trigger direct browser file download
+    const blob = new Blob([response.data], { type: 'application/gzip' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    return {
+      success: true,
+      filename,
+      totalRecords: response.headers['x-total-records'] || 'all'
+    };
+  }
+};
+
 export default api;

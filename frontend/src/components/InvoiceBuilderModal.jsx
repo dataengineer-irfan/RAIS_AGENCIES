@@ -647,6 +647,7 @@ export const InvoiceBuilderModal = ({
                     invoice: {
                       invoice_number: 'PREVIEW',
                       invoice_date: invoiceDate,
+                      created_at: new Date().toISOString(),
                       total_amount: totals.total,
                       payment_terms: paymentTerms
                     },

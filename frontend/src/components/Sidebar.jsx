@@ -40,8 +40,8 @@ export const Sidebar = ({
     { id: 'ai', label: 'AI Assistant', icon: Sparkles, badge: 'AI' },
   ];
 
-  if (hasRole('ADMIN')) {
-    menuItems.push({ id: 'audit', label: 'Audit & System', icon: ShieldCheck });
+  if (hasRole('ADMIN') || hasRole('OPERATOR')) {
+    menuItems.push({ id: 'audit', label: 'Audit & Data Vault', icon: ShieldCheck });
   }
 
   if (!isOpen && !isPeeked) {

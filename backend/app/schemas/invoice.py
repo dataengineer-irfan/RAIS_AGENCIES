@@ -105,6 +105,7 @@ class InvoiceSummary(BaseModel):
     total_amount: Decimal
     paid_amount: Decimal
     outstanding_amount: Decimal
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

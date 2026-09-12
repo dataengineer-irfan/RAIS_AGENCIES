@@ -13,9 +13,13 @@ import {
   FileCode,
   Layers,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database,
+  Download,
+  HardDrive,
+  RefreshCw
 } from 'lucide-react';
-import { auditApi } from '../services/api';
+import { auditApi, backupApi } from '../services/api';
 import { copyToClipboard } from '../utils/mobileHelpers';
 
 export const AuditPage = () => {
@@ -30,9 +34,28 @@ export const AuditPage = () => {
   const [activeInspectorTab, setActiveInspectorTab] = useState('json'); // json, metadata, compliance
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Data Vault & Backup States
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [backupBannerMsg, setBackupBannerMsg] = useState(null);
+  const [showVaultInfo, setShowVaultInfo] = useState(false);
+
   useEffect(() => {
     loadAuditLogs();
   }, [entityFilter, actionFilter]);
+
+  useEffect(() => {
+    loadVaultStatus();
+  }, []);
+
+  const loadVaultStatus = async () => {
+    try {
+      const status = await backupApi.getStatus();
+      setBackupStatus(status);
+    } catch (err) {
+      console.error('Failed to load backup status', err);
+    }
+  };
 
   const loadAuditLogs = async (selectId = null) => {
     setLoading(true);
@@ -52,6 +75,22 @@ export const AuditPage = () => {
       console.error('Failed to load audit logs', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const res = await backupApi.downloadExport();
+      setBackupBannerMsg(`Live backup downloaded: ${res.filename} (${res.totalRecords} records).`);
+      loadVaultStatus();
+      loadAuditLogs();
+      setTimeout(() => setBackupBannerMsg(null), 6000);
+    } catch (err) {
+      console.error('Backup download failed', err);
+      alert('Could not download database backup. Please ensure your session is active.');
+    } finally {
+      setIsBackingUp(false);
     }
   };
 
@@ -86,6 +125,8 @@ export const AuditPage = () => {
         return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
       case 'LOGIN':
         return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+      case 'EXPORT':
+        return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
       default:
         return 'bg-slate-800 text-slate-300 border-slate-700';
     }
@@ -116,7 +157,7 @@ export const AuditPage = () => {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
@@ -124,14 +165,14 @@ export const AuditPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search user, entity, ID..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-36 sm:w-48"
+              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-32 sm:w-44"
             />
           </div>
 
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2 py-1.5 focus:outline-none cursor-pointer"
           >
             <option value="">All Entities</option>
             <option value="Invoice">Invoice</option>
@@ -140,12 +181,13 @@ export const AuditPage = () => {
             <option value="Product">Product</option>
             <option value="Order">Order</option>
             <option value="User">User</option>
+            <option value="DatabaseBackup">DatabaseBackup</option>
           </select>
 
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2 py-1.5 focus:outline-none cursor-pointer"
           >
             <option value="">All Actions</option>
             <option value="CREATE">CREATE</option>
@@ -153,9 +195,88 @@ export const AuditPage = () => {
             <option value="STATUS_CHANGE">STATUS_CHANGE</option>
             <option value="ALLOCATION">ALLOCATION</option>
             <option value="LOGIN">LOGIN</option>
+            <option value="EXPORT">EXPORT</option>
           </select>
+
+          {/* 1-Click Backup Export Button */}
+          <button
+            onClick={handleDownloadBackup}
+            disabled={isBackingUp}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="1-Click Instant Vault Backup (.json.gz)"
+          >
+            {isBackingUp ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Downloading...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5" />
+                <span>Backup (.gz)</span>
+              </>
+            )}
+          </button>
+
+          {/* Toggle Vault Info */}
+          <button
+            onClick={() => setShowVaultInfo(!showVaultInfo)}
+            className={`p-1.5 rounded-xl border transition ${
+              showVaultInfo
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700'
+            }`}
+            title="Toggle Vault Health Overview"
+          >
+            <Database className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* ─── OPTIONAL EXPANDABLE DATA VAULT HEALTH BANNER ─── */}
+      {showVaultInfo && (
+        <div className="bg-slate-900/95 border border-emerald-500/30 rounded-2xl p-3 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shrink-0 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+              <HardDrive className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">RAIS Data Vault & Rolling 30-Day Backup</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-[10px] border border-emerald-500/30">
+                  {backupStatus?.status === 'online' ? '● Database Online' : 'Connecting...'}
+                </span>
+              </div>
+              <p className="text-slate-400 text-[11px] mt-0.5">
+                Cloud Provider: <strong className="text-slate-200">{backupStatus?.cloud_provider || 'Supabase AWS Managed PostgreSQL'}</strong> • 
+                Live Records: <strong className="text-emerald-400 font-mono">{backupStatus?.total_records || '...'}</strong> across 16 tables • 
+                Retention: <strong className="text-slate-300">Rolling 30-Day Local + OneDrive + Cloud Snapshots</strong>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleDownloadBackup}
+              disabled={isBackingUp}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow transition disabled:opacity-50"
+            >
+              {isBackingUp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              <span>Download Live Backup (.json.gz)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── SUCCESS NOTIFICATION BANNER ─── */}
+      {backupBannerMsg && (
+        <div className="bg-emerald-950/80 border border-emerald-500/50 rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-xs text-emerald-200 shrink-0 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{backupBannerMsg}</span>
+          </div>
+          <button onClick={() => setBackupBannerMsg(null)} className="text-emerald-400 hover:text-white text-xs font-bold px-1">✕</button>
+        </div>
+      )}
 
       {/* ─── MASTER-DETAIL SPLIT-PANE CONTAINER (100% Viewport-Locked) ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">

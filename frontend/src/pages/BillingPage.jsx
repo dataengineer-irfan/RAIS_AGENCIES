@@ -30,6 +30,7 @@ import { useAuth } from '../context/AuthContext';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { InvoiceBuilderModal } from '../components/InvoiceBuilderModal';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
+import { formatInvoiceDateTime } from '../utils/invoiceImageGenerator';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) => {
@@ -142,32 +143,27 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleSendWhatsAppInvoice = (inv) => {
-    if (inv?.items && inv.items.length > 0) {
-      shareInvoiceOnWhatsApp({
-        invoice: inv,
-        customer: { business_name: inv.customer_name, phone: inv.customer_phone, outstanding_balance: inv.customer_outstanding_balance },
-        items: inv.items
-      });
-      return;
+  const handleSendWhatsAppInvoice = async (inv) => {
+    if (!inv) return;
+    let fullInvoice = inv;
+    if (!fullInvoice.items || fullInvoice.items.length === 0) {
+      try {
+        fullInvoice = await billingApi.getInvoice(inv.id);
+      } catch (e) {
+        console.warn('Could not fetch full invoice items, sharing available data:', e);
+      }
     }
-    const total = parseFloat(inv.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const due = parseFloat(inv.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const overallDue = parseFloat(inv.customer_outstanding_balance || 0);
-
-    const baseUrl = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http'))
-      ? window.location.origin
-      : 'https://rais-backend.onrender.com';
-    const pdfUrl = `${baseUrl}/api/invoices/${inv.id}/print-html`;
-
-    let text = `*RAIS AGENCIES — Tax Invoice Receipt*\n\nInvoice #: *${inv.invoice_number}*\nCustomer: *${inv.customer_name}*\nDate: *${inv.invoice_date}*\n\n💵 *Bill Amount:* *₹${total}*`;
-    if (overallDue > 0) {
-      text += `\n⚠️ *Overall Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*`;
-    } else if (parseFloat(inv.outstanding_amount || 0) > 0) {
-      text += `\n⚠️ *Bill Balance Due:* *₹${due}*`;
-    }
-    text += `\n\n📄 *Official Tax Invoice Receipt (PDF):*\n${pdfUrl}\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n\n*RAIS Agencies*, Rayachoty.`;
-    openWhatsApp(inv.customer_phone || '9347453135', text);
+    await shareInvoiceOnWhatsApp({
+      invoice: fullInvoice,
+      customer: {
+        business_name: fullInvoice.customer_name,
+        phone: fullInvoice.customer_phone,
+        address: fullInvoice.customer_address,
+        customer_code: fullInvoice.customer_code,
+        outstanding_balance: fullInvoice.customer_outstanding_balance
+      },
+      items: fullInvoice.items || []
+    });
   };
 
   const handleDeleteInvoice = async (inv) => {
@@ -347,7 +343,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                         {inv?.customer_name || 'Customer'}
                       </h4>
                       <p className="text-xs text-slate-400 truncate">
-                        {inv?.invoice_date || '-'} • {inv?.items_count || (inv?.items ? inv.items.length : 0)} line items
+                        {formatInvoiceDateTime(inv?.invoice_date, inv?.created_at).fullText} • {inv?.items_count || (inv?.items ? inv.items.length : 0)} line items
                       </p>
                     </div>
 
@@ -407,7 +403,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                     {selectedInvoice.customer_name}
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Billed on {selectedInvoice.invoice_date} {selectedInvoice.due_date ? `• Due: ${selectedInvoice.due_date}` : ''}
+                    Billed on {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText} {selectedInvoice.due_date ? `• Due: ${selectedInvoice.due_date}` : ''}
                   </p>
                 </div>
 

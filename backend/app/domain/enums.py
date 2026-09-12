@@ -47,3 +47,4 @@ class AuditAction(str, Enum):
     STATUS_CHANGE = "STATUS_CHANGE"
     ALLOCATION = "ALLOCATION"
     LOGIN = "LOGIN"
+    EXPORT = "EXPORT"

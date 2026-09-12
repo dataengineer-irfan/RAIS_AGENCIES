@@ -1,13 +1,28 @@
-import { openWhatsApp } from './mobileHelpers';
+import { openWhatsApp } from './mobileHelpers.js';
+import { generateInvoiceFile, downloadInvoiceImage, formatInvoiceDateTime } from './invoiceImageGenerator.js';
 
-export const shareInvoiceOnWhatsApp = ({
+/**
+ * Always returns the public production Render URL for PDF receipts.
+ * Strictly avoids localhost/capacitor URLs so customers can open receipts anywhere.
+ */
+export const getPublicInvoicePdfUrl = (invoiceId) => {
+  if (!invoiceId) return '';
+  let prodHost = 'https://rais-backend.onrender.com';
+  const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+  const customApi = (env.VITE_PUBLIC_API_URL || env.VITE_API_URL || '').trim();
+  if (customApi && !customApi.includes('localhost') && !customApi.includes('127.0.0.1')) {
+    prodHost = customApi.startsWith('http') ? customApi : `https://${customApi}`;
+  }
+  return `${prodHost.replace(/\/$/, '')}/api/invoices/${invoiceId}/print-html`;
+};
+
+export const shareInvoiceOnWhatsApp = async ({
   invoice,
   customer,
   items = [],
   products = []
 }) => {
   const invNumber = invoice?.invoice_number || 'DRAFT';
-  const invDate = invoice?.invoice_date || new Date().toISOString().split('T')[0];
   const custName = customer?.business_name || invoice?.customer_name || 'Customer';
   const custPhone = customer?.phone || invoice?.customer_phone || '';
   const terms = invoice?.payment_terms || 'Cash on Delivery';
@@ -23,60 +38,120 @@ export const shareInvoiceOnWhatsApp = ({
     overallDue = parseFloat(customer.outstanding_balance);
   }
 
+  // Date + Short Time format (e.g., "12-Sep-2026 • 11:30 AM")
+  const { fullText: invoiceDateTimeStr } = formatInvoiceDateTime(invoice?.invoice_date, invoice?.created_at);
+
+  // Mobile-Optimized Multi-Line Item Cards
   let lines = (items || []).map((itm, idx) => {
     const p = products.find(prod => prod.id === itm.product_id);
     const name = p?.name || itm.item_description || itm.product_name || `Item ${idx + 1}`;
     const qty = itm.quantity || 1;
     const unit = itm.packaging_unit || p?.packaging_unit || 'PKT';
-    const rate = parseFloat(itm.unit_price || 0).toFixed(2);
-    const lineTotal = (qty * parseFloat(itm.unit_price || 0)).toFixed(2);
-    return `• ${name} (${unit}) x ${qty} @ ₹${rate} = *₹${lineTotal}*`;
+    const rate = parseFloat(itm.unit_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const lineTotal = (qty * parseFloat(itm.unit_price || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    return `${idx + 1}️⃣ *${name}* (${unit})\n   ${qty} × ₹${rate} = *₹${lineTotal}*`;
   }).join('\n');
 
   if (!lines) {
-    lines = '• Wholesale products & supplies';
+    lines = '• Wholesale frozen food products & supplies';
   }
 
   let dueSection = '';
   if (overallDue !== null && overallDue > 0) {
     dueSection = `⚠️ *Overall Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
-  } else if (invOutstanding > 0) {
+  } else if (invOutstanding > 0 && invOutstanding !== billAmt) {
     dueSection = `⚠️ *Balance Due on this Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
   }
 
-  // Official Tax Invoice PDF Receipt Link
-  const baseUrl = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http'))
-    ? window.location.origin
-    : 'https://rais-backend.onrender.com';
-  
+  // Guaranteed Live Render URL
   let pdfUrl = '';
   let pdfSection = '';
   if (invoice?.id) {
-    pdfUrl = `${baseUrl}/api/invoices/${invoice.id}/print-html`;
-    pdfSection = `📄 *Official Tax Invoice Receipt (PDF):*\n${pdfUrl}\n\n`;
+    pdfUrl = getPublicInvoicePdfUrl(invoice.id);
+    pdfSection = `📄 *Official Tax Invoice Receipt (PDF):*\n👉 ${pdfUrl}\n\n`;
   }
 
   const message = 
-`🧾 *RAIS AGENCIES — INVOICE*
+`🧾 *TAX INVOICE — RAIS AGENCIES*
 ━━━━━━━━━━━━━━━━━━━━
-📄 *Invoice:* #${invNumber}
-📅 *Date:* ${invDate}
+📄 *Invoice #:* #${invNumber}
+📅 *Date & Time:* ${invoiceDateTimeStr}
 🏪 *Billed To:* *${custName}*
 ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━━━━━━━━━━━
-*Itemized Bill:*
+📦 *ORDER SUMMARY:*
 ${lines}
 
 ━━━━━━━━━━━━━━━━━━━━
 💵 *Bill Amount:* *₹${totalAmtFormatted}*
 ${dueSection}💳 *Payment Terms:* ${terms}
-📲 *Pay via UPI:* 9347453135@ybl
 
-${pdfSection}📍 _RAIS AGENCIES — Frozen Foods & Packaging_
-📍 _Near Reddies Colony, Rayachoty - 516269_
-📞 _Hotline: 9347453135 | 9573261696_
-🙏 _Thank you for your business!_`;
+📲 *PAY VIA UPI:*
+• UPI ID: \`9347453135@ybl\`
+• Payee: *RAIS AGENCIES*
+• GPay / PhonePe: *9347453135*
 
-  openWhatsAppMessage(custPhone, message, pdfUrl);
+${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
+📞 _Order Desk: 9347453135 | 9573261696_
+❄️ _Frozen Food Is Our Specialty (-18°C)_
+🙏 _Thank you for your valued partnership!_`;
+
+  // Try generating the invoice image card and sharing it natively with image attached
+  try {
+    let invoiceFile = null;
+    try {
+      invoiceFile = await generateInvoiceFile({
+        invoice,
+        customer: customer || { business_name: custName, phone: custPhone },
+        items,
+        products
+      });
+    } catch (imgErr) {
+      console.warn('Canvas image generation skipped/failed:', imgErr);
+    }
+
+    // 1. Mobile Web Share API with image file
+    if (
+      invoiceFile &&
+      typeof navigator !== 'undefined' &&
+      navigator.canShare &&
+      navigator.canShare({ files: [invoiceFile] })
+    ) {
+      try {
+        await navigator.share({
+          title: `RAIS Invoice #${invNumber}`,
+          text: message,
+          files: [invoiceFile]
+        });
+        return;
+      } catch (shareErr) {
+        if (shareErr.name === 'AbortError') {
+          return; // User cancelled share sheet
+        }
+        console.warn('Native file share failed, falling back to download & direct link:', shareErr);
+      }
+    }
+
+    // 2. If file sharing is not supported (e.g. desktop web or older Android webview):
+    // Auto-save the invoice image to downloads/gallery so user has it ready
+    if (invoiceFile) {
+      try {
+        await downloadInvoiceImage({
+          invoice,
+          customer: customer || { business_name: custName, phone: custPhone },
+          items,
+          products
+        });
+      } catch (dlErr) {
+        console.warn('Image auto-download failed:', dlErr);
+      }
+    }
+
+    // 3. Launch WhatsApp with message & Render PDF link
+    openWhatsApp(custPhone, message);
+  } catch (err) {
+    console.error('Invoice share pipeline error:', err);
+    openWhatsApp(custPhone, message);
+  }
 };
 
 export const shareOrderOnWhatsApp = ({
@@ -97,7 +172,7 @@ export const shareOrderOnWhatsApp = ({
     const name = p?.name || itm.product_name || `Item ${idx + 1}`;
     const qty = itm.quantity || 1;
     const unit = itm.packaging_unit || p?.packaging_unit || 'PKT';
-    return `• ${name} (${unit}) x ${qty}`;
+    return `${idx + 1}️⃣ *${name}* (${unit}) × ${qty}`;
   }).join('\n');
 
   if (!lines) {
@@ -119,28 +194,7 @@ ${lines}
 ${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n` : ''}
 📍 _RAIS AGENCIES — Rayachoty Depot_
 📞 _Hotline: 9347453135 | 9573261696_
-📦 _Your booking is confirmed and being dispatched!_`;
+❄️ _Cold-chain dispatch scheduled!_`;
 
-  openWhatsAppMessage(custPhone, message);
-};
-
-const openWhatsAppMessage = async (phone, text, url = null) => {
-  // If native navigator.share is available on mobile touch devices
-  if (typeof navigator !== 'undefined' && navigator.share && /android|iphone|ipad|ipod/i.test(navigator.userAgent || '')) {
-    try {
-      await navigator.share({
-        title: 'RAIS Agencies Invoice Receipt',
-        text: text,
-        url: url || undefined
-      });
-      return;
-    } catch (e) {
-      if (e.name !== 'AbortError') {
-        console.warn('Native share failed, falling back to WhatsApp direct link', e);
-      } else {
-        return; // User cancelled share dialog
-      }
-    }
-  }
-  openWhatsApp(phone, text);
+  openWhatsApp(custPhone, message);
 };

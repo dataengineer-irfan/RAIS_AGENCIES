@@ -19,9 +19,13 @@ import {
   CreditCard,
   ShoppingBag,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  Download,
+  HardDrive,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { backupApi } from '../services/api';
 
 export const Header = ({ 
   onToggleAI, 
@@ -38,6 +42,22 @@ export const Header = ({
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileNavDrawerOpen, setMobileNavDrawerOpen] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
+
+  const handleMobileDownloadBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const res = await backupApi.downloadExport();
+      setBackupMsg(`Downloaded ${res.filename} (${res.totalRecords} rows)`);
+      setTimeout(() => setBackupMsg(''), 5000);
+    } catch (err) {
+      console.error('Backup failed:', err);
+      alert('Could not download backup. Please check your network connection.');
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
 
   return (
     <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all">
@@ -107,8 +127,15 @@ export const Header = ({
       {/* ─── NATIVE MOBILE APP BAR (< md) ─── */}
       <div className="md:hidden flex flex-col px-3 py-2">
         <div className="flex items-center justify-between gap-2 h-11">
-          {/* Brand & Depot Identity */}
+          {/* Brand & Depot Identity + Mobile Menu Button */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileNavDrawerOpen(true)}
+              className="p-1.5 -ml-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl active:scale-95 transition"
+              title="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-amber-400" />
+            </button>
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20 shrink-0">
               R
             </div>
@@ -228,6 +255,59 @@ export const Header = ({
                 </div>
               </div>
 
+              {/* Mobile 1-Click Backup & Audit Hub */}
+              {(hasRole('ADMIN') || hasRole('OPERATOR')) && (
+                <div className="flex flex-col gap-2 p-3 bg-slate-950/80 rounded-2xl border border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-200 text-xs font-bold flex items-center gap-1.5">
+                      <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+                      Data Vault & Backup
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      30-Day Rolling
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <button
+                      onClick={handleMobileDownloadBackup}
+                      disabled={isBackingUp}
+                      className="flex items-center justify-center gap-1.5 py-2 px-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-[11px] shadow-sm active:scale-95 transition disabled:opacity-50"
+                      title="Direct GZIP Backup Download"
+                    >
+                      {isBackingUp ? (
+                        <>
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3 h-3" />
+                          <span>Download .gz</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setProfileModalOpen(false);
+                        if (onNavigate) onNavigate('audit');
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-[11px] border border-slate-700 active:scale-95 transition"
+                    >
+                      <ShieldCheck className="w-3 h-3 text-amber-400" />
+                      <span>Audit Hub</span>
+                    </button>
+                  </div>
+
+                  {backupMsg && (
+                    <p className="text-[10px] text-emerald-400 font-medium text-center animate-in fade-in">
+                      ✓ {backupMsg}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Sign Out CTA Button */}
               <button
                 onClick={() => {
@@ -284,7 +364,9 @@ export const Header = ({
                   { id: 'orders', label: 'Orders & Bookings', icon: ShoppingBag },
                   { id: 'reports', label: 'Financial Reports & Aging', icon: BarChart3 },
                   { id: 'ai', label: 'Executive AI Co-Pilot', icon: Sparkles },
-                  ...(hasRole && hasRole('ADMIN') ? [{ id: 'audit', label: 'Audit & System Logs', icon: ShieldCheck }] : [])
+                  ...(hasRole && (hasRole('ADMIN') || hasRole('OPERATOR')) ? [
+                    { id: 'audit', label: 'Audit & Data Vault (Backup)', icon: ShieldCheck, highlight: true }
+                  ] : [])
                 ].map(item => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -312,6 +394,34 @@ export const Header = ({
                   );
                 })}
               </div>
+
+              {/* Drawer Quick Backup CTA */}
+              {(hasRole('ADMIN') || hasRole('OPERATOR')) && (
+                <div className="pt-2 pb-1 shrink-0">
+                  <button
+                    onClick={handleMobileDownloadBackup}
+                    disabled={isBackingUp}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow-md active:scale-95 transition disabled:opacity-50"
+                  >
+                    {isBackingUp ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Generating Backup...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download 1-Click Backup (.gz)</span>
+                      </>
+                    )}
+                  </button>
+                  {backupMsg && (
+                    <p className="text-[10px] text-emerald-400 font-medium text-center mt-1">
+                      ✓ {backupMsg}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Drawer Footer */}
               <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between shrink-0">
