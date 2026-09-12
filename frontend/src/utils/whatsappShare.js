@@ -45,12 +45,13 @@ export const shareInvoiceOnWhatsApp = async ({
   let lines = (items || []).map((itm, idx) => {
     const p = products.find(prod => prod.id === itm.product_id);
     const name = p?.name || itm.item_description || itm.product_name || `Item ${idx + 1}`;
-    const qty = itm.quantity || 1;
+    const rawQty = parseFloat(itm.quantity || 1);
+    const qty = Number.isInteger(rawQty) ? rawQty : rawQty.toFixed(2);
     const unit = itm.packaging_unit || p?.packaging_unit || 'PKT';
     const rate = parseFloat(itm.unit_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const lineTotal = (qty * parseFloat(itm.unit_price || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    return `${idx + 1}️⃣ *${name}* (${unit})\n   ${qty} × ₹${rate} = *₹${lineTotal}*`;
-  }).join('\n');
+    const lineTotal = (rawQty * parseFloat(itm.unit_price || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    return `▫️ *${idx + 1}. ${name}* (${unit})\n   ${qty} × ₹${rate} = *₹${lineTotal}*`;
+  }).join('\n\n');
 
   if (!lines) {
     lines = '• Wholesale frozen food products & supplies';
@@ -63,11 +64,13 @@ export const shareInvoiceOnWhatsApp = async ({
     dueSection = `⚠️ *Balance Due on this Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
   }
 
-  // Guaranteed Live Render URL
-  let pdfUrl = '';
+  // Guaranteed Live Render URLs for Image & PDF
   let pdfSection = '';
+  let imageSection = '';
   if (invoice?.id) {
-    pdfUrl = getPublicInvoicePdfUrl(invoice.id);
+    const pdfUrl = getPublicInvoicePdfUrl(invoice.id);
+    const imgUrl = `https://rais-backend.onrender.com/api/invoices/${invoice.id}/image`;
+    imageSection = `🖼️ *Digital Invoice Receipt (Image Card):*\n👉 ${imgUrl}\n\n`;
     pdfSection = `📄 *Official Tax Invoice Receipt (PDF):*\n👉 ${pdfUrl}\n\n`;
   }
 
@@ -90,7 +93,7 @@ ${dueSection}💳 *Payment Terms:* ${terms}
 • Payee: *RAIS AGENCIES*
 • GPay / PhonePe: *9347453135*
 
-${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
+${imageSection}${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
 📞 _Order Desk: 9347453135 | 9573261696_
 ❄️ _Frozen Food Is Our Specialty (-18°C)_
 🙏 _Thank you for your valued partnership!_`;

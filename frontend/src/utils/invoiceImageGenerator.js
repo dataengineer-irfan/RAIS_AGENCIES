@@ -10,11 +10,18 @@ export const formatInvoiceDateTime = (invoiceDate, createdAt) => {
 
   if (createdAt) {
     try {
-      const d = new Date(createdAt);
+      let iso = String(createdAt).trim();
+      // If server returned ISO datetime without timezone (e.g. '2026-09-12T08:11:00'), force UTC interpretation
+      if (!iso.endsWith('Z') && !iso.includes('+') && !iso.includes('-') && iso.length > 10) {
+        iso += 'Z';
+      } else if (!iso.endsWith('Z') && !iso.includes('+') && iso.includes('T')) {
+        iso += 'Z';
+      }
+      const d = new Date(iso);
       if (!isNaN(d.getTime())) {
-        // Format to IST / Local
-        datePart = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-        timePart = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        // Explicitly format to Indian Standard Time (IST / Asia/Kolkata)
+        datePart = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+        timePart = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
       }
     } catch {
       // fallback
@@ -22,11 +29,10 @@ export const formatInvoiceDateTime = (invoiceDate, createdAt) => {
   }
 
   if (!timePart && datePart) {
-    // If no created_at timestamp, format date nicely
     try {
       const d = new Date(datePart);
       if (!isNaN(d.getTime())) {
-        datePart = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        datePart = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
       }
     } catch {
       // fallback

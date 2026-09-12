@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Sparkles, 
   MapPin, 
@@ -206,15 +207,15 @@ export const Header = ({
           </div>
         )}
 
-        {/* ─── MOBILE USER PROFILE & SIGN OUT MODAL SHEET ─── */}
-        {profileModalOpen && (
+        {/* ─── MOBILE USER PROFILE & SIGN OUT MODAL SHEET (PORTALED) ─── */}
+        {profileModalOpen && typeof document !== 'undefined' && createPortal(
           <div 
             onClick={() => setProfileModalOpen(false)}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200"
+            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
           >
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:max-w-sm bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom-6 duration-200"
+              className="w-full sm:max-w-sm bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom-6 duration-200 max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -234,9 +235,10 @@ export const Header = ({
                 </div>
                 <button
                   onClick={() => setProfileModalOpen(false)}
-                  className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white active:scale-95 transition"
+                  title="Close and Return to Main Screen"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -308,26 +310,38 @@ export const Header = ({
                 </div>
               )}
 
-              {/* Sign Out CTA Button */}
-              <button
-                onClick={() => {
-                  setProfileModalOpen(false);
-                  logout();
-                }}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/40 text-rose-400 hover:text-rose-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-rose-950/40"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign Out of Workspace</span>
-              </button>
+              {/* Action Buttons: Return to Main Screen & Safe Sign Out */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
+                <button
+                  onClick={() => setProfileModalOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+                >
+                  ← Return to Main Screen
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to sign out of RAIS Agencies workspace?')) {
+                      setProfileModalOpen(false);
+                      logout();
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/40 text-rose-400 hover:text-rose-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out of Workspace</span>
+                </button>
+              </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {/* ─── MOBILE FULL NAVIGATION DRAWER (< md) ─── */}
-        {mobileNavDrawerOpen && (
+        {/* ─── MOBILE FULL NAVIGATION DRAWER (PORTALED) ─── */}
+        {mobileNavDrawerOpen && typeof document !== 'undefined' && createPortal(
           <div 
             onClick={() => setMobileNavDrawerOpen(false)}
-            className="md:hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs animate-in fade-in duration-200 flex"
+            className="md:hidden fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200 flex"
           >
             <div 
               onClick={(e) => e.stopPropagation()}
@@ -347,6 +361,7 @@ export const Header = ({
                 <button
                   onClick={() => setMobileNavDrawerOpen(false)}
                   className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                  title="Close Navigation Menu"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -423,14 +438,26 @@ export const Header = ({
                 </div>
               )}
 
+              {/* Return to Main Screen Button inside drawer */}
+              <div className="pt-2 pb-1 shrink-0">
+                <button
+                  onClick={() => setMobileNavDrawerOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs border border-slate-700/80 active:scale-95 transition"
+                >
+                  ← Return to Main Screen
+                </button>
+              </div>
+
               {/* Drawer Footer */}
               <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between shrink-0">
                 <span>Near Reddies Colony</span>
                 <span className="font-mono text-emerald-400">Hub Online</span>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
+
       </div>
     </header>
   );
