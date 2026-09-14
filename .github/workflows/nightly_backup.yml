@@ -28,18 +28,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Validate Database URL Secret
+      - name: Check Database Connection Configuration
         env:
           DB_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$DB_URL" ]; then
-            echo "::error::DATABASE_URL secret is not set in GitHub repository secrets!"
-            echo "To enable automated cloud backups:"
-            echo "1. Go to your GitHub Repository -> Settings -> Secrets and variables -> Actions"
-            echo "2. Click 'New repository secret'"
-            echo "3. Name: DATABASE_URL"
-            echo "4. Value: (Your Supabase PostgreSQL Connection String)"
-            exit 1
+            echo "::notice::DATABASE_URL secret is not set in GitHub repository secrets. Backup script will automatically fetch snapshot from Production Cloud API."
+          else
+            echo "::notice::DATABASE_URL secret detected. Direct PostgreSQL connection enabled."
           fi
 
       - name: Generate IST Timestamp

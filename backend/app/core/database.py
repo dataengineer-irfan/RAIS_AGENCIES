@@ -6,7 +6,9 @@ from typing import Generator
 from app.core.config import settings
 
 # Engine configuration
-database_url = settings.DATABASE_URL
+database_url = (settings.DATABASE_URL or "").strip()
+if not database_url:
+    database_url = "sqlite:///./rais_agencies.db"
 connect_args = {}
 
 # Normalize Supabase / Cloud postgresql connection strings

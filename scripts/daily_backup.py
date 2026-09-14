@@ -116,6 +116,34 @@ def purge_old_backups(backup_dir, retention_days=30):
 
     return removed_count, retained_count
 
+def fetch_backup_from_render_api():
+    """Fallback when direct PostgreSQL DATABASE_URL is not set: fetches live GZIP backup from Render API."""
+    import urllib.request
+    import json
+    
+    api_base = os.environ.get("RENDER_API_URL", "https://rais-backend.onrender.com").rstrip("/")
+    admin_user = os.environ.get("BACKUP_USER", "admin")
+    admin_pass = os.environ.get("BACKUP_PASSWORD", "RaisAdmin@2026")
+    
+    print(f"🌐 Direct DATABASE_URL not detected. Fetching live snapshot from Production API ({api_base})...")
+    
+    # 1. Login to obtain access token
+    login_url = f"{api_base}/api/auth/login-json"
+    login_data = json.dumps({"username": admin_user, "password": admin_pass}).encode("utf-8")
+    req = urllib.request.Request(login_url, data=login_data, headers={"Content-Type": "application/json", "User-Agent": "RAIS-Backup-Agent"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        token_info = json.loads(resp.read().decode("utf-8"))
+        token = token_info.get("access_token")
+        
+    # 2. Download compressed backup stream
+    export_url = f"{api_base}/api/backup/export?token={token}"
+    export_req = urllib.request.Request(export_url, headers={"User-Agent": "RAIS-Backup-Agent"})
+    with urllib.request.urlopen(export_req, timeout=60) as resp:
+        compressed_bytes = resp.read()
+        records_count = resp.headers.get("X-Total-Records", "all")
+        
+    return compressed_bytes, records_count
+
 def run_backup():
     ist_now = datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
     timestamp_str = ist_now.strftime("%Y-%m-%d_%H%M%S")
@@ -126,9 +154,48 @@ def run_backup():
     print(f" ⏰  Time: {ist_now.strftime('%d-%b-%Y %I:%M:%S %p')} IST")
     print("=" * 65)
     
-    # 1. Database Connection
-    db_url = os.environ.get("DATABASE_URL") or settings.DATABASE_URL
-    safe_url = db_url.split("@")[-1] if "@" in db_url else "local_sqlite"
+    target_dirs = get_backup_directories()
+    primary_dir = target_dirs[0]
+    primary_file_path = os.path.join(primary_dir, backup_filename)
+
+    # 1. Database Connection Check
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url and os.path.exists(env_path):
+        db_url = settings.DATABASE_URL
+
+    if not db_url or "sqlite" in db_url.lower():
+        # Fallback to fetching live backup directly from Render production backend
+        compressed_bytes, records_count = fetch_backup_from_render_api()
+        with open(primary_file_path, "wb") as f_out:
+            f_out.write(compressed_bytes)
+        compressed_size_kb = len(compressed_bytes) / 1024
+        print(f"  ✅ Saved Primary: {primary_file_path}")
+        print(f"  📊 Compressed Size: {compressed_size_kb:.1f} KB ({records_count} records)")
+        
+        # Mirror to Cloud Folder (OneDrive) if available
+        if len(target_dirs) > 1:
+            for cloud_dir in target_dirs[1:]:
+                cloud_file = os.path.join(cloud_dir, backup_filename)
+                try:
+                    shutil.copyfile(primary_file_path, cloud_file)
+                    print(f"  ☁️  Mirrored to Cloud Storage: {cloud_file}")
+                except Exception as e:
+                    print(f"  [Warning] Cloud mirror failed: {e}")
+
+        # Enforce 30-Day Retention Policy
+        print("\n🧹 Enforcing Rolling 30-Day Retention Policy:")
+        for b_dir in target_dirs:
+            purged, kept = purge_old_backups(b_dir, retention_days=30)
+            print(f"  • Directory: {b_dir}")
+            print(f"    - Purged (>30 days old) : {purged} file(s)")
+            print(f"    - Retained (Current)    : {kept} file(s)")
+
+        print("\n" + "=" * 65)
+        print(" 🎉  NIGHTLY BACKUP COMPLETED SUCCESSFULLY (VIA CLOUD API)!")
+        print("=" * 65)
+        return
+
+    safe_url = db_url.split("@")[-1] if "@" in db_url else "database"
     print(f"🔌 Connecting to Database ({safe_url})...")
     
     engine = create_engine(db_url, pool_pre_ping=True)
