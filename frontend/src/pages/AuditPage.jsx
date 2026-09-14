@@ -82,10 +82,18 @@ export const AuditPage = () => {
     setIsBackingUp(true);
     try {
       const res = await backupApi.downloadExport();
-      setBackupBannerMsg(`Live backup downloaded: ${res.filename} (${res.totalRecords} records).`);
+      if (res?.filename === 'cancelled') {
+        setIsBackingUp(false);
+        return;
+      }
+      if (res?.method === 'share') {
+        setBackupBannerMsg(`Live backup shared (${res.filename}). Check your selected app/folder.`);
+      } else {
+        setBackupBannerMsg(`Downloading ${res.filename} directly to device Downloads folder.`);
+      }
       loadVaultStatus();
       loadAuditLogs();
-      setTimeout(() => setBackupBannerMsg(null), 6000);
+      setTimeout(() => setBackupBannerMsg(null), 7000);
     } catch (err) {
       console.error('Backup download failed', err);
       alert('Could not download database backup. Please ensure your session is active.');

@@ -50,8 +50,16 @@ export const Header = ({
     setIsBackingUp(true);
     try {
       const res = await backupApi.downloadExport();
-      setBackupMsg(`Downloaded ${res.filename} (${res.totalRecords} rows)`);
-      setTimeout(() => setBackupMsg(''), 5000);
+      if (res?.filename === 'cancelled') {
+        setIsBackingUp(false);
+        return;
+      }
+      if (res?.method === 'share') {
+        setBackupMsg('Backup shared! Check your selected app/folder.');
+      } else {
+        setBackupMsg('Downloading backup to your phone Downloads folder...');
+      }
+      setTimeout(() => setBackupMsg(''), 6000);
     } catch (err) {
       console.error('Backup failed:', err);
       alert('Could not download backup. Please check your network connection.');

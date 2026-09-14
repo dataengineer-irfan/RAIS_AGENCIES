@@ -3,10 +3,11 @@ import json
 import gzip
 from datetime import datetime, timezone, timedelta, date
 from decimal import Decimal
-from typing import Dict, Any
-from fastapi import APIRouter, Depends, Response
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, Depends, Response, Query, Header, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.security import decode_access_token
 from app.models.user import User
 from app.models import (
     Customer, Product, Category,
@@ -18,7 +19,7 @@ from app.models import (
     SystemSetting, DocumentSequence
 )
 from app.services.audit_service import AuditService
-from app.domain.enums import AuditAction
+from app.domain.enums import AuditAction, UserRole
 from app.api.deps import require_operator_or_admin
 
 router = APIRouter(prefix="/backup", tags=["Data Vault & Backup"])
@@ -86,10 +87,44 @@ def get_backup_status(
         "table_counts": counts
     }
 
+def get_backup_export_user(
+    token: Optional[str] = Query(None),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+) -> User:
+    raw_token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        raw_token = authorization.split(" ", 1)[1].strip()
+    elif token:
+        raw_token = token.strip()
+
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token required. Pass via Authorization header or ?token= query parameter."
+        )
+
+    payload = decode_access_token(raw_token)
+    if not payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+
+    user = db.query(User).filter((User.id == user_id) | (User.username == user_id)).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
+    if user.role not in [UserRole.ADMIN.value, UserRole.OPERATOR.value]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to export backup")
+
+    return user
+
 @router.get("/export")
 def export_database_backup(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_operator_or_admin)
+    current_user: User = Depends(get_backup_export_user)
 ):
     """
     Generates an on-demand, compressed GZIP snapshot of all 16 database tables

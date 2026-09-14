@@ -328,6 +328,26 @@ export const backupApi = {
     return cachedGet('/backup/status');
   },
   downloadExport: async () => {
+    const token = localStorage.getItem('rais_token') || '';
+    
+    // Resolve public production backend URL
+    let prodHost = 'https://rais-backend.onrender.com';
+    const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+    const customApi = (env.VITE_PUBLIC_API_URL || env.VITE_API_URL || '').trim();
+    if (customApi && !customApi.includes('localhost') && !customApi.includes('127.0.0.1')) {
+      prodHost = customApi.startsWith('http') ? customApi : `https://${customApi}`;
+    }
+
+    // Check if running on native mobile platform (Capacitor Android APK) or mobile touch device
+    const isNativePlatform = typeof window !== 'undefined' && (
+      window.Capacitor?.isNativePlatform?.() || 
+      window.location.protocol === 'capacitor:' || 
+      (window.location.hostname === 'localhost' && !import.meta.env.DEV)
+    );
+
+    const exportUrl = `${prodHost.replace(/\/$/, '')}/api/backup/export?token=${encodeURIComponent(token)}`;
+
+    // Fetch the backup data
     const response = await api.get('/backup/export', {
       responseType: 'blob'
     });
@@ -340,8 +360,52 @@ export const backupApi = {
       filename = filenameMatch[1];
     }
     
-    // Trigger direct browser file download
     const blob = new Blob([response.data], { type: 'application/gzip' });
+
+    // 1. Mobile Android / Capacitor: Try Native Share Sheet first
+    // This allows the user to immediately tap "Save to device" (Downloads folder), "Google Drive", or "WhatsApp"
+    if (typeof navigator !== 'undefined' && navigator.canShare && typeof File !== 'undefined') {
+      try {
+        const file = new File([blob], filename, { type: 'application/gzip' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'RAIS Database Backup',
+            text: `RAIS Agencies Live Database Backup (${filename})`,
+            files: [file]
+          });
+          return {
+            success: true,
+            filename,
+            totalRecords: response.headers['x-total-records'] || 'all',
+            method: 'share'
+          };
+        }
+      } catch (shareErr) {
+        if (shareErr.name === 'AbortError') {
+          return { success: true, filename: 'cancelled', totalRecords: 0 };
+        }
+        console.warn('Native file share failed/cancelled, falling back to direct download:', shareErr);
+      }
+    }
+
+    // 2. If in native Capacitor APK or share not supported, trigger direct HTTPS download.
+    // In Android APK, MainActivity's DownloadListener catches this and enqueues to Android DownloadManager,
+    // which saves directly into /storage/emulated/0/Download with system notification!
+    if (isNativePlatform) {
+      try {
+        window.location.href = exportUrl;
+      } catch {
+        window.open(exportUrl, '_system');
+      }
+      return {
+        success: true,
+        filename,
+        totalRecords: response.headers['x-total-records'] || 'all',
+        method: 'download_manager'
+      };
+    }
+
+    // 3. Desktop browser fallback: Blob URL + <a> download click
     const downloadUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = downloadUrl;
@@ -354,9 +418,11 @@ export const backupApi = {
     return {
       success: true,
       filename,
-      totalRecords: response.headers['x-total-records'] || 'all'
+      totalRecords: response.headers['x-total-records'] || 'all',
+      method: 'blob'
     };
   }
 };
+
 
 export default api;
