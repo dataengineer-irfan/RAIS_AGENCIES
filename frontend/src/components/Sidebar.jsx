@@ -61,8 +61,8 @@ export const Sidebar = ({
       {/* Brand Header & Collapse Toggle */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-lg text-slate-950 shadow-md shadow-amber-500/20 shrink-0">
-            R
+          <div className="w-9 h-9 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-1 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
+            <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
           </div>
           <div className="overflow-hidden">
             <h1 className="font-extrabold tracking-wider text-sm text-white leading-none truncate">RAIS AGENCIES</h1>

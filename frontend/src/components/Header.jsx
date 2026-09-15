@@ -145,8 +145,8 @@ export const Header = ({
             >
               <Menu className="w-5 h-5 text-amber-400" />
             </button>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20 shrink-0">
-              R
+            <div className="w-8 h-8 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-0.5 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
+              <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -358,8 +358,8 @@ export const Header = ({
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm shadow-md shadow-amber-500/20">
-                    R
+                  <div className="w-9 h-9 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-0.5 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
+                    <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
                   </div>
                   <div>
                     <h3 className="text-xs font-black tracking-wider text-white">RAIS AGENCIES</h3>

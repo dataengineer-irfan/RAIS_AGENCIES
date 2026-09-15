@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.api.deps import require_any_authenticated, require_operator_or_admin
@@ -12,6 +12,7 @@ from app.schemas.inventory import (
     StockMovementResponse
 )
 from app.services.inventory_service import InventoryService
+from app.services.invoice_parser_service import InvoiceParserService
 
 router = APIRouter(prefix="/inventory", tags=["Inventory & Stock Management"])
 
@@ -67,3 +68,20 @@ def get_stock_movements(
 ):
     """Get complete chronological audit trail of inventory movements."""
     return InventoryService.get_stock_movements(db, product_id=product_id, limit=limit)
+
+@router.post("/parse-supplier-invoice")
+async def parse_supplier_invoice(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    """
+    Parse uploaded supplier purchase invoice (PDF, CSV, Image, TXT),
+    extract line items, and perform intelligent catalogue fuzzy SKU matching.
+    """
+    content = await file.read()
+    return InvoiceParserService.parse_invoice_file(
+        file_bytes=content,
+        filename=file.filename or "uploaded_invoice.pdf",
+        db=db
+    )

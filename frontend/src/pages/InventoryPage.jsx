@@ -412,7 +412,7 @@ export const InventoryPage = () => {
               <button
                 onClick={() => setUploadInvoiceModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-                title="Upload Supplier Purchase Invoice (Jubilee Enterprises Pre-Configured)"
+                title="Upload Supplier Purchase Invoice (Smart OCR & SKU Matcher)"
               >
                 <FileUp className="w-3.5 h-3.5" />
                 <span>Upload Invoice</span>
@@ -1178,11 +1178,15 @@ export const InventoryPage = () => {
         }}
       />
 
-      {/* ─── SUPPLIER PURCHASE INVOICE INWARD MODAL (Jubilee Enterprises Pre-Configured) ─── */}
+      {/* ─── SUPPLIER PURCHASE INVOICE INWARD MODAL (Smart OCR & SKU Matcher) ─── */}
       <UploadInvoiceModal
         isOpen={uploadInvoiceModalOpen}
         onClose={() => setUploadInvoiceModalOpen(false)}
         products={stockItems}
+        onProductAdded={(newProd) => {
+          setStockItems(prev => [newProd, ...prev]);
+          loadInventory(true);
+        }}
         onSuccess={() => {
           setUploadInvoiceModalOpen(false);
           loadInventory(true);

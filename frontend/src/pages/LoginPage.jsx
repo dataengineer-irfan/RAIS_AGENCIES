@@ -28,16 +28,18 @@ export const LoginPage = () => {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
         
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-2xl text-slate-950 mx-auto shadow-xl shadow-amber-500/20">
-            R
+        <div className="text-center space-y-3">
+          <div className="relative mx-auto w-20 h-20 rounded-2xl p-1 bg-gradient-to-tr from-amber-500 via-amber-300 to-amber-600 shadow-2xl shadow-amber-500/25">
+            <div className="w-full h-full bg-[#0b1329] rounded-[14px] flex items-center justify-center p-1 overflow-hidden">
+              <img src="/rais_logo.png" alt="RAIS Agencies Logo" className="w-full h-full object-contain filter drop-shadow" />
+            </div>
           </div>
           <h1 className="text-2xl font-black tracking-wider text-white">RAIS AGENCIES</h1>
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-500">
-            Business Management & Billing Platform
+          <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">
+            Wholesale Cold-Chain & Cafe Food Distribution
           </p>
           <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
-            <MapPin className="w-3 h-3 text-amber-500" />
+            <MapPin className="w-3.5 h-3.5 text-amber-500" />
             Near Reddies Colony, Rayachoty - 516269
           </p>
         </div>
