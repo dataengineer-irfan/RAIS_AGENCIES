@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     COMPANY_ADDRESS: str = "Near Reddies Colony, Rayachoty - 516269"
     COMPANY_PHONE_PRIMARY: str = "9347453135"
     COMPANY_PHONE_SECONDARY: str = "9573261696"
-    COMPANY_EMAIL: str = "orders@raisagencies.com"
+    COMPANY_EMAIL: str = "Rais.frozenfoods@gmail.com"
     COMPANY_GSTIN: str = "37AABCR1234F1Z8"
     DEFAULT_CURRENCY: str = "INR"
     DEFAULT_CURRENCY_SYMBOL: str = "₹"

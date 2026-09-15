@@ -122,7 +122,7 @@ export const generateInvoiceCanvas = ({
   ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('Reddies Colony, Sundupalli Road, Rayachoty - 516269, AP', 30, 92);
   ctx.fillText('Order Desk: +91 9347453135 | 9573261696', 30, 110);
-  ctx.fillText('Email: raisagencies2@gmail.com', 30, 128);
+  ctx.fillText('Email: Rais.frozenfoods@gmail.com', 30, 128);
 
   // Right Side Header Badge
   ctx.fillStyle = '#1e293b';
