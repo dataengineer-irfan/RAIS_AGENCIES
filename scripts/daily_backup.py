@@ -117,28 +117,51 @@ def purge_old_backups(backup_dir, retention_days=30):
     return removed_count, retained_count
 
 def fetch_backup_from_render_api():
-    """Fallback when direct PostgreSQL DATABASE_URL is not set: fetches live GZIP backup from Render API."""
+    """Fallback when direct PostgreSQL DATABASE_URL is not set or unreachable: fetches live GZIP backup from Render API."""
     import urllib.request
     import json
+    import time
     
     api_base = os.environ.get("RENDER_API_URL", "https://rais-backend.onrender.com").rstrip("/")
     admin_user = os.environ.get("BACKUP_USER", "admin")
     admin_pass = os.environ.get("BACKUP_PASSWORD", "RaisAdmin@2026")
     
-    print(f"🌐 Direct DATABASE_URL not detected. Fetching live snapshot from Production API ({api_base})...")
+    print(f"🌐 Fetching live snapshot from Production API ({api_base})...")
     
-    # 1. Login to obtain access token
-    login_url = f"{api_base}/api/auth/login-json"
-    login_data = json.dumps({"username": admin_user, "password": admin_pass}).encode("utf-8")
-    req = urllib.request.Request(login_url, data=login_data, headers={"Content-Type": "application/json", "User-Agent": "RAIS-Backup-Agent"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        token_info = json.loads(resp.read().decode("utf-8"))
-        token = token_info.get("access_token")
-        
+    max_retries = 3
+    token = None
+    last_err = None
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"  [Attempt {attempt}/{max_retries}] Authenticating with {api_base}...")
+            login_url = f"{api_base}/api/auth/login-json"
+            login_data = json.dumps({"username": admin_user, "password": admin_pass}).encode("utf-8")
+            req = urllib.request.Request(
+                login_url, 
+                data=login_data, 
+                headers={"Content-Type": "application/json", "User-Agent": "RAIS-Backup-Agent"}
+            )
+            with urllib.request.urlopen(req, timeout=90) as resp:
+                token_info = json.loads(resp.read().decode("utf-8"))
+                token = token_info.get("access_token")
+                if token:
+                    print("  ✓ Authentication successful!")
+                    break
+        except Exception as err:
+            last_err = err
+            print(f"  ⚠️ Attempt {attempt} failed: {err}")
+            if attempt < max_retries:
+                wait_secs = 12 * attempt
+                print(f"  ⏳ Waiting {wait_secs}s for Render service to warm up...")
+                time.sleep(wait_secs)
+            else:
+                raise RuntimeError(f"Failed to authenticate with Render backup API after {max_retries} attempts: {last_err}")
+
     # 2. Download compressed backup stream
     export_url = f"{api_base}/api/backup/export?token={token}"
     export_req = urllib.request.Request(export_url, headers={"User-Agent": "RAIS-Backup-Agent"})
-    with urllib.request.urlopen(export_req, timeout=60) as resp:
+    with urllib.request.urlopen(export_req, timeout=120) as resp:
         compressed_bytes = resp.read()
         records_count = resp.headers.get("X-Total-Records", "all")
         
@@ -163,7 +186,31 @@ def run_backup():
     if not db_url and os.path.exists(env_path):
         db_url = settings.DATABASE_URL
 
-    if not db_url or "sqlite" in db_url.lower():
+    use_direct_db = False
+    db = None
+
+    if db_url and "sqlite" not in db_url.lower():
+        try:
+            safe_url = db_url.split("@")[-1] if "@" in db_url else "database"
+            print(f"🔌 Connecting to Database ({safe_url})...")
+            from sqlalchemy import text
+            engine = create_engine(db_url, pool_pre_ping=True, connect_args={"connect_timeout": 10})
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            db = SessionLocal()
+            db.execute(text("SELECT 1"))
+            use_direct_db = True
+        except Exception as conn_err:
+            print(f"  ⚠️ Direct database connection failed: {conn_err}")
+            print("  🔄 Gracefully falling back to Production API snapshot...")
+            use_direct_db = False
+            if db:
+                try:
+                    db.close()
+                except Exception:
+                    pass
+                db = None
+
+    if not use_direct_db:
         # Fallback to fetching live backup directly from Render production backend
         compressed_bytes, records_count = fetch_backup_from_render_api()
         with open(primary_file_path, "wb") as f_out:
@@ -193,14 +240,7 @@ def run_backup():
         print("\n" + "=" * 65)
         print(" 🎉  NIGHTLY BACKUP COMPLETED SUCCESSFULLY (VIA CLOUD API)!")
         print("=" * 65)
-        return
-
-    safe_url = db_url.split("@")[-1] if "@" in db_url else "database"
-    print(f"🔌 Connecting to Database ({safe_url})...")
-    
-    engine = create_engine(db_url, pool_pre_ping=True)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
+        return primary_file_path
 
     # 2. Extract Data from All Operational Tables
     models_to_backup = [
