@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   BarChart3, 
   Clock, 
@@ -12,9 +12,10 @@ import {
   Sparkles,
   ArrowUpRight,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  CheckCircle2
 } from 'lucide-react';
-import { reportApi } from '../services/api';
+import { reportApi, paymentApi } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
 import { DrillableMetricModal } from '../components/DrillableMetricModal';
 
@@ -24,9 +25,20 @@ export const ReportsPage = () => {
   const [productSales, setProductSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [reconciling, setReconciling] = useState(false);
+  const [reconcileSuccess, setReconcileSuccess] = useState('');
   
   // Drilldown Modal
   const [drillModal, setDrillModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
+
+  // 150ms Debounced Search for smooth 60fps input response
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 150);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   useEffect(() => {
     loadReports();
@@ -81,22 +93,50 @@ export const ReportsPage = () => {
     document.body.removeChild(link);
   };
 
-  const filteredCustomerAging = customerAging.filter(c => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    const name = (c.business_name || c.customer_name || '').toLowerCase();
-    return (
-      name.includes(term) ||
-      (c.customer_code || '').toLowerCase().includes(term) ||
-      (c.phone || '').includes(term)
-    );
-  });
+  const handleReconcileFIFO = async () => {
+    setReconciling(true);
+    setReconcileSuccess('');
+    try {
+      const res = await paymentApi.reconcileFifo();
+      setReconcileSuccess(`Reconciled ${res?.total_customers_reconciled || 0} outlets successfully via FIFO!`);
+      setTimeout(() => setReconcileSuccess(''), 5000);
+      await loadReports();
+    } catch (err) {
+      console.error('Failed to run FIFO reconciliation:', err);
+    } finally {
+      setReconciling(false);
+    }
+  };
+
+  const filteredCustomerAging = useMemo(() => {
+    if (!debouncedSearch) return customerAging;
+    const term = debouncedSearch.toLowerCase();
+    return customerAging.filter(c => {
+      const name = (c.business_name || c.customer_name || '').toLowerCase();
+      return (
+        name.includes(term) ||
+        (c.customer_code || '').toLowerCase().includes(term) ||
+        (c.phone || '').includes(term)
+      );
+    });
+  }, [customerAging, debouncedSearch]);
 
   const totalOutstandingVal = parseFloat(aging?.total_outstanding || 0);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
+      {/* ─── RECONCILIATION SUCCESS NOTIFICATION ─── */}
+      {reconcileSuccess && (
+        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-2 rounded-xl text-xs flex items-center justify-between shrink-0 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="font-bold">{reconcileSuccess}</span>
+          </div>
+          <button onClick={() => setReconcileSuccess('')} className="text-emerald-400 hover:text-white text-xs">✕</button>
+        </div>
+      )}
+
       {/* ─── TOP ACTION & HEADER BAR ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
         <div className="flex items-center gap-2.5">
@@ -127,9 +167,19 @@ export const ReportsPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search customer aging..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-44 sm:w-56"
+              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-36 sm:w-52"
             />
           </div>
+
+          <button
+            onClick={handleReconcileFIFO}
+            disabled={reconciling}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+            title="Auto-reconcile unallocated payments against oldest open invoices (FIFO)"
+          >
+            <Sparkles className={`w-3.5 h-3.5 text-amber-400 ${reconciling ? 'animate-spin' : ''}`} />
+            <span>{reconciling ? 'Reconciling...' : 'FIFO Reconcile'}</span>
+          </button>
 
           <button
             onClick={handleExportCSV}

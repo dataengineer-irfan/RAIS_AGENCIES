@@ -131,6 +131,9 @@ export const customerApi = {
   },
   getLedger: async (id) => {
     return cachedGet(`/customers/${id}/ledger`);
+  },
+  getReorderAlerts: async (daysThreshold = 5) => {
+    return cachedGet('/customers/reorder-alerts', { params: { days_threshold: daysThreshold } });
   }
 };
 
@@ -277,6 +280,13 @@ export const paymentApi = {
   },
   delete: async (id) => {
     const res = await api.delete(`/payments/${id}`);
+    return res.data;
+  },
+  reconcileFifo: async (customerId = null) => {
+    clearApiCache();
+    const res = await api.post('/payments/reconcile-fifo', null, {
+      params: customerId ? { customer_id: customerId } : {}
+    });
     return res.data;
   }
 };

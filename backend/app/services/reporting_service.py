@@ -21,6 +21,16 @@ _CUSTOMER_AGING_CACHE = {"timestamp": 0, "data": None}
 _PRODUCT_SALES_CACHE = {"timestamp": 0, "data": None}
 CACHE_TTL_SECONDS = 60
 
+def invalidate_reporting_caches():
+    _DASHBOARD_CACHE["timestamp"] = 0
+    _DASHBOARD_CACHE["data"] = None
+    _AGING_SUMMARY_CACHE["timestamp"] = 0
+    _AGING_SUMMARY_CACHE["data"] = None
+    _CUSTOMER_AGING_CACHE["timestamp"] = 0
+    _CUSTOMER_AGING_CACHE["data"] = None
+    _PRODUCT_SALES_CACHE["timestamp"] = 0
+    _PRODUCT_SALES_CACHE["data"] = None
+
 class ReportingService:
     @staticmethod
     def get_dashboard_kpis(db: Session, force_refresh: bool = False) -> DashboardKPIs:
@@ -242,6 +252,21 @@ class ReportingService:
             else:
                 c_60_plus += amount
 
+        # Batch query for payment totals per active customer to determine unsettled opening balance
+        customers = db.query(Customer).filter(Customer.status == CustomerStatus.ACTIVE.value).all()
+        cust_ids = [c.id for c in customers]
+        pay_rows = db.query(Payment.customer_id, func.sum(Payment.amount)).filter(Payment.customer_id.in_(cust_ids)).group_by(Payment.customer_id).all() if cust_ids else []
+        paid_map = {r[0]: Decimal(str(r[1] or "0.00")) for r in pay_rows}
+
+        total_rem_ob = Decimal("0.00")
+        for cust in customers:
+            ob = Decimal(str(cust.opening_balance or "0.00"))
+            if ob > Decimal("0.00"):
+                paid = paid_map.get(cust.id, Decimal("0.00"))
+                rem_ob = max(Decimal("0.00"), ob - paid)
+                total_rem_ob += rem_ob
+
+        c_60_plus += total_rem_ob
         total = c_0_15 + c_16_30 + c_31_60 + c_60_plus
         bucket = AgingBucket(
             current_0_15_days=c_0_15,
@@ -282,21 +307,29 @@ class ReportingService:
         for inv in all_open_invs:
             invs_by_customer[inv.customer_id].append(inv)
 
+        # Batch 3: Payments per active customer for remaining OB check
+        pay_rows = db.query(Payment.customer_id, func.sum(Payment.amount)).filter(Payment.customer_id.in_(cust_ids)).group_by(Payment.customer_id).all() if cust_ids else []
+        paid_map = {r[0]: Decimal(str(r[1] or "0.00")) for r in pay_rows}
+
         results: List[CustomerAgingReportItem] = []
 
         for cust in customers:
             open_invs = invs_by_customer.get(cust.id, [])
-            if not open_invs:
+            ob = Decimal(str(cust.opening_balance or "0.00"))
+            paid = paid_map.get(cust.id, Decimal("0.00"))
+            rem_ob = max(Decimal("0.00"), ob - paid) if ob > Decimal("0.00") else Decimal("0.00")
+
+            if not open_invs and rem_ob <= Decimal("0.00"):
                 continue
 
             c_0_15 = Decimal("0.00")
             c_16_30 = Decimal("0.00")
             c_31_60 = Decimal("0.00")
-            c_60_plus = Decimal("0.00")
+            c_60_plus = rem_ob
 
             for inv in open_invs:
                 due = inv.due_date
-                amt = inv.outstanding_amount
+                amt = Decimal(str(inv.outstanding_amount))
                 if due >= d15:
                     c_0_15 += amt
                 elif due >= d30:

@@ -66,6 +66,17 @@ def record_payment(
     )
     return PaymentService.get_payment_by_id(db, payment.id)
 
+@router.post("/reconcile-fifo")
+def reconcile_payments_fifo(
+    customer_id: Optional[str] = Query(None, description="Optional customer ID to reconcile specifically"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    from app.services.reconciliation_service import ReconciliationService
+    if customer_id:
+        return ReconciliationService.reconcile_customer_fifo(db, customer_id)
+    return ReconciliationService.reconcile_all_fifo(db)
+
 @router.post("/{payment_id}/allocate", response_model=PaymentAllocationResponse)
 def allocate_payment(
     payment_id: str,

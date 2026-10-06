@@ -17,10 +17,11 @@ import { InvoiceBuilderModal } from './components/InvoiceBuilderModal';
 import { OrderBuilderModal } from './components/OrderBuilderModal';
 import { PaymentModal } from './components/PaymentModal';
 import { CustomerModal } from './components/CustomerModal';
+import { InactiveCustomerReminderModal } from './components/InactiveCustomerReminderModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { MobileQuickActionFab } from './components/MobileQuickActionFab';
-import { API_BASE_URL } from './services/api';
+import { customerApi, API_BASE_URL } from './services/api';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
@@ -37,6 +38,26 @@ export const App = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // ─── DAILY INACTIVE OUTLET RE-ORDER LAUNCH CHECK ───
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const checkInactiveCustomers = async () => {
+      try {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const lastChecked = localStorage.getItem('rais_last_reorder_alert_date');
+        if (lastChecked !== todayStr) {
+          const alerts = await customerApi.getReorderAlerts(5);
+          if (Array.isArray(alerts) && alerts.length > 0) {
+            setInactiveReminderModalOpen(true);
+          }
+        }
+      } catch (err) {
+        // Silent catch
+      }
+    };
+    checkInactiveCustomers();
+  }, [isAuthenticated]);
+
   // ─── LEFT PANEL TOGGLE & TOP-LEFT CORNER HOVER ENGINE ───
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarPeeked, setSidebarPeeked] = useState(false);
@@ -47,6 +68,7 @@ export const App = () => {
   const [orderBuilderOpen, setOrderBuilderOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [inactiveReminderModalOpen, setInactiveReminderModalOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
   // Contextual modal selections
@@ -187,6 +209,7 @@ export const App = () => {
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentModal={() => handleOpenPayment()}
               onNavigate={(tab) => setActiveTab(tab)}
+              onOpenInactiveReminder={() => setInactiveReminderModalOpen(true)}
             />
           )}
 
@@ -265,6 +288,15 @@ export const App = () => {
         isOpen={customerModalOpen}
         onClose={() => setCustomerModalOpen(false)}
         customerToEdit={customerToEdit}
+      />
+
+      <InactiveCustomerReminderModal
+        isOpen={inactiveReminderModalOpen}
+        onClose={() => setInactiveReminderModalOpen(false)}
+        onSelectCustomerForOrder={(cust) => {
+          setSelectedCustForOrder(cust.customer_id);
+          setOrderBuilderOpen(true);
+        }}
       />
 
       <AIAssistantDrawer

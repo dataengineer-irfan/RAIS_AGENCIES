@@ -21,6 +21,14 @@ def list_customers(
 ):
     return CustomerService.list_customers(db, search=search, status=status, skip=skip, limit=limit)
 
+@router.get("/reorder-alerts")
+def get_inactive_reorder_alerts(
+    days_threshold: int = Query(5, ge=1, le=90, description="Inactivity threshold in days"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    return CustomerService.get_inactive_reorder_alerts(db, days_threshold=days_threshold)
+
 @router.get("/{customer_id}", response_model=CustomerResponse)
 def get_customer(
     customer_id: str,

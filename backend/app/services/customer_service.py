@@ -1,10 +1,12 @@
 from typing import List, Optional, Tuple, Dict, Any
 from decimal import Decimal
+from datetime import datetime, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from app.models.customer import Customer
 from app.models.invoice import Invoice
 from app.models.payment import Payment, PaymentAllocation
+from app.models.order import Order
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse, CustomerSummary
 from app.schemas.reports import CustomerLedgerEntry
 from app.core.exceptions import EntityNotFoundException, RaisAppException
@@ -104,12 +106,25 @@ class CustomerService:
 
         paid_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in pay_stats}
 
+        # Single batch query for earliest invoice date per customer
+        first_inv_rows = db.query(
+            Invoice.customer_id,
+            func.min(Invoice.invoice_date).label("first_inv")
+        ).filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status != InvoiceStatus.CANCELLED.value
+        ).group_by(Invoice.customer_id).all()
+        first_inv_map = {row[0]: row[1] for row in first_inv_rows}
+
         result = []
         for c in customers:
             opening_balance = Decimal(str(c.opening_balance or "0.00"))
             total_invoiced = invoiced_map.get(c.id, Decimal("0.00"))
             total_paid = paid_map.get(c.id, Decimal("0.00"))
             outstanding = opening_balance + total_invoiced - total_paid
+            first_inv = first_inv_map.get(c.id)
+            cust_since = datetime.combine(first_inv, datetime.min.time()) if first_inv else c.created_at
+
             c_resp = CustomerResponse(
                 id=c.id,
                 customer_code=c.customer_code,
@@ -131,6 +146,8 @@ class CustomerService:
                 total_invoiced=total_invoiced,
                 total_paid=total_paid,
                 outstanding_balance=outstanding,
+                first_invoice_date=first_inv,
+                customer_since=cust_since,
                 created_at=c.created_at,
                 updated_at=c.updated_at
             )
@@ -144,6 +161,13 @@ class CustomerService:
             raise EntityNotFoundException("Customer", customer_id)
         
         total_invoiced, total_paid, outstanding = CustomerService.get_customer_balances(db, c.id)
+
+        first_inv = db.query(func.min(Invoice.invoice_date)).filter(
+            Invoice.customer_id == c.id,
+            Invoice.status != InvoiceStatus.CANCELLED.value
+        ).scalar()
+        cust_since = datetime.combine(first_inv, datetime.min.time()) if first_inv else c.created_at
+
         return CustomerResponse(
             id=c.id,
             customer_code=c.customer_code,
@@ -165,9 +189,93 @@ class CustomerService:
             total_invoiced=total_invoiced,
             total_paid=total_paid,
             outstanding_balance=outstanding,
+            first_invoice_date=first_inv,
+            customer_since=cust_since,
             created_at=c.created_at,
             updated_at=c.updated_at
         )
+
+    @staticmethod
+    def get_inactive_reorder_alerts(db: Session, days_threshold: int = 5) -> List[Dict[str, Any]]:
+        """
+        Returns active customer accounts that have not placed an order or had an invoice issued
+        within the specified threshold of days (e.g. >= 5 or 7 days).
+        Includes 1-click WhatsApp restock ping and call links.
+        """
+        today = date.today()
+        customers = db.query(Customer).filter(Customer.status == CustomerStatus.ACTIVE.value).all()
+        if not customers:
+            return []
+
+        cust_ids = [c.id for c in customers]
+
+        # Latest invoice date per customer
+        inv_dates = db.query(
+            Invoice.customer_id,
+            func.max(Invoice.invoice_date).label("last_inv")
+        ).filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status != InvoiceStatus.CANCELLED.value
+        ).group_by(Invoice.customer_id).all()
+        last_inv_map = {row[0]: row[1] for row in inv_dates}
+
+        # Latest order date per customer
+        ord_dates = db.query(
+            Order.customer_id,
+            func.max(Order.order_date).label("last_ord")
+        ).filter(
+            Order.customer_id.in_(cust_ids),
+            Order.status != "CANCELLED"
+        ).group_by(Order.customer_id).all()
+        last_ord_map = {row[0]: row[1] for row in ord_dates}
+
+        # Invoice totals for balance calculation
+        inv_totals = db.query(
+            Invoice.customer_id,
+            func.sum(Invoice.total_amount).label("tot_inv")
+        ).filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status != InvoiceStatus.CANCELLED.value
+        ).group_by(Invoice.customer_id).all()
+        inv_tot_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in inv_totals}
+
+        # Payment totals
+        pay_totals = db.query(
+            Payment.customer_id,
+            func.sum(Payment.amount).label("tot_pay")
+        ).filter(
+            Payment.customer_id.in_(cust_ids)
+        ).group_by(Payment.customer_id).all()
+        pay_tot_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in pay_totals}
+
+        alerts = []
+        for c in customers:
+            candidates = [d for d in [last_ord_map.get(c.id), last_inv_map.get(c.id)] if d is not None]
+            last_activity = max(candidates) if candidates else (c.created_at.date() if c.created_at else today)
+            days_inactive = (today - last_activity).days
+
+            if days_inactive >= days_threshold:
+                ob = Decimal(str(c.opening_balance or "0.00"))
+                tot_inv = inv_tot_map.get(c.id, Decimal("0.00"))
+                tot_pay = pay_tot_map.get(c.id, Decimal("0.00"))
+                outstanding = ob + tot_inv - tot_pay
+
+                alerts.append({
+                    "customer_id": c.id,
+                    "customer_code": c.customer_code,
+                    "business_name": c.business_name,
+                    "contact_person": c.contact_person,
+                    "phone": c.phone,
+                    "city": c.city or "Rayachoty",
+                    "days_inactive": days_inactive,
+                    "last_activity_date": str(last_activity),
+                    "last_activity_str": f"{days_inactive} days ago ({last_activity.strftime('%d-%b-%Y')})",
+                    "outstanding_balance": float(outstanding)
+                })
+
+        # Sort by longest inactive first
+        alerts.sort(key=lambda x: x["days_inactive"], reverse=True)
+        return alerts
 
     @staticmethod
     def create_customer(db: Session, data: CustomerCreate, user_id: Optional[str] = None) -> Customer:

@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import date, timedelta
-from sqlalchemy.orm import Session, joinedload
+from datetime import date, timedelta, datetime
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import or_, func
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.quotation import Quotation, QuotationItem
@@ -500,7 +500,12 @@ class BillingService:
 
     @staticmethod
     def get_invoice_by_id(db: Session, invoice_id: str) -> InvoiceResponse:
-        inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+        from app.models.payment import PaymentAllocation
+        inv = db.query(Invoice).options(
+            joinedload(Invoice.customer),
+            selectinload(Invoice.items),
+            selectinload(Invoice.allocations).joinedload(PaymentAllocation.payment)
+        ).filter(Invoice.id == invoice_id).first()
         if not inv:
             raise EntityNotFoundException("Invoice", invoice_id)
         
@@ -517,7 +522,8 @@ class BillingService:
     def _build_invoice_response(
         inv: Invoice, 
         db: Optional[Session] = None, 
-        balances_map: Optional[Dict[str, Decimal]] = None
+        balances_map: Optional[Dict[str, Decimal]] = None,
+        first_inv_map: Optional[Dict[str, date]] = None
     ) -> InvoiceResponse:
         cust_balance = None
         if balances_map is not None and inv.customer_id:
@@ -528,6 +534,23 @@ class BillingService:
                 _, _, cust_balance = CustomerService.get_customer_balances(db, inv.customer_id)
             except Exception:
                 cust_balance = None
+
+        # Determine customer_since: based on earliest 1st invoice date, fallback to created_at
+        cust_since = None
+        if inv.customer:
+            f_date = first_inv_map.get(inv.customer_id) if first_inv_map else None
+            if not f_date and db and inv.customer_id:
+                try:
+                    f_date = db.query(func.min(Invoice.invoice_date)).filter(
+                        Invoice.customer_id == inv.customer_id,
+                        Invoice.status != InvoiceStatus.CANCELLED.value
+                    ).scalar()
+                except Exception:
+                    f_date = None
+            if f_date:
+                cust_since = datetime.combine(f_date, datetime.min.time())
+            else:
+                cust_since = inv.customer.created_at
 
         items_resp = [
             InvoiceItemResponse(
@@ -572,7 +595,7 @@ class BillingService:
             customer_phone=inv.customer.phone if inv.customer else "",
             customer_address=f"{inv.customer.address_line1}, {inv.customer.city} - {inv.customer.pincode}" if inv.customer else "",
             customer_gstin=inv.customer.gstin if inv.customer else "",
-            customer_since=inv.customer.created_at if inv.customer else None,
+            customer_since=cust_since,
             order_id=inv.order_id,
             quotation_id=inv.quotation_id,
             status=inv.status,
@@ -609,8 +632,8 @@ class BillingService:
         from app.models.payment import PaymentAllocation
         query = db.query(Invoice).options(
             joinedload(Invoice.customer),
-            joinedload(Invoice.items),
-            joinedload(Invoice.allocations).joinedload(PaymentAllocation.payment)
+            selectinload(Invoice.items),
+            selectinload(Invoice.allocations).joinedload(PaymentAllocation.payment)
         )
         if customer_id:
             query = query.filter(Invoice.customer_id == customer_id)
@@ -635,6 +658,7 @@ class BillingService:
         # Batch-calculate customer balances in 3 bulk queries instead of 3 * N sequential queries
         cust_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
         balances_map = {}
+        first_inv_map = {}
         if cust_ids:
             try:
                 cust_rows = db.query(Customer.id, Customer.opening_balance).filter(Customer.id.in_(cust_ids)).all()
@@ -660,10 +684,20 @@ class BillingService:
 
                 for cid in cust_ids:
                     balances_map[cid] = openings.get(cid, Decimal("0.00")) + inv_map.get(cid, Decimal("0.00")) - pay_map.get(cid, Decimal("0.00"))
+
+                first_inv_rows = db.query(
+                    Invoice.customer_id, 
+                    func.min(Invoice.invoice_date)
+                ).filter(
+                    Invoice.customer_id.in_(cust_ids),
+                    Invoice.status != InvoiceStatus.CANCELLED.value
+                ).group_by(Invoice.customer_id).all()
+                first_inv_map = {r[0]: r[1] for r in first_inv_rows}
             except Exception:
                 balances_map = {}
+                first_inv_map = {}
 
-        return [BillingService._build_invoice_response(inv, db, balances_map) for inv in invoices]
+        return [BillingService._build_invoice_response(inv, db, balances_map, first_inv_map) for inv in invoices]
 
     # ----------------------------------------------------
     # QUOTATION MANAGEMENT

@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   RefreshCw,
   Calendar,
+  Bell,
   Filter as FilterIcon
 } from 'lucide-react';
 import { reportApi, customerApi, catalogueApi, billingApi } from '../services/api';
@@ -335,7 +336,7 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN DASHBOARD PAGE COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavigate }) => {
+export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavigate, onOpenInactiveReminder }) => {
   const [rawKpis, setRawKpis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
@@ -525,6 +526,16 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 </h1>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {onOpenInactiveReminder && (
+                  <button
+                    onClick={onOpenInactiveReminder}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-xl text-xs uppercase tracking-wider border border-amber-500/30 transition-all hover:scale-105 active:scale-95 shadow-sm"
+                    title="View Outlets Needing Re-Order Reminder"
+                  >
+                    <Bell className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Re-Stock Alerts</span>
+                  </button>
+                )}
                 <button
                   onClick={onOpenInvoiceBuilder}
                   className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"

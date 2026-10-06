@@ -640,9 +640,9 @@ export const CustomersPage = ({
                       
                       <p className="text-xs text-slate-400 truncate">
                         {cust.contact_person} • {cust.phone}
-                        {cust.created_at && (
+                        {(cust.first_invoice_date || cust.customer_since || cust.created_at) && (
                           <span className="text-[10px] text-amber-400/80 font-mono ml-1">
-                            • Since {new Date(cust.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                            • Since {new Date(cust.first_invoice_date || cust.customer_since || cust.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
                         )}
                       </p>
@@ -749,9 +749,9 @@ export const CustomersPage = ({
                   </h2>
                   <p className="text-xs text-slate-400">
                     {selectedCustomer.contact_person} • Ph: <strong className="text-slate-200">{selectedCustomer.phone}</strong>
-                    {selectedCustomer.created_at && (
+                    {(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at) && (
                       <span className="block mt-0.5 text-[11px] text-amber-400/90 font-medium">
-                        🤝 Associated Since: {new Date(selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        🤝 Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                     )}
                   </p>
