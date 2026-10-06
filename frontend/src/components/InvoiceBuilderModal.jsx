@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus } from 'lucide-react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
@@ -265,6 +265,18 @@ export const InvoiceBuilderModal = ({
     });
     return map;
   }, [items]);
+
+  // Identify any line items where billing quantity exceeds available depot stock
+  const overStockItems = useMemo(() => {
+    return items.filter(itm => {
+      if (!itm?.product_id) return false;
+      const prod = products.find(p => p.id === itm.product_id);
+      if (!prod) return false;
+      const curStock = parseFloat(prod.current_stock ?? 0);
+      const reqQty = parseFloat(itm.quantity || 0);
+      return reqQty > curStock;
+    });
+  }, [items, products]);
 
   const removeItemRow = (index) => {
     if (items.length === 1) {
@@ -824,6 +836,11 @@ export const InvoiceBuilderModal = ({
                 <div className="space-y-2">
                   {(items || []).map((item, index) => {
                     const selProd = (products || []).find(p => p?.id === item?.product_id);
+                    const curStock = parseFloat(selProd?.current_stock ?? 0);
+                    const qtyVal = parseFloat(item.quantity) || 0;
+                    const isExceedingStock = selProd && qtyVal > curStock;
+                    const isZeroStock = selProd && curStock <= 0;
+                    const isLowStock = selProd && curStock > 0 && curStock <= parseFloat(selProd.min_stock_alert || 10);
 
                     return (
                       <div key={index} className="grid grid-cols-12 gap-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">
@@ -845,10 +862,22 @@ export const InvoiceBuilderModal = ({
                             })}
                           </select>
                           {selProd && (
-                            <div className="flex items-center gap-2 mt-1 px-1 text-[10px] text-slate-400 font-mono">
-                              <span>SKU: {selProd.sku}</span>
-                              <span>•</span>
-                              <span className="text-emerald-400 font-semibold">Stock: {parseFloat(selProd.current_stock || 0)} {selProd.packaging_unit}</span>
+                            <div className="flex items-center gap-1.5 mt-1 px-1 text-[10px] flex-wrap">
+                              <span className="font-mono text-slate-500">SKU: {selProd.sku}</span>
+                              <span className="text-slate-600">•</span>
+                              {isZeroStock ? (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                  Out of Stock (0 {selProd.packaging_unit})
+                                </span>
+                              ) : isLowStock ? (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                  Low Stock: {curStock} {selProd.packaging_unit}
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                                  In Stock: {curStock} {selProd.packaging_unit}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -871,7 +900,11 @@ export const InvoiceBuilderModal = ({
                               onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
                               placeholder="Qty"
                               required
-                              className="w-full min-w-[32px] bg-slate-900 border border-slate-800 rounded-md py-1 text-xs text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 font-mono"
+                              className={`w-full min-w-[32px] bg-slate-900 border rounded-md py-1 text-xs text-center font-bold font-mono focus:outline-none ${
+                                isExceedingStock
+                                  ? 'border-rose-500/80 text-rose-400 focus:border-rose-400'
+                                  : 'border-slate-800 text-amber-400 focus:border-amber-500'
+                              }`}
                             />
                             <button
                               type="button"
@@ -882,6 +915,12 @@ export const InvoiceBuilderModal = ({
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
+                          {isExceedingStock && (
+                            <div className="mt-1 px-1 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[9px] font-black text-center flex items-center justify-center gap-1">
+                              <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                              <span>Exceeds Stock ({curStock} avail)</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="col-span-2">
@@ -965,6 +1004,22 @@ export const InvoiceBuilderModal = ({
                   </label>
                 </div>
               </div>
+
+              {/* Over-Stock Warning Alert */}
+              {overStockItems.length > 0 && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 text-amber-300 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <span className="font-bold">Inventory Notice: </span>
+                      <span>{overStockItems.length} billed item(s) exceed current depot stock. Submitting will clamp or deplete inventory to 0.</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-amber-400 font-bold shrink-0 uppercase bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                    Depot Alert
+                  </span>
+                </div>
+              )}
 
               {/* Totals Summary Card */}
               <div className="p-4 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">

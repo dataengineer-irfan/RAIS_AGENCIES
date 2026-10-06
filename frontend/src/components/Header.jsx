@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { backupApi } from '../services/api';
+import { RaisLogo } from './RaisLogo';
 
 export const Header = ({ 
   onToggleAI, 
@@ -146,7 +147,7 @@ export const Header = ({
               <Menu className="w-5 h-5 text-amber-400" />
             </button>
             <div className="w-8 h-8 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-0.5 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
-              <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
+              <RaisLogo alt="RAIS" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

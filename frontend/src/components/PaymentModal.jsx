@@ -94,13 +94,23 @@ export const PaymentModal = ({
 
     setSubmitting(true);
     try {
+      // Auto-clamp allocation so it never exceeds invoice outstanding balance
+      const matchedInvoice = (openInvoices || []).find(i => i?.id === selectedInvoiceId);
+      const allocatedAmount = (selectedInvoiceId && matchedInvoice)
+        ? Math.min(amtNum, parseFloat(matchedInvoice.outstanding_amount || 0))
+        : (selectedInvoiceId ? amtNum : 0);
+
+      const allocations = selectedInvoiceId && allocatedAmount > 0
+        ? [{ invoice_id: selectedInvoiceId, amount: allocatedAmount }]
+        : [];
+
       const payload = {
         customer_id: customerId,
         amount: amtNum,
         payment_method: paymentMethod,
         reference_number: referenceNumber,
         notes: notes,
-        allocations: selectedInvoiceId ? [{ invoice_id: selectedInvoiceId, amount: amtNum }] : []
+        allocations: allocations
       };
 
       const result = await paymentApi.record(payload);
@@ -118,6 +128,12 @@ export const PaymentModal = ({
       setSubmitting(false);
     }
   };
+
+  const selectedInvoice = (openInvoices || []).find(i => i?.id === selectedInvoiceId);
+  const invOutstanding = selectedInvoice ? parseFloat(selectedInvoice.outstanding_amount || 0) : 0;
+  const enteredAmt = parseFloat(amount) || 0;
+  const allocatedToInvoice = selectedInvoice ? Math.min(enteredAmt, invOutstanding) : 0;
+  const excessToAdvance = selectedInvoice ? Math.max(0, enteredAmt - invOutstanding) : 0;
 
   if (!isOpen) return null;
 
@@ -202,13 +218,24 @@ export const PaymentModal = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Amount (₹) *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Amount (₹) *
+                </label>
+                {selectedInvoice && invOutstanding > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(String(invOutstanding))}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold underline"
+                  >
+                    Fill Full Due (₹{invOutstanding.toFixed(2)})
+                  </button>
+                )}
+              </div>
               <input
                 type="number"
                 step="0.01"
-                min="1"
+                min="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
@@ -234,6 +261,27 @@ export const PaymentModal = ({
               </select>
             </div>
           </div>
+
+          {/* Dynamic Settlement Breakdown Banner */}
+          {selectedInvoice && enteredAmt > 0 && (
+            <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-1.5 text-xs">
+              <div className="flex justify-between items-center text-slate-300 font-medium">
+                <span>Allocated to {selectedInvoice.invoice_number}:</span>
+                <span className="font-mono font-bold text-emerald-400">₹{allocatedToInvoice.toFixed(2)}</span>
+              </div>
+              {excessToAdvance > 0 && (
+                <div className="flex justify-between items-center text-amber-400 font-medium pt-1 border-t border-slate-800">
+                  <span>Advance Customer Credit (Excess):</span>
+                  <span className="font-mono font-bold">+₹{excessToAdvance.toFixed(2)}</span>
+                </div>
+              )}
+              {excessToAdvance > 0 && (
+                <p className="text-[10px] text-slate-400">
+                  The extra ₹{excessToAdvance.toFixed(2)} will be retained as unallocated credit on customer ledger for future orders.
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">

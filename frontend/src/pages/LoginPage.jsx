@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, Sparkles, MapPin, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { RaisLogo } from '../components/RaisLogo';
 
 export const LoginPage = () => {
   const { login, loading } = useAuth();
@@ -31,7 +32,7 @@ export const LoginPage = () => {
         <div className="text-center space-y-3">
           <div className="relative mx-auto w-20 h-20 rounded-2xl p-1 bg-gradient-to-tr from-amber-500 via-amber-300 to-amber-600 shadow-2xl shadow-amber-500/25">
             <div className="w-full h-full bg-[#0b1329] rounded-[14px] flex items-center justify-center p-1 overflow-hidden">
-              <img src="/rais_logo.png" alt="RAIS Agencies Logo" className="w-full h-full object-contain filter drop-shadow" />
+              <RaisLogo alt="RAIS Agencies Logo" className="w-full h-full object-contain filter drop-shadow" />
             </div>
           </div>
           <h1 className="text-2xl font-black tracking-wider text-white">RAIS AGENCIES</h1>

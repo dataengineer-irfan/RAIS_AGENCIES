@@ -56,22 +56,44 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // 1. Phone validation (10-digit Indian mobile)
+    const cleanPhone = phone.replace(/[^0-9]/g, '').slice(-10);
+    if (cleanPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setError('Please enter a valid 10-digit Indian mobile number (e.g. 9848012345) starting with 6, 7, 8, or 9 for WhatsApp statement delivery.');
+      return;
+    }
+
+    // 2. GSTIN validation (if entered)
+    const cleanGst = gstin.trim().toUpperCase();
+    if (cleanGst && cleanGst.length !== 15) {
+      setError('GSTIN must be exactly 15 characters (e.g. 37AAAAA0000A1Z5) or left blank.');
+      return;
+    }
+
+    // 3. Pincode validation (6 digits)
+    const cleanPin = pincode.trim();
+    if (cleanPin && !/^\d{6}$/.test(cleanPin)) {
+      setError('Pincode must be exactly 6 digits (e.g. 516269).');
+      return;
+    }
+
     setLoading(true);
 
     const payload = {
-      business_name: businessName,
-      contact_person: contactPerson,
-      phone: phone,
-      secondary_phone: secondaryPhone || null,
-      email: email || null,
-      address_line1: addressLine1,
-      city: city,
-      state: state,
-      pincode: pincode,
-      gstin: gstin || null,
+      business_name: businessName.trim(),
+      contact_person: contactPerson.trim(),
+      phone: cleanPhone,
+      secondary_phone: secondaryPhone ? secondaryPhone.replace(/[^0-9]/g, '').slice(-10) : null,
+      email: email ? email.trim() : null,
+      address_line1: addressLine1.trim(),
+      city: city.trim(),
+      state: state.trim(),
+      pincode: cleanPin || '516269',
+      gstin: cleanGst || null,
       credit_limit: parseFloat(creditLimit) || 0,
       opening_balance: parseFloat(openingBalance) || 0,
-      notes: notes || null
+      notes: notes ? notes.trim() : null
     };
 
     try {
@@ -153,16 +175,20 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Phone Number *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Phone Number *
+                </label>
+                <span className="text-[10px] text-amber-400 font-medium">10-Digit Mobile</span>
+              </div>
               <input
                 type="tel"
                 required
+                maxLength={10}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 9848012345"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                placeholder="9848012345"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
@@ -210,9 +236,10 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
               </label>
               <input
                 type="text"
+                maxLength={6}
                 value={pincode}
-                onChange={(e) => setPincode(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
@@ -224,10 +251,11 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
               </label>
               <input
                 type="text"
+                maxLength={15}
                 value={gstin}
-                onChange={(e) => setGstin(e.target.value)}
+                onChange={(e) => setGstin(e.target.value.toUpperCase())}
                 placeholder="37AAAAA0000A1Z5"
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 uppercase focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono uppercase focus:outline-none focus:border-amber-500"
               />
             </div>
             <div>

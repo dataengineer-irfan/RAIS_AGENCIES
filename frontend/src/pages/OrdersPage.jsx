@@ -41,9 +41,17 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [convertingId, setConvertingId] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
 
   // Modal
   const [orderModalOpen, setOrderModalOpen] = useState(false);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
 
   useEffect(() => {
     loadOrders();
@@ -93,12 +101,16 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
     setConvertingId(orderId);
     try {
       const inv = await orderApi.convertToInvoice(orderId);
+      showToast(`Order converted to Invoice ${inv.invoice_number || 'INV'} successfully! Stock deducted.`, 'success');
       await loadOrders(orderId);
       if (onOpenBillingForInvoice) {
-        onOpenBillingForInvoice(inv);
+        setTimeout(() => {
+          onOpenBillingForInvoice(inv);
+        }, 800);
       }
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to convert order to invoice.');
+      const msg = err.response?.data?.detail || err.message || 'Failed to convert order to invoice.';
+      showToast(msg, 'error');
     } finally {
       setConvertingId(null);
     }
@@ -188,6 +200,23 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification Banner */}
+      {toast && (
+        <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between transition-all shrink-0 animate-in fade-in slide-in-from-top-2 ${
+          toast.type === 'error'
+            ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+            : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'error' ? <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" /> : <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+            <span>{toast.message}</span>
+          </div>
+          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-white p-1">
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ─── MASTER-DETAIL SPLIT-PANE CONTAINER (100% Viewport-Locked) ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">

@@ -15,6 +15,7 @@ import {
   PanelLeftClose
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { RaisLogo } from './RaisLogo';
 
 export const Sidebar = ({ 
   activeTab, 
@@ -62,7 +63,7 @@ export const Sidebar = ({
       <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5 overflow-hidden">
           <div className="w-9 h-9 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-1 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
-            <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
+            <RaisLogo alt="RAIS" className="w-full h-full object-contain" />
           </div>
           <div className="overflow-hidden">
             <h1 className="font-extrabold tracking-wider text-sm text-white leading-none truncate">RAIS AGENCIES</h1>

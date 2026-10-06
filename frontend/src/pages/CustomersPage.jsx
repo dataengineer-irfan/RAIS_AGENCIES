@@ -675,12 +675,27 @@ export const CustomersPage = ({
 
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
-                        <div className={`font-mono font-black text-xs ${balance > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        <div className={`font-mono font-black text-xs ${
+                          creditLimit > 0 && balance > creditLimit 
+                            ? 'text-rose-400' 
+                            : balance > 0 
+                              ? 'text-amber-400' 
+                              : 'text-emerald-400'
+                        }`}>
                           ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
-                        <span className="text-[9px] text-slate-500 font-mono">
-                          Limit: ₹{(creditLimit / 1000).toFixed(0)}k
-                        </span>
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[9px] text-slate-500 font-mono">
+                            Limit: ₹{(creditLimit / 1000).toFixed(0)}k
+                          </span>
+                        </div>
+                        {creditLimit > 0 && balance > creditLimit && (
+                          <div className="mt-0.5">
+                            <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                              Limit Exceeded (+₹{Math.round(balance - creditLimit)})
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-600'}`} />
                     </div>
@@ -883,22 +898,34 @@ export const CustomersPage = ({
                     </div>
 
                     {/* Credit Utilization Progress */}
-                    {parseFloat(selectedCustomer.credit_limit || 0) > 0 && (
-                      <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-400 font-semibold">Credit Exposure Rate</span>
-                          <span className="font-mono font-bold text-amber-400">
-                            {Math.min(Math.round((parseFloat(selectedCustomer.outstanding_balance || 0) / parseFloat(selectedCustomer.credit_limit || 1)) * 100), 100)}% utilized
-                          </span>
+                    {parseFloat(selectedCustomer.credit_limit || 0) > 0 && (() => {
+                      const curBal = parseFloat(selectedCustomer.outstanding_balance || 0);
+                      const curLim = parseFloat(selectedCustomer.credit_limit || 1);
+                      const utilRate = Math.round((curBal / curLim) * 100);
+                      const isBreach = curBal > curLim;
+                      return (
+                        <div className={`p-3 rounded-xl space-y-1.5 border ${
+                          isBreach 
+                            ? 'bg-rose-500/10 border-rose-500/30' 
+                            : 'bg-slate-950/70 border-slate-800'
+                        }`}>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={isBreach ? 'text-rose-400 font-bold' : 'text-slate-400 font-semibold'}>
+                              {isBreach ? '🚨 Credit Limit Exceeded' : 'Credit Exposure Rate'}
+                            </span>
+                            <span className={`font-mono font-bold ${isBreach ? 'text-rose-400' : 'text-amber-400'}`}>
+                              {utilRate}% utilized {isBreach ? `(+₹${(curBal - curLim).toFixed(2)})` : ''}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div 
+                              className={`h-full rounded-full transition-all ${isBreach ? 'bg-rose-500' : utilRate > 80 ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                              style={{ width: `${Math.min(utilRate, 100)}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                          <div 
-                            className="bg-amber-400 h-full rounded-full transition-all"
-                            style={{ width: `${Math.min(Math.round((parseFloat(selectedCustomer.outstanding_balance || 0) / parseFloat(selectedCustomer.credit_limit || 1)) * 100), 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Business Metadata & Route */}
                     <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 text-xs">
