@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileText, 
   PlusCircle, 
@@ -96,7 +96,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
 
   useEffect(() => {
     loadInvoices();
-  }, [activeStatusFilter]);
+  }, []);
 
   const loadInvoices = async (selectId = null) => {
     // Only show full loading skeleton if we have zero invoices in memory/cache
@@ -104,11 +104,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       setLoading(true);
     }
     try {
-      const params = {};
-      if (activeStatusFilter !== 'ALL') {
-        params.status = activeStatusFilter;
-      }
-      const data = await billingApi.listInvoices(params);
+      const data = await billingApi.listInvoices();
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       setInvoices(items);
       _invoicesMemoryCache = items;
@@ -118,7 +114,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       if (items.length > 0) {
         const initialId = selectId || selectedInvoiceId || items[0].id;
         setSelectedInvoiceId(initialId);
-        loadInvoiceDetails(initialId);
+        const match = items.find(i => i.id === initialId) || items[0];
+        setSelectedInvoiceDetails(match);
+        loadInvoiceDetails(match.id, true);
       } else {
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetails(null);
@@ -130,22 +128,27 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     }
   };
 
-  const loadInvoiceDetails = async (invoiceId) => {
-    setDetailsLoading(true);
+  const loadInvoiceDetails = async (invoiceId, isBackground = false) => {
+    if (!isBackground) {
+      setDetailsLoading(true);
+    }
     try {
       const details = await billingApi.getInvoice(invoiceId);
       setSelectedInvoiceDetails(details);
     } catch (err) {
       console.error('Failed to load invoice details:', err);
     } finally {
-      setDetailsLoading(false);
+      if (!isBackground) {
+        setDetailsLoading(false);
+      }
     }
   };
 
   const handleSelectInvoice = (inv) => {
     setSelectedInvoiceId(inv.id);
-    loadInvoiceDetails(inv.id);
+    setSelectedInvoiceDetails(inv);
     setMobileView('detail');
+    loadInvoiceDetails(inv.id, true);
   };
 
   const handleIssueDraft = async (invoiceId) => {
@@ -224,17 +227,37 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     }
   };
 
-  const filteredInvoices = invoices.filter(inv => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      (inv.invoice_number || '').toLowerCase().includes(term) ||
-      (inv.customer_name || '').toLowerCase().includes(term) ||
-      (inv.customer_code || '').toLowerCase().includes(term)
-    );
-  });
+  const filteredInvoices = useMemo(() => {
+    const term = (searchTerm || '').trim().toLowerCase();
+    return invoices.filter(inv => {
+      if (activeStatusFilter !== 'ALL') {
+        if (inv.status !== activeStatusFilter) return false;
+      }
+      if (term) {
+        const matches = (
+          (inv.invoice_number || '').toLowerCase().includes(term) ||
+          (inv.customer_name || '').toLowerCase().includes(term) ||
+          (inv.customer_code || '').toLowerCase().includes(term)
+        );
+        if (!matches) return false;
+      }
+      return true;
+    });
+  }, [invoices, activeStatusFilter, searchTerm]);
 
   const selectedInvoice = selectedInvoiceDetails || invoices.find(i => i.id === selectedInvoiceId);
+
+  useEffect(() => {
+    if (filteredInvoices.length > 0) {
+      const isStillPresent = selectedInvoiceId && filteredInvoices.some(i => i.id === selectedInvoiceId);
+      if (!isStillPresent) {
+        const next = filteredInvoices[0];
+        setSelectedInvoiceId(next.id);
+        setSelectedInvoiceDetails(next);
+        loadInvoiceDetails(next.id, true);
+      }
+    }
+  }, [filteredInvoices, selectedInvoiceId]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
@@ -580,7 +603,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                 {/* ─── TAB 1: ITEMIZED TAX INVOICE LINES ─── */}
                 {activeInspectorTab === 'items' && (
                   <div className="space-y-3">
-                    {detailsLoading ? (
+                    {detailsLoading && (!selectedInvoice.items || selectedInvoice.items.length === 0) ? (
                       <div className="space-y-2 animate-pulse py-4">
                         <div className="h-10 bg-slate-800 rounded" />
                         <div className="h-10 bg-slate-800 rounded" />

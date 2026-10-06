@@ -23,7 +23,15 @@ from app.core.config import settings
 def quantize_amount(val: Decimal) -> Decimal:
     return val.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
+_INVOICES_CACHE: Dict[str, Any] = {}
+_INVOICES_CACHE_TTL: float = 60.0  # 60 seconds server-side in-memory TTL
+
 class BillingService:
+    @staticmethod
+    def invalidate_cache():
+        global _INVOICES_CACHE
+        _INVOICES_CACHE.clear()
+
     @staticmethod
     def calculate_invoice_totals(
         items_data: List[Dict[str, Any]],
@@ -207,6 +215,7 @@ class BillingService:
             }
         )
         db.commit()
+        BillingService.invalidate_cache()
         db.refresh(invoice)
         return invoice
 
@@ -379,6 +388,7 @@ class BillingService:
             }
         )
         db.commit()
+        BillingService.invalidate_cache()
         db.refresh(invoice)
         return invoice
 
@@ -394,6 +404,7 @@ class BillingService:
         db.flush()
         AuditService.log(db, AuditAction.STATUS_CHANGE, "Invoice", invoice.id, user_id=user_id, after_state={"status": invoice.status})
         db.commit()
+        BillingService.invalidate_cache()
         db.refresh(invoice)
         return invoice
 
@@ -442,6 +453,7 @@ class BillingService:
             after_state={"status": target_status, "reason": reason}
         )
         db.commit()
+        BillingService.invalidate_cache()
         db.refresh(invoice)
         return invoice
 
@@ -492,6 +504,7 @@ class BillingService:
 
         db.delete(invoice)
         db.commit()
+        BillingService.invalidate_cache()
 
         return {
             "success": True,
@@ -523,34 +536,38 @@ class BillingService:
         inv: Invoice, 
         db: Optional[Session] = None, 
         balances_map: Optional[Dict[str, Decimal]] = None,
-        first_inv_map: Optional[Dict[str, date]] = None
+        first_inv_map: Optional[Dict[str, date]] = None,
+        is_list: bool = False
     ) -> InvoiceResponse:
         cust_balance = None
-        if balances_map is not None and inv.customer_id:
-            cust_balance = balances_map.get(inv.customer_id)
-        elif db and inv.customer_id:
-            try:
-                from app.services.customer_service import CustomerService
-                _, _, cust_balance = CustomerService.get_customer_balances(db, inv.customer_id)
-            except Exception:
-                cust_balance = None
-
-        # Determine customer_since: based on earliest 1st invoice date, fallback to created_at
         cust_since = None
-        if inv.customer:
-            f_date = first_inv_map.get(inv.customer_id) if first_inv_map else None
-            if not f_date and db and inv.customer_id:
+        if not is_list:
+            if balances_map is not None and inv.customer_id:
+                cust_balance = balances_map.get(inv.customer_id)
+            elif db and inv.customer_id:
                 try:
-                    f_date = db.query(func.min(Invoice.invoice_date)).filter(
-                        Invoice.customer_id == inv.customer_id,
-                        Invoice.status != InvoiceStatus.CANCELLED.value
-                    ).scalar()
+                    from app.services.customer_service import CustomerService
+                    _, _, cust_balance = CustomerService.get_customer_balances(db, inv.customer_id)
                 except Exception:
-                    f_date = None
-            if f_date:
-                cust_since = datetime.combine(f_date, datetime.min.time())
-            else:
-                cust_since = inv.customer.created_at
+                    cust_balance = None
+
+            # Determine customer_since: based on earliest 1st invoice date, fallback to created_at
+            if inv.customer:
+                f_date = first_inv_map.get(inv.customer_id) if first_inv_map else None
+                if not f_date and db and inv.customer_id:
+                    try:
+                        f_date = db.query(func.min(Invoice.invoice_date)).filter(
+                            Invoice.customer_id == inv.customer_id,
+                            Invoice.status != InvoiceStatus.CANCELLED.value
+                        ).scalar()
+                    except Exception:
+                        f_date = None
+                if f_date:
+                    cust_since = datetime.combine(f_date, datetime.min.time())
+                else:
+                    cust_since = inv.customer.created_at
+        elif inv.customer and inv.customer.created_at:
+            cust_since = inv.customer.created_at
 
         items_resp = [
             InvoiceItemResponse(
@@ -572,7 +589,7 @@ class BillingService:
         ]
 
         allocs_resp = []
-        if inv.allocations:
+        if not is_list and inv.allocations:
             for alloc in inv.allocations:
                 if alloc.payment:
                     allocs_resp.append(
@@ -629,11 +646,17 @@ class BillingService:
         skip: int = 0,
         limit: int = 100
     ) -> List[InvoiceResponse]:
-        from app.models.payment import PaymentAllocation
+        import time
+        cache_key = f"{customer_id}_{status}_{search}_{from_date}_{to_date}_{skip}_{limit}"
+        now = time.time()
+        if cache_key in _INVOICES_CACHE:
+            ts, cached_data = _INVOICES_CACHE[cache_key]
+            if now - ts < _INVOICES_CACHE_TTL:
+                return cached_data
+
         query = db.query(Invoice).options(
             joinedload(Invoice.customer),
-            selectinload(Invoice.items),
-            selectinload(Invoice.allocations).joinedload(PaymentAllocation.payment)
+            selectinload(Invoice.items)
         )
         if customer_id:
             query = query.filter(Invoice.customer_id == customer_id)
@@ -655,49 +678,9 @@ class BillingService:
         
         invoices = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()
 
-        # Batch-calculate customer balances in 3 bulk queries instead of 3 * N sequential queries
-        cust_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
-        balances_map = {}
-        first_inv_map = {}
-        if cust_ids:
-            try:
-                cust_rows = db.query(Customer.id, Customer.opening_balance).filter(Customer.id.in_(cust_ids)).all()
-                openings = {r[0]: Decimal(str(r[1] or 0)) for r in cust_rows}
-                
-                valid_statuses = [
-                    InvoiceStatus.ISSUED.value,
-                    InvoiceStatus.PARTIALLY_PAID.value,
-                    InvoiceStatus.PAID.value,
-                    InvoiceStatus.OVERDUE.value
-                ]
-                inv_sums = db.query(Invoice.customer_id, func.sum(Invoice.total_amount)).filter(
-                    Invoice.customer_id.in_(cust_ids),
-                    Invoice.status.in_(valid_statuses)
-                ).group_by(Invoice.customer_id).all()
-                inv_map = {r[0]: Decimal(str(r[1] or 0)) for r in inv_sums}
-
-                from app.models.payment import Payment
-                pay_sums = db.query(Payment.customer_id, func.sum(Payment.amount)).filter(
-                    Payment.customer_id.in_(cust_ids)
-                ).group_by(Payment.customer_id).all()
-                pay_map = {r[0]: Decimal(str(r[1] or 0)) for r in pay_sums}
-
-                for cid in cust_ids:
-                    balances_map[cid] = openings.get(cid, Decimal("0.00")) + inv_map.get(cid, Decimal("0.00")) - pay_map.get(cid, Decimal("0.00"))
-
-                first_inv_rows = db.query(
-                    Invoice.customer_id, 
-                    func.min(Invoice.invoice_date)
-                ).filter(
-                    Invoice.customer_id.in_(cust_ids),
-                    Invoice.status != InvoiceStatus.CANCELLED.value
-                ).group_by(Invoice.customer_id).all()
-                first_inv_map = {r[0]: r[1] for r in first_inv_rows}
-            except Exception:
-                balances_map = {}
-                first_inv_map = {}
-
-        return [BillingService._build_invoice_response(inv, db, balances_map, first_inv_map) for inv in invoices]
+        res = [BillingService._build_invoice_response(inv, db, is_list=True) for inv in invoices]
+        _INVOICES_CACHE[cache_key] = (now, res)
+        return res
 
     # ----------------------------------------------------
     # QUOTATION MANAGEMENT

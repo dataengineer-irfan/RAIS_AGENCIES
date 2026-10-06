@@ -83,6 +83,8 @@ class PaymentService:
                 )
 
         db.commit()
+        from app.services.billing_service import BillingService
+        BillingService.invalidate_cache()
         db.refresh(payment)
         return payment
 
@@ -327,6 +329,8 @@ class PaymentService:
         )
 
         db.commit()
+        from app.services.billing_service import BillingService
+        BillingService.invalidate_cache()
         db.refresh(payment)
         return PaymentService._build_payment_response(payment)
 
@@ -379,6 +383,8 @@ class PaymentService:
         pay_number = payment.payment_number
         db.delete(payment)
         db.commit()
+        from app.services.billing_service import BillingService
+        BillingService.invalidate_cache()
 
         return {
             "success": True,

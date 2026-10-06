@@ -57,7 +57,7 @@ def test_full_invoice_and_payment_lifecycle(test_db):
     cust = test_db.query(Customer).first()
     prod = test_db.query(Product).first()
 
-    # 1. Create Invoice for 2 packs (2 * 300 = 600 + 5% tax = 630.00)
+    # 1. Create Invoice for 2 packs (2 * 300 = 600.00 wholesale flat)
     inv_data = InvoiceCreate(
         customer_id=cust.id,
         auto_issue=True,
@@ -65,8 +65,8 @@ def test_full_invoice_and_payment_lifecycle(test_db):
     )
     inv = BillingService.create_invoice(test_db, inv_data)
     assert inv.status == InvoiceStatus.ISSUED.value
-    assert inv.total_amount == Decimal("630.00")
-    assert inv.outstanding_amount == Decimal("630.00")
+    assert inv.total_amount == Decimal("600.00")
+    assert inv.outstanding_amount == Decimal("600.00")
     assert inv.paid_amount == Decimal("0.00")
 
     # 2. Record partial payment of Rs.300
@@ -81,23 +81,23 @@ def test_full_invoice_and_payment_lifecycle(test_db):
     test_db.refresh(inv)
     assert inv.status == InvoiceStatus.PARTIALLY_PAID.value
     assert inv.paid_amount == Decimal("300.00")
-    assert inv.outstanding_amount == Decimal("330.00")
+    assert inv.outstanding_amount == Decimal("300.00")
     assert pay.unallocated_amount == Decimal("0.00")
 
     # 3. Prevent over-allocation
     with pytest.raises(InvalidFinancialOperationException):
         PaymentService.allocate_payment(test_db, pay.id, inv.id, Decimal("500.00"))
 
-    # 4. Settle remainder with second payment of Rs.330
+    # 4. Settle remainder with second payment of Rs.300
     pay2_data = PaymentCreate(
         customer_id=cust.id,
-        amount=Decimal("330.00"),
+        amount=Decimal("300.00"),
         payment_method="CASH",
-        allocations=[PaymentAllocationCreate(invoice_id=inv.id, amount=Decimal("330.00"))]
+        allocations=[PaymentAllocationCreate(invoice_id=inv.id, amount=Decimal("300.00"))]
     )
     pay2 = PaymentService.record_payment(test_db, pay2_data)
 
     test_db.refresh(inv)
     assert inv.status == InvoiceStatus.PAID.value
-    assert inv.paid_amount == Decimal("630.00")
+    assert inv.paid_amount == Decimal("600.00")
     assert inv.outstanding_amount == Decimal("0.00")
