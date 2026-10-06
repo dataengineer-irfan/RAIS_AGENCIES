@@ -404,6 +404,11 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   </h2>
                   <p className="text-xs text-slate-400">
                     Billed on {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText} {selectedInvoice.due_date ? `• Due: ${selectedInvoice.due_date}` : ''}
+                    {selectedInvoice.customer_since && (
+                      <span className="block mt-0.5 text-[11px] text-amber-400/90 font-medium">
+                        🤝 Associated Since: {new Date(selectedInvoice.customer_since).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
                   </p>
                 </div>
 

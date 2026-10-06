@@ -35,22 +35,31 @@ class CustomerAgingReportItem(BaseModel):
     customer_id: str
     customer_code: str
     business_name: str
+    customer_name: Optional[str] = None
     contact_person: str
     phone: str
     current_0_15: Decimal
+    current_0_15_days: Optional[Decimal] = None
     days_16_30: Decimal
+    aging_16_30_days: Optional[Decimal] = None
     days_31_60: Decimal
+    aging_31_60_days: Optional[Decimal] = None
     days_60_plus: Decimal
+    aging_60_plus_days: Optional[Decimal] = None
     total_due: Decimal
+    total_outstanding: Optional[Decimal] = None
 
 class ProductPerformanceItem(BaseModel):
     product_id: str
     sku: str
     product_name: str
+    name: Optional[str] = None
     category_name: str
     brand: str
     total_quantity_sold: Decimal
+    units_sold: Optional[Decimal] = None
     total_revenue: Decimal
+    revenue: Optional[Decimal] = None
 
 class CustomerLedgerEntry(BaseModel):
     date: date

@@ -41,6 +41,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [summaryData, setSummaryData] = useState(null);
 
   useEffect(() => {
     loadPayments();
@@ -49,9 +50,13 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   const loadPayments = async (selectId = null) => {
     setLoading(true);
     try {
-      const data = await paymentApi.list();
+      const [data, summary] = await Promise.all([
+        paymentApi.list(),
+        paymentApi.getSummary().catch(() => null)
+      ]);
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       setPayments(items);
+      if (summary) setSummaryData(summary);
       if (items.length > 0) {
         setSelectedPaymentId(selectId || items[0].id);
       } else {
@@ -124,13 +129,25 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
             <CreditCard className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 mt-0.5">
               <h1 className="text-sm sm:text-base font-black text-white">
                 Payment Settlements & Collection Ledger
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-full border border-slate-700 font-mono">
-                ₹{totalCollected.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Total Collected
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/15 text-emerald-300 rounded-full border border-emerald-500/30 font-mono">
+                  All-Time: ₹{(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+                {summaryData?.total_collected_this_month !== undefined && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+                    {summaryData.current_month_str}: ₹{summaryData.total_collected_this_month.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                )}
+                {payments.length >= 100 && (
+                  <span className="text-[9px] text-slate-500 font-mono hidden md:inline">
+                    (Page: ₹{totalCollected.toLocaleString('en-IN', { minimumFractionDigits: 0 })})
+                  </span>
+                )}
+              </div>
             </div>
             <p className="text-[11px] text-slate-400">
               Master-Detail UPI, Cash & Bank Settlement Reconciliation with Invoices

@@ -44,6 +44,11 @@ export const App = () => {
   const [selectedCustForOrder, setSelectedCustForOrder] = useState(null);
   const [selectedCustForInvoice, setSelectedCustForInvoice] = useState(null);
   const [customerToEdit, setCustomerToEdit] = useState(null);
+  const [dataRefreshKey, setDataRefreshKey] = useState(0);
+
+  const handleDataRefresh = () => {
+    setDataRefreshKey(k => k + 1);
+  };
 
   const handleOpenInvoice = (cust = null) => {
     setSelectedCustForInvoice(cust);
@@ -183,13 +188,15 @@ export const App = () => {
             />
           )}
 
-          {activeTab === 'catalogue' && <CataloguePage />}
+          {activeTab === 'catalogue' && <CataloguePage key={dataRefreshKey} />}
 
-          {activeTab === 'inventory' && <InventoryPage />}
+          {activeTab === 'inventory' && <InventoryPage key={dataRefreshKey} />}
 
           {activeTab === 'orders' && (
             <OrdersPage
+              key={dataRefreshKey}
               onOpenBillingForInvoice={(inv) => {
+                handleDataRefresh();
                 setActiveTab('billing');
               }}
             />
@@ -197,6 +204,7 @@ export const App = () => {
 
           {activeTab === 'billing' && (
             <BillingPage
+              key={dataRefreshKey}
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentForInvoice={(inv) => handleOpenPayment(null, inv)}
             />
@@ -204,11 +212,12 @@ export const App = () => {
 
           {activeTab === 'payments' && (
             <PaymentsPage
+              key={dataRefreshKey}
               onOpenPaymentModal={handleOpenPayment}
             />
           )}
 
-          {activeTab === 'reports' && <ReportsPage />}
+          {activeTab === 'reports' && <ReportsPage key={dataRefreshKey} />}
 
           {activeTab === 'ai' && <AIAssistantPage />}
 
@@ -220,18 +229,21 @@ export const App = () => {
       <InvoiceBuilderModal
         isOpen={invoiceBuilderOpen}
         onClose={() => setInvoiceBuilderOpen(false)}
+        onInvoiceCreated={handleDataRefresh}
         preselectedCustomer={selectedCustForInvoice}
       />
 
       <OrderBuilderModal
         isOpen={orderBuilderOpen}
         onClose={() => setOrderBuilderOpen(false)}
+        onOrderCreated={handleDataRefresh}
         initialCustomerId={selectedCustForOrder}
       />
 
       <PaymentModal
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}
+        onPaymentSuccess={handleDataRefresh}
         preselectedCustomer={selectedCustForPayment}
         preselectedInvoice={selectedInvForPayment}
         initialCustomer={selectedCustForPayment}

@@ -51,9 +51,10 @@ export const ReportsPage = () => {
   };
 
   const handleSendWhatsAppReminder = (cust) => {
-    const total = parseFloat(cust.total_outstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const over60 = parseFloat(cust.aging_60_plus_days || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Payment Aging Statement*\n\nCustomer: *${cust.customer_name}*\nTotal Outstanding: *₹${total}*\nOverdue (>60 Days): *₹${over60}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n*RAIS Agencies*, Rayachoty.`;
+    const total = parseFloat(cust.total_outstanding ?? cust.total_due ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const over60 = parseFloat(cust.aging_60_plus_days ?? cust.days_60_plus ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const name = cust.business_name || cust.customer_name || 'Customer';
+    const text = `*RAIS AGENCIES — Payment Aging Statement*\n\nCustomer: *${name}*\nTotal Outstanding: *₹${total}*\nOverdue (>60 Days): *₹${over60}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n*RAIS Agencies*, Rayachoty.`;
     openWhatsApp(cust.phone || '9347453135', text);
   };
 
@@ -61,13 +62,13 @@ export const ReportsPage = () => {
     const headers = ['Customer Code', 'Customer Name', 'Phone', '0-15 Days', '16-30 Days', '31-60 Days', '60+ Days', 'Total Outstanding'];
     const rows = customerAging.map(c => [
       `"${c.customer_code}"`,
-      `"${c.customer_name}"`,
+      `"${c.business_name || c.customer_name || ''}"`,
       `"${c.phone || ''}"`,
-      c.current_0_15_days,
-      c.aging_16_30_days,
-      c.aging_31_60_days,
-      c.aging_60_plus_days,
-      c.total_outstanding
+      c.current_0_15_days ?? c.current_0_15 ?? 0,
+      c.aging_16_30_days ?? c.days_16_30 ?? 0,
+      c.aging_31_60_days ?? c.days_31_60 ?? 0,
+      c.aging_60_plus_days ?? c.days_60_plus ?? 0,
+      c.total_outstanding ?? c.total_due ?? 0
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -83,8 +84,9 @@ export const ReportsPage = () => {
   const filteredCustomerAging = customerAging.filter(c => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
+    const name = (c.business_name || c.customer_name || '').toLowerCase();
     return (
-      (c.customer_name || '').toLowerCase().includes(term) ||
+      name.includes(term) ||
       (c.customer_code || '').toLowerCase().includes(term) ||
       (c.phone || '').includes(term)
     );
@@ -227,23 +229,28 @@ export const ReportsPage = () => {
               </thead>
               <tbody>
                 {(filteredCustomerAging || []).map(c => {
-                  const total = parseFloat(c?.total_outstanding || 0);
-                  const isSevere = parseFloat(c?.aging_60_plus_days || 0) > 0;
+                  const total = parseFloat(c?.total_outstanding ?? c?.total_due ?? 0);
+                  const isSevere = parseFloat(c?.aging_60_plus_days ?? c?.days_60_plus ?? 0) > 0;
+                  const cName = c?.business_name || c?.customer_name || 'Customer';
+                  const c0_15 = parseFloat(c?.current_0_15_days ?? c?.current_0_15 ?? 0);
+                  const c16_30 = parseFloat(c?.aging_16_30_days ?? c?.days_16_30 ?? 0);
+                  const c31_60 = parseFloat(c?.aging_31_60_days ?? c?.days_31_60 ?? 0);
+                  const c60_plus = parseFloat(c?.aging_60_plus_days ?? c?.days_60_plus ?? 0);
 
                   return (
                     <tr key={c?.customer_id} className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors">
                       <td className="py-2 px-2">
-                        <span className="font-bold text-white block text-xs truncate max-w-[140px]">{c?.customer_name || 'Customer'}</span>
+                        <span className="font-bold text-white block text-xs truncate max-w-[140px]">{cName}</span>
                         <span className="text-[9px] text-slate-500 font-mono">{c?.customer_code || ''}</span>
                       </td>
-                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{parseFloat(c?.current_0_15_days || 0).toFixed(0)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{parseFloat(c?.aging_16_30_days || 0).toFixed(0)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-amber-400">₹{parseFloat(c?.aging_31_60_days || 0).toFixed(0)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{c0_15.toFixed(0)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-slate-300">₹{c16_30.toFixed(0)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-amber-400">₹{c31_60.toFixed(0)}</td>
                       <td className={`py-2 px-2 text-right font-mono font-bold ${isSevere ? 'text-rose-400' : 'text-slate-500'}`}>
-                        ₹{parseFloat(c?.aging_60_plus_days || 0).toFixed(0)}
+                        ₹{c60_plus.toFixed(0)}
                       </td>
                       <td className="py-2 px-2 text-right font-mono font-black text-amber-400">
-                        ₹{parseFloat(total || 0).toFixed(2)}
+                        ₹{total.toFixed(2)}
                       </td>
                       <td className="py-2 px-2 text-center">
                         <button
@@ -280,12 +287,12 @@ export const ReportsPage = () => {
               >
                 <div className="overflow-hidden pr-2">
                   <span className="font-mono text-[10px] text-amber-400 font-bold">{prod.sku}</span>
-                  <h5 className="font-bold text-white text-xs truncate mt-0.5">{prod.name}</h5>
-                  <p className="text-[10px] text-slate-400">{prod.units_sold} packs sold</p>
+                  <h5 className="font-bold text-white text-xs truncate mt-0.5">{prod.name || prod.product_name}</h5>
+                  <p className="text-[10px] text-slate-400">{prod.units_sold ?? prod.total_quantity_sold ?? 0} packs sold</p>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-mono font-bold text-emerald-400 text-xs">
-                    ₹{parseFloat(prod.revenue || 0).toFixed(2)}
+                    ₹{parseFloat(prod.revenue ?? prod.total_revenue ?? 0).toFixed(2)}
                   </div>
                   <span className="text-[9px] text-slate-500 font-bold uppercase">Volume Val</span>
                 </div>

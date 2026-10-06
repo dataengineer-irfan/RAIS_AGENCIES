@@ -257,6 +257,9 @@ export const paymentApi = {
   get: async (id) => {
     return cachedGet(`/payments/${id}`);
   },
+  getSummary: async () => {
+    return cachedGet('/payments/summary');
+  },
   record: async (data) => {
     const res = await api.post('/payments', data);
     return res.data;

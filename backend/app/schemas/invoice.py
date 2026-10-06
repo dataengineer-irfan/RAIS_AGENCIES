@@ -70,6 +70,7 @@ class InvoiceResponse(BaseModel):
     customer_phone: Optional[str] = None
     customer_address: Optional[str] = None
     customer_gstin: Optional[str] = None
+    customer_since: Optional[datetime] = None
     order_id: Optional[str] = None
     quotation_id: Optional[str] = None
     status: str

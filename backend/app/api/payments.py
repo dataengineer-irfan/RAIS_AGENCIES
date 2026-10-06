@@ -32,6 +32,17 @@ def list_payments(
         limit=limit
     )
 
+@router.get("/summary")
+def get_payments_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """
+    Returns true global collection metrics:
+    All-Time Collections, Current Month Collections, Total Vouchers Count.
+    """
+    return PaymentService.get_payments_summary(db)
+
 @router.get("/{payment_id}", response_model=PaymentResponse)
 def get_payment(
     payment_id: str,

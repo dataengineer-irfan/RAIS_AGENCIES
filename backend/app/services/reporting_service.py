@@ -312,13 +312,19 @@ class ReportingService:
                     customer_id=cust.id,
                     customer_code=cust.customer_code,
                     business_name=cust.business_name,
+                    customer_name=cust.business_name,
                     contact_person=cust.contact_person,
                     phone=cust.phone,
                     current_0_15=c_0_15,
+                    current_0_15_days=c_0_15,
                     days_16_30=c_16_30,
+                    aging_16_30_days=c_16_30,
                     days_31_60=c_31_60,
+                    aging_31_60_days=c_31_60,
                     days_60_plus=c_60_plus,
-                    total_due=total
+                    aging_60_plus_days=c_60_plus,
+                    total_due=total,
+                    total_outstanding=total
                 ))
 
         results.sort(key=lambda x: x.total_due, reverse=True)
@@ -359,10 +365,13 @@ class ReportingService:
                 product_id=row[0],
                 sku=row[1],
                 product_name=row[2],
+                name=row[2],
                 category_name=row[3],
                 brand=row[4],
                 total_quantity_sold=Decimal(str(row[5])),
-                total_revenue=Decimal(str(row[6]))
+                units_sold=Decimal(str(row[5])),
+                total_revenue=Decimal(str(row[6])),
+                revenue=Decimal(str(row[6]))
             ) for row in query
         ]
 

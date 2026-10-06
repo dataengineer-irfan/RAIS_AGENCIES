@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import date, timedelta
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.quotation import Quotation, QuotationItem
 from app.models.order import Order, OrderItem
@@ -180,14 +180,16 @@ class BillingService:
             db.add(inv_item)
             
             # Automatically deduct warehouse inventory for this commercial invoice item
-            from app.services.inventory_service import InventoryService
-            InventoryService.deduct_stock_for_invoice(
-                db=db,
-                product_id=itm["product_id"],
-                quantity=itm["quantity"],
-                invoice_number=invoice.invoice_number,
-                user_id=user_id
-            )
+            # (If invoice was created from an order, order already deducted stock upon placement)
+            if not data.order_id:
+                from app.services.inventory_service import InventoryService
+                InventoryService.deduct_stock_for_invoice(
+                    db=db,
+                    product_id=itm["product_id"],
+                    quantity=itm["quantity"],
+                    invoice_number=invoice.invoice_number,
+                    user_id=user_id
+                )
 
         AuditService.log(
             db=db,
@@ -512,9 +514,15 @@ class BillingService:
         return BillingService._build_invoice_response(inv, db)
 
     @staticmethod
-    def _build_invoice_response(inv: Invoice, db: Optional[Session] = None) -> InvoiceResponse:
+    def _build_invoice_response(
+        inv: Invoice, 
+        db: Optional[Session] = None, 
+        balances_map: Optional[Dict[str, Decimal]] = None
+    ) -> InvoiceResponse:
         cust_balance = None
-        if db and inv.customer_id:
+        if balances_map is not None and inv.customer_id:
+            cust_balance = balances_map.get(inv.customer_id)
+        elif db and inv.customer_id:
             try:
                 from app.services.customer_service import CustomerService
                 _, _, cust_balance = CustomerService.get_customer_balances(db, inv.customer_id)
@@ -564,6 +572,7 @@ class BillingService:
             customer_phone=inv.customer.phone if inv.customer else "",
             customer_address=f"{inv.customer.address_line1}, {inv.customer.city} - {inv.customer.pincode}" if inv.customer else "",
             customer_gstin=inv.customer.gstin if inv.customer else "",
+            customer_since=inv.customer.created_at if inv.customer else None,
             order_id=inv.order_id,
             quotation_id=inv.quotation_id,
             status=inv.status,
@@ -597,9 +606,11 @@ class BillingService:
         skip: int = 0,
         limit: int = 100
     ) -> List[InvoiceResponse]:
+        from app.models.payment import PaymentAllocation
         query = db.query(Invoice).options(
             joinedload(Invoice.customer),
-            joinedload(Invoice.items)
+            joinedload(Invoice.items),
+            joinedload(Invoice.allocations).joinedload(PaymentAllocation.payment)
         )
         if customer_id:
             query = query.filter(Invoice.customer_id == customer_id)
@@ -620,7 +631,39 @@ class BillingService:
             )
         
         invoices = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()
-        return [BillingService._build_invoice_response(inv, db) for inv in invoices]
+
+        # Batch-calculate customer balances in 3 bulk queries instead of 3 * N sequential queries
+        cust_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
+        balances_map = {}
+        if cust_ids:
+            try:
+                cust_rows = db.query(Customer.id, Customer.opening_balance).filter(Customer.id.in_(cust_ids)).all()
+                openings = {r[0]: Decimal(str(r[1] or 0)) for r in cust_rows}
+                
+                valid_statuses = [
+                    InvoiceStatus.ISSUED.value,
+                    InvoiceStatus.PARTIALLY_PAID.value,
+                    InvoiceStatus.PAID.value,
+                    InvoiceStatus.OVERDUE.value
+                ]
+                inv_sums = db.query(Invoice.customer_id, func.sum(Invoice.total_amount)).filter(
+                    Invoice.customer_id.in_(cust_ids),
+                    Invoice.status.in_(valid_statuses)
+                ).group_by(Invoice.customer_id).all()
+                inv_map = {r[0]: Decimal(str(r[1] or 0)) for r in inv_sums}
+
+                from app.models.payment import Payment
+                pay_sums = db.query(Payment.customer_id, func.sum(Payment.amount)).filter(
+                    Payment.customer_id.in_(cust_ids)
+                ).group_by(Payment.customer_id).all()
+                pay_map = {r[0]: Decimal(str(r[1] or 0)) for r in pay_sums}
+
+                for cid in cust_ids:
+                    balances_map[cid] = openings.get(cid, Decimal("0.00")) + inv_map.get(cid, Decimal("0.00")) - pay_map.get(cid, Decimal("0.00"))
+            except Exception:
+                balances_map = {}
+
+        return [BillingService._build_invoice_response(inv, db, balances_map) for inv in invoices]
 
     # ----------------------------------------------------
     # QUOTATION MANAGEMENT

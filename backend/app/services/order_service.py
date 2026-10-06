@@ -51,6 +51,15 @@ class OrderService:
             )
             order_items.append(order_item)
 
+            # Deduct stock for the ordered item upon order confirmation
+            InventoryService.deduct_stock_for_order(
+                db=db,
+                product_id=product.id,
+                quantity=qty,
+                order_number=order_number,
+                user_id=user_id
+            )
+
         total_amount = subtotal
 
         order = Order(
@@ -127,15 +136,7 @@ class OrderService:
                 "discount_rate": 0.0,
                 "tax_rate": 0.0
             })
-
-            # Deduct stock for the ordered item
-            InventoryService.deduct_stock_for_order(
-                db=db,
-                product_id=itm.product_id,
-                quantity=itm.quantity,
-                order_number=order.order_number,
-                user_id=user_id
-            )
+            # Stock was already deducted when the order was placed. No duplicate deduction here.
 
         # Create real invoice via BillingService
         from app.schemas.invoice import InvoiceCreate, InvoiceItemCreate

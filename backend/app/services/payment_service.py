@@ -384,3 +384,23 @@ class PaymentService:
             "success": True,
             "message": f"Payment voucher '{pay_number}' deleted and allocations reversed successfully."
         }
+
+    @staticmethod
+    def get_payments_summary(db: Session) -> dict:
+        from sqlalchemy import func
+        today = date.today()
+        month_start = date(today.year, today.month, 1)
+
+        total_all_time = db.query(func.coalesce(func.sum(Payment.amount), 0)).scalar() or Decimal("0.00")
+        total_month = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+            Payment.payment_date >= month_start,
+            Payment.payment_date <= today
+        ).scalar() or Decimal("0.00")
+        count_all = db.query(func.count(Payment.id)).scalar() or 0
+
+        return {
+            "total_collected_all_time": float(total_all_time),
+            "total_collected_this_month": float(total_month),
+            "total_vouchers_count": count_all,
+            "current_month_str": today.strftime("%b %Y")
+        }
