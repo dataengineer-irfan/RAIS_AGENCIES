@@ -33,15 +33,41 @@ import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatInvoiceDateTime } from '../utils/invoiceImageGenerator';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
+// ─── MODULE-LEVEL IN-MEMORY CACHE FOR INSTANT 0-MS INVOICE RENDERING ───
+let _invoicesMemoryCache = null;
+
+const getInitialInvoices = () => {
+  if (Array.isArray(_invoicesMemoryCache) && _invoicesMemoryCache.length > 0) {
+    return _invoicesMemoryCache;
+  }
+  try {
+    const cached = sessionStorage.getItem('rais_invoices_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        _invoicesMemoryCache = parsed;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return [];
+};
+
 export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) => {
   const { hasRole } = useAuth();
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [invoices, setInvoices] = useState(getInitialInvoices);
+  const [loading, setLoading] = useState(() => {
+    const initial = getInitialInvoices();
+    return initial.length === 0;
+  });
   const [activeStatusFilter, setActiveStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Master-Detail State
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(() => {
+    const initial = getInitialInvoices();
+    return initial.length > 0 ? initial[0].id : null;
+  });
   const [selectedInvoiceDetails, setSelectedInvoiceDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState('items'); // items, payment, print
@@ -73,7 +99,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   }, [activeStatusFilter]);
 
   const loadInvoices = async (selectId = null) => {
-    setLoading(true);
+    // Only show full loading skeleton if we have zero invoices in memory/cache
+    if (invoices.length === 0 && !getInitialInvoices().length) {
+      setLoading(true);
+    }
     try {
       const params = {};
       if (activeStatusFilter !== 'ALL') {
@@ -82,8 +111,12 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       const data = await billingApi.listInvoices(params);
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       setInvoices(items);
+      _invoicesMemoryCache = items;
+      try {
+        sessionStorage.setItem('rais_invoices_cache', JSON.stringify(items));
+      } catch (e) {}
       if (items.length > 0) {
-        const initialId = selectId || items[0].id;
+        const initialId = selectId || selectedInvoiceId || items[0].id;
         setSelectedInvoiceId(initialId);
         loadInvoiceDetails(initialId);
       } else {
@@ -206,8 +239,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
-      {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
-      <div className="flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
+      {/* ─── DESKTOP TOP ACTION & FILTER HEADER BAR (>= md) ─── */}
+      <div className="hidden md:flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -219,10 +252,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   Billing & Wholesale Invoices Hub
                 </h1>
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                  {invoices.length} Invoices
+                  {loading && invoices.length === 0 ? 'Syncing...' : invoices.length > 0 ? `${invoices.length} Invoices` : 'Invoices'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
+              <p className="text-[11px] text-slate-400">
                 Wholesale Invoicing, 58mm Thermal POS Print & Direct Settlement
               </p>
             </div>
@@ -255,7 +288,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           <select
             value={activeStatusFilter}
             onChange={(e) => setActiveStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer flex-1 sm:flex-initial max-w-[140px]"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[140px]"
           >
             <option value="ALL">All Status</option>
             <option value="ISSUED">Issued / Open</option>
@@ -265,6 +298,44 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
             <option value="DRAFT">Drafts</option>
           </select>
         </div>
+      </div>
+
+      {/* ─── MOBILE COMPACT SEARCH & ACTION BAR (< md) ─── */}
+      <div className="md:hidden flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1.5 shrink-0 shadow-sm">
+        <div className="relative flex-1 min-w-0">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={invoices.length > 0 ? `Search ${invoices.length} invoices...` : "Search invoices..."}
+            className="w-full pl-8 pr-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        <select
+          value={activeStatusFilter}
+          onChange={(e) => setActiveStatusFilter(e.target.value)}
+          className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer shrink-0 max-w-[95px]"
+        >
+          <option value="ALL">All</option>
+          <option value="ISSUED">Open</option>
+          <option value="PARTIALLY_PAID">Partial</option>
+          <option value="PAID">Paid</option>
+          <option value="OVERDUE">Overdue</option>
+          <option value="DRAFT">Draft</option>
+        </select>
+
+        {hasRole(['ADMIN', 'OPERATOR']) && (
+          <button
+            onClick={onOpenInvoiceBuilder}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
+            title="Create Tax Invoice"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>+ Bill</span>
+          </button>
+        )}
       </div>
 
       {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
@@ -278,7 +349,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           }`}
         >
           <FileText className="w-3.5 h-3.5" />
-          <span>Invoices ({filteredInvoices.length})</span>
+          <span>{loading && invoices.length === 0 ? 'Invoices' : invoices.length > 0 ? `Invoices (${filteredInvoices.length})` : 'Invoices'}</span>
         </button>
         <button
           onClick={() => setMobileView('detail')}
@@ -300,7 +371,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
         {/* ─── LEFT MASTER PANE (Invoices List) ─── */}
         <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
-            <span>Tax Invoices ({filteredInvoices.length})</span>
+            <span>{loading && invoices.length === 0 ? 'Tax Invoices' : invoices.length > 0 ? `Tax Invoices (${filteredInvoices.length})` : 'Tax Invoices'}</span>
             <span>Total / Due</span>
           </div>
 
@@ -377,7 +448,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
               <span>Back to Invoices List</span>
             </button>
             <span className="text-xs text-slate-400 font-mono">
-              {filteredInvoices.length} Invoices
+              {loading && invoices.length === 0 ? '' : filteredInvoices.length > 0 ? `${filteredInvoices.length} Invoices` : ''}
             </span>
           </div>
           {selectedInvoice ? (

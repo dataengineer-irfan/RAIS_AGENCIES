@@ -122,8 +122,8 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
-      {/* ─── TOP ACTION & SUMMARY HEADER BAR ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
+      {/* ─── DESKTOP TOP ACTION & SUMMARY HEADER BAR (>= md) ─── */}
+      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <CreditCard className="w-4 h-4" />
@@ -176,6 +176,44 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
               <PlusCircle className="w-3.5 h-3.5" />
               <span>+ Settlement</span>
             </button>
+          )}
+        </div>
+      </div>
+
+      {/* ─── MOBILE SLEEK ACTION BAR (< md) ─── */}
+      <div className="md:hidden flex flex-col gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2 shrink-0 shadow-sm">
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={`Search ${payments.length} vouchers...`}
+              className="w-full pl-8 pr-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <button
+              onClick={() => onOpenPaymentModal && onOpenPaymentModal(null, null)}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
+              title="Record Settlement"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Pay</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[10px] font-mono">
+          <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-300 rounded-md border border-emerald-500/30 whitespace-nowrap font-bold">
+            Total: ₹{parseFloat(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
+          {summaryData?.total_collected_this_month !== undefined && (
+            <span className="px-2 py-0.5 bg-slate-800 text-amber-400 rounded-md border border-slate-700 whitespace-nowrap font-bold">
+              {summaryData.current_month_str}: ₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </span>
           )}
         </div>
       </div>

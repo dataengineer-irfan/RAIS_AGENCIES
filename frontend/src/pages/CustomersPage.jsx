@@ -343,25 +343,38 @@ export const CustomersPage = ({
         </div>
       </div>
 
-      {/* ─── ROW 1 (MOBILE): NATIVE MOBILE SEARCH & SWIPEABLE CHIPS (< md) ─── */}
-      <div className="md:hidden flex flex-col gap-2 shrink-0">
-        {/* Mobile Search & + Outlet Bar */}
-        <div className="flex items-center gap-2">
+      {/* ─── ROW 1 (MOBILE): NATIVE MOBILE SEARCH, COMPACT FILTERS & STATS (< md) ─── */}
+      <div className="md:hidden flex flex-col gap-1.5 shrink-0">
+        {/* Mobile Search, Quick Sort & + Outlet Bar */}
+        <div className="flex items-center gap-1.5">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search outlets, contact, area..."
-              className="w-full pl-9 pr-7 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
+              placeholder="Search outlets, phone, area..."
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
             />
             {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">
+              <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold p-0.5">
                 ✕
               </button>
             )}
           </div>
+
+          {/* Compact Sort Select on Mobile */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
+            title="Sort Outlets"
+          >
+            <option value="BALANCE_DESC">🚨 Due ↓</option>
+            <option value="NAME_ASC">🔤 A → Z</option>
+            <option value="LIMIT_DESC">💳 Limit ↓</option>
+            <option value="CODE_ASC">🏷️ Code</option>
+          </select>
 
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <button
@@ -369,7 +382,7 @@ export const CustomersPage = ({
                 setCustomerToEdit(null);
                 setCustomerModalOpen(true);
               }}
-              className="flex items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 shrink-0"
               title="Add New Customer Outlet"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -378,49 +391,11 @@ export const CustomersPage = ({
           )}
         </div>
 
-        {/* Touch-Friendly Mobile Sort Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">Sort:</span>
-          <button
-            type="button"
-            onClick={() => setSortBy('BALANCE_DESC')}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
-              sortBy === 'BALANCE_DESC'
-                ? 'bg-rose-500 text-white shadow-sm ring-1 ring-rose-400'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'
-            }`}
-          >
-            🚨 Overdue (Due ↓)
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy('NAME_ASC')}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
-              sortBy === 'NAME_ASC'
-                ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'
-            }`}
-          >
-            🔤 Name (A → Z)
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortBy('LIMIT_DESC')}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 flex items-center gap-1 ${
-              sortBy === 'LIMIT_DESC'
-                ? 'bg-blue-500 text-white shadow-sm ring-1 ring-blue-400'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white'
-            }`}
-          >
-            💳 Limit ↓
-          </button>
-        </div>
-
         {/* Swipeable Horizontal Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
           <button
             onClick={() => { setAreaFilter('ALL'); setBalanceFilter('ALL'); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
               areaFilter === 'ALL' && balanceFilter === 'ALL'
                 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                 : 'bg-slate-900 border border-slate-800 text-slate-400'
@@ -431,7 +406,7 @@ export const CustomersPage = ({
 
           <button
             onClick={() => setBalanceFilter(balanceFilter === 'HAS_DUE' ? 'ALL' : 'HAS_DUE')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
               balanceFilter === 'HAS_DUE'
                 ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
                 : 'bg-slate-900 border border-slate-800 text-slate-400'
@@ -442,7 +417,7 @@ export const CustomersPage = ({
 
           <button
             onClick={() => setAreaFilter(areaFilter === 'RAYACHOTY_TOWN' ? 'ALL' : 'RAYACHOTY_TOWN')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
               areaFilter === 'RAYACHOTY_TOWN'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 border border-slate-800 text-slate-400'
@@ -453,7 +428,7 @@ export const CustomersPage = ({
 
           <button
             onClick={() => setAreaFilter(areaFilter === 'MADANAPALLE_RD' ? 'ALL' : 'MADANAPALLE_RD')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
               areaFilter === 'MADANAPALLE_RD'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 border border-slate-800 text-slate-400'
@@ -464,7 +439,7 @@ export const CustomersPage = ({
 
           <button
             onClick={() => setAreaFilter(areaFilter === 'CHINNAMANDEM' ? 'ALL' : 'CHINNAMANDEM')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
               areaFilter === 'CHINNAMANDEM'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-900 border border-slate-800 text-slate-400'
@@ -474,19 +449,22 @@ export const CustomersPage = ({
           </button>
         </div>
 
-        {/* Mobile Quick Metric Strip */}
-        <div className="grid grid-cols-3 gap-2 py-1">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
-            <span className="text-[11px] uppercase font-bold text-slate-400 block">Outlets</span>
-            <span className="text-xs sm:text-sm font-extrabold text-white font-mono">{filteredCount} / {totalOutlets}</span>
+        {/* Mobile Quick Metric Strip: Ultra-compact 1-line summary badge */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-xs">
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="font-extrabold text-white font-mono">{filteredCount}</span>
+            <span className="text-slate-500 text-[11px] font-mono">/ {totalOutlets}</span>
           </div>
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
-            <span className="text-[11px] uppercase font-bold text-slate-400 block">Receivables</span>
-            <span className="text-xs sm:text-sm font-extrabold text-emerald-400 font-mono">₹{parseFloat(totalReceivables || 0).toFixed(0)}</span>
+          <div className="h-3 w-[1px] bg-slate-800" />
+          <div className="flex items-center gap-1 text-emerald-400 font-mono">
+            <span className="text-[10px] uppercase font-bold text-slate-500 font-sans">Due:</span>
+            <span className="font-extrabold">₹{parseFloat(totalReceivables || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
           </div>
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-2 text-center">
-            <span className="text-[11px] uppercase font-bold text-slate-400 block">Credit Cap</span>
-            <span className="text-xs sm:text-sm font-extrabold text-blue-400 font-mono">₹{(parseFloat(totalCreditExposure || 0) / 100000).toFixed(1)}L</span>
+          <div className="h-3 w-[1px] bg-slate-800" />
+          <div className="flex items-center gap-1 text-blue-400 font-mono">
+            <span className="text-[10px] uppercase font-bold text-slate-500 font-sans">Cap:</span>
+            <span className="font-bold">₹{(parseFloat(totalCreditExposure || 0) / 100000).toFixed(1)}L</span>
           </div>
         </div>
       </div>

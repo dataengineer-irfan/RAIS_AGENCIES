@@ -295,7 +295,125 @@ export const InventoryPage = () => {
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
       
       {/* ─── ROW 1: POWER BI PERSISTENT SLICER & CONTROL RIBBON ─── */}
-      <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex-wrap items-center justify-between gap-2 text-xs`}>
+      {/* ─── MOBILE CONTROLS (< md) ─── */}
+      <div className={`${mobileView === 'detail' ? 'hidden' : 'flex'} md:hidden flex-col gap-1.5 shrink-0`}>
+        {/* Mobile Search, Quick Sort & Actions Bar */}
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search SKU, item, brand..."
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold p-0.5">
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Compact Sort Select on Mobile */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
+            title="Sort SKUs"
+          >
+            <option value="VALUATION_DESC">Valuation ↓</option>
+            <option value="STOCK_DESC">Stock ↓</option>
+            <option value="STOCK_ASC">Stock ↑</option>
+            <option value="NAME_ASC">Name A→Z</option>
+          </select>
+
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setBarcodeModalOpen(true)}
+                className="p-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all"
+                title="Scan Barcode"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setUploadInvoiceModalOpen(true)}
+                className="p-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-md shadow-amber-500/20"
+                title="Upload Purchase Invoice"
+              >
+                <FileUp className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Swipeable Traffic Light Freezer Health Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
+          <button
+            onClick={() => setStatusFilter('ALL')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              statusFilter === 'ALL'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-400'
+            }`}
+          >
+            All SKUs ({stockItems.length})
+          </button>
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'LOW_STOCK' ? 'ALL' : 'LOW_STOCK')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              statusFilter === 'LOW_STOCK'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'bg-slate-900 border border-slate-800 text-amber-400'
+            }`}
+          >
+            🟡 Low ({lowStockCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'OUT_OF_STOCK' ? 'ALL' : 'OUT_OF_STOCK')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              statusFilter === 'OUT_OF_STOCK'
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
+                : 'bg-slate-900 border border-slate-800 text-rose-400'
+            }`}
+          >
+            🔴 Out ({outOfStockCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'IN_STOCK' ? 'ALL' : 'IN_STOCK')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              statusFilter === 'IN_STOCK'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'bg-slate-900 border border-slate-800 text-emerald-400'
+            }`}
+          >
+            🟢 Optimal ({inStockCount})
+          </button>
+        </div>
+
+        {/* Mobile Quick Metric Strip: Ultra-compact 1-line summary badge */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-xs font-mono">
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <Boxes className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="font-extrabold text-white">{filteredItems.length}</span>
+            <span className="text-slate-500 text-[11px]">/ {stockItems.length} SKUs</span>
+          </div>
+          <div className="h-3 w-[1px] bg-slate-800" />
+          <div className="flex items-center gap-1 text-amber-400">
+            <span className="text-[10px] uppercase font-bold text-slate-500 font-sans">Valuation:</span>
+            <span className="font-extrabold">₹{(totalInventoryValuation / 100000).toFixed(1)}L</span>
+          </div>
+          <div className="h-3 w-[1px] bg-slate-800" />
+          <div className="flex items-center gap-1 text-emerald-400">
+            <span className="text-[10px] uppercase font-bold text-slate-500 font-sans">Stock:</span>
+            <span className="font-extrabold">{totalStockUnits.toLocaleString('en-IN')} pk</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DESKTOP SLICER RIBBON (md and above) ─── */}
+      <div className="hidden md:flex bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex-wrap items-center justify-between gap-2 text-xs">
         
         {/* Left: Quick Jump SKU Selector & Slicers */}
         <div className="flex items-center gap-2 flex-1 min-w-[280px]">
@@ -464,8 +582,8 @@ export const InventoryPage = () => {
         </div>
       </div>
 
-      {/* ─── 2026 TRAFFIC LIGHT FREEZER HEALTH FILTER BAR ─── */}
-      <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 px-1`}>
+      {/* ─── 2026 TRAFFIC LIGHT FREEZER HEALTH FILTER BAR (md and above) ─── */}
+      <div className="hidden md:flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 shrink-0 px-1">
         <span className="text-[10px] uppercase font-bold text-slate-400 mr-1 hidden sm:inline">
           Freezer Health:
         </span>
@@ -522,8 +640,8 @@ export const InventoryPage = () => {
         </button>
       </div>
 
-      {/* ─── ROW 2: 4 POWER BI EXECUTIVE SUMMARY METRIC CARDS ─── */}
-      <div className={`${mobileView === 'detail' ? 'hidden lg:grid' : 'grid'} grid-cols-2 lg:grid-cols-4 gap-2 shrink-0`}>
+      {/* ─── ROW 2: 4 POWER BI EXECUTIVE SUMMARY METRIC CARDS (md and above) ─── */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
         
         {/* Card 1: Total Warehouse Valuation */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 shadow-sm flex items-center justify-between">

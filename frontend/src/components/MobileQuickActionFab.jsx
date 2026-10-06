@@ -5,9 +5,12 @@ export const MobileQuickActionFab = ({
   onOpenInvoice,
   onOpenOrder,
   onOpenCustomer,
-  onOpenAI
+  onOpenAI,
+  isOpenModal = false
 }) => {
   const [open, setOpen] = useState(false);
+
+  if (isOpenModal) return null;
 
   const actions = [
     {

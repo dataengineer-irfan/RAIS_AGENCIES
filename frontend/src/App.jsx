@@ -310,6 +310,7 @@ export const App = () => {
         onOpenOrder={() => handleOpenOrder()}
         onOpenCustomer={() => handleOpenCustomerModal()}
         onOpenAI={() => setAiDrawerOpen(true)}
+        isOpenModal={invoiceBuilderOpen || orderBuilderOpen || paymentModalOpen || customerModalOpen || inactiveReminderModalOpen || aiDrawerOpen}
       />
 
       {/* Mobile Bottom Navigation (Visible on mobile screens) */}

@@ -188,9 +188,9 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
-           {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
+      {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
       <div className="flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
-        <div className="flex items-center justify-between gap-2">
+        <div className="hidden md:flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Package className="w-4 h-4" />
@@ -389,6 +389,20 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             >
               <MessageSquare className="w-4 h-4" />
             </button>
+
+            {hasRole(['ADMIN', 'OPERATOR']) && (
+              <button
+                onClick={() => {
+                  setProductToEdit(null);
+                  setProductModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shrink-0 active:scale-95 transition"
+                title="Add New SKU"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ SKU</span>
+              </button>
+            )}
           </div>
 
           {/* Swipeable Category Chips */}

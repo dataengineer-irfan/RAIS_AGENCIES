@@ -809,36 +809,49 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
               
               {/* Card 1: Executive Financial Hero Card (Instant Numbers & Actions at Top of Screen) */}
-              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 shadow-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Rayachoty Depot Overview</span>
-                  </div>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-                    {kpis?.total_invoices_count || 0} Orders
-                  </span>
-                </div>
-
-                {/* Primary Metric: Total Revenue */}
-                <div className="mt-1 flex items-center justify-between">
+              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-3 shadow-xl">
+                {/* Consolidated Hero Row: Rayachoty + Revenue + Alerts + Count */}
+                <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="text-xs font-medium text-slate-400">Total B2B Wholesale Revenue</span>
-                    <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight mt-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-xs font-black uppercase tracking-wider text-amber-400 font-mono">Rayachoty</span>
+                      <span className="text-slate-500">•</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Revenue</span>
+                    </div>
+                    <div className="text-2xl font-black text-white font-mono tracking-tight mt-0.5">
                       ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
-                  <MiniSparkline data={revenueTrend} color="blue" width={64} height={24} />
+
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      {onOpenInactiveReminder && (
+                        <button
+                          onClick={onOpenInactiveReminder}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold active:scale-95 transition-all shadow-sm"
+                          title="View Inactive Commercial Accounts"
+                        >
+                          <Bell className="w-3 h-3 text-amber-400 animate-pulse" />
+                          <span>Alerts</span>
+                        </button>
+                      )}
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                        {kpis?.total_invoices_count || 0} Bills
+                      </span>
+                    </div>
+                    <MiniSparkline data={revenueTrend} color="blue" width={60} height={18} />
+                  </div>
                 </div>
 
                 {/* Sub-Metrics Strip */}
-                <div className="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                <div className="grid grid-cols-4 gap-1.5 mt-2.5 pt-2.5 border-t border-slate-800/80">
                   <div 
                     onClick={() => setActivePage('receivables')}
                     className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/60 active:scale-95 transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div>
-                      <span className="text-[11px] font-semibold text-slate-300 uppercase block truncate">Receivables</span>
+                      <span className="text-[11px] font-semibold text-slate-300 uppercase block truncate">Dues</span>
                       <p className="text-xs sm:text-sm font-bold text-amber-400 font-mono mt-0.5 truncate">
                         ₹{outstandingVal >= 1000 ? `${(outstandingVal/1000).toFixed(1)}k` : outstandingVal.toFixed(0)}
                       </p>

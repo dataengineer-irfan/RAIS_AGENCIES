@@ -143,8 +143,8 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
-      {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
+      {/* ─── DESKTOP TOP ACTION & FILTER HEADER BAR (>= md) ─── */}
+      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <ShoppingBag className="w-4 h-4" />
@@ -199,6 +199,43 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
             </button>
           )}
         </div>
+      </div>
+
+      {/* ─── MOBILE COMPACT SEARCH & ACTION BAR (< md) ─── */}
+      <div className="md:hidden flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1.5 shrink-0 shadow-sm">
+        <div className="relative flex-1 min-w-0">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={`Search ${orders.length} orders...`}
+            className="w-full pl-8 pr-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer shrink-0 max-w-[95px]"
+        >
+          <option value="ALL">All</option>
+          <option value="CONFIRMED">Confirmed</option>
+          <option value="PENDING">Pending</option>
+          <option value="COMPLETED">Done</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+
+        {hasRole(['ADMIN', 'OPERATOR']) && (
+          <button
+            onClick={() => setOrderModalOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
+            title="Create Order Booking"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>+ Order</span>
+          </button>
+        )}
       </div>
 
       {/* Toast Notification Banner */}

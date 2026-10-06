@@ -31,6 +31,7 @@ export const ReportsPage = () => {
   
   // Drilldown Modal
   const [drillModal, setDrillModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
+  const [mobileTab, setMobileTab] = useState('aging'); // 'aging' | 'velocity'
 
   // 150ms Debounced Search for smooth 60fps input response
   useEffect(() => {
@@ -137,8 +138,8 @@ export const ReportsPage = () => {
         </div>
       )}
 
-      {/* ─── TOP ACTION & HEADER BAR ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
+      {/* ─── DESKTOP TOP ACTION & HEADER BAR (md and above) ─── */}
+      <div className="hidden md:flex sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <BarChart3 className="w-4 h-4" />
@@ -192,62 +193,107 @@ export const ReportsPage = () => {
         </div>
       </div>
 
-      {/* ─── 4 GLOWING KPI AGING BUCKETS RIBBON ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
-        <div 
-          onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '0–15 Days Current Balances' })}
-          className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-emerald-500/50 shadow-md cursor-pointer transition-all hover:scale-[1.01]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">0–15 Days (Current)</span>
-            <ArrowUpRight className="w-3 h-3 text-slate-500" />
+      {/* ─── MOBILE NATIVE ULTRA-COMPACT CONTROLS (< md) ─── */}
+      <div className="flex md:hidden flex-col gap-1.5 shrink-0">
+        {/* Row 1: Search + View Switcher + FIFO + CSV */}
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search outlet aging..."
+              className="w-full pl-8 pr-6 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold p-0.5">
+                ✕
+              </button>
+            )}
           </div>
-          <p className="text-lg font-black text-white mt-1 font-mono">
-            ₹{parseFloat(aging?.current_0_15_days || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[9px] text-slate-500">Normal healthy credit terms</span>
+
+          {/* Compact View Switcher */}
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 shrink-0">
+            <button
+              onClick={() => setMobileTab('aging')}
+              className={`py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
+                mobileTab === 'aging'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400'
+              }`}
+              title="Customer Aging"
+            >
+              <Users className="w-3 h-3" />
+              <span>Aging</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('velocity')}
+              className={`py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
+                mobileTab === 'velocity'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400'
+              }`}
+              title="SKU Velocity"
+            >
+              <Package className="w-3 h-3" />
+              <span>SKU</span>
+            </button>
+          </div>
+
+          <button
+            onClick={handleReconcileFIFO}
+            disabled={reconciling}
+            className="flex items-center gap-1 px-2 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-bold rounded-lg text-xs shrink-0 active:scale-95 transition"
+            title="Auto-reconcile unallocated payments via FIFO"
+          >
+            <Sparkles className={`w-3 h-3 text-amber-400 ${reconciling ? 'animate-spin' : ''}`} />
+            <span className="text-[10px]">FIFO</span>
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            className="p-1.5 bg-slate-900 border border-slate-800 text-slate-300 rounded-lg text-xs font-bold shrink-0"
+            title="Export CSV"
+          >
+            <Download className="w-3 h-3" />
+          </button>
         </div>
 
-        <div 
-          onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '16–30 Days Balances' })}
-          className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-blue-500/50 shadow-md cursor-pointer transition-all hover:scale-[1.01]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">16–30 Days (Watch)</span>
-            <ArrowUpRight className="w-3 h-3 text-slate-500" />
+        {/* Row 2: 1-Line Sleek Aging Buckets & Due Micro-Strip */}
+        <div className="flex items-center justify-between gap-1 px-2 py-1 bg-slate-900/90 border border-slate-800 rounded-lg text-[10px] font-mono overflow-x-auto no-scrollbar shrink-0">
+          <div className="flex items-center gap-1 font-bold text-amber-400 whitespace-nowrap">
+            <span className="text-[9px] uppercase font-sans text-slate-400">Due:</span>
+            <span>₹{totalOutstandingVal >= 1000 ? `${(totalOutstandingVal/1000).toFixed(1)}k` : totalOutstandingVal.toFixed(0)}</span>
           </div>
-          <p className="text-lg font-black text-white mt-1 font-mono">
-            ₹{parseFloat(aging?.aging_16_30_days || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[9px] text-slate-500">Approaching due limit</span>
-        </div>
-
-        <div 
-          onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '31–60 Days Overdue Balances' })}
-          className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-amber-500/50 shadow-md cursor-pointer transition-all hover:scale-[1.01]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">31–60 Days (Aging)</span>
-            <ArrowUpRight className="w-3 h-3 text-slate-500" />
-          </div>
-          <p className="text-lg font-black text-amber-400 mt-1 font-mono">
-            ₹{parseFloat(aging?.aging_31_60_days || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[9px] text-slate-500">Outreach settlement due</span>
-        </div>
-
-        <div 
-          onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '60+ Days Severe Risk Balances' })}
-          className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-rose-500/50 shadow-md cursor-pointer transition-all hover:scale-[1.01]"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">60+ Days (Severe Risk)</span>
-            <ArrowUpRight className="w-3 h-3 text-slate-500" />
-          </div>
-          <p className="text-lg font-black text-rose-400 mt-1 font-mono">
-            ₹{parseFloat(aging?.aging_60_plus_days || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[9px] text-slate-500">Supply restriction alert</span>
+          <span className="text-slate-700">|</span>
+          <button 
+            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '0–15 Days Current Balances' })}
+            className="text-emerald-400 whitespace-nowrap hover:underline active:scale-95"
+          >
+            <span className="text-slate-400 text-[9px]">0-15d:</span> ₹{parseFloat(aging?.current_0_15_days || 0) >= 1000 ? `${(parseFloat(aging?.current_0_15_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.current_0_15_days || 0).toFixed(0)}
+          </button>
+          <span className="text-slate-700">|</span>
+          <button 
+            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '16–30 Days Balances' })}
+            className="text-blue-400 whitespace-nowrap hover:underline active:scale-95"
+          >
+            <span className="text-slate-400 text-[9px]">16-30d:</span> ₹{parseFloat(aging?.aging_16_30_days || 0) >= 1000 ? `${(parseFloat(aging?.aging_16_30_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.aging_16_30_days || 0).toFixed(0)}
+          </button>
+          <span className="text-slate-700">|</span>
+          <button 
+            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '31–60 Days Overdue Balances' })}
+            className="text-amber-400 whitespace-nowrap hover:underline active:scale-95"
+          >
+            <span className="text-slate-400 text-[9px]">31-60d:</span> ₹{parseFloat(aging?.aging_31_60_days || 0) >= 1000 ? `${(parseFloat(aging?.aging_31_60_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.aging_31_60_days || 0).toFixed(0)}
+          </button>
+          <span className="text-slate-700">|</span>
+          <button 
+            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '60+ Days Severe Risk Balances' })}
+            className="text-rose-400 font-bold whitespace-nowrap hover:underline active:scale-95"
+          >
+            <span className="text-slate-400 text-[9px]">60+d:</span> ₹{parseFloat(aging?.aging_60_plus_days || 0) >= 1000 ? `${(parseFloat(aging?.aging_60_plus_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.aging_60_plus_days || 0).toFixed(0)}
+          </button>
         </div>
       </div>
 
@@ -255,7 +301,7 @@ export const ReportsPage = () => {
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
         
         {/* Left Column: Customer Aging Table (55% = 7 cols) */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden">
+        <div className={`${mobileTab === 'velocity' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0">
             <div className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-amber-400" />
@@ -320,7 +366,7 @@ export const ReportsPage = () => {
         </div>
 
         {/* Right Column: Product Velocity Leaderboard (45% = 5 cols) */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden">
+        <div className={`${mobileTab === 'aging' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0">
             <div className="flex items-center gap-1.5">
               <Package className="w-3.5 h-3.5 text-emerald-400" />
