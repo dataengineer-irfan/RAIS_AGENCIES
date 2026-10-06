@@ -33,7 +33,7 @@ import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatInvoiceDateTime } from '../utils/invoiceImageGenerator';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
-// ─── MODULE-LEVEL IN-MEMORY CACHE FOR INSTANT 0-MS INVOICE RENDERING ───
+// ─── MODULE-LEVEL & PERSISTENT CACHE FOR INSTANT 0-MS INVOICE RENDERING ───
 let _invoicesMemoryCache = null;
 
 const getInitialInvoices = () => {
@@ -41,7 +41,7 @@ const getInitialInvoices = () => {
     return _invoicesMemoryCache;
   }
   try {
-    const cached = sessionStorage.getItem('rais_invoices_cache');
+    const cached = localStorage.getItem('rais_invoices_cache') || sessionStorage.getItem('rais_invoices_cache');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -63,12 +63,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const [activeStatusFilter, setActiveStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Master-Detail State
+  // Master-Detail State (Pre-seeded at Frame 0 from persistent cache)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(() => {
     const initial = getInitialInvoices();
     return initial.length > 0 ? initial[0].id : null;
   });
-  const [selectedInvoiceDetails, setSelectedInvoiceDetails] = useState(null);
+  const [selectedInvoiceDetails, setSelectedInvoiceDetails] = useState(() => {
+    const initial = getInitialInvoices();
+    return initial.length > 0 ? initial[0] : null;
+  });
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState('items'); // items, payment, print
   const [copiedCode, setCopiedCode] = useState(false);
@@ -109,6 +112,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       setInvoices(items);
       _invoicesMemoryCache = items;
       try {
+        localStorage.setItem('rais_invoices_cache', JSON.stringify(items));
         sessionStorage.setItem('rais_invoices_cache', JSON.stringify(items));
       } catch (e) {}
       if (items.length > 0) {
