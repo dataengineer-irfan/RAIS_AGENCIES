@@ -20,11 +20,22 @@ import { CustomerModal } from './components/CustomerModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { MobileQuickActionFab } from './components/MobileQuickActionFab';
+import { API_BASE_URL } from './services/api';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+
+  // ─── 24/7 KEEP-ALIVE CLIENT HEARTBEAT ───
+  useEffect(() => {
+    const pingBackend = () => {
+      fetch(`${API_BASE_URL.replace(/\/api$/, '')}/health`).catch(() => {});
+    };
+    pingBackend();
+    const interval = setInterval(pingBackend, 4 * 60 * 1000); // 4-minute heartbeat
+    return () => clearInterval(interval);
+  }, []);
 
   // ─── LEFT PANEL TOGGLE & TOP-LEFT CORNER HOVER ENGINE ───
   const [sidebarOpen, setSidebarOpen] = useState(true);
