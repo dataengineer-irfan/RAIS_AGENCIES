@@ -527,10 +527,22 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                               className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
                             >
                               <div className="overflow-hidden pr-2">
-                                <span className="font-mono text-[10px] text-amber-400 font-bold">{item.product_sku || 'SKU'}</span>
-                                <h5 className="font-bold text-white text-xs truncate mt-0.5">{item.product_name}</h5>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {item.brand && (
+                                    <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider">{item.brand}</span>
+                                  )}
+                                  {item.product_sku && (
+                                    <span className="font-mono text-[10px] text-slate-400">{item.product_sku}</span>
+                                  )}
+                                  {item.hsn_code && (
+                                    <span className="font-mono text-[9px] text-slate-500">HSN: {item.hsn_code}</span>
+                                  )}
+                                </div>
+                                <h5 className="font-bold text-white text-xs truncate mt-0.5">
+                                  {item.item_description || item.item_name || item.product_name || 'Item'}
+                                </h5>
                                 <p className="text-[10px] text-slate-400 font-mono">
-                                  {item.quantity} units @ ₹{parseFloat(item.unit_price || 0).toFixed(2)}
+                                  {item.quantity} {item.packaging_unit || 'units'} @ ₹{parseFloat(item.unit_price || 0).toFixed(2)}
                                 </p>
                               </div>
                               <div className="text-right shrink-0">
