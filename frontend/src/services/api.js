@@ -402,9 +402,15 @@ export const analyticsApi = {
     return cachedGet(`/analytics/receipt/${invoiceId}`, { params: { paper_width: paperWidth } });
   },
   getDrilldown: async (metric = 'revenue', level = 'category', categoryId = null) => {
-    return cachedGet('/analytics/drilldown', {
-      params: { metric, level, category_id: categoryId }
-    });
+    try {
+      const res = await cachedGet('/analytics/drilldown', {
+        params: { metric, level, category_id: categoryId }
+      });
+      return res || { metric, level, summary: {}, items: [] };
+    } catch (err) {
+      console.warn('Drilldown API fetch failed, falling back:', err);
+      return { metric, level, summary: {}, items: [] };
+    }
   }
 };
 

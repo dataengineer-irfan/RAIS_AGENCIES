@@ -32,6 +32,24 @@ import { DrillableMetricModal } from '../components/DrillableMetricModal';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { MiniSparkline } from '../components/MiniSparkline';
 
+// Compact date formatter for mobile cards and tables (e.g. "Today", "Y'day", "08 Oct")
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    if (isToday) return 'Today';
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return "Y'day";
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  } catch {
+    return dateStr;
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLIENT-SIDE SLICER FILTER ENGINE
 // Filters KPIs, invoices, and products by the active slicer selections.
@@ -634,7 +652,8 @@ export const DashboardPage = ({
 
               {/* Overall Profit */}
               <div 
-                className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 shadow-md transition-all hover:scale-[1.01] group flex flex-col justify-between"
+                onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive')}
+                className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500/70 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
@@ -753,8 +772,13 @@ export const DashboardPage = ({
                       className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
                     >
                       <div className="overflow-hidden pr-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                          {inv.invoice_date && (
+                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                              {formatShortDate(inv.invoice_date)}
+                            </span>
+                          )}
                           <StatusBadge status={inv.status} />
                         </div>
                         <p className="text-xs text-slate-300 truncate mt-0.5 font-medium">{inv.customer_name}</p>
@@ -884,7 +908,8 @@ export const DashboardPage = ({
                   </div>
                   
                   <div 
-                    className="bg-slate-950/60 rounded-xl p-2.5 border border-emerald-500/20 active:scale-95 transition-all flex flex-col justify-between"
+                    onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive')}
+                    className="bg-slate-950/60 rounded-xl p-2.5 border border-emerald-500/20 active:scale-95 transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div>
                       <span className="text-[11px] font-semibold text-emerald-400 uppercase block truncate">Profit</span>
@@ -1004,8 +1029,13 @@ export const DashboardPage = ({
                       className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center justify-between text-xs transition-colors"
                     >
                       <div className="min-w-0 pr-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                          {inv.invoice_date && (
+                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                              {formatShortDate(inv.invoice_date)}
+                            </span>
+                          )}
                           <StatusBadge status={inv.status} />
                         </div>
                         <p className="text-xs text-slate-200 font-medium truncate mt-1">{inv.customer_name}</p>
@@ -1154,6 +1184,7 @@ export const DashboardPage = ({
                   <thead className="sticky top-0 bg-slate-900 z-10">
                     <tr className="border-b border-slate-800 text-xs">
                       <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Invoice #</th>
+                      <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Date</th>
                       <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Customer</th>
                       <th className="text-right font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Total</th>
                       <th className="text-right font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Balance</th>
@@ -1165,6 +1196,7 @@ export const DashboardPage = ({
                     {(kpis?.recent_invoices || []).map((inv) => (
                       <tr key={inv.id} className="hover:bg-slate-950/50 transition-colors">
                         <td className="py-2.5 px-3 font-mono font-bold text-white">{inv.invoice_number}</td>
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">{formatShortDate(inv.invoice_date)}</td>
                         <td className="py-2.5 px-3 text-slate-200 font-medium truncate max-w-[180px]">{inv.customer_name}</td>
                         <td className="py-2.5 px-3 text-right font-mono text-white font-bold">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</td>
                         <td className={`py-2.5 px-3 text-right font-mono font-bold ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
