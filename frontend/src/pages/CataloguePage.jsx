@@ -33,7 +33,7 @@ import { WhatsAppPriceListModal } from '../components/WhatsAppPriceListModal';
 import { OfficialFlyerModal } from '../components/OfficialFlyerModal';
 import { QuickPriceModal } from '../components/QuickPriceModal';
 import { BulkPriceAdjustModal } from '../components/BulkPriceAdjustModal';
-import { getProductVisualIcon, PARTNER_BRANDS } from '../utils/productIcons';
+import { getProductVisualIcon, ProductVisualBadge, PARTNER_BRANDS } from '../utils/productIcons';
 
 export const CataloguePage = ({ onOpenOrderForProduct }) => {
   const { hasRole } = useAuth();
@@ -510,8 +510,9 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                   </span>
                                 </div>
 
-                                <div className="flex items-baseline justify-between gap-2">
-                                  <h4 className="font-bold text-white text-xs leading-snug">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <ProductVisualBadge product={prod} size="sm" />
+                                  <h4 className="font-bold text-white text-xs leading-snug truncate">
                                     {prod.name} {prod.unit ? <span className="text-[10px] text-slate-500 font-normal">({prod.unit})</span> : ''}
                                   </h4>
                                 </div>
@@ -669,12 +670,13 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                 {prod.sku}
                               </td>
                               <td className="py-2 px-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-slate-200 text-xs group-hover:text-white">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <ProductVisualBadge product={prod} size="xs" />
+                                  <span className="font-bold text-slate-200 text-xs group-hover:text-white truncate">
                                     {prod.name}
                                   </span>
                                   {prod.unit && (
-                                    <span className="text-[9px] text-slate-500 font-mono">({prod.unit})</span>
+                                    <span className="text-[9px] text-slate-500 font-mono shrink-0">({prod.unit})</span>
                                   )}
                                 </div>
                               </td>
@@ -748,10 +750,13 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                     <span className="font-mono text-xs font-bold text-amber-400">{prod.sku}</span>
                     <span className="text-xs font-bold text-slate-400 uppercase">{prod.brand}</span>
                   </div>
-                  <h4 className="font-bold text-white text-xs mt-1 line-clamp-1 group-hover:text-amber-300">
-                    {prod.name}
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-0.5">{prod.category_name}</p>
+                  <div className="flex items-center gap-2 mt-1.5 min-w-0">
+                    <ProductVisualBadge product={prod} size="sm" />
+                    <h4 className="font-bold text-white text-xs truncate group-hover:text-amber-300">
+                      {prod.name}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">{prod.category_name}</p>
                 </div>
 
                 <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">

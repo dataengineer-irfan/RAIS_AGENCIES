@@ -31,6 +31,7 @@ import { RecentPaymentsCard } from '../components/RecentPaymentsCard';
 import { DrillableMetricModal } from '../components/DrillableMetricModal';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { MiniSparkline } from '../components/MiniSparkline';
+import { ProductVisualBadge } from '../utils/productIcons';
 
 // Compact date formatter for mobile cards and tables (e.g. "Today", "Y'day", "08 Oct")
 const formatShortDate = (dateStr) => {
@@ -829,9 +830,12 @@ export const DashboardPage = ({
                       key={idx}
                       className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
                     >
-                      <div className="overflow-hidden pr-2">
-                        <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{prod.quantity_sold} packs sold</p>
+                      <div className="flex items-center gap-2.5 overflow-hidden pr-2 min-w-0">
+                        <ProductVisualBadge product={{ name: prod.product_name, sku: prod.sku }} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{prod.quantity_sold} packs sold</p>
+                        </div>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
@@ -1087,9 +1091,12 @@ export const DashboardPage = ({
                       key={idx}
                       className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center justify-between text-xs transition-colors"
                     >
-                      <div className="min-w-0 pr-2">
-                        <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
-                        <span className="text-xs text-slate-400">{prod.quantity_sold} packs sold</span>
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <ProductVisualBadge product={{ name: prod.product_name, sku: prod.sku }} size="sm" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
+                          <span className="text-xs text-slate-400">{prod.quantity_sold} packs sold</span>
+                        </div>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>

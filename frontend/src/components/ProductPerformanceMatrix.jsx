@@ -13,7 +13,7 @@ import {
   ArrowUpRight 
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
-import { getProductVisualIcon } from '../utils/productIcons';
+import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons';
 
 export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   const [data, setData] = useState(null);
@@ -201,7 +201,6 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {filteredItems.map(item => {
-                  const visual = getProductVisualIcon(item);
                   const isWinner = item.classification === 'WINNER';
                   const isZeroMover = item.classification === 'ZERO_MOVER';
                   const isDeclining = item.classification === 'DECLINING';
@@ -214,7 +213,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                     >
                       <td className="py-2 px-2.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-base shrink-0">{visual.icon}</span>
+                          <ProductVisualBadge product={item} size="sm" />
                           <div className="min-w-0">
                             <span className="font-bold text-white block truncate max-w-[150px] sm:max-w-[220px]">
                               {item.name}
@@ -265,7 +264,6 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
           /* MATRIX / CARD VIEW (COMPACT MOBILE CARDS) */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {filteredItems.map(item => {
-              const visual = getProductVisualIcon(item);
               const isWinner = item.classification === 'WINNER';
               const isZeroMover = item.classification === 'ZERO_MOVER';
               const isDeclining = item.classification === 'DECLINING';
@@ -283,7 +281,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xl shrink-0">{visual.icon}</span>
+                      <ProductVisualBadge product={item} size="md" />
                       <div className="min-w-0">
                         <h4 className="font-bold text-white text-xs truncate">{item.name}</h4>
                         <p className="text-[10px] text-slate-400 font-mono truncate">

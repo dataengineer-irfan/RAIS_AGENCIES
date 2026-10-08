@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronRight, Layers, ArrowLeft, ArrowUpRight, TrendingUp, DollarSign, Package, Percent } from 'lucide-react';
 import { analyticsApi } from '../services/api';
-import { getProductVisualIcon } from '../utils/productIcons';
+import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const DrillableMetricModal = ({ 
@@ -273,17 +273,13 @@ export const DrillableMetricModal = ({
                 </span>
               </div>
 
-              {(items || []).map(prod => {
-                const visual = getProductVisualIcon(prod);
-                return (
-                  <div
-                    key={prod?.id}
-                    className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
-                      <div className="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl shadow-inner shrink-0">
-                        {visual.icon}
-                      </div>
+              {(items || []).map(prod => (
+                <div
+                  key={prod?.id}
+                  className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
+                >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <ProductVisualBadge product={prod} size="lg" />
                       <div className="min-w-0">
                         <h4 className="text-xs font-bold text-white truncate">{prod?.name}</h4>
                         <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
@@ -322,8 +318,7 @@ export const DrillableMetricModal = ({
                       )}
                     </div>
                   </div>
-                );
-              })}
+                ))}
               {(!items || items.length === 0) && (
                 <div className="text-center py-10 text-slate-400 text-xs font-medium">
                   No products found in this category.

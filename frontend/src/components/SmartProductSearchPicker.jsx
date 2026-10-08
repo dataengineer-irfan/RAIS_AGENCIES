@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, X, Plus, Check, Package, Sparkles } from 'lucide-react';
 import { cleanProductName, formatProductDisplay, smartProductMatch, sortProductsByCleanName } from '../utils/productHelpers';
+import { ProductVisualBadge } from '../utils/productIcons';
 
 export const SmartProductSearchPicker = ({
   products = [],
@@ -137,9 +138,11 @@ export const SmartProductSearchPicker = ({
                 }`}
               >
                 {/* Left: Product Info */}
-                <div className="min-w-0 flex-1 pr-3">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className={`text-xs font-bold ${isAdded ? 'text-amber-300' : 'text-slate-100'}`}>
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-3">
+                  <ProductVisualBadge product={prod} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className={`text-xs font-bold ${isAdded ? 'text-amber-300' : 'text-slate-100'}`}>
                       {cleanName}
                     </p>
                     {brandName && (
@@ -163,6 +166,7 @@ export const SmartProductSearchPicker = ({
                     </span>
                   </div>
                 </div>
+              </div>
 
                 {/* Right: Rate & Touch Add Button */}
                 <div className="flex items-center gap-2.5 shrink-0">
