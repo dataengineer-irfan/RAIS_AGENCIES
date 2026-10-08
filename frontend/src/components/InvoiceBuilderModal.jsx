@@ -410,27 +410,25 @@ export const InvoiceBuilderModal = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                   {showPreview 
-                    ? 'Invoice Live Preview' 
+                    ? 'Invoice Preview' 
                     : isEditMode 
-                      ? `Edit Bill — ${invoiceToEdit?.invoice_number || ''}` 
-                      : 'Create Commercial Wholesale Invoice'}
+                      ? `Edit Invoice #${invoiceToEdit?.invoice_number || ''}` 
+                      : 'New Invoice'}
                 </h2>
-                <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full font-mono border ${
-                  isEditMode 
-                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                }`}>
-                  {isEditMode ? 'EDIT MODE' : 'DIRECT WHOLESALE'}
-                </span>
+                {isEditMode && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full font-mono border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                    EDIT
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 {showPreview 
-                  ? 'Review verified document layout before issuing' 
+                  ? 'Verify items before issuing' 
                   : isEditMode
-                    ? `Editing ${invoiceToEdit?.invoice_number} — Stock will be auto-reconciled on save`
-                    : 'RAIS Agencies Wholesale Invoicing Engine • Cash / Immediate Settlement'}
+                    ? 'Update bill details and items'
+                    : 'Direct Wholesale Billing'}
               </p>
             </div>
           </div>
@@ -708,7 +706,7 @@ export const InvoiceBuilderModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Customer / Restaurant *
+                    Customer *
                   </label>
                   <select
                     value={customerId}
@@ -726,9 +724,8 @@ export const InvoiceBuilderModal = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
-                    <span>Invoice Date</span>
-                    <span className="text-[10px] text-amber-400 font-mono font-normal">Cash Same-Day</span>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Invoice Date
                   </label>
                   <input
                     type="date"
@@ -740,9 +737,8 @@ export const InvoiceBuilderModal = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
-                    <span>Payment Due Date</span>
-                    <span className="text-[10px] text-emerald-400 font-mono font-normal">= Invoice Date</span>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Payment Due Date
                   </label>
                   <input
                     type="date"
@@ -765,8 +761,8 @@ export const InvoiceBuilderModal = ({
                     onChange={(e) => setPaymentTerms(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
                   >
-                    <option value="Cash on Delivery / Immediate Settlement">Cash on Delivery / Immediate Settlement (Default)</option>
-                    <option value="Immediate UPI / Online Settlement">Immediate UPI / Online Settlement</option>
+                    <option value="Cash on Delivery / Immediate Settlement">Cash on Delivery (COD)</option>
+                    <option value="Immediate UPI / Online Settlement">UPI / Online</option>
                     <option value="Net 7 Days">Net 7 Days</option>
                     <option value="Net 15 Days">Net 15 Days</option>
                   </select>
@@ -774,13 +770,13 @@ export const InvoiceBuilderModal = ({
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Delivery Notes / Instructions
+                    Notes (Optional)
                   </label>
                   <input
                     type="text"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g. Delivered via morning refrigerated vehicle • Ref #9842"
+                    placeholder="Delivery notes, ref number..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -791,9 +787,8 @@ export const InvoiceBuilderModal = ({
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Quick Product Search & 1-Tap Add</span>
+                    <span>Add Products</span>
                   </h3>
-                  <span className="text-[10px] text-slate-400">Type product name (e.g. fre, nugget) or tap category</span>
                 </div>
                 <SmartProductSearchPicker
                   products={products}
@@ -808,7 +803,7 @@ export const InvoiceBuilderModal = ({
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                      Billed Line Items
+                      Line Items
                     </h3>
                     <span className="text-[11px] font-mono text-slate-500">
                       ({items.length} {items.length === 1 ? 'item' : 'items'})
@@ -820,7 +815,7 @@ export const InvoiceBuilderModal = ({
                     className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl border border-amber-500/20 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Manual Blank Row
+                    + Add Item
                   </button>
                 </div>
 
@@ -1126,7 +1121,7 @@ export const InvoiceBuilderModal = ({
                     className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
                   />
                   <label htmlFor="autoIssue" className="text-xs font-semibold text-slate-300 cursor-pointer select-none">
-                    Issue Immediately (Ready for WhatsApp & Thermal Print)
+                    Issue Immediately
                   </label>
                 </div>
               </div>
@@ -1137,13 +1132,10 @@ export const InvoiceBuilderModal = ({
                   <div className="flex items-center gap-2.5">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                     <div>
-                      <span className="font-bold">Inventory Notice: </span>
-                      <span>{overStockItems.length} billed item(s) exceed current depot stock. Submitting will clamp or deplete inventory to 0.</span>
+                      <span className="font-bold">Notice: </span>
+                      <span>{overStockItems.length} billed item(s) exceed current stock.</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono text-amber-400 font-bold shrink-0 uppercase bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
-                    Depot Alert
-                  </span>
                 </div>
               )}
 
@@ -1154,8 +1146,7 @@ export const InvoiceBuilderModal = ({
                     <Calculator className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-slate-200 font-semibold">Wholesale Pricing Valuation</span>
-                    <p className="text-[10px] text-slate-500">Direct Pricing • No Tax Included</p>
+                    <span className="text-slate-200 font-semibold">Invoice Summary</span>
                   </div>
                 </div>
 
@@ -1210,8 +1201,8 @@ export const InvoiceBuilderModal = ({
                   {submitting 
                     ? (isEditMode ? 'Updating...' : 'Generating...') 
                     : isEditMode 
-                      ? `Update Bill` 
-                      : autoIssue ? 'Issue Invoice Now' : 'Save Draft'}
+                      ? `Update Invoice` 
+                      : autoIssue ? 'Issue Invoice' : 'Save Draft'}
                 </button>
               </div>
             </div>

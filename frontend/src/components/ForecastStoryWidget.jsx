@@ -96,7 +96,7 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Live pacing against monthly wholesale revenue benchmark
+              Monthly revenue pacing
             </p>
           </div>
         </div>

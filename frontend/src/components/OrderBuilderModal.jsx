@@ -224,8 +224,8 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Create New Customer Order</h2>
-              <p className="text-xs text-slate-400">Record restaurant booking with live stock availability verification</p>
+              <h2 className="text-base font-bold text-white">New Order</h2>
+              <p className="text-xs text-slate-400">Order booking & stock check</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">

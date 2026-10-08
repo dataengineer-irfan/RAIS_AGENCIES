@@ -100,8 +100,8 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
               <PackagePlus className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Receive Stock Delivery</h2>
-              <p className="text-xs text-slate-400">Record supplier intake and update inventory counts</p>
+              <h2 className="text-base font-bold text-white">Receive Stock</h2>
+              <p className="text-xs text-slate-400">Supplier intake & stock update</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">

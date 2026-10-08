@@ -125,9 +125,9 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
-                {customerToEdit ? 'Edit Customer Account' : 'Register New Customer / Restaurant'}
+                {customerToEdit ? 'Edit Customer' : 'New Customer'}
               </h2>
-              <p className="text-xs text-slate-400">B2B Account & Credit Profile</p>
+              <p className="text-xs text-slate-400">Account details & balance</p>
             </div>
           </div>
           <button

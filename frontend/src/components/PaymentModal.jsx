@@ -148,8 +148,8 @@ export const PaymentModal = ({
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white">Record Settlement / Payment</h2>
-              <p className="text-xs text-slate-400">Allocate Cash, UPI, or Bank settlement to Invoice</p>
+              <h2 className="text-base font-bold text-white">Record Payment</h2>
+              <p className="text-xs text-slate-400">Cash, UPI, or Bank settlement</p>
             </div>
           </div>
           <button

@@ -64,7 +64,7 @@ export const SmartProductSearchPicker = ({
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search fries, burger, patty, nuggets, momos, cheese, ketchup..."
+          placeholder="Search products by name or SKU..."
           className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-medium"
         />
         {searchTerm && (

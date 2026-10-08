@@ -193,9 +193,9 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
             </div>
             <div>
               <h2 className="text-base font-bold text-white tracking-tight">
-                {productToEdit ? 'Edit Catalogue SKU' : 'Add New Catalogue Product'}
+                {productToEdit ? 'Edit Product' : 'New Product'}
               </h2>
-              <p className="text-xs text-slate-400">RAIS Master Price List & Stock Definition</p>
+              <p className="text-xs text-slate-400">Pricing & stock details</p>
             </div>
           </div>
           <button
