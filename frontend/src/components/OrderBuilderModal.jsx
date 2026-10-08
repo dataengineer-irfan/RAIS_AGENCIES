@@ -306,10 +306,10 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
             )}
 
             {/* Customer & Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-3">
               <div>
-                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Select Customer / Restaurant *
+                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1 text-xs">
+                  Customer *
                 </label>
                 <select
                   value={customerId}
@@ -325,28 +325,30 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                 </select>
               </div>
 
-              <div>
-                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Order Date
-                </label>
-                <input
-                  type="date"
-                  value={orderDate}
-                  onChange={(e) => setOrderDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1 text-[11px] truncate">
+                    Order Date
+                  </label>
+                  <input
+                    type="date"
+                    value={orderDate}
+                    onChange={(e) => setOrderDate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
 
-              <div>
-                <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Required Delivery Date
-                </label>
-                <input
-                  type="date"
-                  value={expectedDeliveryDate}
-                  onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
-                />
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1 text-[11px] truncate">
+                    Delivery Date
+                  </label>
+                  <input
+                    type="date"
+                    value={expectedDeliveryDate}
+                    onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
               </div>
             </div>
 
@@ -355,9 +357,8 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Quick Product Search & 1-Tap Add</span>
+                  <span>Add Products</span>
                 </h3>
-                <span className="text-[10px] text-slate-400">Type product name (e.g. fre, nugget) or tap category</span>
               </div>
               <SmartProductSearchPicker
                 products={products}

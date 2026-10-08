@@ -33,6 +33,7 @@ export const InvoiceBuilderModal = ({
   const [invoiceDiscount, setInvoiceDiscount] = useState('0');
   const [paymentTerms, setPaymentTerms] = useState('Cash on Delivery / Immediate Settlement');
   const [notes, setNotes] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
   const [autoIssue, setAutoIssue] = useState(true);
 
   // Line items
@@ -72,6 +73,7 @@ export const InvoiceBuilderModal = ({
         setInvoiceDiscount(String(parseFloat(invoiceToEdit.discount_amount || 0)));
         setPaymentTerms(invoiceToEdit.payment_terms || 'Cash on Delivery / Immediate Settlement');
         setNotes(invoiceToEdit.notes || '');
+        if (invoiceToEdit.notes) setShowNotes(true);
 
         // Map existing invoice items → editable line items
         if (invoiceToEdit.items && invoiceToEdit.items.length > 0) {
@@ -146,6 +148,7 @@ export const InvoiceBuilderModal = ({
     setShowPreview(false);
     setInvoiceDiscount('0');
     setNotes('');
+    setShowNotes(false);
     setPaymentTerms('Cash on Delivery / Immediate Settlement');
     const curToday = new Date().toISOString().split('T')[0];
     setInvoiceDate(curToday);
@@ -702,29 +705,30 @@ export const InvoiceBuilderModal = ({
                 </div>
               )}
 
-              {/* Customer, Date & Due Date Section */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Customer *
-                  </label>
-                  <select
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
-                    required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-medium"
-                  >
-                    <option value="">-- Select Customer --</option>
-                    {(customers || []).map((c) => (
-                      <option key={c?.id} value={c?.id}>
-                        {c?.business_name || 'Customer'} ({c?.customer_code || ''})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Row 1: Customer Selection */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Customer *
+                </label>
+                <select
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  required
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-medium"
+                >
+                  <option value="">-- Select Customer --</option>
+                  {(customers || []).map((c) => (
+                    <option key={c?.id} value={c?.id}>
+                      {c?.business_name || 'Customer'} ({c?.customer_code || ''})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
+              {/* Row 2: Date, Due Date & Terms in a SINGLE COMPACT LINE */}
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
                     Invoice Date
                   </label>
                   <input
@@ -732,55 +736,70 @@ export const InvoiceBuilderModal = ({
                     value={invoiceDate}
                     onChange={(e) => handleInvoiceDateChange(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Payment Due Date
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                    Due Date
                   </label>
                   <input
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono"
                   />
                 </div>
-              </div>
 
-              {/* Payment Terms & Notes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Payment Terms
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                    Terms
                   </label>
                   <select
                     value={paymentTerms}
                     onChange={(e) => setPaymentTerms(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
                   >
-                    <option value="Cash on Delivery / Immediate Settlement">Cash on Delivery (COD)</option>
-                    <option value="Immediate UPI / Online Settlement">UPI / Online</option>
-                    <option value="Net 7 Days">Net 7 Days</option>
-                    <option value="Net 15 Days">Net 15 Days</option>
+                    <option value="Cash on Delivery / Immediate Settlement">COD</option>
+                    <option value="Immediate UPI / Online Settlement">UPI</option>
+                    <option value="Net 7 Days">Net 7d</option>
+                    <option value="Net 15 Days">Net 15d</option>
                   </select>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Notes (Optional)
-                  </label>
+              {/* Optional Notes Toggle / Row */}
+              {(showNotes || notes) ? (
+                <div className="relative animate-in fade-in duration-150">
                   <input
                     type="text"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Delivery notes, ref number..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    placeholder="Delivery notes, reference number..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => { setShowNotes(false); setNotes(''); }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold"
+                    title="Remove note"
+                  >
+                    ✕
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="flex justify-end -mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowNotes(true)}
+                    className="text-[11px] font-medium text-slate-500 hover:text-amber-400 transition-colors"
+                  >
+                    + Add delivery note
+                  </button>
+                </div>
+              )}
 
               {/* Smart Touch Product Search & Instant Picker */}
               <div>
@@ -815,7 +834,7 @@ export const InvoiceBuilderModal = ({
                     className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl border border-amber-500/20 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    + Add Item
+                    <span>Add Item</span>
                   </button>
                 </div>
 
