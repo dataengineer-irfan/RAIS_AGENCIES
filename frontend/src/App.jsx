@@ -26,7 +26,19 @@ import { customerApi, API_BASE_URL } from './services/api';
 export const App = () => {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardSubPage, setDashboardSubPage] = useState('overview');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+
+  const handleNavigate = (target) => {
+    const dashboardSubPages = ['overview', 'forecast', 'targets', 'receivables', 'products', 'activity'];
+    if (dashboardSubPages.includes(target)) {
+      const sub = target === 'targets' ? 'forecast' : target;
+      setDashboardSubPage(sub);
+      setActiveTab('dashboard');
+    } else {
+      setActiveTab(target);
+    }
+  };
 
   // ─── 24/7 KEEP-ALIVE CLIENT HEARTBEAT ───
   useEffect(() => {
@@ -178,7 +190,7 @@ export const App = () => {
       <Sidebar
         activeTab={activeTab}
         setActiveTab={(tab) => {
-          setActiveTab(tab);
+          handleNavigate(tab);
           if (sidebarPeeked) setSidebarPeeked(false);
         }}
         isOpen={sidebarOpen}
@@ -200,7 +212,7 @@ export const App = () => {
           globalSearchTerm={globalSearchTerm}
           onGlobalSearch={setGlobalSearchTerm}
           activeTab={activeTab}
-          onNavigate={(tab) => setActiveTab(tab)}
+          onNavigate={handleNavigate}
         />
 
         <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
@@ -208,7 +220,8 @@ export const App = () => {
             <DashboardPage
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentModal={() => handleOpenPayment()}
-              onNavigate={(tab) => setActiveTab(tab)}
+              onNavigate={handleNavigate}
+              initialPage={dashboardSubPage}
               onOpenInactiveReminder={() => setInactiveReminderModalOpen(true)}
             />
           )}
@@ -316,7 +329,7 @@ export const App = () => {
       {/* Mobile Bottom Navigation (Visible on mobile screens) */}
       <MobileBottomNav
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleNavigate}
       />
     </div>
   );

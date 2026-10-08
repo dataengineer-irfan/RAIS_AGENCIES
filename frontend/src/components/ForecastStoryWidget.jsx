@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Target, Edit3, Check, X, Sparkles, Compass, AlertCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { 
+  Target, 
+  Edit3, 
+  Check, 
+  X, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  TrendingUp, 
+  Calendar,
+  Sparkles,
+  BarChart2
+} from 'lucide-react';
 import { analyticsApi } from '../services/api';
+import { MiniSparkline } from './MiniSparkline';
 
 export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
   const [forecast, setForecast] = useState(null);
@@ -18,7 +30,7 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
     try {
       const res = await analyticsApi.getForecast();
       setForecast(res);
-      setTargetInput(res.target_revenue?.toString() || '50000');
+      setTargetInput(res?.target_revenue?.toString() || '180000');
     } catch (err) {
       console.error('Failed to load sales forecast:', err);
     } finally {
@@ -42,170 +54,248 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 shadow-xl animate-pulse">
-        <div className="h-6 w-56 bg-slate-800 rounded mb-4"></div>
-        <div className="h-20 bg-slate-800/40 rounded-2xl"></div>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl animate-pulse space-y-3">
+        <div className="h-6 w-48 bg-slate-800 rounded"></div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-16 bg-slate-800/50 rounded-xl"></div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!forecast) return null;
 
-  const isAhead = forecast.projected_month_end >= forecast.target_revenue;
-  const progressPct = Math.min(Math.round((forecast.current_revenue / forecast.target_revenue) * 100), 100);
+  const targetRev = parseFloat(forecast.target_revenue || 1);
+  const currentRev = parseFloat(forecast.current_revenue || 0);
+  const projectedRev = parseFloat(forecast.projected_month_end || 0);
+  const dailyRate = parseFloat(forecast.daily_run_rate || 0);
+  const progressPct = Math.min(Math.round((currentRev / targetRev) * 100), 100);
+  const isAhead = projectedRev >= targetRev;
+  const pacePct = Math.abs(parseFloat(forecast.projected_vs_target_pct || 0)).toFixed(1);
+
+  const sparklineData = (forecast.sparkline || []).map(p => p.daily_revenue || 0);
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-6 relative overflow-hidden">
+    <div className="flex flex-col h-full gap-2.5 overflow-hidden animate-fadeIn">
       
-      {/* Background Ambient Glow */}
-      <div className={`absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-20 ${
-        isAhead ? 'bg-emerald-500' : 'bg-amber-500'
-      }`}></div>
-
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-inner">
-            <Compass className="w-6 h-6 animate-spin-slow" />
+      {/* ─── TOP HEADER BAR ─── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+            <Target className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                Predictive Run-Rate
-              </span>
-              <span className="text-xs font-semibold text-slate-400 font-mono">
-                Day {forecast.days_elapsed} of {forecast.days_in_month} ({forecast.year_month})
+              <h2 className="text-sm sm:text-base font-black text-white">
+                Sales Targets & Run-Rate
+              </h2>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                Day {forecast.days_elapsed}/{forecast.days_in_month} ({forecast.year_month})
               </span>
             </div>
-            <h3 className="text-lg font-black text-white tracking-wide mt-0.5">
-              Sales Forecast vs Monthly Target
-            </h3>
+            <p className="text-[11px] text-slate-400">
+              Live pacing against monthly wholesale revenue benchmark
+            </p>
           </div>
         </div>
 
-        {/* Target Setter Widget */}
-        <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 rounded-2xl px-3 py-1.5 shadow-inner">
-          <Target className="w-4 h-4 text-amber-500 shrink-0" />
+        {/* Compact Target Setter Pill */}
+        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1">
+          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Goal:</span>
           {editingTarget ? (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">₹</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-amber-400 font-mono">₹</span>
               <input
                 type="number"
                 value={targetInput}
                 onChange={(e) => setTargetInput(e.target.value)}
-                className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 text-xs text-white font-bold focus:outline-none focus:border-amber-500"
+                className="w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
                 autoFocus
               />
               <button
                 onClick={handleSaveTarget}
                 disabled={savingTarget}
-                className="p-1 text-emerald-400 hover:bg-emerald-500/20 rounded-md transition-colors"
-                title="Save Target"
+                className="p-1 text-emerald-400 hover:bg-emerald-500/20 rounded transition"
+                title="Save"
               >
                 <Check className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setEditingTarget(false)}
-                className="p-1 text-slate-400 hover:bg-slate-800 rounded-md transition-colors"
+                className="p-1 text-slate-400 hover:bg-slate-800 rounded transition"
                 title="Cancel"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <div className="text-xs">
-                <span className="text-slate-400 font-medium">Goal: </span>
-                <span className="font-black text-white font-mono">
-                  ₹{forecast.target_revenue.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-mono font-bold text-white">
+                ₹{targetRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+              </span>
               <button
                 onClick={() => setEditingTarget(true)}
-                className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 rounded-lg transition-all"
+                className="p-1 text-slate-400 hover:text-amber-400 rounded transition"
                 title="Edit Target"
               >
-                <Edit3 className="w-3.5 h-3.5" />
+                <Edit3 className="w-3 h-3" />
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* PLAIN-LANGUAGE EXECUTIVE STORY SENTENCE */}
-      <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-4.5 flex items-start gap-3.5 shadow-inner">
-        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0 mt-0.5">
-          <Sparkles className="w-4 h-4" />
-        </div>
-        <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Decision-Support Storyline
-          </h4>
-          <p className="text-sm sm:text-base font-bold text-white mt-1 leading-relaxed">
-            "{forecast.story}"
-          </p>
-        </div>
-      </div>
-
-      {/* Forecast Numbers Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-          <div className="text-[11px] font-bold text-slate-400">Current Invoiced</div>
-          <div className="text-lg font-black text-white font-mono mt-1">
-            ₹{forecast.current_revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+      {/* ─── 4-TILE EXECUTIVE METRIC STRIP ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+        {/* Invoiced */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            Invoiced Revenue
+          </span>
+          <div className="mt-1">
+            <span className="text-base sm:text-lg font-mono font-black text-white">
+              ₹{currentRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">
+          <span className="text-[10px] text-slate-400 font-mono mt-0.5">
             {progressPct}% of monthly goal
-          </div>
+          </span>
         </div>
 
-        <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-          <div className="text-[11px] font-bold text-slate-400">Projected Month-End</div>
-          <div className="text-lg font-black text-amber-400 font-mono mt-1">
-            ₹{forecast.projected_month_end.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        {/* Daily Velocity */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              Daily Velocity
+            </span>
+            <MiniSparkline data={sparklineData} color="amber" width={40} height={14} />
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">
-            Rolling weighted forecast
+          <div className="mt-1">
+            <span className="text-base sm:text-lg font-mono font-black text-amber-400">
+              ₹{dailyRate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
           </div>
+          <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+            Avg / day elapsed
+          </span>
         </div>
 
-        <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-          <div className="text-[11px] font-bold text-slate-400">Daily Run-Rate</div>
-          <div className="text-lg font-black text-white font-mono mt-1">
-            ₹{forecast.daily_run_rate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        {/* Projected Month-End */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            Projected Month-End
+          </span>
+          <div className="mt-1">
+            <span className="text-base sm:text-lg font-mono font-black text-white">
+              ₹{projectedRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">
-            Avg revenue / day elapsed
-          </div>
+          <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+            Weighted extrapolation
+          </span>
         </div>
 
-        <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5">
-          <div className="text-[11px] font-bold text-slate-400">Pacing vs Target</div>
-          <div className={`text-lg font-black font-mono mt-1 flex items-center gap-1 ${
-            isAhead ? 'text-emerald-400' : 'text-orange-400'
-          }`}>
-            {isAhead ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-            {Math.abs(forecast.projected_vs_target_pct)}%
+        {/* Pacing vs Target */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 flex flex-col justify-between">
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            Pacing vs Target
+          </span>
+          <div className="mt-1 flex items-center gap-1">
+            <span className={`text-base sm:text-lg font-mono font-black ${isAhead ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isAhead ? `+${pacePct}%` : `-${pacePct}%`}
+            </span>
+            {isAhead ? (
+              <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <ArrowDownRight className="w-4 h-4 text-rose-400" />
+            )}
           </div>
-          <div className="text-[10px] text-slate-500 mt-1">
-            {isAhead ? 'Ahead of forecast' : 'Gap to target'}
-          </div>
+          <span className={`text-[10px] font-bold ${isAhead ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {isAhead ? 'Ahead of goal' : 'Behind pace'}
+          </span>
         </div>
       </div>
 
-      {/* Target Progress Bar */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
-          <span>Pacing Progress (Target: ₹{forecast.target_revenue.toLocaleString('en-IN')})</span>
-          <span className="font-mono text-white font-bold">{progressPct}% achieved</span>
+      {/* ─── TARGET PROGRESS BAR (COMPACT 1-LINE) ─── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 shrink-0 space-y-1.5">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <span className="text-slate-400 text-[11px]">
+            Goal Progress: <span className="text-white font-mono">{progressPct}%</span> (₹{currentRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })} of ₹{targetRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })})
+          </span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${isAhead ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/10 text-rose-300 border-rose-500/30'}`}>
+            {isAhead ? '🟢 On Track' : '🔴 Requires Boost'}
+          </span>
         </div>
-        <div className="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800">
+        <div className="w-full bg-slate-950 rounded-full h-2 p-0.5 border border-slate-800">
           <div 
             className={`h-full rounded-full transition-all duration-700 ${
               isAhead ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-amber-500 to-amber-400'
             }`}
             style={{ width: `${Math.min(progressPct, 100)}%` }}
-          ></div>
+          />
+        </div>
+      </div>
+
+      {/* ─── DAILY RUN-RATE LOG TABLE (HIGH-DENSITY, INTERNAL SCROLL) ─── */}
+      <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0">
+          <div className="flex items-center gap-1.5">
+            <BarChart2 className="w-3.5 h-3.5 text-amber-400" />
+            <span>Daily Intake & Run-Rate Log ({forecast.sparkline?.length || 0} Days)</span>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">
+            Target Run-Rate: ₹{(targetRev / (forecast.days_in_month || 30)).toFixed(0)}/day
+          </span>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+              <tr>
+                <th className="py-2 px-2.5">Date</th>
+                <th className="py-2 px-2.5 text-right">Daily Invoiced</th>
+                <th className="py-2 px-2.5 text-right">Cumulative Revenue</th>
+                <th className="py-2 px-2.5 text-right">Pace vs Run-Rate</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {[...(forecast.sparkline || [])].reverse().map((day) => {
+                const targetDaily = targetRev / (forecast.days_in_month || 30);
+                const dailyVal = parseFloat(day.daily_revenue || 0);
+                const isDayAhead = dailyVal >= targetDaily;
+
+                return (
+                  <tr key={day.date} className="hover:bg-slate-950/40 transition-colors">
+                    <td className="py-2 px-2.5">
+                      <span className="font-mono text-xs font-bold text-white">
+                        {day.date}
+                      </span>
+                      <span className="text-[10px] text-slate-400 ml-1.5">
+                        Day {day.day}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2.5 text-right font-mono font-bold text-white">
+                      ₹{dailyVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-2 px-2.5 text-right font-mono font-semibold text-slate-300">
+                      ₹{parseFloat(day.cumulative_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-2 px-2.5 text-right">
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                        isDayAhead 
+                          ? 'bg-emerald-500/10 text-emerald-300' 
+                          : 'bg-rose-500/10 text-rose-300'
+                      }`}>
+                        {isDayAhead ? '+' : ''}{((dailyVal - targetDaily) / 1000).toFixed(1)}k
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 

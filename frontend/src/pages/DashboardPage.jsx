@@ -336,14 +336,35 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN DASHBOARD PAGE COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavigate, onOpenInactiveReminder }) => {
+export const DashboardPage = ({ 
+  onOpenInvoiceBuilder, 
+  onOpenPaymentModal, 
+  onNavigate, 
+  onOpenInactiveReminder,
+  initialPage = 'overview'
+}) => {
   const [rawKpis, setRawKpis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [customers, setCustomers] = useState([]);
 
   // Active Power BI Page Tab
-  const [activePage, setActivePage] = useState('overview');
+  const [activePage, setActivePage] = useState(initialPage);
+
+  useEffect(() => {
+    if (initialPage) {
+      setActivePage(initialPage);
+    }
+  }, [initialPage]);
+
+  const handleDashboardNavigate = (target) => {
+    const dashboardSubPages = ['overview', 'forecast', 'targets', 'receivables', 'products', 'activity'];
+    if (dashboardSubPages.includes(target)) {
+      setActivePage(target === 'targets' ? 'forecast' : target);
+    } else if (onNavigate) {
+      onNavigate(target);
+    }
+  };
 
   // Slicer Filters State (Applies across all 5 pages)
   const [filters, setFilters] = useState({
@@ -557,7 +578,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             <ExecutivePulseBanner
               kpis={kpis}
               customers={customers}
-              onNavigate={onNavigate}
+              onNavigate={handleDashboardNavigate}
               onOpenPaymentModal={onOpenPaymentModal}
             />
 
@@ -932,7 +953,7 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
               <ExecutivePulseBanner
                 kpis={kpis}
                 customers={customers}
-                onNavigate={onNavigate}
+                onNavigate={handleDashboardNavigate}
                 onOpenPaymentModal={onOpenPaymentModal}
                 compact={true}
               />
@@ -1078,14 +1099,12 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
                 totalOutstanding={outstandingVal}
                 totalOverdue={overdueVal}
                 openInvoicesCount={kpis?.open_invoices_count || 0}
-                onViewOutlets={() => onNavigate('customers')}
+                onViewOutlets={() => handleDashboardNavigate('customers')}
               />
             </div>
             {/* Customer Health (fills remaining, internal scroll) */}
             <div className="flex-1 min-h-0 overflow-hidden">
-              <div className="h-full overflow-y-auto">
-                <CustomerHealthCard onSelectCustomer={(c) => onNavigate('customers')} />
-              </div>
+              <CustomerHealthCard onSelectCustomer={(c) => handleDashboardNavigate('customers')} />
             </div>
           </div>
         )}
@@ -1094,8 +1113,8 @@ export const DashboardPage = ({ onOpenInvoiceBuilder, onOpenPaymentModal, onNavi
             PAGE 4: PRODUCT INTELLIGENCE
            ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'products' && (
-          <div className="h-full overflow-y-auto animate-fadeIn">
-            <ProductPerformanceMatrix onSelectProduct={() => onNavigate('catalogue')} />
+          <div className="h-full overflow-hidden animate-fadeIn">
+            <ProductPerformanceMatrix onSelectProduct={() => handleDashboardNavigate('catalogue')} />
           </div>
         )}
 

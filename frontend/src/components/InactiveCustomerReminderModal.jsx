@@ -37,7 +37,7 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
       setAlerts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load inactive re-order alerts:', err);
-      setError('Failed to fetch inactive customer list.');
+      setError('Unable to load re-order alerts. Tap below to retry.');
       setAlerts([]);
     } finally {
       setLoading(false);
@@ -125,8 +125,14 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
               <p className="text-xs">Analyzing customer order histories...</p>
             </div>
           ) : error ? (
-            <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs text-center">
-              {error}
+            <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs text-center space-y-2">
+              <p>{error}</p>
+              <button 
+                onClick={() => loadAlerts(daysThreshold)}
+                className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 rounded-lg text-xs font-bold transition active:scale-95"
+              >
+                Retry
+              </button>
             </div>
           ) : alerts.length === 0 ? (
             <div className="py-12 text-center text-slate-400 space-y-3">
