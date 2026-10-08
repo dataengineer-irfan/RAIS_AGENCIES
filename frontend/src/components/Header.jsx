@@ -357,7 +357,7 @@ export const Header = ({
               <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-0.5 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
-                    <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
+                    <RaisLogo alt="RAIS" className="w-full h-full object-contain" />
                   </div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-xs font-black tracking-wider text-white">RAIS AGENCIES</h3>
