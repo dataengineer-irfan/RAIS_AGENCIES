@@ -271,7 +271,7 @@ export const AIAssistantPage = () => {
           <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
               <Building2 className="w-4 h-4 text-amber-500" />
-              <span>Rayachoty Depot Profile</span>
+              <span>Depot Operating Profile</span>
             </div>
             <div className="space-y-1 text-xs text-slate-300">
               <p><strong className="text-slate-400">Business:</strong> RAIS Agencies</p>

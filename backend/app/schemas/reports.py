@@ -16,6 +16,8 @@ class DashboardKPIs(BaseModel):
     recent_invoices: List[Dict[str, Any]]
     recent_payments: List[Dict[str, Any]]
     top_selling_products: List[Dict[str, Any]]
+    revenue_periods: Optional[Dict[str, Any]] = None
+    today_comparison: Optional[Dict[str, Any]] = None
 
 class SalesReportItem(BaseModel):
     period: str

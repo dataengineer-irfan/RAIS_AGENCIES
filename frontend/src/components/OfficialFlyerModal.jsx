@@ -40,7 +40,7 @@ export const OfficialFlyerModal = ({ isOpen, onClose }) => {
                 <span>Official RAIS Agencies Product & Price Flyer</span>
               </h2>
               <p className="text-[11px] text-slate-400">
-                Authorized Marketing Brochure • Rayachoty Frozen Food Hub
+                Authorized Marketing Brochure • Frozen Food Wholesale Hub
               </p>
             </div>
           </div>

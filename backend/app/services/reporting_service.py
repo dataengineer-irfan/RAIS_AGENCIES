@@ -123,12 +123,73 @@ class ReportingService:
             for p in top_products_query
         ]
 
-        # 9. Recent Invoices
+        # 9. Multi-Period Revenue Intelligence & Comparisons
+        yesterday = today - timedelta(days=1)
+        start_of_week = today - timedelta(days=today.weekday())
+        start_of_last_week = start_of_week - timedelta(days=7)
+        end_of_last_week = start_of_week - timedelta(days=1)
+        last_day_prev_month = first_day_month - timedelta(days=1)
+        first_day_prev_month = date(last_day_prev_month.year, last_day_prev_month.month, 1)
+
+        def get_period_stats(start_d: Optional[date], end_d: Optional[date]):
+            q = db.query(
+                func.coalesce(func.sum(Invoice.total_amount), 0),
+                func.count(Invoice.id)
+            ).filter(Invoice.status.in_(valid_statuses))
+            if start_d:
+                q = q.filter(Invoice.invoice_date >= start_d)
+            if end_d:
+                q = q.filter(Invoice.invoice_date <= end_d)
+            rev, cnt = q.first() or (0, 0)
+            return float(rev or 0), int(cnt or 0)
+
+        today_rev, today_cnt = get_period_stats(today, today)
+        yest_rev, yest_cnt = get_period_stats(yesterday, yesterday)
+        week_rev, week_cnt = get_period_stats(start_of_week, today)
+        last_week_rev, last_week_cnt = get_period_stats(start_of_last_week, end_of_last_week)
+        month_rev, month_cnt = float(total_revenue_month), int(invoices_count)
+        last_month_rev, last_month_cnt = get_period_stats(first_day_prev_month, last_day_prev_month)
+        all_time_rev, all_time_cnt = get_period_stats(None, None)
+
+        diff_amount = round(today_rev - yest_rev, 2)
+        if yest_rev > 0:
+            pct = round((diff_amount / yest_rev) * 100, 1)
+        elif today_rev > 0:
+            pct = 100.0
+        else:
+            pct = 0.0
+
+        if today_rev > yest_rev:
+            trend = "up"
+        elif today_rev < yest_rev:
+            trend = "down"
+        else:
+            trend = "flat"
+
+        revenue_periods = {
+            "today": {"revenue": today_rev, "invoices_count": today_cnt, "label": "Today"},
+            "yesterday": {"revenue": yest_rev, "invoices_count": yest_cnt, "label": "Yesterday"},
+            "this_week": {"revenue": week_rev, "invoices_count": week_cnt, "label": "This Week"},
+            "last_week": {"revenue": last_week_rev, "invoices_count": last_week_cnt, "label": "Past Week"},
+            "this_month": {"revenue": month_rev, "invoices_count": month_cnt, "label": "This Month"},
+            "last_month": {"revenue": last_month_rev, "invoices_count": last_month_cnt, "label": "Past Month"},
+            "all_time": {"revenue": all_time_rev, "invoices_count": all_time_cnt, "label": "All Time"}
+        }
+
+        today_comparison = {
+            "today_revenue": today_rev,
+            "yesterday_revenue": yest_rev,
+            "diff_amount": diff_amount,
+            "pct": pct,
+            "trend": trend
+        }
+
+        # 10. Recent Invoices (expanded to 30 for high-density audit & period inspection)
         recent_invs = db.query(Invoice).options(
             joinedload(Invoice.customer)
         ).filter(
             Invoice.status != InvoiceStatus.CANCELLED.value
-        ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(6).all()
+        ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(30).all()
 
         recent_invoices = [
             {
@@ -212,7 +273,9 @@ class ReportingService:
             overall_loss=overall_loss,
             top_selling_products=top_products,
             recent_invoices=recent_invoices,
-            recent_payments=recent_payments
+            recent_payments=recent_payments,
+            revenue_periods=revenue_periods,
+            today_comparison=today_comparison
         )
 
         _DASHBOARD_CACHE["timestamp"] = now_ts

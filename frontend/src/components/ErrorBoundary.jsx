@@ -97,7 +97,7 @@ export class ErrorBoundary extends React.Component {
 
             <div className="text-xs text-slate-400 flex items-center justify-center gap-2">
               <Phone className="w-3.5 h-3.5 text-amber-500" />
-              <span>Rayachoty Depot Hotline: <strong className="text-slate-200">9347453135</strong></span>
+              <span>Support Hotline: <strong className="text-slate-200">9347453135</strong></span>
             </div>
           </div>
         </div>

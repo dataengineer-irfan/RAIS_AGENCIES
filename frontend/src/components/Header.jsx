@@ -149,12 +149,9 @@ export const Header = ({
             <div className="w-8 h-8 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-0.5 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
               <RaisLogo alt="RAIS" className="w-full h-full object-contain" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black tracking-wider text-white">RAIS AGENCIES</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              </div>
-              <p className="text-[10px] text-slate-400 font-medium">Rayachoty Depot</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black tracking-wider text-white">RAIS AGENCIES</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
           </div>
 
@@ -254,8 +251,8 @@ export const Header = ({
               {/* System Info */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between py-2 px-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
-                  <span className="text-slate-400 text-xs">Assigned Depot</span>
-                  <span className="font-semibold text-slate-200 text-xs">Rayachoty Hub (516269)</span>
+                  <span className="text-slate-400 text-xs">Primary Facility</span>
+                  <span className="font-semibold text-slate-200 text-xs">Central Distribution (516269)</span>
                 </div>
                 <div className="flex items-center justify-between py-2 px-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
                   <span className="text-slate-400 text-xs">Cloud Server</span>
@@ -362,9 +359,9 @@ export const Header = ({
                   <div className="w-9 h-9 rounded-xl bg-[#0b1329] border border-amber-500/30 flex items-center justify-center p-0.5 shadow-md shadow-amber-500/10 shrink-0 overflow-hidden">
                     <img src="/rais_logo.png" alt="RAIS" className="w-full h-full object-contain" />
                   </div>
-                  <div>
+                  <div className="flex items-center gap-1.5">
                     <h3 className="text-xs font-black tracking-wider text-white">RAIS AGENCIES</h3>
-                    <p className="text-[10px] text-amber-400 font-semibold">Rayachoty Depot</p>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   </div>
                 </div>
                 <button

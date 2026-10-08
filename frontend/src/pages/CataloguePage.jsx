@@ -206,7 +206,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Rayachoty Depot Wholesale Master SKU Matrix & Cash Pricing (0 Uncategorized)
+                Wholesale Master SKU Matrix & Cash Pricing (0 Uncategorized)
               </p>
             </div>
           </div>

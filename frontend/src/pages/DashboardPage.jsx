@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   TrendingUp, 
+  TrendingDown,
+  X,
   Clock, 
   AlertTriangle, 
   FileText, 
@@ -450,6 +452,48 @@ export const DashboardPage = ({
   const profitVal = parseFloat(kpis?.overall_profit || 0);
   const lossVal = parseFloat(kpis?.overall_loss || 0);
 
+  // ─── DYNAMIC PERIOD SLICER FOR REVENUE HERO (Today by default) ───
+  const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [billsDrawerOpen, setBillsDrawerOpen] = useState(false);
+
+  const periodStats = kpis?.revenue_periods?.[selectedPeriod] || {
+    revenue: selectedPeriod === 'this_month' ? revenueVal : (kpis?.revenue_periods?.today?.revenue ?? revenueVal),
+    invoices_count: selectedPeriod === 'this_month' ? (kpis?.total_invoices_count || 0) : (kpis?.revenue_periods?.today?.invoices_count ?? (kpis?.total_invoices_count || 0)),
+    label: selectedPeriod === 'today' ? 'Today' : selectedPeriod
+  };
+
+  const activeRevenue = typeof periodStats.revenue === 'number' ? periodStats.revenue : revenueVal;
+  const activeBillsCount = typeof periodStats.invoices_count === 'number' ? periodStats.invoices_count : (kpis?.total_invoices_count || 0);
+
+  const periodTitles = {
+    today: "Today's Revenue",
+    yesterday: "Yesterday's Revenue",
+    this_week: "This Week's Revenue",
+    last_week: "Past Week's Revenue",
+    this_month: "This Month's Revenue",
+    last_month: "Past Month's Revenue",
+    all_time: "All-Time Revenue"
+  };
+
+  const periodInvoices = useMemo(() => {
+    const all = kpis?.recent_invoices || [];
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    if (selectedPeriod === 'today') {
+      const filtered = all.filter(inv => (inv.invoice_date || '').slice(0, 10) === todayStr);
+      return filtered.length > 0 ? filtered : all.slice(0, 6);
+    }
+    if (selectedPeriod === 'yesterday') {
+      const filtered = all.filter(inv => (inv.invoice_date || '').slice(0, 10) === yesterdayStr);
+      return filtered.length > 0 ? filtered : all.slice(0, 4);
+    }
+    return all;
+  }, [kpis?.recent_invoices, selectedPeriod]);
+
   // ─── 7-Day Micro-Trend Sparkline Series (Power BI Fabric Telemetry) ───
   // Declared BEFORE early returns to strictly honor React Rules of Hooks
   const revenueTrend = useMemo(() => {
@@ -559,7 +603,7 @@ export const DashboardPage = ({
             <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-lg shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                  Rayachoty Depot Hub
+                  Wholesale Operations
                 </span>
                 <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   Executive Command & Decision Overview
@@ -858,19 +902,59 @@ export const DashboardPage = ({
             <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
               
               {/* Card 1: Executive Financial Hero Card (Instant Numbers & Actions at Top of Screen) */}
-              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-3 shadow-xl">
-                {/* Consolidated Hero Row: Rayachoty + Revenue + Alerts + Count */}
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="text-xs font-black uppercase tracking-wider text-amber-400 font-mono">Rayachoty</span>
-                      <span className="text-slate-500">•</span>
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Revenue</span>
+              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-xl">
+                {/* Consolidated Hero Row: Dynamic Period + Revenue + Alerts + Interactive Bills */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                      <span className="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-wider font-mono">
+                        {periodTitles[selectedPeriod] || "Today's Revenue"}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[9px] font-bold border border-emerald-500/30">
+                        Live
+                      </span>
                     </div>
-                    <div className="text-2xl font-black text-white font-mono tracking-tight mt-0.5">
-                      ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+
+                    <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight mt-1">
+                      ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </div>
+
+                    {/* Comparison Pill / Subtext */}
+                    {selectedPeriod === 'today' && kpis?.today_comparison && (
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {kpis.today_comparison.trend === 'up' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black text-[10px] border border-emerald-500/30">
+                            <TrendingUp className="w-3 h-3" />
+                            <span>+{kpis.today_comparison.pct}%</span>
+                          </span>
+                        )}
+                        {kpis.today_comparison.trend === 'down' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 font-black text-[10px] border border-rose-500/30">
+                            <TrendingDown className="w-3 h-3" />
+                            <span>{kpis.today_comparison.pct}%</span>
+                          </span>
+                        )}
+                        {kpis.today_comparison.trend === 'flat' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold text-[10px] border border-slate-700">
+                            <span>Same as yesterday</span>
+                          </span>
+                        )}
+                        <span className="text-slate-400 font-mono text-[10px]">
+                          vs y'day (₹{parseFloat(kpis.today_comparison.yesterday_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })})
+                        </span>
+                      </div>
+                    )}
+                    {selectedPeriod === 'yesterday' && (
+                      <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
+                        <span>Today so far: ₹{parseFloat(kpis?.revenue_periods?.today?.revenue || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    {selectedPeriod === 'this_month' && kpis?.revenue_periods?.last_month && (
+                      <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
+                        <span>Last month: ₹{parseFloat(kpis.revenue_periods.last_month.revenue || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -885,12 +969,47 @@ export const DashboardPage = ({
                           <span>Alerts</span>
                         </button>
                       )}
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
-                        {kpis?.total_invoices_count || 0} Bills
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setBillsDrawerOpen(true)}
+                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-750 active:scale-95 text-slate-200 hover:text-white border border-slate-700 font-mono shadow-sm transition-all cursor-pointer"
+                        title="Tap to inspect bills for this period"
+                      >
+                        <FileText className="w-3 h-3 text-amber-400" />
+                        <span>{activeBillsCount} Bills</span>
+                      </button>
                     </div>
                     <MiniSparkline data={revenueTrend} color="blue" width={60} height={18} />
                   </div>
+                </div>
+
+                {/* Period Slicer Strip (Inside Hero Card) */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 mt-2 border-t border-slate-800/80 scroll-smooth">
+                  {[
+                    { id: 'today', label: 'Today' },
+                    { id: 'yesterday', label: 'Yesterday' },
+                    { id: 'this_week', label: 'This Week' },
+                    { id: 'last_week', label: 'Past Week' },
+                    { id: 'this_month', label: 'This Month' },
+                    { id: 'last_month', label: 'Past Month' },
+                    { id: 'all_time', label: 'All Time' },
+                  ].map(p => {
+                    const isSelected = selectedPeriod === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPeriod(p.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0 active:scale-95 ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
+                            : 'bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Sub-Metrics Strip */}
@@ -1185,9 +1304,60 @@ export const DashboardPage = ({
                 </button>
               </div>
 
-              {/* Table with internal scroll */}
+              {/* Table with internal scroll (Responsive: Desktop Table + Mobile Cards) */}
               <div className="flex-1 min-h-0 overflow-y-auto">
-                <table className="w-full text-[11px]">
+                {/* Mobile Cards View (< sm) */}
+                <div className="sm:hidden space-y-2.5 pb-4">
+                  {(kpis?.recent_invoices || []).map((inv) => (
+                    <div key={inv.id} className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                          {inv.invoice_date && (
+                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                              {formatShortDate(inv.invoice_date)}
+                            </span>
+                          )}
+                          <StatusBadge status={inv.status} />
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-mono text-white font-bold text-xs">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</span>
+                          {parseFloat(inv.outstanding_amount || 0) > 0 && (
+                            <span className="block text-[10px] font-mono text-amber-400 font-semibold">Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/60 text-xs">
+                        <span className="text-slate-300 font-medium truncate max-w-[190px]">{inv.customer_name}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => openThermalReceipt(inv.id)}
+                            className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                          >
+                            <Printer className="w-3 h-3" />
+                            <span>Thermal</span>
+                          </button>
+                          <a
+                            href={billingApi.getPrintHtmlUrl(inv.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-lg border border-slate-800 transition-colors"
+                            title="View PDF"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
+                    <div className="text-center py-6 text-slate-500 text-xs">No invoices found.</div>
+                  )}
+                </div>
+
+                {/* Desktop Table View (sm and up) */}
+                <table className="hidden sm:table w-full text-[11px]">
                   <thead className="sticky top-0 bg-slate-900 z-10">
                     <tr className="border-b border-slate-800 text-xs">
                       <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Invoice #</th>
@@ -1262,6 +1432,118 @@ export const DashboardPage = ({
         onClose={() => setThermalReceiptModal({ isOpen: false, invoiceId: null })}
         invoiceId={thermalReceiptModal.invoiceId}
       />
+
+      {/* ─── BILLS QUICK DRAWER / MODAL ─── */}
+      {billsDrawerOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-slideUp">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>{periodTitles[selectedPeriod] || 'Invoices'}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold">
+                      {activeBillsCount} Bills
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    Total Invoiced: <strong className="text-emerald-400 font-bold">₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setBillsDrawerOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Invoices List */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+              {periodInvoices.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  No bills found for {periodTitles[selectedPeriod] || selectedPeriod}.
+                </div>
+              ) : (
+                periodInvoices.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-col gap-2 hover:border-slate-700 transition-all shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                        {inv.invoice_date && (
+                          <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                            {formatShortDate(inv.invoice_date)}
+                          </span>
+                        )}
+                        <StatusBadge status={inv.status} />
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono font-black text-white text-xs sm:text-sm">
+                          ₹{parseFloat(inv.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                        {parseFloat(inv.outstanding_amount || 0) > 0 && (
+                          <div className="text-[10px] font-mono text-amber-400 font-semibold">
+                            Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/60 text-xs">
+                      <span className="text-slate-300 font-medium truncate max-w-[200px]">
+                        {inv.customer_name}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => {
+                            setBillsDrawerOpen(false);
+                            openThermalReceipt(inv.id);
+                          }}
+                          className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>Thermal</span>
+                        </button>
+                        <a
+                          href={billingApi.getPrintHtmlUrl(inv.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-lg border border-slate-800 transition-colors"
+                          title="View PDF"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-2">
+              <button
+                onClick={() => {
+                  setBillsDrawerOpen(false);
+                  if (onNavigate) onNavigate('billing');
+                }}
+                className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 uppercase tracking-wider transition-colors"
+              >
+                <span>Open Full Commercial Billing</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1089,7 +1089,7 @@ export const InventoryPage = () => {
                     <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                       <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
                         <Thermometer className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Rayachoty Depot Storage Lineage</span>
+                        <span>Central Storage Lineage</span>
                       </h4>
 
                       <div className="grid grid-cols-2 gap-2.5 text-xs">
@@ -1105,7 +1105,7 @@ export const InventoryPage = () => {
                         <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
                           <span className="text-[10px] font-bold text-slate-400 uppercase block">Depot Bin / Rack</span>
                           <span className="font-semibold text-slate-200 mt-0.5 block">
-                            Rayachoty Depot • Bay 02 / Shelf B
+                            Central Depot • Bay 02 / Shelf B
                           </span>
                         </div>
 

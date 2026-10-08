@@ -889,7 +889,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
             </div>
 
             <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300">
-              Deleting this invoice will <strong>automatically restore all deducted product stock</strong> back to the Rayachoty depot inventory and remove this bill from customer outstanding balance.
+              Deleting this invoice will <strong>automatically restore all deducted product stock</strong> back to warehouse inventory and remove this bill from customer outstanding balance.
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
