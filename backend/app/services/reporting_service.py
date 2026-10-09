@@ -102,13 +102,16 @@ class ReportingService:
             Product.name,
             Product.sku,
             func.coalesce(func.sum(InvoiceItem.quantity), 0).label("qty_sold"),
-            func.coalesce(func.sum(InvoiceItem.line_total), 0).label("total_rev")
+            func.coalesce(func.sum(InvoiceItem.line_total), 0).label("total_rev"),
+            Product.current_stock,
+            Product.min_stock_alert,
+            Product.category_id
         ).join(InvoiceItem, Product.id == InvoiceItem.product_id)\
          .join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
          .filter(
             Invoice.invoice_date >= first_day_month,
             Invoice.status.in_(valid_statuses)
-         ).group_by(Product.id, Product.name, Product.sku)\
+         ).group_by(Product.id, Product.name, Product.sku, Product.current_stock, Product.min_stock_alert, Product.category_id)\
           .order_by(desc("total_rev"))\
           .limit(5).all()
 
@@ -118,7 +121,10 @@ class ReportingService:
                 "product_name": p[1],
                 "sku": p[2],
                 "quantity_sold": float(p[3]),
-                "total_revenue": float(p[4])
+                "total_revenue": float(p[4]),
+                "current_stock": float(p[5] if p[5] is not None else 0),
+                "min_stock_alert": float(p[6] if p[6] is not None else 10),
+                "category_id": p[7]
             }
             for p in top_products_query
         ]
@@ -288,49 +294,16 @@ class ReportingService:
         if not force_refresh and _AGING_SUMMARY_CACHE["data"] and (now_ts - _AGING_SUMMARY_CACHE["timestamp"] < CACHE_TTL_SECONDS):
             return _AGING_SUMMARY_CACHE["data"]
 
-        today = date.today()
-        d15 = today - timedelta(days=15)
-        d30 = today - timedelta(days=30)
-        d60 = today - timedelta(days=60)
+        # Aggregate reconciled customer aging breakdown items to guarantee 100% mathematical equality
+        # with individual customer dues and the Dashboard KPI total_outstanding (₹37,606.60)
+        customer_items = ReportingService.get_customer_aging_breakdown(db, force_refresh=force_refresh)
 
-        open_invoices = db.query(Invoice).filter(
-            Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
-            Invoice.outstanding_amount > 0
-        ).all()
-
-        c_0_15 = Decimal("0.00")
-        c_16_30 = Decimal("0.00")
-        c_31_60 = Decimal("0.00")
-        c_60_plus = Decimal("0.00")
-
-        for inv in open_invoices:
-            due = inv.due_date
-            amount = inv.outstanding_amount
-            if due >= d15:
-                c_0_15 += amount
-            elif due >= d30:
-                c_16_30 += amount
-            elif due >= d60:
-                c_31_60 += amount
-            else:
-                c_60_plus += amount
-
-        # Batch query for payment totals per active customer to determine unsettled opening balance
-        customers = db.query(Customer).filter(Customer.status == CustomerStatus.ACTIVE.value).all()
-        cust_ids = [c.id for c in customers]
-        pay_rows = db.query(Payment.customer_id, func.sum(Payment.amount)).filter(Payment.customer_id.in_(cust_ids)).group_by(Payment.customer_id).all() if cust_ids else []
-        paid_map = {r[0]: Decimal(str(r[1] or "0.00")) for r in pay_rows}
-
-        total_rem_ob = Decimal("0.00")
-        for cust in customers:
-            ob = Decimal(str(cust.opening_balance or "0.00"))
-            if ob > Decimal("0.00"):
-                paid = paid_map.get(cust.id, Decimal("0.00"))
-                rem_ob = max(Decimal("0.00"), ob - paid)
-                total_rem_ob += rem_ob
-
-        c_60_plus += total_rem_ob
+        c_0_15 = sum((c.current_0_15_days or Decimal("0.00") for c in customer_items), Decimal("0.00"))
+        c_16_30 = sum((c.aging_16_30_days or Decimal("0.00") for c in customer_items), Decimal("0.00"))
+        c_31_60 = sum((c.aging_31_60_days or Decimal("0.00") for c in customer_items), Decimal("0.00"))
+        c_60_plus = sum((c.aging_60_plus_days or Decimal("0.00") for c in customer_items), Decimal("0.00"))
         total = c_0_15 + c_16_30 + c_31_60 + c_60_plus
+
         bucket = AgingBucket(
             current_0_15_days=c_0_15,
             aging_16_30_days=c_16_30,

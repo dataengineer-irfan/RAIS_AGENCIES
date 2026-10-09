@@ -27,6 +27,7 @@ export const getInvoicePrintUrl = (id) => `${API_BASE_URL}/invoices/${id}/print-
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 12000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -133,7 +134,74 @@ export const customerApi = {
     return cachedGet(`/customers/${id}/ledger`);
   },
   getReorderAlerts: async (daysThreshold = 5) => {
-    return cachedGet('/customers/reorder-alerts', { params: { days_threshold: daysThreshold } });
+    try {
+      const res = await cachedGet('/customers/reorder-alerts', { 
+        params: { days_threshold: daysThreshold } 
+      });
+      if (Array.isArray(res) && res.length >= 0) return res;
+    } catch (err) {
+      console.warn('Backend /customers/reorder-alerts unavailable, activating resilient client telemetry fallback:', err?.message || err);
+    }
+
+    // ─── ZERO-DOWNTIME CLIENT TELEMETRY FALLBACK ───
+    // Computes inactive outlets directly from loaded customer accounts & billing invoices
+    try {
+      const [customers, invoices] = await Promise.all([
+        cachedGet('/customers', { params: { limit: 500 } }).catch(() => []),
+        cachedGet('/invoices', { params: { limit: 500 } }).catch(() => [])
+      ]);
+
+      const custList = Array.isArray(customers) ? customers : (customers?.items || customers?.data || []);
+      const invList = Array.isArray(invoices) ? invoices : (invoices?.items || invoices?.data || []);
+      const now = new Date();
+
+      const latestInvoiceMap = {};
+      invList.forEach(inv => {
+        if (!inv.customer_id || inv.status === 'CANCELLED') return;
+        const invDate = new Date(inv.invoice_date || inv.created_at);
+        if (!isNaN(invDate.getTime())) {
+          if (!latestInvoiceMap[inv.customer_id] || invDate > latestInvoiceMap[inv.customer_id]) {
+            latestInvoiceMap[inv.customer_id] = invDate;
+          }
+        }
+      });
+
+      const alerts = [];
+      custList.forEach(cust => {
+        if (cust.status && cust.status !== 'ACTIVE') return;
+
+        const lastActivity = latestInvoiceMap[cust.id] || (cust.created_at ? new Date(cust.created_at) : now);
+        const diffMs = now.getTime() - lastActivity.getTime();
+        const daysInactive = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+        if (daysInactive >= daysThreshold) {
+          const formattedDate = lastActivity.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          });
+
+          alerts.push({
+            customer_id: cust.id,
+            customer_code: cust.customer_code || 'CUST',
+            business_name: cust.business_name || cust.contact_person || 'Customer',
+            contact_person: cust.contact_person || '',
+            phone: cust.phone || '',
+            city: cust.city || 'Rayachoty',
+            days_inactive: daysInactive,
+            last_activity_date: lastActivity.toISOString().slice(0, 10),
+            last_activity_str: `${daysInactive} days ago (${formattedDate})`,
+            outstanding_balance: parseFloat(cust.outstanding_balance || 0)
+          });
+        }
+      });
+
+      alerts.sort((a, b) => b.days_inactive - a.days_inactive);
+      return alerts;
+    } catch (fallbackErr) {
+      console.error('Failed to compute inactive customer fallback:', fallbackErr);
+      return [];
+    }
   }
 };
 

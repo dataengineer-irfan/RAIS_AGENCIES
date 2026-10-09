@@ -77,20 +77,90 @@ function applyClientFilters(rawKpis, filters, customers = []) {
     products = products.filter(p => p.category_id === filters.categoryId);
   }
 
-  // Recompute KPI totals: preserve server-wide total_revenue_month unless specifically filtered by a customer
-  const totalRevenue = isCustomerFiltered
-    ? invoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0)
-    : parseFloat(rawKpis?.total_revenue_month || 0);
+  // Normalize period key
+  const rawRange = (filters.dateRange || 'TODAY').toLowerCase();
+  let periodKey = 'today';
+  if (rawRange.includes('yest')) periodKey = 'yesterday';
+  else if (rawRange.includes('last_week') || rawRange.includes('past_week')) periodKey = 'last_week';
+  else if (rawRange.includes('week')) periodKey = 'this_week';
+  else if (rawRange.includes('last_month') || rawRange.includes('past_month')) periodKey = 'last_month';
+  else if (rawRange.includes('month') || rawRange.includes('30')) periodKey = 'this_month';
+  else if (rawRange.includes('all')) periodKey = 'all_time';
+  else if (rawRange.includes('today')) periodKey = 'today';
+
+  // Date boundaries for filtering individual invoice rows
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
   
+  const yestDate = new Date(now);
+  yestDate.setDate(now.getDate() - 1);
+  const yestStr = yestDate.toISOString().slice(0, 10);
+
+  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - dayOfWeek);
+  const startOfWeekStr = startOfWeek.toISOString().slice(0, 10);
+
+  const startOfLastWeek = new Date(startOfWeek);
+  startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+  const startOfLastWeekStr = startOfLastWeek.toISOString().slice(0, 10);
+  const endOfLastWeek = new Date(startOfWeek);
+  endOfLastWeek.setDate(startOfWeek.getDate() - 1);
+  const endOfLastWeekStr = endOfLastWeek.toISOString().slice(0, 10);
+
+  const currentMonthPrefix = todayStr.slice(0, 7);
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthPrefix = prevMonthDate.toISOString().slice(0, 7);
+
+  // Filter invoice rows by date
+  let periodInvoices = invoices;
+  if (periodKey === 'today') {
+    periodInvoices = invoices.filter(inv => (inv.invoice_date || '').slice(0, 10) === todayStr);
+  } else if (periodKey === 'yesterday') {
+    periodInvoices = invoices.filter(inv => (inv.invoice_date || '').slice(0, 10) === yestStr);
+  } else if (periodKey === 'this_week') {
+    periodInvoices = invoices.filter(inv => {
+      const d = (inv.invoice_date || '').slice(0, 10);
+      return d >= startOfWeekStr && d <= todayStr;
+    });
+  } else if (periodKey === 'last_week') {
+    periodInvoices = invoices.filter(inv => {
+      const d = (inv.invoice_date || '').slice(0, 10);
+      return d >= startOfLastWeekStr && d <= endOfLastWeekStr;
+    });
+  } else if (periodKey === 'this_month') {
+    periodInvoices = invoices.filter(inv => (inv.invoice_date || '').startsWith(currentMonthPrefix));
+  } else if (periodKey === 'last_month') {
+    periodInvoices = invoices.filter(inv => (inv.invoice_date || '').startsWith(prevMonthPrefix));
+  } else if (periodKey === 'all_time') {
+    periodInvoices = invoices;
+  }
+
+  // Precomputed backend revenue stats for period
+  const backendPeriodStat = rawKpis?.revenue_periods?.[periodKey];
+  
+  // Total Revenue: if filtered by customer, sum the customer's invoices; otherwise use backend precomputed period revenue
+  const totalRevenue = isCustomerFiltered
+    ? periodInvoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0)
+    : (typeof backendPeriodStat?.revenue === 'number'
+        ? backendPeriodStat.revenue
+        : periodInvoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0));
+
+  const invoicesCount = isCustomerFiltered
+    ? periodInvoices.length
+    : (typeof backendPeriodStat?.invoices_count === 'number'
+        ? backendPeriodStat.invoices_count
+        : periodInvoices.length);
+
   // Total receivables: matches Outlets Page formula exactly (sum of customer outstanding_balance)
   const totalOutstanding = filteredCustomers && filteredCustomers.length > 0
     ? filteredCustomers.reduce((acc, c) => acc + parseFloat(c.outstanding_balance || 0), 0)
     : parseFloat(rawKpis?.total_outstanding || 0);
 
-  const totalOverdue = invoices
+  const totalOverdue = periodInvoices
     .filter(inv => inv.status === 'OVERDUE' || parseFloat(inv.outstanding_amount || 0) > 0)
     .reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0);
-  const openInvoices = invoices.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0);
+  const openInvoices = periodInvoices.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0);
 
   const overallProfit = parseFloat(rawKpis?.overall_profit || 0);
   const overallLoss = parseFloat(rawKpis?.overall_loss || 0);
@@ -100,12 +170,13 @@ function applyClientFilters(rawKpis, filters, customers = []) {
     total_revenue_month: totalRevenue,
     total_outstanding: totalOutstanding,
     total_overdue: totalOverdue,
-    total_invoices_count: invoices.length,
+    total_invoices_count: invoicesCount,
     open_invoices_count: openInvoices.length,
     overall_profit: overallProfit,
     overall_loss: overallLoss,
-    recent_invoices: invoices,
+    recent_invoices: periodInvoices,
     top_selling_products: products,
+    active_period_key: periodKey
   };
 }
 
@@ -274,42 +345,51 @@ const ExecutivePulseBanner = ({ customers, kpis, onNavigate, onOpenPaymentModal,
 // ─────────────────────────────────────────────────────────────────────────────
 // INLINE SLICER RIBBON (Compact, 12px sunlight-readable touch targets)
 // ─────────────────────────────────────────────────────────────────────────────
+const PERIOD_SLICER_TABS = [
+  { id: 'today', label: 'Today' },
+  { id: 'yesterday', label: 'Yesterday' },
+  { id: 'this_week', label: 'This Week' },
+  { id: 'last_week', label: 'Past Week' },
+  { id: 'this_month', label: 'This Month' },
+  { id: 'last_month', label: 'Past Month' },
+  { id: 'all_time', label: 'All Time' },
+];
+
 const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, customers }) => {
-  const isFiltered = filters.customerId !== 'ALL' || filters.categoryId !== 'ALL' || filters.dateRange !== 'THIS_MONTH';
+  const currentPeriod = (filters.dateRange || 'today').toLowerCase();
+  const isFiltered = filters.customerId !== 'ALL' || filters.categoryId !== 'ALL' || currentPeriod !== 'today';
 
   return (
-    <div className="flex items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-sm border border-slate-800 rounded-xl px-3 py-2 shrink-0">
-      {/* Left label */}
-      <div className="flex items-center gap-2 shrink-0">
-        <SlidersHorizontal className="w-4 h-4 text-amber-400" />
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-300 hidden sm:inline">Filters</span>
-        {isFiltered && (
-          <span className="text-xs font-bold uppercase px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
-            Active
-          </span>
-        )}
+    <div className="flex items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-sm border border-slate-800 rounded-xl px-3 py-2 shrink-0 flex-wrap">
+      {/* Left: Quick Period Slicer Strip */}
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 mr-1 text-slate-400 shrink-0">
+          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-300 hidden lg:inline">Period:</span>
+        </div>
+        {PERIOD_SLICER_TABS.map(tab => {
+          const isSelected = currentPeriod === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onFilterChange('dateRange', tab.id)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 active:scale-95 ${
+                isSelected
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-sm shadow-amber-500/20'
+                  : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Slicer dropdowns */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-        {/* Date Range */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 shrink-0 transition-colors">
-          <Calendar className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0" />
-          <select
-            value={filters.dateRange}
-            onChange={(e) => onFilterChange('dateRange', e.target.value)}
-            className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
-          >
-            <option value="TODAY" className="bg-slate-900">Today</option>
-            <option value="THIS_WEEK" className="bg-slate-900">This Week</option>
-            <option value="THIS_MONTH" className="bg-slate-900">This Month</option>
-            <option value="LAST_30_DAYS" className="bg-slate-900">Last 30 Days</option>
-            <option value="ALL_TIME" className="bg-slate-900">All Time</option>
-          </select>
-        </div>
-
+      {/* Right: Customer & Category dropdowns + Reset */}
+      <div className="flex items-center gap-2 shrink-0">
         {/* Customer */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 shrink-0 transition-colors">
+        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1 text-xs text-slate-200 shrink-0 transition-colors">
           <Users className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0" />
           <select
             value={filters.customerId}
@@ -324,7 +404,7 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
         </div>
 
         {/* Category */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 shrink-0 transition-colors">
+        <div className="flex items-center bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-2.5 py-1 text-xs text-slate-200 shrink-0 transition-colors">
           <Package className="w-3.5 h-3.5 text-amber-400 mr-1.5 shrink-0" />
           <select
             value={filters.categoryId}
@@ -337,21 +417,22 @@ const InlineSlicerBar = ({ filters, onFilterChange, onResetFilters, categories, 
             ))}
           </select>
         </div>
-      </div>
 
-      {/* Reset */}
-      <button
-        onClick={onResetFilters}
-        disabled={!isFiltered}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all shrink-0 ${
-          isFiltered
-            ? 'text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 cursor-pointer active:scale-95'
-            : 'text-slate-600 bg-slate-950 border-slate-800 cursor-default'
-        }`}
-      >
-        <RefreshCw className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Reset</span>
-      </button>
+        {/* Reset */}
+        <button
+          onClick={onResetFilters}
+          disabled={!isFiltered}
+          className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-xl border transition-all shrink-0 ${
+            isFiltered
+              ? 'text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 cursor-pointer active:scale-95'
+              : 'text-slate-600 bg-slate-950 border-slate-800 cursor-default'
+          }`}
+          title="Reset Slicers to Today"
+        >
+          <RefreshCw className="w-3 h-3" />
+          <span className="hidden sm:inline">Reset</span>
+        </button>
+      </div>
     </div>
   );
 };
@@ -366,7 +447,8 @@ export const DashboardPage = ({
   onNavigate, 
   onOpenInactiveReminder,
   initialPage = 'overview',
-  onModalStateChange
+  onModalStateChange,
+  alertsCount = 0
 }) => {
   const [rawKpis, setRawKpis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -375,6 +457,19 @@ export const DashboardPage = ({
 
   // Active Power BI Page Tab
   const [activePage, setActivePage] = useState(initialPage);
+
+  // Inactive accounts count for badge (from props or direct query fallback)
+  const [localAlertsCount, setLocalAlertsCount] = useState(alertsCount || 0);
+
+  useEffect(() => {
+    if (alertsCount) {
+      setLocalAlertsCount(alertsCount);
+    } else {
+      customerApi.getReorderAlerts(5).then(res => {
+        if (Array.isArray(res)) setLocalAlertsCount(res.length);
+      }).catch(() => {});
+    }
+  }, [alertsCount]);
 
   useEffect(() => {
     if (initialPage) {
@@ -391,9 +486,9 @@ export const DashboardPage = ({
     }
   };
 
-  // Slicer Filters State (Applies across all 5 pages)
+  // Slicer Filters State (Defaults to Today for immediate daily operational focus)
   const [filters, setFilters] = useState({
-    dateRange: 'THIS_MONTH',
+    dateRange: 'today',
     customerId: 'ALL',
     categoryId: 'ALL',
     compareTo: 'LAST_MONTH'
@@ -435,7 +530,7 @@ export const DashboardPage = ({
 
   const handleResetFilters = useCallback(() => {
     setFilters({
-      dateRange: 'THIS_MONTH',
+      dateRange: 'today',
       customerId: 'ALL',
       categoryId: 'ALL',
       compareTo: 'LAST_MONTH'
@@ -472,8 +567,12 @@ export const DashboardPage = ({
     return `₹${projectedMonthlyPacing.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
   }, [projectedMonthlyPacing]);
 
-  // ─── DYNAMIC PERIOD SLICER FOR REVENUE HERO (Today by default) ───
-  const [selectedPeriod, setSelectedPeriod] = useState('today');
+  // ─── DYNAMIC PERIOD SLICER FOR REVENUE HERO (Derived directly from active dateRange) ───
+  const selectedPeriod = (filters.dateRange || 'today').toLowerCase();
+  const setSelectedPeriod = useCallback((p) => {
+    handleFilterChange('dateRange', p);
+  }, [handleFilterChange]);
+
   const [billsDrawerOpen, setBillsDrawerOpen] = useState(false);
   const [mobileSlicerOpen, setMobileSlicerOpen] = useState(false);
 
@@ -495,80 +594,18 @@ export const DashboardPage = ({
   };
 
   const periodInvoices = useMemo(() => {
-    const all = (kpis?.recent_invoices || []).filter(inv => inv.status !== 'CANCELLED');
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-    
-    const yestDate = new Date(now);
-    yestDate.setDate(now.getDate() - 1);
-    const yestStr = yestDate.toISOString().slice(0, 10);
+    return (kpis?.recent_invoices || []).filter(inv => inv.status !== 'CANCELLED');
+  }, [kpis?.recent_invoices]);
 
-    // This week: Monday through today
-    const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - dayOfWeek);
-    const startOfWeekStr = startOfWeek.toISOString().slice(0, 10);
-
-    // Past week: Monday through Sunday of previous week
-    const startOfLastWeek = new Date(startOfWeek);
-    startOfLastWeek.setDate(startOfWeek.getDate() - 7);
-    const startOfLastWeekStr = startOfLastWeek.toISOString().slice(0, 10);
-    const endOfLastWeek = new Date(startOfWeek);
-    endOfLastWeek.setDate(startOfWeek.getDate() - 1);
-    const endOfLastWeekStr = endOfLastWeek.toISOString().slice(0, 10);
-
-    // This month (YYYY-MM prefix)
-    const currentMonthPrefix = todayStr.slice(0, 7);
-
-    // Past month
-    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonthPrefix = prevMonthDate.toISOString().slice(0, 7);
-
-    switch (selectedPeriod) {
-      case 'today':
-        return all.filter(inv => (inv.invoice_date || '').slice(0, 10) === todayStr);
-      case 'yesterday':
-        return all.filter(inv => (inv.invoice_date || '').slice(0, 10) === yestStr);
-      case 'this_week':
-        return all.filter(inv => {
-          const d = (inv.invoice_date || '').slice(0, 10);
-          return d >= startOfWeekStr && d <= todayStr;
-        });
-      case 'last_week':
-        return all.filter(inv => {
-          const d = (inv.invoice_date || '').slice(0, 10);
-          return d >= startOfLastWeekStr && d <= endOfLastWeekStr;
-        });
-      case 'this_month':
-        return all.filter(inv => (inv.invoice_date || '').startsWith(currentMonthPrefix));
-      case 'last_month':
-        return all.filter(inv => (inv.invoice_date || '').startsWith(prevMonthPrefix));
-      case 'all_time':
-      default:
-        return all;
-    }
-  }, [kpis?.recent_invoices, selectedPeriod]);
-
-  // Compute live revenue from filtered period invoices as truthful ground truth
-  const periodCalculatedRevenue = useMemo(() => {
-    return periodInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0);
-  }, [periodInvoices]);
-
-  // Use backend precomputed revenue if present; otherwise, use truthful client calculation
-  const activeRevenue = typeof kpis?.revenue_periods?.[selectedPeriod]?.revenue === 'number'
-    ? kpis.revenue_periods[selectedPeriod].revenue
-    : periodCalculatedRevenue;
-
-  const activeBillsCount = typeof kpis?.revenue_periods?.[selectedPeriod]?.invoices_count === 'number'
-    ? kpis.revenue_periods[selectedPeriod].invoices_count
-    : periodInvoices.length;
+  const activeRevenue = revenueVal;
+  const activeBillsCount = kpis?.total_invoices_count ?? periodInvoices.length;
 
   // ─── 7-Day Micro-Trend Sparkline Series (Power BI Fabric Telemetry) ───
   // Declared BEFORE early returns to strictly honor React Rules of Hooks
   const revenueTrend = useMemo(() => {
-    const base = revenueVal || 1000;
+    const base = activeRevenue || 1000;
     return [base * 0.65, base * 0.72, base * 0.68, base * 0.82, base * 0.89, base * 0.92, base];
-  }, [revenueVal]);
+  }, [activeRevenue]);
 
   const receivablesTrend = useMemo(() => {
     const base = outstandingVal || 500;
@@ -762,6 +799,11 @@ export const DashboardPage = ({
                   >
                     <Bell className="w-3.5 h-3.5 text-amber-400" />
                     <span>Re-Stock Alerts</span>
+                    {localAlertsCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[10px]">
+                        {localAlertsCount}
+                      </span>
+                    )}
                   </button>
                 )}
                 <button
@@ -791,26 +833,28 @@ export const DashboardPage = ({
 
             {/* Row 2: 6 Executive KPI Cards (Desktop Power BI Fabric Standard) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 shrink-0">
-              {/* Revenue */}
+              {/* Revenue (Dynamic for active period: Today, Yesterday, This Week, Past Week, This Month) */}
               <div 
-                onClick={() => openDrilldown('revenue', 'Revenue by Category & SKU Breakdown')}
+                onClick={() => openDrilldown('revenue', `${periodTitles[selectedPeriod] || 'Revenue'} Breakdown`)}
                 className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Revenue</span>
-                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider truncate">
+                      {periodTitles[selectedPeriod] || 'Revenue'}
+                    </span>
+                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
                       <TrendingUp className="w-3.5 h-3.5" />
                     </div>
                   </div>
                   <p className="text-base lg:text-lg font-bold text-white mt-1.5 font-mono truncate">
-                    ₹{revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80">
                   <MiniSparkline data={revenueTrend} color="blue" width={48} height={16} />
                   <span className="text-amber-400 font-semibold flex items-center gap-0.5 text-[11px]">
-                    {kpis?.total_invoices_count || 0} ord <ArrowUpRight className="w-3 h-3" />
+                    {activeBillsCount} ord <ArrowUpRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>
@@ -1111,6 +1155,11 @@ export const DashboardPage = ({
                         >
                           <Bell className="w-3 h-3 text-amber-400 animate-pulse" />
                           <span>Alerts</span>
+                          {localAlertsCount > 0 && (
+                            <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[9px] ml-0.5">
+                              {localAlertsCount}
+                            </span>
+                          )}
                         </button>
                       )}
                       <button

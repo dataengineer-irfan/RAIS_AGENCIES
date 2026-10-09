@@ -50,10 +50,27 @@ export const App = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Inactive outlet check (accessible on-demand via Alerts button)
+  // Contextual data refresh key
+  const [dataRefreshKey, setDataRefreshKey] = useState(0);
+
+  const handleDataRefresh = () => {
+    setDataRefreshKey(k => k + 1);
+  };
+
+  // Active re-order alerts count (reactive badge for Header & Dashboard)
+  const [alertsCount, setAlertsCount] = useState(0);
+
+  const fetchAlertsCount = () => {
+    if (isAuthenticated) {
+      customerApi.getReorderAlerts(5).then(res => {
+        if (Array.isArray(res)) setAlertsCount(res.length);
+      }).catch(() => {});
+    }
+  };
+
   useEffect(() => {
-    // No-op auto-popup: do not steal user screen involuntarily on launch
-  }, [isAuthenticated]);
+    fetchAlertsCount();
+  }, [isAuthenticated, dataRefreshKey]);
 
   // ─── LEFT PANEL TOGGLE & TOP-LEFT CORNER HOVER ENGINE ───
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -75,11 +92,6 @@ export const App = () => {
   const [selectedCustForOrder, setSelectedCustForOrder] = useState(null);
   const [selectedCustForInvoice, setSelectedCustForInvoice] = useState(null);
   const [customerToEdit, setCustomerToEdit] = useState(null);
-  const [dataRefreshKey, setDataRefreshKey] = useState(0);
-
-  const handleDataRefresh = () => {
-    setDataRefreshKey(k => k + 1);
-  };
 
   const handleOpenInvoice = (cust = null) => {
     setSelectedCustForInvoice(cust);
@@ -199,6 +211,8 @@ export const App = () => {
           onGlobalSearch={setGlobalSearchTerm}
           activeTab={activeTab}
           onNavigate={handleNavigate}
+          onOpenInactiveReminder={() => setInactiveReminderModalOpen(true)}
+          alertsCount={alertsCount}
         />
 
         <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
@@ -210,6 +224,7 @@ export const App = () => {
               initialPage={dashboardSubPage}
               onOpenInactiveReminder={() => setInactiveReminderModalOpen(true)}
               onModalStateChange={setChildModalOpen}
+              alertsCount={alertsCount}
             />
           )}
 

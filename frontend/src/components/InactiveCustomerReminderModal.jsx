@@ -29,6 +29,16 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
     }
   }, [isOpen, daysThreshold]);
 
+  // Close on Escape key press
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const loadAlerts = async (threshold) => {
     setLoading(true);
     setError('');
@@ -59,8 +69,14 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border-t-4 border-t-amber-500">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-[80] flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn cursor-pointer"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border-t-4 border-t-amber-500 cursor-default"
+      >
         
         {/* ─── MODAL HEADER ─── */}
         <div className="p-4 border-b border-slate-800 flex items-start justify-between bg-slate-950/60 shrink-0">

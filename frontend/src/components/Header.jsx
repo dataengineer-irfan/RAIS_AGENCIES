@@ -23,7 +23,8 @@ import {
   ChevronRight,
   Download,
   HardDrive,
-  RefreshCw
+  RefreshCw,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { backupApi } from '../services/api';
@@ -38,7 +39,9 @@ export const Header = ({
   onHoverTopLeft,
   onLeaveTopLeft,
   activeTab = 'dashboard',
-  onNavigate
+  onNavigate,
+  onOpenInactiveReminder,
+  alertsCount = 0
 }) => {
   const { user, logout, hasRole } = useAuth();
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
@@ -122,6 +125,23 @@ export const Header = ({
             <span>9347453135</span>
           </div>
 
+          {/* Global Re-Stock Alerts Notification Bell (Desktop) */}
+          {onOpenInactiveReminder && (
+            <button
+              onClick={onOpenInactiveReminder}
+              className="relative flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-750 hover:border-amber-500/50 rounded-lg text-slate-300 hover:text-white text-xs font-bold transition-all shadow-sm shrink-0"
+              title="Inactive Outlets & Re-Stock Alerts"
+            >
+              <Bell className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Alerts</span>
+              {alertsCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[10px]">
+                  {alertsCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* AI Assistant Quick Toggle */}
           <button
             onClick={onToggleAI}
@@ -169,6 +189,22 @@ export const Header = ({
             >
               <Search className="w-4 h-4" />
             </button>
+
+            {/* Global Re-Stock Alerts Notification Bell (Mobile) */}
+            {onOpenInactiveReminder && (
+              <button
+                onClick={onOpenInactiveReminder}
+                className="relative p-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+                title="Inactive Outlets & Re-Stock Alerts"
+              >
+                <Bell className="w-4 h-4 text-amber-400" />
+                {alertsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[9px] flex items-center justify-center shadow-md">
+                    {alertsCount > 99 ? '99+' : alertsCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* AI Assistant Button */}
             <button
