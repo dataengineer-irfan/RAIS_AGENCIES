@@ -58,10 +58,13 @@ const formatShortDate = (dateStr) => {
 // Filters KPIs, invoices, and products by the active slicer selections.
 // Backend always returns the full dataset; slicers narrow the view instantly.
 // ─────────────────────────────────────────────────────────────────────────────
-function applyClientFilters(rawKpis, filters, customers = []) {
+function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) {
   if (!rawKpis) return rawKpis;
 
-  let invoices = rawKpis.recent_invoices || [];
+  // Use full invoice list if loaded, otherwise fall back to rawKpis.recent_invoices
+  let invoices = (allInvoices && allInvoices.length > 0)
+    ? allInvoices.filter(inv => inv.status !== 'CANCELLED')
+    : (rawKpis.recent_invoices || []);
   let products = rawKpis.top_selling_products || [];
 
   // Filter by customer
@@ -88,29 +91,36 @@ function applyClientFilters(rawKpis, filters, customers = []) {
   else if (rawRange.includes('all')) periodKey = 'all_time';
   else if (rawRange.includes('today')) periodKey = 'today';
 
-  // Date boundaries for filtering individual invoice rows
+  // Format Date in local system timezone (Indian Standard Time) to prevent UTC date shift
+  const formatLocalDate = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = formatLocalDate(now);
   
   const yestDate = new Date(now);
   yestDate.setDate(now.getDate() - 1);
-  const yestStr = yestDate.toISOString().slice(0, 10);
+  const yestStr = formatLocalDate(yestDate);
 
   const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - dayOfWeek);
-  const startOfWeekStr = startOfWeek.toISOString().slice(0, 10);
+  const startOfWeekStr = formatLocalDate(startOfWeek);
 
   const startOfLastWeek = new Date(startOfWeek);
   startOfLastWeek.setDate(startOfWeek.getDate() - 7);
-  const startOfLastWeekStr = startOfLastWeek.toISOString().slice(0, 10);
+  const startOfLastWeekStr = formatLocalDate(startOfLastWeek);
   const endOfLastWeek = new Date(startOfWeek);
   endOfLastWeek.setDate(startOfWeek.getDate() - 1);
-  const endOfLastWeekStr = endOfLastWeek.toISOString().slice(0, 10);
+  const endOfLastWeekStr = formatLocalDate(endOfLastWeek);
 
   const currentMonthPrefix = todayStr.slice(0, 7);
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthPrefix = prevMonthDate.toISOString().slice(0, 7);
+  const prevMonthPrefix = formatLocalDate(prevMonthDate).slice(0, 7);
 
   // Filter invoice rows by date
   let periodInvoices = invoices;
@@ -138,19 +148,28 @@ function applyClientFilters(rawKpis, filters, customers = []) {
 
   // Precomputed backend revenue stats for period
   const backendPeriodStat = rawKpis?.revenue_periods?.[periodKey];
+  const periodCalculatedRevenue = periodInvoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0);
   
-  // Total Revenue: if filtered by customer, sum the customer's invoices; otherwise use backend precomputed period revenue
+  // Total Revenue:
   const totalRevenue = isCustomerFiltered
-    ? periodInvoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0)
+    ? periodCalculatedRevenue
     : (typeof backendPeriodStat?.revenue === 'number'
         ? backendPeriodStat.revenue
-        : periodInvoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0));
+        : (allInvoices && allInvoices.length > 0
+            ? periodCalculatedRevenue
+            : (periodKey === 'this_month'
+                ? parseFloat(rawKpis?.total_revenue_month || 0)
+                : periodCalculatedRevenue)));
 
   const invoicesCount = isCustomerFiltered
     ? periodInvoices.length
     : (typeof backendPeriodStat?.invoices_count === 'number'
         ? backendPeriodStat.invoices_count
-        : periodInvoices.length);
+        : (allInvoices && allInvoices.length > 0
+            ? periodInvoices.length
+            : (periodKey === 'this_month'
+                ? (rawKpis?.total_invoices_count ?? periodInvoices.length)
+                : periodInvoices.length)));
 
   // Total receivables: matches Outlets Page formula exactly (sum of customer outstanding_balance)
   const totalOutstanding = filteredCustomers && filteredCustomers.length > 0
@@ -454,6 +473,7 @@ export const DashboardPage = ({
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
 
   // Active Power BI Page Tab
   const [activePage, setActivePage] = useState(initialPage);
@@ -506,14 +526,16 @@ export const DashboardPage = ({
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [kpiData, catData, custData] = await Promise.all([
+      const [kpiData, catData, custData, invData] = await Promise.all([
         reportApi.getDashboard(),
         catalogueApi.listCategories(true),
-        customerApi.list({ limit: 100 })
+        customerApi.list({ limit: 100 }),
+        billingApi.listInvoices({ limit: 500 }).catch(() => [])
       ]);
       setRawKpis(kpiData);
       setCategories(catData || []);
       setCustomers(Array.isArray(custData) ? custData : (custData?.items || custData?.data || []));
+      setAllInvoices(Array.isArray(invData) ? invData : (invData?.items || invData?.data || []));
     } catch (err) {
       console.error('Failed to load dashboard telemetry:', err);
     } finally {
@@ -522,7 +544,7 @@ export const DashboardPage = ({
   };
 
   // ─── REACTIVE SLICER: useMemo re-computes filtered KPIs whenever filters change ───
-  const kpis = useMemo(() => applyClientFilters(rawKpis, filters, customers), [rawKpis, filters, customers]);
+  const kpis = useMemo(() => applyClientFilters(rawKpis, filters, customers, allInvoices), [rawKpis, filters, customers, allInvoices]);
 
   const handleFilterChange = useCallback((key, val) => {
     setFilters(prev => ({ ...prev, [key]: val }));

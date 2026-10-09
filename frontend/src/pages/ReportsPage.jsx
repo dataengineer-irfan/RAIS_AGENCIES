@@ -141,7 +141,26 @@ export const ReportsPage = () => {
     });
   }, [customerAging, debouncedSearch]);
 
-  const totalOutstandingVal = parseFloat(aging?.total_outstanding || 0);
+  // Derive mathematically reconciled aging summary directly from ground-truth customer rows:
+  const reconciledAging = useMemo(() => {
+    if (customerAging && customerAging.length > 0) {
+      const c0_15 = customerAging.reduce((s, c) => s + parseFloat(c.current_0_15_days ?? c.current_0_15 ?? 0), 0);
+      const c16_30 = customerAging.reduce((s, c) => s + parseFloat(c.aging_16_30_days ?? c.days_16_30 ?? 0), 0);
+      const c31_60 = customerAging.reduce((s, c) => s + parseFloat(c.aging_31_60_days ?? c.days_31_60 ?? 0), 0);
+      const c60_plus = customerAging.reduce((s, c) => s + parseFloat(c.aging_60_plus_days ?? c.days_60_plus ?? 0), 0);
+      const totalDue = customerAging.reduce((s, c) => s + parseFloat(c.total_outstanding ?? c.total_due ?? 0), 0);
+      return {
+        current_0_15_days: c0_15,
+        aging_16_30_days: c16_30,
+        aging_31_60_days: c31_60,
+        aging_60_plus_days: c60_plus,
+        total_outstanding: totalDue
+      };
+    }
+    return aging;
+  }, [customerAging, aging]);
+
+  const totalOutstandingVal = parseFloat(reconciledAging?.total_outstanding || 0);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
@@ -300,28 +319,28 @@ export const ReportsPage = () => {
             onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '0–15 Days Current Balances' })}
             className="text-emerald-400 whitespace-nowrap hover:underline active:scale-95"
           >
-            <span className="text-slate-400 text-[9px]">0-15d:</span> ₹{parseFloat(aging?.current_0_15_days || 0) >= 1000 ? `${(parseFloat(aging?.current_0_15_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.current_0_15_days || 0).toFixed(0)}
+            <span className="text-slate-400 text-[9px]">0-15d:</span> ₹{parseFloat(reconciledAging?.current_0_15_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.current_0_15_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.current_0_15_days || 0).toFixed(0)}
           </button>
           <span className="text-slate-700">|</span>
           <button 
             onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '16–30 Days Balances' })}
             className="text-blue-400 whitespace-nowrap hover:underline active:scale-95"
           >
-            <span className="text-slate-400 text-[9px]">16-30d:</span> ₹{parseFloat(aging?.aging_16_30_days || 0) >= 1000 ? `${(parseFloat(aging?.aging_16_30_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.aging_16_30_days || 0).toFixed(0)}
+            <span className="text-slate-400 text-[9px]">16-30d:</span> ₹{parseFloat(reconciledAging?.aging_16_30_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_16_30_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.aging_16_30_days || 0).toFixed(0)}
           </button>
           <span className="text-slate-700">|</span>
           <button 
             onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '31–60 Days Overdue Balances' })}
             className="text-amber-400 whitespace-nowrap hover:underline active:scale-95"
           >
-            <span className="text-slate-400 text-[9px]">31-60d:</span> ₹{parseFloat(aging?.aging_31_60_days || 0) >= 1000 ? `${(parseFloat(aging?.aging_31_60_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.aging_31_60_days || 0).toFixed(0)}
+            <span className="text-slate-400 text-[9px]">31-60d:</span> ₹{parseFloat(reconciledAging?.aging_31_60_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_31_60_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.aging_31_60_days || 0).toFixed(0)}
           </button>
           <span className="text-slate-700">|</span>
           <button 
             onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '60+ Days Severe Risk Balances' })}
             className="text-rose-400 font-bold whitespace-nowrap hover:underline active:scale-95"
           >
-            <span className="text-slate-400 text-[9px]">60+d:</span> ₹{parseFloat(aging?.aging_60_plus_days || 0) >= 1000 ? `${(parseFloat(aging?.aging_60_plus_days || 0)/1000).toFixed(1)}k` : parseFloat(aging?.aging_60_plus_days || 0).toFixed(0)}
+            <span className="text-slate-400 text-[9px]">60+d:</span> ₹{parseFloat(reconciledAging?.aging_60_plus_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_60_plus_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.aging_60_plus_days || 0).toFixed(0)}
           </button>
         </div>
       </div>
