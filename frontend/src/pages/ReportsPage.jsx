@@ -37,6 +37,7 @@ export const ReportsPage = () => {
   // Drilldown Modal
   const [drillModal, setDrillModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
   const [mobileTab, setMobileTab] = useState('aging'); // 'aging' | 'velocity'
+  const [selectedAgingBucket, setSelectedAgingBucket] = useState('ALL'); // 'ALL' | '0-15' | '16-30' | '31-60' | '60+'
 
   // 150ms Debounced Search for smooth 60fps input response
   useEffect(() => {
@@ -129,9 +130,22 @@ export const ReportsPage = () => {
   };
 
   const filteredCustomerAging = useMemo(() => {
-    if (!debouncedSearch) return customerAging;
+    let list = customerAging || [];
+
+    // Filter by selected aging bucket
+    if (selectedAgingBucket === '0-15') {
+      list = list.filter(c => parseFloat(c?.current_0_15_days ?? c?.current_0_15 ?? 0) > 0);
+    } else if (selectedAgingBucket === '16-30') {
+      list = list.filter(c => parseFloat(c?.aging_16_30_days ?? c?.days_16_30 ?? 0) > 0);
+    } else if (selectedAgingBucket === '31-60') {
+      list = list.filter(c => parseFloat(c?.aging_31_60_days ?? c?.days_31_60 ?? 0) > 0);
+    } else if (selectedAgingBucket === '60+') {
+      list = list.filter(c => parseFloat(c?.aging_60_plus_days ?? c?.days_60_plus ?? 0) > 0);
+    }
+
+    if (!debouncedSearch) return list;
     const term = debouncedSearch.toLowerCase();
-    return customerAging.filter(c => {
+    return list.filter(c => {
       const name = (c.business_name || c.customer_name || '').toLowerCase();
       return (
         name.includes(term) ||
@@ -139,7 +153,7 @@ export const ReportsPage = () => {
         (c.phone || '').includes(term)
       );
     });
-  }, [customerAging, debouncedSearch]);
+  }, [customerAging, debouncedSearch, selectedAgingBucket]);
 
   // Derive mathematically reconciled aging summary directly from ground-truth customer rows:
   const reconciledAging = useMemo(() => {
@@ -310,35 +324,63 @@ export const ReportsPage = () => {
 
         {/* Row 2: 1-Line Sleek Aging Buckets & Due Micro-Strip */}
         <div className="flex items-center justify-between gap-1 px-2 py-1 bg-slate-900/90 border border-slate-800 rounded-lg text-[10px] font-mono overflow-x-auto no-scrollbar shrink-0">
-          <div className="flex items-center gap-1 font-bold text-amber-400 whitespace-nowrap">
+          <button 
+            onClick={() => setSelectedAgingBucket('ALL')}
+            className={`px-1.5 py-0.5 rounded transition-all font-bold whitespace-nowrap flex items-center gap-1 active:scale-95 cursor-pointer ${
+              selectedAgingBucket === 'ALL'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 ring-1 ring-amber-500/30'
+                : 'text-amber-400 hover:text-white'
+            }`}
+            title="Show All Outlets with Dues"
+          >
             <span className="text-[9px] uppercase font-sans text-slate-400">Due:</span>
             <span>₹{totalOutstandingVal >= 1000 ? `${(totalOutstandingVal/1000).toFixed(1)}k` : totalOutstandingVal.toFixed(0)}</span>
-          </div>
+          </button>
           <span className="text-slate-700">|</span>
           <button 
-            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '0–15 Days Current Balances' })}
-            className="text-emerald-400 whitespace-nowrap hover:underline active:scale-95"
+            onClick={() => setSelectedAgingBucket(prev => prev === '0-15' ? 'ALL' : '0-15')}
+            className={`px-1.5 py-0.5 rounded transition-all font-bold whitespace-nowrap active:scale-95 cursor-pointer ${
+              selectedAgingBucket === '0-15'
+                ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 ring-1 ring-emerald-500/40 shadow-sm'
+                : 'text-emerald-400 hover:text-emerald-200'
+            }`}
+            title="Filter Outlets with 0–15 Days Balances"
           >
             <span className="text-slate-400 text-[9px]">0-15d:</span> ₹{parseFloat(reconciledAging?.current_0_15_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.current_0_15_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.current_0_15_days || 0).toFixed(0)}
           </button>
           <span className="text-slate-700">|</span>
           <button 
-            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '16–30 Days Balances' })}
-            className="text-blue-400 whitespace-nowrap hover:underline active:scale-95"
+            onClick={() => setSelectedAgingBucket(prev => prev === '16-30' ? 'ALL' : '16-30')}
+            className={`px-1.5 py-0.5 rounded transition-all font-bold whitespace-nowrap active:scale-95 cursor-pointer ${
+              selectedAgingBucket === '16-30'
+                ? 'bg-blue-500/25 text-blue-300 border border-blue-500/50 ring-1 ring-blue-500/40 shadow-sm'
+                : 'text-blue-400 hover:text-blue-200'
+            }`}
+            title="Filter Outlets with 16–30 Days Balances"
           >
             <span className="text-slate-400 text-[9px]">16-30d:</span> ₹{parseFloat(reconciledAging?.aging_16_30_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_16_30_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.aging_16_30_days || 0).toFixed(0)}
           </button>
           <span className="text-slate-700">|</span>
           <button 
-            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '31–60 Days Overdue Balances' })}
-            className="text-amber-400 whitespace-nowrap hover:underline active:scale-95"
+            onClick={() => setSelectedAgingBucket(prev => prev === '31-60' ? 'ALL' : '31-60')}
+            className={`px-1.5 py-0.5 rounded transition-all font-bold whitespace-nowrap active:scale-95 cursor-pointer ${
+              selectedAgingBucket === '31-60'
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 ring-1 ring-amber-500/40 shadow-sm'
+                : 'text-amber-400 hover:text-amber-200'
+            }`}
+            title="Filter Outlets with 31–60 Days Balances"
           >
             <span className="text-slate-400 text-[9px]">31-60d:</span> ₹{parseFloat(reconciledAging?.aging_31_60_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_31_60_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.aging_31_60_days || 0).toFixed(0)}
           </button>
           <span className="text-slate-700">|</span>
           <button 
-            onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: '60+ Days Severe Risk Balances' })}
-            className="text-rose-400 font-bold whitespace-nowrap hover:underline active:scale-95"
+            onClick={() => setSelectedAgingBucket(prev => prev === '60+' ? 'ALL' : '60+')}
+            className={`px-1.5 py-0.5 rounded transition-all font-bold whitespace-nowrap active:scale-95 cursor-pointer ${
+              selectedAgingBucket === '60+'
+                ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 ring-1 ring-rose-500/40 shadow-sm'
+                : 'text-rose-400 hover:text-rose-200'
+            }`}
+            title="Filter Outlets with 60+ Days Severe Risk Balances"
           >
             <span className="text-slate-400 text-[9px]">60+d:</span> ₹{parseFloat(reconciledAging?.aging_60_plus_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_60_plus_days || 0)/1000).toFixed(1)}k` : parseFloat(reconciledAging?.aging_60_plus_days || 0).toFixed(0)}
           </button>
@@ -351,9 +393,22 @@ export const ReportsPage = () => {
         {/* Left Column: Customer Aging Table (55% = 7 cols) */}
         <div className={`${mobileTab === 'velocity' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Users className="w-3.5 h-3.5 text-amber-400" />
-              <span>Customer Aging Matrix ({filteredCustomerAging.length})</span>
+              <span>
+                Customer Aging Matrix ({filteredCustomerAging.length}
+                {selectedAgingBucket !== 'ALL' ? ` in ${selectedAgingBucket}d` : ' Outlets'})
+              </span>
+              {selectedAgingBucket !== 'ALL' && (
+                <button
+                  onClick={() => setSelectedAgingBucket('ALL')}
+                  className="text-[10px] text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 transition"
+                  title="Clear bucket filter"
+                >
+                  <span>Reset</span>
+                  <span>✕</span>
+                </button>
+              )}
             </div>
             <span className="text-[10px] text-slate-500">1-Click WhatsApp reminder</span>
           </div>
@@ -480,7 +535,14 @@ export const ReportsPage = () => {
               <Package className="w-3.5 h-3.5 text-emerald-400" />
               <span>SKU Sales Velocity ({productSales.length})</span>
             </div>
-            <span className="text-[10px] text-slate-500">Units & Revenue</span>
+            <button
+              onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: 'Product Category Sales Deep-Dive' })}
+              className="text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 transition active:scale-95"
+              title="Drilldown into product categories and SKUs"
+            >
+              <span>Category Drill</span>
+              <span>→</span>
+            </button>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5 pb-20 sm:pb-2">
