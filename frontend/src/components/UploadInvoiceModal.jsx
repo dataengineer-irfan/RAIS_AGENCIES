@@ -472,6 +472,10 @@ export const UploadInvoiceModal = ({
               <p className="text-xs text-slate-400">
                 Upload any PDF, Image or CSV invoice. Our AI detects items, matches existing catalogue SKUs, and lets you add new products instantly.
               </p>
+              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-emerald-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                <span>Quantity-Only Update: Inwarding increases warehouse stock. Defined catalogue selling prices remain untouched.</span>
+              </div>
             </div>
           </div>
           <button
@@ -636,7 +640,7 @@ export const UploadInvoiceModal = ({
                       <th className="py-2.5 px-3 text-center">Billed Qty</th>
                       <th className="py-2.5 px-3 text-center">Pack Spec</th>
                       <th className="py-2.5 px-3 text-center">Inward Packs *</th>
-                      <th className="py-2.5 px-3 text-right">Cost / Pack (₹) *</th>
+                      <th className="py-2.5 px-3 text-right">Supplier Cost / Pack (₹) *</th>
                       <th className="py-2.5 px-3 text-right">Line Total (₹)</th>
                       <th className="py-2.5 px-2 text-center"></th>
                     </tr>
@@ -798,7 +802,7 @@ export const UploadInvoiceModal = ({
               </div>
 
               <span className="text-[11px] text-slate-400">
-                Inward Depot: <strong className="text-white">Rayachoty Cold-Chain Depot</strong>
+                Inward Depot: <strong className="text-white">Rayachoty Cold-Chain Depot</strong> • <span className="text-emerald-400 font-semibold">Catalogue selling prices preserved</span>
               </span>
             </div>
           )}
