@@ -340,7 +340,67 @@ export const ReportsPage = () => {
           </div>
 
           <div className="flex-1 min-h-0 overflow-auto pb-20 sm:pb-2">
-            <table className="min-w-[550px] w-full text-left text-xs border-collapse">
+            {/* ─── MOBILE CARD VIEW (< sm) ─── */}
+            <div className="sm:hidden space-y-2">
+              {(filteredCustomerAging || []).map(c => {
+                const total = parseFloat(c?.total_outstanding ?? c?.total_due ?? 0);
+                const isSevere = parseFloat(c?.aging_60_plus_days ?? c?.days_60_plus ?? 0) > 0;
+                const cName = c?.business_name || c?.customer_name || 'Customer';
+                const c0_15 = parseFloat(c?.current_0_15_days ?? c?.current_0_15 ?? 0);
+                const c16_30 = parseFloat(c?.aging_16_30_days ?? c?.days_16_30 ?? 0);
+                const c31_60 = parseFloat(c?.aging_31_60_days ?? c?.days_31_60 ?? 0);
+                const c60_plus = parseFloat(c?.aging_60_plus_days ?? c?.days_60_plus ?? 0);
+
+                return (
+                  <div key={c?.customer_id} className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="overflow-hidden">
+                        <span className="font-bold text-white text-xs block truncate">{cName}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{c?.customer_code || 'OUTLET'}</span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] uppercase text-slate-500 font-bold block">Total Due</span>
+                        <span className="font-mono font-black text-amber-400 text-sm">₹{total.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Aging Buckets Micro-Pills */}
+                    <div className="grid grid-cols-4 gap-1 text-center font-mono text-[10px] pt-1 border-t border-slate-900">
+                      <div className="bg-slate-900/90 rounded p-1">
+                        <span className="text-[8px] text-slate-500 block">0–15d</span>
+                        <span className="text-slate-300 font-bold">₹{c0_15.toFixed(0)}</span>
+                      </div>
+                      <div className="bg-slate-900/90 rounded p-1">
+                        <span className="text-[8px] text-slate-500 block">16–30d</span>
+                        <span className="text-slate-300 font-bold">₹{c16_30.toFixed(0)}</span>
+                      </div>
+                      <div className="bg-slate-900/90 rounded p-1">
+                        <span className="text-[8px] text-slate-500 block">31–60d</span>
+                        <span className="text-amber-400 font-bold">₹{c31_60.toFixed(0)}</span>
+                      </div>
+                      <div className={`rounded p-1 ${isSevere ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-900/90 text-slate-500'}`}>
+                        <span className="text-[8px] block opacity-75">60+d</span>
+                        <span className="font-bold">₹{c60_plus.toFixed(0)}</span>
+                      </div>
+                    </div>
+
+                    {/* Quick WhatsApp Action Bar */}
+                    <div className="pt-1 flex justify-end">
+                      <button
+                        onClick={() => handleSendWhatsAppReminder(c)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold active:scale-95 transition"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Send WhatsApp Statement</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ─── DESKTOP TABLE VIEW (sm and above) ─── */}
+            <table className="hidden sm:table min-w-[550px] w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
                   <th className="py-2 px-2">Customer</th>

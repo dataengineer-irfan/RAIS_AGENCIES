@@ -70,7 +70,7 @@ export const Header = ({
   };
 
   return (
-    <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all">
+    <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all pt-[env(safe-area-inset-top,0px)]">
       {/* ─── DESKTOP HEADER (md and above) ─── */}
       <div className="hidden md:flex h-16 px-4 sm:px-6 items-center justify-between gap-3">
         {/* Left section: Top-Left Toggle Bar + Search */}
@@ -351,7 +351,7 @@ export const Header = ({
           >
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="w-4/5 max-w-xs bg-slate-900 border-r border-slate-800 h-full flex flex-col p-4 shadow-2xl animate-in slide-in-from-left duration-200"
+              className="w-4/5 max-w-xs bg-slate-900 border-r border-slate-800 h-full flex flex-col p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-[max(1rem,env(safe-area-inset-bottom,0px))] shadow-2xl animate-in slide-in-from-left duration-200"
             >
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">

@@ -58,7 +58,7 @@ export const AIAssistantDrawer = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-y-0 right-0 w-full md:w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+      <div className="p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
             <Sparkles className="w-4 h-4" />
@@ -147,7 +147,7 @@ export const AIAssistantDrawer = ({ isOpen, onClose }) => {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-slate-800 bg-slate-950">
+      <div className="p-3 border-t border-slate-800 bg-slate-950 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
         <form
           onSubmit={(e) => {
             e.preventDefault();

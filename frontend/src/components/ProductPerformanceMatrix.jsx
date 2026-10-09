@@ -19,7 +19,9 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL'); // ALL, WINNER, STEADY, DECLINING, ZERO_MOVER
-  const [viewMode, setViewMode] = useState('TABLE'); // TABLE or MATRIX
+  const [viewMode, setViewMode] = useState(() => 
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'MATRIX' : 'TABLE'
+  ); // Responsive default: MATRIX for mobile/tablet, TABLE for desktop
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {

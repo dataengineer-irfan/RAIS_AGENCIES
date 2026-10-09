@@ -456,9 +456,26 @@ export const DashboardPage = ({
   const profitVal = parseFloat(kpis?.overall_profit || 0);
   const lossVal = parseFloat(kpis?.overall_loss || 0);
 
+  // Dynamic Run-Rate & Calendar Pacing for Mobile/Desktop cards
+  const currentCalendarDate = useMemo(() => new Date(), []);
+  const currentDay = currentCalendarDate.getDate();
+  const daysInMonth = useMemo(() => {
+    return new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + 1, 0).getDate();
+  }, [currentCalendarDate]);
+  const projectedMonthlyPacing = useMemo(() => {
+    return currentDay > 0 ? (revenueVal / currentDay) * daysInMonth : revenueVal;
+  }, [revenueVal, currentDay, daysInMonth]);
+  const pacingFormatted = useMemo(() => {
+    if (projectedMonthlyPacing >= 100000) {
+      return `₹${(projectedMonthlyPacing / 100000).toFixed(2)} Lakhs`;
+    }
+    return `₹${projectedMonthlyPacing.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  }, [projectedMonthlyPacing]);
+
   // ─── DYNAMIC PERIOD SLICER FOR REVENUE HERO (Today by default) ───
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [billsDrawerOpen, setBillsDrawerOpen] = useState(false);
+  const [mobileSlicerOpen, setMobileSlicerOpen] = useState(false);
 
   // Notify parent layout if any sub-modal or drawer is open (for suppressing floating action button)
   useEffect(() => {
@@ -617,28 +634,103 @@ export const DashboardPage = ({
         />
       </div>
 
-      {/* ─── MOBILE PAGE TAB STRIP (< md) ─── */}
-      <div className="md:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 py-0.5 scroll-smooth">
-        {[
-          { id: 'overview', label: '📊 Overview' },
-          { id: 'forecast', label: '🎯 Targets' },
-          { id: 'receivables', label: '🛡️ Receivables' },
-          { id: 'products', label: '📦 Products' },
-          { id: 'activity', label: '⚡ Activity' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActivePage(tab.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              activePage === tab.id
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-400'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* ─── MOBILE PAGE TAB STRIP & FILTER TRIGGER (< md) ─── */}
+      <div className="md:hidden flex items-center justify-between gap-1.5 shrink-0 py-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth flex-1">
+          {[
+            { id: 'overview', label: '📊 Overview' },
+            { id: 'forecast', label: '🎯 Targets' },
+            { id: 'receivables', label: '🛡️ Receivables' },
+            { id: 'products', label: '📦 Products' },
+            { id: 'activity', label: '⚡ Activity' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActivePage(tab.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                activePage === tab.id
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                  : 'bg-slate-900 border border-slate-800 text-slate-400'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile Filter Toggle Button */}
+        <button
+          onClick={() => setMobileSlicerOpen(!mobileSlicerOpen)}
+          className={`px-2.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+            mobileSlicerOpen || filters.categoryId !== 'ALL' || filters.customerId !== 'ALL'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+          }`}
+          title="Toggle Filter Slicers"
+        >
+          <FilterIcon className="w-3 h-3" />
+          <span>Filters</span>
+          {(filters.categoryId !== 'ALL' || filters.customerId !== 'ALL') && (
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          )}
+        </button>
       </div>
+
+      {/* ─── MOBILE COLLAPSIBLE FILTER SLICER PANEL (< md) ─── */}
+      {mobileSlicerOpen && (
+        <div className="md:hidden bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150 shrink-0">
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+              <FilterIcon className="w-3.5 h-3.5" />
+              <span>Data Slicers & Scope</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleResetFilters}
+                className="text-[10px] text-slate-400 hover:text-white underline font-semibold"
+              >
+                Reset All
+              </button>
+              <button
+                onClick={() => setMobileSlicerOpen(false)}
+                className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Category</label>
+              <select
+                value={filters.categoryId}
+                onChange={(e) => handleFilterChange('categoryId', e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 truncate"
+              >
+                <option value="ALL">All Categories</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Outlet</label>
+              <select
+                value={filters.customerId}
+                onChange={(e) => handleFilterChange('customerId', e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 truncate"
+              >
+                <option value="ALL">All Outlets</option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.business_name || c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── CANVAS VIEWPORT: flex-1 fills remaining height ─── */}
       <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
@@ -1167,10 +1259,12 @@ export const DashboardPage = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-white">Monthly Run-Rate</span>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-lg">Day 3/30</span>
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-lg">
+                        Day {currentDay}/{daysInMonth}
+                      </span>
                     </div>
                     <p className="text-xs text-slate-300 mt-0.5">
-                      Pacing at <span className="text-amber-400 font-bold font-mono">₹2.31 Lakhs</span> this month
+                      Pacing at <span className="text-amber-400 font-bold font-mono">{pacingFormatted}</span> this month
                     </p>
                   </div>
                 </div>

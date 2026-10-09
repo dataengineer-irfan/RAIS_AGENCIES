@@ -401,8 +401,75 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                   const isStockLow = (parseFloat(item?.quantity || 0)) > (parseFloat(item?.current_stock || 0));
 
                   return (
-                    <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                      <div className="grid grid-cols-12 gap-2 items-center">
+                    <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2.5">
+                      {/* ─── MOBILE STACKED VIEW (< sm) ─── */}
+                      <div className="sm:hidden space-y-2">
+                        {/* Top: SKU Selector + Delete Button */}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={item.product_id}
+                            onChange={(e) => handleProductChange(idx, e.target.value)}
+                            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium truncate"
+                          >
+                            <option value="">-- Choose Product SKU --</option>
+                            {sortProductsByCleanName(products).map((p) => {
+                              const { cleanName, brandName } = formatProductDisplay(p);
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(idx)}
+                            className="p-2 text-slate-400 hover:text-rose-400 bg-slate-900 border border-slate-800 rounded-lg active:scale-95 shrink-0"
+                            title="Remove row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Bottom: 36px Steppers + Line Total */}
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustQuantity(idx, -1)}
+                              className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700 text-sm font-bold"
+                              title="Decrease quantity"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              step="any"
+                              value={item.quantity}
+                              onChange={(e) => handleQuantityChange(idx, e.target.value)}
+                              placeholder="Qty"
+                              className="w-14 bg-slate-900 border border-slate-800 rounded-xl py-1.5 text-xs text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAdjustQuantity(idx, 1)}
+                              className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700 text-sm font-bold"
+                              title="Increase quantity"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-500 uppercase block font-sans">Line Total</span>
+                            <span className="font-mono font-black text-amber-400 text-sm">₹{(item.quantity * item.unit_price).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ─── DESKTOP/TABLET GRID VIEW (sm and above) ─── */}
+                      <div className="hidden sm:grid grid-cols-12 gap-2 items-center">
                         <div className="col-span-6">
                           <select
                             value={item.product_id}
@@ -426,10 +493,10 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                             <button
                               type="button"
                               onClick={() => handleAdjustQuantity(idx, -1)}
-                              className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                              className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
                               title="Decrease quantity"
                             >
-                              <Minus className="w-3 h-3" />
+                              <Minus className="w-3.5 h-3.5" />
                             </button>
                             <input
                               type="number"
@@ -438,15 +505,15 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                               value={item.quantity}
                               onChange={(e) => handleQuantityChange(idx, e.target.value)}
                               placeholder="Qty"
-                              className="w-full min-w-[32px] bg-slate-900 border border-slate-800 rounded py-1 text-xs text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 font-mono"
+                              className="w-full min-w-[36px] bg-slate-900 border border-slate-800 rounded-lg py-1 text-xs text-center font-bold text-amber-400 focus:outline-none focus:border-amber-500 font-mono"
                             />
                             <button
                               type="button"
                               onClick={() => handleAdjustQuantity(idx, 1)}
-                              className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                              className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
                               title="Increase quantity"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>

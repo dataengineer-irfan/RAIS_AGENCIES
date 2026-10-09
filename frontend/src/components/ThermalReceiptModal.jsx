@@ -219,20 +219,20 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
               <div className="my-2 border-t border-dashed border-black"></div>
 
               {/* UPI QR Payment Code Block */}
-              {receipt?.upi?.upi_qr_string ? (
+              {(receipt?.upi?.upi_qr_base64 || receipt?.upi?.upi_qr_string) ? (
                 <div className="text-center space-y-1">
                   <div className="text-xs font-bold uppercase tracking-wider">
                     Scan & Pay via UPI
                   </div>
                   <div className="flex justify-center p-1 bg-white">
-                    {/* Generated Dynamic UPI QR Code Image via quickchart */}
+                    {/* Render offline-generated UPI QR code (base64) with remote fallback */}
                     <img 
-                      src={`https://quickchart.io/qr?text=${encodeURIComponent(receipt.upi.upi_qr_string)}&size=120&margin=1`}
+                      src={receipt?.upi?.upi_qr_base64 || `https://quickchart.io/qr?text=${encodeURIComponent(receipt.upi.upi_qr_string)}&size=120&margin=1`}
                       alt="UPI QR Code"
-                      className="w-24 h-24 border border-black p-0.5"
+                      className="w-24 h-24 border border-black p-0.5 object-contain"
                     />
                   </div>
-                  <div className="text-[10px] font-bold text-gray-900">UPI: {receipt.upi.upi_id || '9347453135@ybl'}</div>
+                  <div className="text-[10px] font-bold text-gray-900">UPI: {receipt.upi?.upi_id || '9347453135@ybl'}</div>
                 </div>
               ) : null}
 

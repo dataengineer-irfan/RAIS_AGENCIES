@@ -58,6 +58,15 @@ class ThermalPrintService:
         outstanding = float(invoice.outstanding_amount or 0.0)
 
         upi_qr_data = ThermalPrintService.generate_upi_qr_string(invoice.invoice_number, outstanding if outstanding > 0 else grand_total)
+        upi_qr_base64 = None
+        try:
+            import io, base64, qrcode
+            qr_img = qrcode.make(upi_qr_data)
+            buf = io.BytesIO()
+            qr_img.save(buf, format="PNG")
+            upi_qr_base64 = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
+        except Exception:
+            upi_qr_base64 = None
 
         return {
             "header": {
@@ -90,7 +99,8 @@ class ThermalPrintService:
             },
             "upi": {
                 "upi_id": ThermalPrintService.UPI_ID,
-                "upi_qr_string": upi_qr_data
+                "upi_qr_string": upi_qr_data,
+                "upi_qr_base64": upi_qr_base64
             },
             "footer_message": "Thank you for partnering with RAIS Agencies!"
         }

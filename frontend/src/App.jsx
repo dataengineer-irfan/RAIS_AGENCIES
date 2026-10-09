@@ -152,7 +152,7 @@ export const App = () => {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-950 flex relative">
+    <div className="h-screen h-[100dvh] w-screen overflow-hidden bg-slate-950 flex relative">
       
       {/* ─── TOP-LEFT CORNER HOVER TRIGGER HOTSPOT (Active when collapsed on desktop) ─── */}
       {!sidebarOpen && (
@@ -188,7 +188,7 @@ export const App = () => {
       />
 
       {/* ─── MAIN CONTENT AREA ─── */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden transition-all duration-300">
+      <div className="flex-1 flex flex-col min-w-0 h-screen h-[100dvh] overflow-hidden transition-all duration-300">
         <Header
           sidebarOpen={sidebarOpen}
           onToggleSidebar={handleToggleSidebar}

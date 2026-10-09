@@ -17,7 +17,8 @@ import {
   Database,
   Download,
   HardDrive,
-  RefreshCw
+  RefreshCw,
+  FileText
 } from 'lucide-react';
 import { auditApi, backupApi } from '../services/api';
 import { copyToClipboard } from '../utils/mobileHelpers';
@@ -31,6 +32,7 @@ export const AuditPage = () => {
   
   // Master-Detail State
   const [selectedLogId, setSelectedLogId] = useState(null);
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
   const [activeInspectorTab, setActiveInspectorTab] = useState('json'); // json, metadata, compliance
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -286,11 +288,38 @@ export const AuditPage = () => {
         </div>
       )}
 
+      {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
+      <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+        <button
+          onClick={() => setMobileView('list')}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'list'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Journal ({filteredLogs.length})</span>
+        </button>
+        <button
+          onClick={() => setMobileView('detail')}
+          disabled={!selectedLog}
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileView === 'detail'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white disabled:opacity-40'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Inspector</span>
+        </button>
+      </div>
+
       {/* ─── MASTER-DETAIL SPLIT-PANE CONTAINER (100% Viewport-Locked) ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
         
         {/* ─── LEFT MASTER PANE (42% Width = 5 cols) ─── */}
-        <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
             <span>Audit Journal ({filteredLogs.length})</span>
             <span>Timestamp</span>
@@ -315,7 +344,10 @@ export const AuditPage = () => {
                 return (
                   <div
                     key={l.id}
-                    onClick={() => setSelectedLogId(l.id)}
+                    onClick={() => {
+                      setSelectedLogId(l.id);
+                      setMobileView('detail');
+                    }}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                       isSelected
                         ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/10'
@@ -353,10 +385,20 @@ export const AuditPage = () => {
         </div>
 
         {/* ─── RIGHT DETAIL INSPECTOR (58% Width = 7 cols) ─── */}
-        <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'list' ? 'hidden lg:flex' : 'flex'} lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-xl flex-col overflow-hidden`}>
           {selectedLog ? (
             <div className="h-full flex flex-col overflow-hidden">
               
+              {/* Mobile Back Button */}
+              <div className="lg:hidden mb-2">
+                <button
+                  onClick={() => setMobileView('list')}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-all active:scale-95"
+                >
+                  ← Back to Audit Journal
+                </button>
+              </div>
+
               {/* Inspector Header */}
               <div className="flex items-start justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div>
