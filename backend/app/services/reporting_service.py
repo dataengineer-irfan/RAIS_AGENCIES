@@ -374,16 +374,27 @@ class ReportingService:
         pay_rows = db.query(Payment.customer_id, func.sum(Payment.amount)).filter(Payment.customer_id.in_(cust_ids)).group_by(Payment.customer_id).all() if cust_ids else []
         paid_map = {r[0]: Decimal(str(r[1] or "0.00")) for r in pay_rows}
 
+        # Batch 4: Total invoiced per active customer to determine true live ledger balance
+        inv_tot_rows = db.query(Invoice.customer_id, func.sum(Invoice.total_amount)).filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.PAID.value, InvoiceStatus.OVERDUE.value])
+        ).group_by(Invoice.customer_id).all() if cust_ids else []
+        inv_tot_map = {r[0]: Decimal(str(r[1] or "0.00")) for r in inv_tot_rows}
+
         results: List[CustomerAgingReportItem] = []
 
         for cust in customers:
             open_invs = invs_by_customer.get(cust.id, [])
             ob = Decimal(str(cust.opening_balance or "0.00"))
             paid = paid_map.get(cust.id, Decimal("0.00"))
-            rem_ob = max(Decimal("0.00"), ob - paid) if ob > Decimal("0.00") else Decimal("0.00")
+            tot_invoiced = inv_tot_map.get(cust.id, Decimal("0.00"))
+            net_balance = max(Decimal("0.00"), ob + tot_invoiced - paid)
 
-            if not open_invs and rem_ob <= Decimal("0.00"):
+            # If customer has zero or negative net ledger balance, they owe nothing
+            if net_balance <= Decimal("0.00"):
                 continue
+
+            rem_ob = max(Decimal("0.00"), ob - paid) if ob > Decimal("0.00") else Decimal("0.00")
 
             c_0_15 = Decimal("0.00")
             c_16_30 = Decimal("0.00")
@@ -402,8 +413,22 @@ class ReportingService:
                 else:
                     c_60_plus += amt
 
-            total = c_0_15 + c_16_30 + c_31_60 + c_60_plus
-            if total > 0:
+            raw_total = c_0_15 + c_16_30 + c_31_60 + c_60_plus
+            if raw_total <= Decimal("0.00"):
+                continue
+
+            # Strict reconciliation clamp: total aging cannot exceed net live balance
+            if raw_total > net_balance and raw_total > Decimal("0.00"):
+                scale = net_balance / raw_total
+                c_0_15 = (c_0_15 * scale).quantize(Decimal("0.01"))
+                c_16_30 = (c_16_30 * scale).quantize(Decimal("0.01"))
+                c_31_60 = (c_31_60 * scale).quantize(Decimal("0.01"))
+                c_60_plus = max(Decimal("0.00"), net_balance - c_0_15 - c_16_30 - c_31_60)
+                total = net_balance
+            else:
+                total = raw_total
+
+            if total > Decimal("0.00"):
                 results.append(CustomerAgingReportItem(
                     customer_id=cust.id,
                     customer_code=cust.customer_code,

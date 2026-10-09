@@ -64,10 +64,17 @@ class CustomerHealthService:
 
             # 2. Overdue calculation & punctuality
             overdue_invoices = [inv for inv in invoices if inv.outstanding_amount > 0 and inv.due_date and inv.due_date < today]
-            overdue_amount = sum([inv.outstanding_amount for inv in overdue_invoices]) or Decimal("0.00")
+            raw_overdue = sum([inv.outstanding_amount for inv in overdue_invoices]) or Decimal("0.00")
 
-            days_late_list = [(today - inv.due_date).days for inv in overdue_invoices if inv.due_date]
-            avg_days_late = round(sum(days_late_list) / len(days_late_list), 1) if days_late_list else 0.0
+            # CRITICAL ACCOUNTING INTEGRITY CLAMP:
+            # Overdue cannot exceed net customer ledger balance. If a customer has 0 or negative balance, overdue is strictly 0.
+            if outstanding <= Decimal("0.00"):
+                overdue_amount = Decimal("0.00")
+                avg_days_late = 0.0
+            else:
+                overdue_amount = min(raw_overdue, outstanding)
+                days_late_list = [(today - inv.due_date).days for inv in overdue_invoices if inv.due_date]
+                avg_days_late = round(sum(days_late_list) / len(days_late_list), 1) if days_late_list else 0.0
 
             # 3. Order frequency trend
             last_order_date = orders[0].order_date if orders else None

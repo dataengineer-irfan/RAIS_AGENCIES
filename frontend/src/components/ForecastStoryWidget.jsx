@@ -78,72 +78,90 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
   const sparklineData = (forecast.sparkline || []).map(p => p.daily_revenue || 0);
 
   return (
-    <div className="flex flex-col h-full gap-2.5 overflow-hidden animate-fadeIn">
+    <div className="flex flex-col min-h-full sm:h-full gap-2.5 sm:overflow-hidden animate-fadeIn pb-24 sm:pb-0">
       
       {/* ─── TOP HEADER BAR ─── */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-            <Target className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-black text-white">
-                Sales Targets & Run-Rate
-              </h2>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                Day {forecast.days_elapsed}/{forecast.days_in_month} ({forecast.year_month})
-              </span>
+      {/* ─── 2-ROW EXECUTIVE HEADER BAR (Mobile-Optimized) ─── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col gap-2 shrink-0">
+        {/* Row 1: Title & Inline Goal Setter Pill */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+              <Target className="w-4 h-4" />
             </div>
-            <p className="text-[11px] text-slate-400">
-              Monthly revenue pacing
-            </p>
+            <h2 className="text-sm sm:text-base font-black text-white truncate">
+              Sales Targets & Run-Rate
+            </h2>
+          </div>
+
+          {/* Inline Goal Setter Pill */}
+          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 shrink-0">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 font-bold uppercase tracking-wider">Goal:</span>
+            {editingTarget ? (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-amber-400 font-mono">₹</span>
+                <input
+                  type="number"
+                  value={targetInput}
+                  onChange={(e) => setTargetInput(e.target.value)}
+                  className="w-16 sm:w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveTarget}
+                  disabled={savingTarget}
+                  className="p-0.5 text-emerald-400 hover:bg-emerald-500/20 rounded transition"
+                  title="Save"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setEditingTarget(false)}
+                  className="p-0.5 text-slate-400 hover:bg-slate-800 rounded transition"
+                  title="Cancel"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-mono font-bold text-amber-400">
+                  ₹{targetRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
+                <button
+                  onClick={() => setEditingTarget(true)}
+                  className="p-0.5 text-slate-400 hover:text-amber-400 rounded transition"
+                  title="Edit Target"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Compact Target Setter Pill */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1">
-          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Goal:</span>
-          {editingTarget ? (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-amber-400 font-mono">₹</span>
-              <input
-                type="number"
-                value={targetInput}
-                onChange={(e) => setTargetInput(e.target.value)}
-                className="w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
-                autoFocus
-              />
-              <button
-                onClick={handleSaveTarget}
-                disabled={savingTarget}
-                className="p-1 text-emerald-400 hover:bg-emerald-500/20 rounded transition"
-                title="Save"
-              >
-                <Check className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setEditingTarget(false)}
-                className="p-1 text-slate-400 hover:bg-slate-800 rounded transition"
-                title="Cancel"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-mono font-bold text-white">
-                ₹{targetRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </span>
-              <button
-                onClick={() => setEditingTarget(true)}
-                className="p-1 text-slate-400 hover:text-amber-400 rounded transition"
-                title="Edit Target"
-              >
-                <Edit3 className="w-3 h-3" />
-              </button>
-            </div>
-          )}
+        {/* Row 2: Timeline Context & Live Velocity Micro-Strip */}
+        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800/80 text-[11px]">
+          <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+            <span className="font-mono text-slate-300">
+              Day {forecast.days_elapsed}/{forecast.days_in_month}
+            </span>
+            <span className="text-slate-600">•</span>
+            <span>{forecast.year_month}</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono border ${
+              isAhead
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+            }`}>
+              {isAhead ? `Ahead +${pacePct}%` : `Behind -${pacePct}%`}
+            </span>
+            <span className="text-[10px] text-slate-500 font-mono hidden xs:inline">
+              (₹{dailyRate.toFixed(0)}/day)
+            </span>
+          </div>
         </div>
       </div>
 
@@ -239,7 +257,7 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
       </div>
 
       {/* ─── DAILY RUN-RATE LOG TABLE (HIGH-DENSITY, INTERNAL SCROLL) ─── */}
-      <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg flex flex-col overflow-hidden">
+      <div className="min-h-[360px] sm:min-h-0 sm:flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg flex flex-col overflow-hidden">
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0">
           <div className="flex items-center gap-1.5">
             <BarChart2 className="w-3.5 h-3.5 text-amber-400" />
@@ -250,14 +268,14 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
           </span>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto pb-20 sm:pb-2">
+          <table className="w-full min-w-[360px] text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
               <tr>
-                <th className="py-2 px-2.5">Date</th>
-                <th className="py-2 px-2.5 text-right">Daily Invoiced</th>
-                <th className="py-2 px-2.5 text-right">Cumulative Revenue</th>
-                <th className="py-2 px-2.5 text-right">Pace vs Run-Rate</th>
+                <th className="py-2 px-2.5 whitespace-nowrap">Date</th>
+                <th className="py-2 px-2.5 text-right whitespace-nowrap">Daily Invoiced</th>
+                <th className="py-2 px-2.5 text-right whitespace-nowrap">Cumulative</th>
+                <th className="py-2 px-2.5 text-right whitespace-nowrap">Pace vs Target</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
@@ -266,23 +284,40 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
                 const dailyVal = parseFloat(day.daily_revenue || 0);
                 const isDayAhead = dailyVal >= targetDaily;
 
+                const formatDateDisplay = (dateStr) => {
+                  if (!dateStr) return '';
+                  try {
+                    const parts = dateStr.split('-');
+                    if (parts.length === 3) {
+                      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      const mIdx = parseInt(parts[1], 10) - 1;
+                      return `${parts[2]} ${months[mIdx] || parts[1]}`;
+                    }
+                    return dateStr;
+                  } catch (e) {
+                    return dateStr;
+                  }
+                };
+
                 return (
                   <tr key={day.date} className="hover:bg-slate-950/40 transition-colors">
-                    <td className="py-2 px-2.5">
-                      <span className="font-mono text-xs font-bold text-white">
-                        {day.date}
-                      </span>
-                      <span className="text-[10px] text-slate-400 ml-1.5">
-                        Day {day.day}
-                      </span>
+                    <td className="py-2 px-2.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="font-mono text-xs font-bold text-white">
+                          {formatDateDisplay(day.date)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          • Day {day.day}
+                        </span>
+                      </div>
                     </td>
-                    <td className="py-2 px-2.5 text-right font-mono font-bold text-white">
+                    <td className="py-2 px-2.5 text-right font-mono font-bold text-white whitespace-nowrap">
                       ₹{dailyVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-2 px-2.5 text-right font-mono font-semibold text-slate-300">
+                    <td className="py-2 px-2.5 text-right font-mono font-semibold text-slate-300 whitespace-nowrap">
                       ₹{parseFloat(day.cumulative_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-2 px-2.5 text-right">
+                    <td className="py-2 px-2.5 text-right whitespace-nowrap">
                       <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
                         isDayAhead 
                           ? 'bg-emerald-500/10 text-emerald-300' 

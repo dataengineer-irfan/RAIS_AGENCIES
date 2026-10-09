@@ -13,7 +13,10 @@ import {
   ArrowUpRight,
   ChevronRight,
   ShieldAlert,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  RefreshCw,
+  Info
 } from 'lucide-react';
 import { reportApi, paymentApi } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
@@ -28,6 +31,8 @@ export const ReportsPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [reconciling, setReconciling] = useState(false);
   const [reconcileSuccess, setReconcileSuccess] = useState('');
+  const [fifoModalOpen, setFifoModalOpen] = useState(false);
+  const [downloadToast, setDownloadToast] = useState('');
   
   // Drilldown Modal
   const [drillModal, setDrillModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
@@ -72,26 +77,37 @@ export const ReportsPage = () => {
   };
 
   const handleExportCSV = () => {
-    const headers = ['Customer Code', 'Customer Name', 'Phone', '0-15 Days', '16-30 Days', '31-60 Days', '60+ Days', 'Total Outstanding'];
-    const rows = customerAging.map(c => [
-      `"${c.customer_code}"`,
-      `"${c.business_name || c.customer_name || ''}"`,
-      `"${c.phone || ''}"`,
-      c.current_0_15_days ?? c.current_0_15 ?? 0,
-      c.aging_16_30_days ?? c.days_16_30 ?? 0,
-      c.aging_31_60_days ?? c.days_31_60 ?? 0,
-      c.aging_60_plus_days ?? c.days_60_plus ?? 0,
-      c.total_outstanding ?? c.total_due ?? 0
-    ]);
+    try {
+      const headers = ['Customer Code', 'Customer Name', 'Phone', '0-15 Days', '16-30 Days', '31-60 Days', '60+ Days', 'Total Outstanding'];
+      const rows = customerAging.map(c => [
+        `"${c.customer_code || ''}"`,
+        `"${(c.business_name || c.customer_name || '').replace(/"/g, '""')}"`,
+        `"${c.phone || ''}"`,
+        c.current_0_15_days ?? c.current_0_15 ?? 0,
+        c.aging_16_30_days ?? c.days_16_30 ?? 0,
+        c.aging_31_60_days ?? c.days_31_60 ?? 0,
+        c.aging_60_plus_days ?? c.days_60_plus ?? 0,
+        c.total_outstanding ?? c.total_due ?? 0
+      ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `RAIS_Aging_Report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `RAIS_Aging_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      setDownloadToast(`Aging CSV exported successfully (${customerAging.length} outlets)`);
+      setTimeout(() => setDownloadToast(''), 4000);
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+      setDownloadToast('Failed to export CSV. Please retry.');
+      setTimeout(() => setDownloadToast(''), 4000);
+    }
   };
 
   const handleReconcileFIFO = async () => {
@@ -99,11 +115,14 @@ export const ReportsPage = () => {
     setReconcileSuccess('');
     try {
       const res = await paymentApi.reconcileFifo();
-      setReconcileSuccess(`Reconciled ${res?.total_customers_reconciled || 0} outlets successfully via FIFO!`);
-      setTimeout(() => setReconcileSuccess(''), 5000);
+      const count = res?.total_customers_reconciled || 0;
+      setReconcileSuccess(`Reconciled ${count} outlet${count === 1 ? '' : 's'} successfully via FIFO!`);
+      setTimeout(() => setReconcileSuccess(''), 6000);
+      setFifoModalOpen(false);
       await loadReports();
     } catch (err) {
       console.error('Failed to run FIFO reconciliation:', err);
+      setReconcileSuccess('FIFO reconciliation failed. Please try again.');
     } finally {
       setReconciling(false);
     }
@@ -135,6 +154,17 @@ export const ReportsPage = () => {
             <span className="font-bold">{reconcileSuccess}</span>
           </div>
           <button onClick={() => setReconcileSuccess('')} className="text-emerald-400 hover:text-white text-xs">✕</button>
+        </div>
+      )}
+
+      {/* ─── DOWNLOAD CSV NOTIFICATION TOAST ─── */}
+      {downloadToast && (
+        <div className="bg-sky-500/10 border border-sky-500/30 text-sky-300 px-4 py-2 rounded-xl text-xs flex items-center justify-between shrink-0 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Download className="w-4 h-4 text-sky-400" />
+            <span className="font-bold">{downloadToast}</span>
+          </div>
+          <button onClick={() => setDownloadToast('')} className="text-sky-400 hover:text-white text-xs">✕</button>
         </div>
       )}
 
@@ -173,21 +203,20 @@ export const ReportsPage = () => {
           </div>
 
           <button
-            onClick={handleReconcileFIFO}
-            disabled={reconciling}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50"
-            title="Auto-reconcile unallocated payments against oldest open invoices (FIFO)"
+            onClick={() => setFifoModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95"
+            title="Open FIFO Reconciliation Dialog"
           >
-            <Sparkles className={`w-3.5 h-3.5 text-amber-400 ${reconciling ? 'animate-spin' : ''}`} />
-            <span>{reconciling ? 'Reconciling...' : 'FIFO Reconcile'}</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>FIFO Reconcile</span>
           </button>
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95"
             title="Export Aging Report to CSV"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 text-amber-400" />
             <span>Export CSV</span>
           </button>
         </div>
@@ -242,21 +271,21 @@ export const ReportsPage = () => {
           </div>
 
           <button
-            onClick={handleReconcileFIFO}
-            disabled={reconciling}
-            className="flex items-center gap-1 px-2 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-bold rounded-lg text-xs shrink-0 active:scale-95 transition"
+            onClick={() => setFifoModalOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-bold rounded-lg text-xs shrink-0 active:scale-95 transition shadow-xs"
             title="Auto-reconcile unallocated payments via FIFO"
           >
-            <Sparkles className={`w-3 h-3 text-amber-400 ${reconciling ? 'animate-spin' : ''}`} />
+            <Sparkles className="w-3 h-3 text-amber-400" />
             <span className="text-[10px]">FIFO</span>
           </button>
 
           <button
             onClick={handleExportCSV}
-            className="p-1.5 bg-slate-900 border border-slate-800 text-slate-300 rounded-lg text-xs font-bold shrink-0"
+            className="flex items-center gap-1 px-2 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 active:text-white rounded-lg text-xs font-bold shrink-0 transition"
             title="Export CSV"
           >
-            <Download className="w-3 h-3" />
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-[10px] hidden xs:inline">CSV</span>
           </button>
         </div>
 
@@ -310,7 +339,7 @@ export const ReportsPage = () => {
             <span className="text-[10px] text-slate-500">1-Click WhatsApp reminder</span>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-auto">
+          <div className="flex-1 min-h-0 overflow-auto pb-20 sm:pb-2">
             <table className="min-w-[550px] w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
@@ -375,7 +404,7 @@ export const ReportsPage = () => {
             <span className="text-[10px] text-slate-500">Units & Revenue</span>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5 pb-20 sm:pb-2">
             {productSales.map((prod, idx) => (
               <div 
                 key={idx}
@@ -406,6 +435,99 @@ export const ReportsPage = () => {
         metricType={drillModal.metric}
         title={drillModal.title}
       />
+
+      {/* ─── FIFO RECONCILIATION EDUCATIONAL & CONFIRMATION MODAL ─── */}
+      {fifoModalOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border-t-4 border-t-amber-500 animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    FIFO Ledger Reconciliation
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    First-In, First-Out Automatic Settlement Engine
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setFifoModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 text-xs text-slate-300">
+              <div className="p-3.5 bg-slate-950/70 border border-slate-800/80 rounded-xl space-y-2">
+                <div className="flex items-center gap-1.5 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
+                  <Info className="w-3.5 h-3.5" />
+                  <span>How FIFO Reconciliation Works:</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  When wholesale outlets pay lump-sum amounts without specifying which invoice is cleared, <b>FIFO (First-In, First-Out)</b> automatically allocates those payments against their <b>oldest open invoices first</b>.
+                </p>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  This guarantees that debt aging buckets (0–15d, 16–30d, 60+d) accurately reflect only truly outstanding recent shipments, preventing false overdue penalties.
+                </p>
+              </div>
+
+              {/* Current Ledger Stats */}
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold">Active Debtors</p>
+                  <p className="text-base font-black text-white mt-0.5 font-mono">
+                    {customerAging.length} Outlets
+                  </p>
+                </div>
+                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold">Total Debt Balance</p>
+                  <p className="text-base font-black text-amber-400 mt-0.5 font-mono">
+                    ₹{totalOutstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setFifoModalOpen(false)}
+                disabled={reconciling}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs uppercase tracking-wider transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReconcileFIFO}
+                disabled={reconciling}
+                className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition disabled:opacity-50"
+              >
+                {reconciling ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Reconciling...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Run FIFO Reconciliation</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

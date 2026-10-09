@@ -74,7 +74,16 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
                   Inactive Outlet Re-Order Reminder
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
-                  {alerts.length} Outlets Need Ping
+                  {loading ? (
+                    <span className="inline-flex items-center gap-1 font-mono">
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                      <span>Scanning...</span>
+                    </span>
+                  ) : alerts.length > 0 ? (
+                    `${alerts.length} Outlets Need Ping`
+                  ) : (
+                    'All Replenished'
+                  )}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">

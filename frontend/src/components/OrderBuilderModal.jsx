@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Plus, Trash2, X, AlertTriangle, CheckCircle, CheckCircle2, Calculator, MessageSquare, Minus, Sparkles } from 'lucide-react';
+import { ShoppingBag, Plus, Trash2, X, AlertTriangle, CheckCircle, CheckCircle2, Calculator, MessageSquare, Minus, Sparkles, RefreshCw } from 'lucide-react';
 import { customerApi, catalogueApi, orderApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 
-export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselectedCustomerId }) => {
+export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselectedCustomerId, initialCustomerId }) => {
+  const effectiveCustomerId = preselectedCustomerId || initialCustomerId;
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -17,6 +18,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
     { product_id: '', quantity: 1, unit_price: 0, tax_rate: 0, packaging_unit: '', current_stock: 0 }
   ]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdOrder, setCreatedOrder] = useState(null);
 
@@ -24,40 +26,45 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
     if (isOpen) {
       loadInitialData();
     }
-  }, [isOpen, preselectedCustomerId]);
+  }, [isOpen, effectiveCustomerId]);
 
   const loadInitialData = async () => {
     setCreatedOrder(null);
+    setInitialLoading(true);
     try {
       const [custs, prods, cats] = await Promise.all([
-        customerApi.list(),
+        customerApi.list({ limit: 100 }),
         catalogueApi.listProducts({ limit: 200 }),
         catalogueApi.listCategories(true).catch(() => [])
       ]);
-      setCustomers(Array.isArray(custs) ? custs : (custs?.items || []));
-      setProducts(Array.isArray(prods) ? prods : (prods?.items || []));
+      const customerList = Array.isArray(custs) ? custs : (custs?.items || []);
+      const productList = Array.isArray(prods) ? prods : (prods?.items || []);
+      setCustomers(customerList);
+      setProducts(productList);
       setCategories(Array.isArray(cats) ? cats : (cats?.items || []));
 
-      if (preselectedCustomerId) {
-        setCustomerId(preselectedCustomerId);
-      } else if (custs.length > 0) {
-        setCustomerId(custs[0].id);
+      if (effectiveCustomerId) {
+        setCustomerId(effectiveCustomerId);
+      } else if (customerList.length > 0) {
+        setCustomerId(customerList[0].id);
       }
 
-      if (prods.length > 0) {
+      if (productList.length > 0) {
         setItems([
           {
-            product_id: prods[0].id,
+            product_id: productList[0].id,
             quantity: 1,
-            unit_price: parseFloat(prods[0].base_price),
-            tax_rate: parseFloat(prods[0].tax_rate || 0),
-            packaging_unit: prods[0].packaging_unit || 'PKT',
-            current_stock: parseFloat(prods[0].current_stock || 0)
+            unit_price: parseFloat(productList[0].base_price),
+            tax_rate: parseFloat(productList[0].tax_rate || 0),
+            packaging_unit: productList[0].packaging_unit || 'PKT',
+            current_stock: parseFloat(productList[0].current_stock || 0)
           }
         ]);
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -214,13 +221,13 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div className="bg-slate-900 border border-slate-800 w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
@@ -228,13 +235,18 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
               <p className="text-xs text-slate-400">Order booking & stock check</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <button onClick={onClose} title="Close" aria-label="Close" className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Success Screen or Main Form */}
-        {createdOrder ? (
+        {/* Success Screen, Initial Loading or Main Form */}
+        {initialLoading ? (
+          <div className="p-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+            <RefreshCw className="w-7 h-7 animate-spin text-amber-500" />
+            <p className="text-xs font-semibold text-slate-300">Loading catalogue products & outlets...</p>
+          </div>
+        ) : createdOrder ? (
           <div className="p-8 flex flex-col items-center justify-center text-center space-y-4 my-auto">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <CheckCircle2 className="w-8 h-8" />
@@ -298,7 +310,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
           </div>
         ) : (
           /* Form Body */
-          <div className="p-6 space-y-5 text-xs">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 text-xs overflow-y-auto flex-1 custom-scrollbar">
             {error && (
               <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl">
                 {error}

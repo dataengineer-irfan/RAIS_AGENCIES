@@ -70,3 +70,8 @@ frontend/android/app/*.iml
 qa_*.png
 qa_mob_*.png
 backend/tests/*.png
+
+# Local input media & scratch scripts
+_input/
+scratch/
+

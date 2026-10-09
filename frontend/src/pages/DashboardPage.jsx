@@ -66,7 +66,8 @@ function applyClientFilters(rawKpis, filters, customers = []) {
 
   // Filter by customer
   let filteredCustomers = customers;
-  if (filters.customerId && filters.customerId !== 'ALL') {
+  const isCustomerFiltered = Boolean(filters.customerId && filters.customerId !== 'ALL');
+  if (isCustomerFiltered) {
     invoices = invoices.filter(inv => inv.customer_id === filters.customerId);
     filteredCustomers = customers.filter(c => c.id === filters.customerId);
   }
@@ -76,8 +77,10 @@ function applyClientFilters(rawKpis, filters, customers = []) {
     products = products.filter(p => p.category_id === filters.categoryId);
   }
 
-  // Recompute KPI totals from filtered invoices
-  const totalRevenue = invoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0);
+  // Recompute KPI totals: preserve server-wide total_revenue_month unless specifically filtered by a customer
+  const totalRevenue = isCustomerFiltered
+    ? invoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0)
+    : parseFloat(rawKpis?.total_revenue_month || 0);
   
   // Total receivables: matches Outlets Page formula exactly (sum of customer outstanding_balance)
   const totalOutstanding = filteredCustomers && filteredCustomers.length > 0
@@ -362,7 +365,8 @@ export const DashboardPage = ({
   onOpenPaymentModal, 
   onNavigate, 
   onOpenInactiveReminder,
-  initialPage = 'overview'
+  initialPage = 'overview',
+  onModalStateChange
 }) => {
   const [rawKpis, setRawKpis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -456,14 +460,12 @@ export const DashboardPage = ({
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [billsDrawerOpen, setBillsDrawerOpen] = useState(false);
 
-  const periodStats = kpis?.revenue_periods?.[selectedPeriod] || {
-    revenue: selectedPeriod === 'this_month' ? revenueVal : (kpis?.revenue_periods?.today?.revenue ?? revenueVal),
-    invoices_count: selectedPeriod === 'this_month' ? (kpis?.total_invoices_count || 0) : (kpis?.revenue_periods?.today?.invoices_count ?? (kpis?.total_invoices_count || 0)),
-    label: selectedPeriod === 'today' ? 'Today' : selectedPeriod
-  };
-
-  const activeRevenue = typeof periodStats.revenue === 'number' ? periodStats.revenue : revenueVal;
-  const activeBillsCount = typeof periodStats.invoices_count === 'number' ? periodStats.invoices_count : (kpis?.total_invoices_count || 0);
+  // Notify parent layout if any sub-modal or drawer is open (for suppressing floating action button)
+  useEffect(() => {
+    if (onModalStateChange) {
+      onModalStateChange(drilldownModal.isOpen || thermalReceiptModal.isOpen || billsDrawerOpen);
+    }
+  }, [drilldownModal.isOpen, thermalReceiptModal.isOpen, billsDrawerOpen, onModalStateChange]);
 
   const periodTitles = {
     today: "Today's Revenue",
@@ -476,23 +478,73 @@ export const DashboardPage = ({
   };
 
   const periodInvoices = useMemo(() => {
-    const all = kpis?.recent_invoices || [];
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    const all = (kpis?.recent_invoices || []).filter(inv => inv.status !== 'CANCELLED');
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    
+    const yestDate = new Date(now);
+    yestDate.setDate(now.getDate() - 1);
+    const yestStr = yestDate.toISOString().slice(0, 10);
 
-    if (selectedPeriod === 'today') {
-      const filtered = all.filter(inv => (inv.invoice_date || '').slice(0, 10) === todayStr);
-      return filtered.length > 0 ? filtered : all.slice(0, 6);
+    // This week: Monday through today
+    const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    const startOfWeekStr = startOfWeek.toISOString().slice(0, 10);
+
+    // Past week: Monday through Sunday of previous week
+    const startOfLastWeek = new Date(startOfWeek);
+    startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+    const startOfLastWeekStr = startOfLastWeek.toISOString().slice(0, 10);
+    const endOfLastWeek = new Date(startOfWeek);
+    endOfLastWeek.setDate(startOfWeek.getDate() - 1);
+    const endOfLastWeekStr = endOfLastWeek.toISOString().slice(0, 10);
+
+    // This month (YYYY-MM prefix)
+    const currentMonthPrefix = todayStr.slice(0, 7);
+
+    // Past month
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthPrefix = prevMonthDate.toISOString().slice(0, 7);
+
+    switch (selectedPeriod) {
+      case 'today':
+        return all.filter(inv => (inv.invoice_date || '').slice(0, 10) === todayStr);
+      case 'yesterday':
+        return all.filter(inv => (inv.invoice_date || '').slice(0, 10) === yestStr);
+      case 'this_week':
+        return all.filter(inv => {
+          const d = (inv.invoice_date || '').slice(0, 10);
+          return d >= startOfWeekStr && d <= todayStr;
+        });
+      case 'last_week':
+        return all.filter(inv => {
+          const d = (inv.invoice_date || '').slice(0, 10);
+          return d >= startOfLastWeekStr && d <= endOfLastWeekStr;
+        });
+      case 'this_month':
+        return all.filter(inv => (inv.invoice_date || '').startsWith(currentMonthPrefix));
+      case 'last_month':
+        return all.filter(inv => (inv.invoice_date || '').startsWith(prevMonthPrefix));
+      case 'all_time':
+      default:
+        return all;
     }
-    if (selectedPeriod === 'yesterday') {
-      const filtered = all.filter(inv => (inv.invoice_date || '').slice(0, 10) === yesterdayStr);
-      return filtered.length > 0 ? filtered : all.slice(0, 4);
-    }
-    return all;
   }, [kpis?.recent_invoices, selectedPeriod]);
+
+  // Compute live revenue from filtered period invoices as truthful ground truth
+  const periodCalculatedRevenue = useMemo(() => {
+    return periodInvoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0);
+  }, [periodInvoices]);
+
+  // Use backend precomputed revenue if present; otherwise, use truthful client calculation
+  const activeRevenue = typeof kpis?.revenue_periods?.[selectedPeriod]?.revenue === 'number'
+    ? kpis.revenue_periods[selectedPeriod].revenue
+    : periodCalculatedRevenue;
+
+  const activeBillsCount = typeof kpis?.revenue_periods?.[selectedPeriod]?.invoices_count === 'number'
+    ? kpis.revenue_periods[selectedPeriod].invoices_count
+    : periodInvoices.length;
 
   // ─── 7-Day Micro-Trend Sparkline Series (Power BI Fabric Telemetry) ───
   // Declared BEFORE early returns to strictly honor React Rules of Hooks

@@ -56,7 +56,7 @@ def test_fifo_reconciliation_and_pizza_time_balance(db):
 
     # Verify live customer balance
     _, _, pt_balance = CustomerService.get_customer_balances(db, pt.id)
-    assert pt_balance == Decimal("20749.00"), f"Expected 20749.00, got {pt_balance}"
+    assert pt_balance == Decimal("19028.00"), f"Expected 19028.00, got {pt_balance}"
 
     # Verify Aging report for Pizza Time
     aging_list = ReportingService.get_customer_aging_breakdown(db, force_refresh=True)

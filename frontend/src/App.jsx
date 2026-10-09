@@ -50,24 +50,9 @@ export const App = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // ─── DAILY INACTIVE OUTLET RE-ORDER LAUNCH CHECK ───
+  // Inactive outlet check (accessible on-demand via Alerts button)
   useEffect(() => {
-    if (!isAuthenticated) return;
-    const checkInactiveCustomers = async () => {
-      try {
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const lastChecked = localStorage.getItem('rais_last_reorder_alert_date');
-        if (lastChecked !== todayStr) {
-          const alerts = await customerApi.getReorderAlerts(5);
-          if (Array.isArray(alerts) && alerts.length > 0) {
-            setInactiveReminderModalOpen(true);
-          }
-        }
-      } catch (err) {
-        // Silent catch
-      }
-    };
-    checkInactiveCustomers();
+    // No-op auto-popup: do not steal user screen involuntarily on launch
   }, [isAuthenticated]);
 
   // ─── LEFT PANEL TOGGLE & TOP-LEFT CORNER HOVER ENGINE ───
@@ -82,6 +67,7 @@ export const App = () => {
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [inactiveReminderModalOpen, setInactiveReminderModalOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [childModalOpen, setChildModalOpen] = useState(false);
 
   // Contextual modal selections
   const [selectedCustForPayment, setSelectedCustForPayment] = useState(null);
@@ -223,6 +209,7 @@ export const App = () => {
               onNavigate={handleNavigate}
               initialPage={dashboardSubPage}
               onOpenInactiveReminder={() => setInactiveReminderModalOpen(true)}
+              onModalStateChange={setChildModalOpen}
             />
           )}
 
@@ -323,7 +310,7 @@ export const App = () => {
         onOpenOrder={() => handleOpenOrder()}
         onOpenCustomer={() => handleOpenCustomerModal()}
         onOpenAI={() => setAiDrawerOpen(true)}
-        isOpenModal={invoiceBuilderOpen || orderBuilderOpen || paymentModalOpen || customerModalOpen || inactiveReminderModalOpen || aiDrawerOpen}
+        isOpenModal={invoiceBuilderOpen || orderBuilderOpen || paymentModalOpen || customerModalOpen || inactiveReminderModalOpen || aiDrawerOpen || childModalOpen}
       />
 
       {/* Mobile Bottom Navigation (Visible on mobile screens) */}

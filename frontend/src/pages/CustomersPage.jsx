@@ -54,7 +54,7 @@ export const CustomersPage = ({
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, ACTIVE, INACTIVE
   const [areaFilter, setAreaFilter] = useState('ALL'); // ALL, Rayachoty, Madanapalle, Kadapa, Chinnamandem
   const [balanceFilter, setBalanceFilter] = useState('ALL'); // ALL, HAS_DUE, ZERO_DUE
-  const [sortBy, setSortBy] = useState('NAME_ASC'); // NAME_ASC, BALANCE_DESC, LIMIT_DESC, CODE_ASC
+  const [sortBy, setSortBy] = useState('BALANCE_DESC'); // BALANCE_DESC, NAME_ASC, LIMIT_DESC, CODE_ASC
   
   // Selected Customer for Right Detail Inspector
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
@@ -167,7 +167,7 @@ export const CustomersPage = ({
     setStatusFilter('ALL');
     setAreaFilter('ALL');
     setBalanceFilter('ALL');
-    setSortBy('NAME_ASC');
+    setSortBy('BALANCE_DESC');
   };
 
   // ─── POWER BI REACTIVE SLICING & FILTERING ───
@@ -213,7 +213,9 @@ export const CustomersPage = ({
       if (sortBy === 'NAME_ASC') {
         return (a.business_name || '').localeCompare(b.business_name || '');
       } else if (sortBy === 'BALANCE_DESC') {
-        return parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
+        const diff = parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
+        if (Math.abs(diff) > 0.001) return diff;
+        return (a.business_name || '').localeCompare(b.business_name || '');
       } else if (sortBy === 'LIMIT_DESC') {
         return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
       } else if (sortBy === 'CODE_ASC') {
