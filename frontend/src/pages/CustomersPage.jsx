@@ -31,7 +31,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { customerApi, billingApi } from '../services/api';
+import { customerApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
@@ -46,8 +46,15 @@ export const CustomersPage = ({
   onOpenOrderForCustomer
 }) => {
   const { hasRole } = useAuth();
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState(() => {
+    const cached = getLocalCachedSnapshot('customers_list');
+    return Array.isArray(cached) ? cached : (cached?.items || cached?.data || []);
+  });
+  const [loading, setLoading] = useState(() => {
+    const cached = getLocalCachedSnapshot('customers_list');
+    const items = Array.isArray(cached) ? cached : (cached?.items || cached?.data || []);
+    return items.length === 0;
+  });
   
   // Slicers & Filter State (Power BI Style)
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,19 +89,19 @@ export const CustomersPage = ({
   }, []);
 
   const loadCustomers = async (selectId = null) => {
-    setLoading(true);
+    if (customers.length === 0) setLoading(true);
     try {
       const data = await customerApi.list({ limit: 100 });
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
-      setCustomers(items);
       if (items.length > 0) {
+        setCustomers(items);
         const initialId = selectId || (selectedCustomerId && items.some(i => i.id === selectedCustomerId) ? selectedCustomerId : items[0].id);
         setSelectedCustomerId(initialId);
         loadCustomerLedger(initialId);
         loadCustomerInvoices(initialId);
       }
     } catch (err) {
-      console.error('Failed to load customers', err);
+      console.warn('Failed to refresh customers from network (preserved cached state):', err?.message || err);
     } finally {
       setLoading(false);
     }

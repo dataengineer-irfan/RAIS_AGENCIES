@@ -18,15 +18,15 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react';
-import { reportApi, paymentApi } from '../services/api';
+import { reportApi, paymentApi, getLocalCachedSnapshot } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
 import { DrillableMetricModal } from '../components/DrillableMetricModal';
 
 export const ReportsPage = () => {
-  const [aging, setAging] = useState(null);
-  const [customerAging, setCustomerAging] = useState([]);
+  const [aging, setAging] = useState(() => getLocalCachedSnapshot('reports_aging'));
+  const [customerAging, setCustomerAging] = useState(() => getLocalCachedSnapshot('reports_customer_aging') || []);
   const [productSales, setProductSales] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getLocalCachedSnapshot('reports_aging'));
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [reconciling, setReconciling] = useState(false);
@@ -52,18 +52,24 @@ export const ReportsPage = () => {
   }, []);
 
   const loadReports = async () => {
-    setLoading(true);
+    if (!aging) setLoading(true);
     try {
-      const [agingData, custAgingData, prodData] = await Promise.all([
+      const [agingRes, custAgingRes, prodRes] = await Promise.allSettled([
         reportApi.getAging(),
         reportApi.getCustomerAging(),
         reportApi.getProductSales()
       ]);
-      setAging(agingData);
-      setCustomerAging(Array.isArray(custAgingData) ? custAgingData : []);
-      setProductSales(Array.isArray(prodData) ? prodData : []);
+      if (agingRes.status === 'fulfilled' && agingRes.value) {
+        setAging(agingRes.value);
+      }
+      if (custAgingRes.status === 'fulfilled' && custAgingRes.value) {
+        setCustomerAging(Array.isArray(custAgingRes.value) ? custAgingRes.value : []);
+      }
+      if (prodRes.status === 'fulfilled' && prodRes.value) {
+        setProductSales(Array.isArray(prodRes.value) ? prodRes.value : []);
+      }
     } catch (err) {
-      console.error('Failed to load reports', err);
+      console.warn('Failed to refresh reports from network (preserved cached state):', err?.message || err);
     } finally {
       setLoading(false);
     }

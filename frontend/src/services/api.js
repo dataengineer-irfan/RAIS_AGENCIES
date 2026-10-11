@@ -25,18 +25,43 @@ export const API_BASE_URL = rawApiUrl
 
 export const getInvoicePrintUrl = (id) => `${API_BASE_URL}/invoices/${id}/print-html`;
 
+// 45-second timeout ensures tolerance for Render Free Tier cold boots (which take ~30-50s)
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 12000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-
-// ─── HIGH-PERFORMANCE IN-MEMORY CLIENT RESPONSE CACHE ───
+// ─── HIGH-PERFORMANCE PERSISTENT CLIENT TELEMETRY & RESPONSE CACHE ───
 const _CLIENT_CACHE = new Map();
 const CACHE_TTL_MS = 60000; // 60-second in-memory client cache
+const LOCAL_STORAGE_CACHE_PREFIX = 'rais_telemetry_cache_v1_';
+
+export const getLocalCachedSnapshot = (key) => {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  try {
+    const raw = localStorage.getItem(`${LOCAL_STORAGE_CACHE_PREFIX}${key}`);
+    if (!raw) return null;
+    const item = JSON.parse(raw);
+    return item?.data ?? null;
+  } catch (err) {
+    return null;
+  }
+};
+
+export const setLocalCachedSnapshot = (key, data) => {
+  if (typeof window === 'undefined' || !window.localStorage || !data) return;
+  try {
+    localStorage.setItem(`${LOCAL_STORAGE_CACHE_PREFIX}${key}`, JSON.stringify({
+      timestamp: Date.now(),
+      data
+    }));
+  } catch (err) {
+    // LocalStorage quota or private mode guard
+  }
+};
 
 export const clearApiCache = () => {
   _CLIENT_CACHE.clear();
@@ -46,9 +71,22 @@ const getCacheKey = (url, params) => {
   return `${url}_${JSON.stringify(params || {})}`;
 };
 
+const getPersistentKeyForUrl = (url, params) => {
+  if (url === '/reports/dashboard') return 'dashboard_kpis';
+  if (url === '/customers' && (!params || Object.keys(params).length === 0 || params.limit === 100)) return 'customers_list';
+  if (url === '/catalogue/categories') return 'categories_list';
+  if (url === '/reports/aging') return 'reports_aging';
+  if (url === '/reports/aging/customers') return 'reports_customer_aging';
+  if (url === '/invoices' && params?.limit === 500) return 'invoices_list';
+  return null;
+};
+
 export const cachedGet = async (url, config = {}) => {
   const key = getCacheKey(url, config.params);
   const now = Date.now();
+  const persistentKey = getPersistentKeyForUrl(url, config.params);
+
+  // 1. Check in-memory RAM cache first (fastest, 60s TTL)
   if (_CLIENT_CACHE.has(key)) {
     const cached = _CLIENT_CACHE.get(key);
     if (now - cached.timestamp < CACHE_TTL_MS) {
@@ -56,9 +94,24 @@ export const cachedGet = async (url, config = {}) => {
     }
   }
 
-  const res = await api.get(url, config);
-  _CLIENT_CACHE.set(key, { timestamp: now, data: res.data });
-  return res.data;
+  try {
+    const res = await api.get(url, config);
+    _CLIENT_CACHE.set(key, { timestamp: now, data: res.data });
+    if (persistentKey && res.data) {
+      setLocalCachedSnapshot(persistentKey, res.data);
+    }
+    return res.data;
+  } catch (err) {
+    // 2. If network request timed out or failed, fall back to persistent local snapshot
+    if (persistentKey) {
+      const fallback = getLocalCachedSnapshot(persistentKey);
+      if (fallback) {
+        console.warn(`[ColdBoot/Network] Utilizing persistent local cache fallback for ${url}:`, err?.message || err);
+        return fallback;
+      }
+    }
+    throw err;
+  }
 };
 
 // Attach JWT token to requests
@@ -70,7 +123,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401s and Invalidate Cache on Mutations (POST, PUT, DELETE, PATCH)
+// Handle 401s, Invalidate Cache on Mutations, and Auto-Retry on Cold-Boot Timeouts
 api.interceptors.response.use(
   (response) => {
     const method = response.config.method?.toLowerCase();
@@ -79,14 +132,36 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
+    const config = error.config;
+
+    // Handle 401 Unauthorized
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('rais_token');
       localStorage.removeItem('rais_user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
+      return Promise.reject(error);
     }
+
+    // Auto-Retry for cold boot on idempotent GET queries
+    // Catches timeout (ECONNABORTED) or Render spinning up 502/503/504 gateway errors
+    if (config && config.method?.toLowerCase() === 'get') {
+      config.__retryCount = config.__retryCount || 0;
+      const isTimeout = error.code === 'ECONNABORTED' || (error.message && error.message.toLowerCase().includes('timeout'));
+      const isGatewayError = error.response && [502, 503, 504].includes(error.response.status);
+      const isNetworkDown = !error.response && Boolean(error.message);
+
+      if ((isTimeout || isGatewayError || isNetworkDown) && config.__retryCount < 2) {
+        config.__retryCount += 1;
+        const delayMs = config.__retryCount * 2500;
+        console.warn(`[API] Cold-start delay on ${config.url}. Auto-retrying attempt ${config.__retryCount}/2 in ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        return api(config);
+      }
+    }
+
     return Promise.reject(error);
   }
 );

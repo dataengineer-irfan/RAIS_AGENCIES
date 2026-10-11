@@ -21,7 +21,7 @@ import {
   Bell,
   Filter as FilterIcon
 } from 'lucide-react';
-import { reportApi, customerApi, catalogueApi, billingApi } from '../services/api';
+import { reportApi, customerApi, catalogueApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { DashboardTabStrip } from '../components/DashboardTabStrip';
 import { CompactForecastStrip } from '../components/CompactForecastStrip';
@@ -186,7 +186,8 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
 
   return {
     ...rawKpis,
-    total_revenue_month: totalRevenue,
+    total_revenue_month: (periodKey === 'this_month') ? totalRevenue : parseFloat(rawKpis?.total_revenue_month || 0),
+    active_period_revenue: totalRevenue,
     total_outstanding: totalOutstanding,
     total_overdue: totalOverdue,
     total_invoices_count: invoicesCount,
@@ -469,11 +470,19 @@ export const DashboardPage = ({
   onModalStateChange,
   alertsCount = 0
 }) => {
-  const [rawKpis, setRawKpis] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [allInvoices, setAllInvoices] = useState([]);
+  // Instant Local Hydration (0ms Stale-While-Revalidate prevents any flash of 0.00 balances)
+  const [rawKpis, setRawKpis] = useState(() => getLocalCachedSnapshot('dashboard_kpis'));
+  const [loading, setLoading] = useState(() => !getLocalCachedSnapshot('dashboard_kpis'));
+  const [categories, setCategories] = useState(() => getLocalCachedSnapshot('categories_list') || []);
+  const [customers, setCustomers] = useState(() => {
+    const c = getLocalCachedSnapshot('customers_list');
+    return Array.isArray(c) ? c : (c?.items || c?.data || []);
+  });
+  const [allInvoices, setAllInvoices] = useState(() => {
+    const inv = getLocalCachedSnapshot('invoices_list');
+    return Array.isArray(inv) ? inv : (inv?.items || inv?.data || []);
+  });
+  const [isColdBooting, setIsColdBooting] = useState(false);
 
   // Active Power BI Page Tab
   const [activePage, setActivePage] = useState(initialPage);
@@ -518,26 +527,51 @@ export const DashboardPage = ({
   const [drilldownModal, setDrilldownModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
   const [thermalReceiptModal, setThermalReceiptModal] = useState({ isOpen: false, invoiceId: null });
 
-  // ─── Load raw data once on mount ───
+  // ─── Load raw data once on mount & revalidate on tab focus ───
   useEffect(() => {
     loadDashboardData();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardData(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  const loadDashboardData = async () => {
-    setLoading(true);
+  const loadDashboardData = async (isSilent = false) => {
+    if (!rawKpis && !isSilent) {
+      setLoading(true);
+    }
     try {
-      const [kpiData, catData, custData, invData] = await Promise.all([
+      const [kpiRes, catRes, custRes, invRes] = await Promise.allSettled([
         reportApi.getDashboard(),
         catalogueApi.listCategories(true),
         customerApi.list({ limit: 100 }),
-        billingApi.listInvoices({ limit: 500 }).catch(() => [])
+        billingApi.listInvoices({ limit: 500 })
       ]);
-      setRawKpis(kpiData);
-      setCategories(catData || []);
-      setCustomers(Array.isArray(custData) ? custData : (custData?.items || custData?.data || []));
-      setAllInvoices(Array.isArray(invData) ? invData : (invData?.items || invData?.data || []));
+
+      if (kpiRes.status === 'fulfilled' && kpiRes.value) {
+        setRawKpis(kpiRes.value);
+      }
+      if (catRes.status === 'fulfilled' && catRes.value) {
+        setCategories(catRes.value || []);
+      }
+      if (custRes.status === 'fulfilled' && custRes.value) {
+        const cItems = Array.isArray(custRes.value) ? custRes.value : (custRes.value?.items || custRes.value?.data || []);
+        if (cItems.length > 0) setCustomers(cItems);
+      }
+      if (invRes.status === 'fulfilled' && invRes.value) {
+        const iItems = Array.isArray(invRes.value) ? invRes.value : (invRes.value?.items || invRes.value?.data || []);
+        if (iItems.length > 0) setAllInvoices(iItems);
+      }
+
+      const hadFailure = [kpiRes, custRes].some(r => r.status === 'rejected');
+      setIsColdBooting(hadFailure && !kpiRes.value);
     } catch (err) {
-      console.error('Failed to load dashboard telemetry:', err);
+      console.warn('Dashboard telemetry background revalidation notice:', err?.message || err);
+      setIsColdBooting(true);
     } finally {
       setLoading(false);
     }
@@ -567,21 +601,23 @@ export const DashboardPage = ({
     setThermalReceiptModal({ isOpen: true, invoiceId });
   };
 
-  const revenueVal = parseFloat(kpis?.total_revenue_month || 0);
+  const monthlyRevenue = parseFloat(kpis?.total_revenue_month || 0);
+  const activeRevenue = parseFloat(kpis?.active_period_revenue ?? kpis?.total_revenue_month ?? 0);
+  const revenueVal = activeRevenue;
   const outstandingVal = parseFloat(kpis?.total_outstanding || 0);
   const overdueVal = parseFloat(kpis?.total_overdue || 0);
   const profitVal = parseFloat(kpis?.overall_profit || 0);
   const lossVal = parseFloat(kpis?.overall_loss || 0);
 
-  // Dynamic Run-Rate & Calendar Pacing for Mobile/Desktop cards
+  // Dynamic Run-Rate & Calendar Pacing for Mobile/Desktop cards (always paces based on total monthly revenue)
   const currentCalendarDate = useMemo(() => new Date(), []);
   const currentDay = currentCalendarDate.getDate();
   const daysInMonth = useMemo(() => {
     return new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth() + 1, 0).getDate();
   }, [currentCalendarDate]);
   const projectedMonthlyPacing = useMemo(() => {
-    return currentDay > 0 ? (revenueVal / currentDay) * daysInMonth : revenueVal;
-  }, [revenueVal, currentDay, daysInMonth]);
+    return currentDay > 0 ? (monthlyRevenue / currentDay) * daysInMonth : monthlyRevenue;
+  }, [monthlyRevenue, currentDay, daysInMonth]);
   const pacingFormatted = useMemo(() => {
     if (projectedMonthlyPacing >= 100000) {
       return `₹${(projectedMonthlyPacing / 100000).toFixed(2)} Lakhs`;
@@ -619,7 +655,6 @@ export const DashboardPage = ({
     return (kpis?.recent_invoices || []).filter(inv => inv.status !== 'CANCELLED');
   }, [kpis?.recent_invoices]);
 
-  const activeRevenue = revenueVal;
   const activeBillsCount = kpis?.total_invoices_count ?? periodInvoices.length;
 
   // ─── 7-Day Micro-Trend Sparkline Series (Power BI Fabric Telemetry) ───
@@ -802,6 +837,21 @@ export const DashboardPage = ({
             {/* ─── DESKTOP OVERVIEW CANVAS (md and up) ─── */}
             <div className="hidden md:flex h-full flex-col gap-2 overflow-hidden animate-fadeIn">
             
+            {isColdBooting && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-1.5 flex items-center justify-between gap-2 text-xs text-amber-300 shrink-0">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                  <span>Cloud backend is waking up from idle sleep. Displaying cached numbers.</span>
+                </div>
+                <button
+                  onClick={() => loadDashboardData(false)}
+                  className="px-2.5 py-0.5 bg-amber-500 text-slate-950 font-bold rounded-lg text-[11px] hover:bg-amber-400 transition-colors"
+                >
+                  Retry Refresh
+                </button>
+              </div>
+            )}
+
             {/* Row 1: Action Header (compact) */}
             <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-lg shrink-0">
               <div className="flex items-center gap-2">
@@ -1111,6 +1161,21 @@ export const DashboardPage = ({
             {/* ─── MOBILE NATIVE OVERVIEW CANVAS (< md) ─── */}
             <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
               
+              {isColdBooting && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-xs text-amber-300 shrink-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin shrink-0" />
+                    <span className="truncate text-[11px]">Connecting to cloud depot...</span>
+                  </div>
+                  <button
+                    onClick={() => loadDashboardData(false)}
+                    className="px-2 py-0.5 bg-amber-500 text-slate-950 font-bold rounded text-[10px] shrink-0"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
               {/* Card 1: Executive Financial Hero Card (Instant Numbers & Actions at Top of Screen) */}
               <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-xl">
                 {/* Consolidated Hero Row: Dynamic Period + Revenue + Alerts + Interactive Bills */}

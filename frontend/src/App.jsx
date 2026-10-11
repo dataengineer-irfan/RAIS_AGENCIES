@@ -40,14 +40,25 @@ export const App = () => {
     }
   };
 
-  // ─── 24/7 KEEP-ALIVE CLIENT HEARTBEAT ───
+  // ─── 24/7 KEEP-ALIVE CLIENT HEARTBEAT & APP RESUME WAKE-UP ───
   useEffect(() => {
     const pingBackend = () => {
       fetch(`${API_BASE_URL.replace(/\/api$/, '')}/health`).catch(() => {});
     };
     pingBackend();
     const interval = setInterval(pingBackend, 4 * 60 * 1000); // 4-minute heartbeat
-    return () => clearInterval(interval);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        pingBackend();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // Contextual data refresh key
