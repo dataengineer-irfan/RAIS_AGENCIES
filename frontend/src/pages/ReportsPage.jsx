@@ -5,7 +5,6 @@ import {
   TrendingUp, 
   DollarSign, 
   Package,
-  Download,
   Search,
   Users,
   MessageSquare,
@@ -32,7 +31,6 @@ export const ReportsPage = () => {
   const [reconciling, setReconciling] = useState(false);
   const [reconcileSuccess, setReconcileSuccess] = useState('');
   const [fifoModalOpen, setFifoModalOpen] = useState(false);
-  const [downloadToast, setDownloadToast] = useState('');
   
   // Drilldown Modal
   const [drillModal, setDrillModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
@@ -81,40 +79,6 @@ export const ReportsPage = () => {
     const name = cust.business_name || cust.customer_name || 'Customer';
     const text = `*RAIS AGENCIES — Payment Aging Statement*\n\nCustomer: *${name}*\nTotal Outstanding: *₹${total}*\nOverdue (>60 Days): *₹${over60}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n*RAIS Agencies*, Rayachoty.`;
     openWhatsApp(cust.phone || '9347453135', text);
-  };
-
-  const handleExportCSV = () => {
-    try {
-      const headers = ['Customer Code', 'Customer Name', 'Phone', '0-15 Days', '16-30 Days', '31-60 Days', '60+ Days', 'Total Outstanding'];
-      const rows = customerAging.map(c => [
-        `"${c.customer_code || ''}"`,
-        `"${(c.business_name || c.customer_name || '').replace(/"/g, '""')}"`,
-        `"${c.phone || ''}"`,
-        c.current_0_15_days ?? c.current_0_15 ?? 0,
-        c.aging_16_30_days ?? c.days_16_30 ?? 0,
-        c.aging_31_60_days ?? c.days_31_60 ?? 0,
-        c.aging_60_plus_days ?? c.days_60_plus ?? 0,
-        c.total_outstanding ?? c.total_due ?? 0
-      ]);
-
-      const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `RAIS_Aging_Report_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-      setDownloadToast(`Aging CSV exported successfully (${customerAging.length} outlets)`);
-      setTimeout(() => setDownloadToast(''), 4000);
-    } catch (err) {
-      console.error('Failed to export CSV:', err);
-      setDownloadToast('Failed to export CSV. Please retry.');
-      setTimeout(() => setDownloadToast(''), 4000);
-    }
   };
 
   const handleReconcileFIFO = async () => {
@@ -196,17 +160,6 @@ export const ReportsPage = () => {
         </div>
       )}
 
-      {/* ─── DOWNLOAD CSV NOTIFICATION TOAST ─── */}
-      {downloadToast && (
-        <div className="bg-sky-500/10 border border-sky-500/30 text-sky-300 px-4 py-2 rounded-xl text-xs flex items-center justify-between shrink-0 animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-sky-400" />
-            <span className="font-bold">{downloadToast}</span>
-          </div>
-          <button onClick={() => setDownloadToast('')} className="text-sky-400 hover:text-white text-xs">✕</button>
-        </div>
-      )}
-
       {/* ─── DESKTOP TOP ACTION & HEADER BAR (md and above) ─── */}
       <div className="hidden md:flex sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
         <div className="flex items-center gap-2.5">
@@ -254,7 +207,7 @@ export const ReportsPage = () => {
 
       {/* ─── MOBILE NATIVE ULTRA-COMPACT CONTROLS (< md) ─── */}
       <div className="flex md:hidden flex-col gap-1.5 shrink-0">
-        {/* Row 1: Search + View Switcher + FIFO + CSV */}
+        {/* Row 1: Search + View Switcher + FIFO */}
         <div className="flex items-center gap-1.5">
           <div className="relative flex-1 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />

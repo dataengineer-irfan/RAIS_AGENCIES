@@ -1158,32 +1158,15 @@ export const DashboardPage = ({
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      {onOpenInactiveReminder && (
-                        <button
-                          onClick={onOpenInactiveReminder}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold active:scale-95 transition-all shadow-sm"
-                          title="View Inactive Commercial Accounts"
-                        >
-                          <Bell className="w-3 h-3 text-amber-400 animate-pulse" />
-                          <span>Alerts</span>
-                          {localAlertsCount > 0 && (
-                            <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[9px] ml-0.5">
-                              {localAlertsCount}
-                            </span>
-                          )}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setBillsDrawerOpen(true)}
-                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-750 active:scale-95 text-slate-200 hover:text-white border border-slate-700 font-mono shadow-sm transition-all cursor-pointer"
-                        title="Tap to inspect bills for this period"
-                      >
-                        <FileText className="w-3 h-3 text-amber-400" />
-                        <span>{activeBillsCount} Bills</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBillsDrawerOpen(true)}
+                      className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-750 active:scale-95 text-slate-200 hover:text-white border border-slate-700 font-mono shadow-sm transition-all cursor-pointer"
+                      title="Tap to inspect bills for this period"
+                    >
+                      <FileText className="w-3 h-3 text-amber-400" />
+                      <span>{activeBillsCount} Bills</span>
+                    </button>
                     <MiniSparkline data={revenueTrend} color="blue" width={60} height={18} />
                   </div>
                 </div>
