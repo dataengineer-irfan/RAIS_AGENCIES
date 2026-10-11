@@ -249,15 +249,6 @@ export const ReportsPage = () => {
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>FIFO Reconcile</span>
           </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95"
-            title="Export Aging Report to CSV"
-          >
-            <Download className="w-3.5 h-3.5 text-amber-400" />
-            <span>Export CSV</span>
-          </button>
         </div>
       </div>
 
@@ -316,15 +307,6 @@ export const ReportsPage = () => {
           >
             <Sparkles className="w-3 h-3 text-amber-400" />
             <span className="text-[10px]">FIFO</span>
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1 px-2 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 active:text-white rounded-lg text-xs font-bold shrink-0 transition"
-            title="Export CSV"
-          >
-            <Download className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[10px] hidden xs:inline">CSV</span>
           </button>
         </div>
 
