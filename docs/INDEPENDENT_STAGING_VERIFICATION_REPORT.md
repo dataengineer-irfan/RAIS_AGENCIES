@@ -1,238 +1,210 @@
 # RAIS Frozen Foods — Independent Staging Verification, APK Safety Audit & Physical Pilot Gate Report
 
 **Auditor:** Principal Software Architect, Senior Backend Engineer, NLP/Voice Systems Engineer, Application Security Engineer, Database Transaction Specialist, and Independent QA Lead  
-**Audit Timestamp:** October 14, 2026, 13:55:00 +05:30  
+**Audit Timestamp:** October 14, 2026, 14:15:00 +05:30  
 **Repository Scope:** `C:\Users\affra\Documents\RAIS`  
-**Latest Staging Commits:** `743c7d8` -> `963d46c` -> `1b7b5b1df1f9e08f410bbf88e68caeaa371944b6`  
-**Overall Release Gate Decision:** **READY FOR PHYSICAL PILOT — STAGING ONLY**  
+**Current Git Commit:** `4185fb1` (origin/main)  
+**CI Workflow Run:** [Run #38534533576](https://github.com/dataengineer-irfan/RAIS_AGENCIES/actions/runs/38534533576)  
+**APK Artifact:** `RAIS_Agencies_STAGING_DEBUG.apk` (14.48 MB)  
+**APK SHA-256 Checksum:** `2ba3316a3b2afceb5dee5f71b9f4a2675f52e06766d2899f8fb3534ce75b1297`  
+**Overall Release Gate Decision:** **BLOCKED — PHYSICAL PILOT NOT COMPLETED**  
 **Production Release Status:** **STRICTLY ON HOLD** (Zero Live Mutations)
 
 ---
 
-## 1. Executive Summary & Release Gate Decision
+## 1. Executive Summary & Authoritative Release Gate Decision
 
 ```
 +--------------------------------------------------------------------------------------------------------+
-|                        OVERALL GATE DECISION: READY FOR PHYSICAL PILOT — STAGING ONLY                   |
+|                        OVERALL GATE DECISION: BLOCKED — PHYSICAL PILOT NOT COMPLETED                   |
 |                        PRODUCTION RELEASE: STRICTLY ON HOLD (Zero Live Mutations)                       |
 +--------------------------------+--------------+--------------------------------------------------------+
 | Gate Evaluation Component      | Status       | Key Evidence & Verified Findings                       |
 +--------------------------------+--------------+--------------------------------------------------------+
-| Gate A: Pre-Deployment Safety  | PASS         | All 8 pre-deployment checks PASS. Fail-closed guard    |
-|         & Isolation Review     | (VERIFIED)   | (database.py) terminates on production Supabase host   |
-|                                |              | in non-prod. Pushed cleanly to origin/main (1b7b5b1).  |
+| Gate A: Staging Isolation      | PASS         | All 8 isolation checks PASS. rais-backend-staging      |
+|         & Health Verification  | (VERIFIED)   | returns HTTP 200 (env=staging). Prod untouched.        |
 +--------------------------------+--------------+--------------------------------------------------------+
-| Gate B: Cloud Staging Deploy   | PASS         | Both rais-backend-staging (HTTP 200, env=staging) and  |
-|                                | (LIVE)       | rais-frontend-staging (HTTP 200) active on Render.     |
+| Gate B: Cloud Staging Deploy   | PASS         | rais-backend-staging & rais-frontend-staging live on   |
+|                                | (LIVE)       | Render. Clean Swagger & mobile SPA rendering.          |
 +--------------------------------+--------------+--------------------------------------------------------+
 | Gate C: PostgreSQL Concurrency | PASS         | 8/8 concurrency tests PASSED on PostgreSQL 18.4 cluster|
-|         & Live Cloud DB E2E    | (10/10 CLOUD)| 10/10 end-to-end cloud transactional tests PASSED on   |
-|                                |              | live Render rais-postgres-staging database.            |
+|         & Financial Invariants | (VERIFIED)   | True row-level locking proven with for_update.         |
 +--------------------------------+--------------+--------------------------------------------------------+
-| Gate D: Voice NLP & Dialect    | PASS         | 325/325 adversarial cases (100%), 50/50 simulation     |
+| Gate D: Transaction Reconcile  | PASS         | 10/10 cloud transactions PASSED. Full mathematical     |
+|         & Financial Audit      | (0 DRIFT)    | ledger reconciliation across invoices, payments, stock.|
++--------------------------------+--------------+--------------------------------------------------------+
+| Gate E: Voice NLP & Benchmark  | PASS         | 325/325 adversarial cases (100%), 50/50 simulation     |
 |                                | (VERIFIED)   | (100%), median latency 0.25 ms, P99 0.96 ms.           |
 +--------------------------------+--------------+--------------------------------------------------------+
-| Gate E: Backend Pytest Suite   | PASS         | 17 passed unit/concurrency tests. Zero regressions.    |
+| Gate F: Android APK Packaging  | PASS         | Downloaded & inspected RAIS_Agencies_STAGING_DEBUG.apk |
+|         & Checksum Audit       | (VERIFIED)   | SHA-256 matches published 2ba3316... Microphone perms  |
+|                                |              | & Speech Recognition v6.0.1 present. Zero prod URLs.   |
 +--------------------------------+--------------+--------------------------------------------------------+
-| Gate F: Android APK Packaging  | PASS         | GitHub Actions Run #38534533576 completed SUCCESS.     |
-|                                | (VERIFIED)   | Staging APK generated: RAIS_Agencies_STAGING_DEBUG.apk |
-|                                |              | (14.48 MB, Artifact ID: 11879936554). Prod release cut |
-|                                |              | was strictly skipped by safety guard.                  |
-+--------------------------------+--------------+--------------------------------------------------------+
-| Gate G: Physical Field Pilot   | READY FOR    | Handset runsheet ready at docs/PHYSICAL_PILOT_RUNSHEET |
-|                                | EXECUTION    | Staging debug APK ready for warehouse sideloading.     |
+| Gate G: Physical Field Pilot   | NOT RUN      | Dev workstation is headless (0 ADB devices attached).  |
+|         (Warehouse Handsets)   | (RUNSHEET OK)| Authoritative 50-scenario runsheet delivered. Requires |
+|                                |              | sideloading onto physical handsets in Rayachoty.       |
 +--------------------------------+--------------+--------------------------------------------------------+
 ```
 
-### Authoritative Release Gate Decision: `READY FOR PHYSICAL PILOT — STAGING ONLY`
+### Authoritative Release Gate Decision: `BLOCKED — PHYSICAL PILOT NOT COMPLETED`
 
-Under Section 11 of the release gate standard:
-> **READY FOR PHYSICAL PILOT — STAGING ONLY**: *Authorized only if cloud Render staging is live/healthy, staging DB isolation is proven, deployed PostgreSQL tests pass, and staging APK is verified.*
+Under Section 11 and Phase 3 of the verification standard:
+> **BLOCKED — PHYSICAL PILOT NOT COMPLETED**: *Devices, artifact, environment, or required evidence are unavailable. Do not mark a physical test as passed based only on an automated simulation. If physical devices are unavailable, leave the physical pilot NOT RUN and provide the exact remaining operator steps.*
 
-All conditions for staging pilot authorization have been conclusively fulfilled and verified:
-1. **Cloud Render Staging Environment is Active & Healthy:**
-   - Web Service: `https://rais-backend-staging.onrender.com/api/v1/health` returns `HTTP 200 OK` (`{"status":"healthy","service":"rais-backend","uptime":"active","environment":"staging"}`).
-   - Static SPA: `https://rais-frontend-staging.onrender.com` returns `HTTP 200 OK`.
-2. **Staging Database Isolation Proven:**
-   - Connected exclusively to isolated `rais-postgres-staging` on Render Singapore region.
-   - 10 out of 10 end-to-end transactions (catalogue query, inward stock receipt, customer creation, order confirmation, invoice issuance, stock decrement, cash payment receipt, customer ledger balance update) succeeded on the live staging database.
-3. **Zero Production Mutation:**
-   - Production backend (`https://rais-backend.onrender.com/health`) was continuously audited and remains untouched (`{"environment": "production"}`).
-4. **Staging Android Debug APK Verified:**
-   - Built cleanly on GitHub Actions runner via Run ID `38534533576`.
-   - Artifact `RAIS_Agencies_STAGING_DEBUG.apk` (14.48 MB, Artifact ID `11879936554`) contains full Capacitor Speech Recognition plugin v6.0.1, strict HTTPS staging endpoints, and zero production credentials.
-   - Production GitHub release was automatically skipped by CI security condition `env.IS_STAGING == 'false'`.
-5. **Physical Warehouse Pilot Hand-Off:**
-   - Rayachoty depot staff are cleared to proceed with physical acoustic validation of 50 orders using `docs/PHYSICAL_PILOT_RUNSHEET.md`.
-   - **Production deployment remains STRICTLY ON HOLD** until all 50 physical orders are executed, signed off, and audited.
-
----
-
-## 2. Phase 1 — Pre-Deployment Safety & Isolation Review
-
-All 8 mandatory pre-deployment checks were systematically evaluated and verified:
-
-| # | Safety Check Description | Inspected Mechanism / Evidence | Verdict |
-|:--|:---|:---|:---:|
-| **1** | Git branch, commit & working tree audit | Pushed cleanly to `origin/main` at commit `1b7b5b1df1f9e08f410bbf88e68caeaa371944b6`. Working tree clean. | **PASS** |
-| **2** | Preservation of existing production deployment | Production services in `render.yaml` (`rais-backend`, `rais-frontend`) retain production settings (`sync: false`, unmutated env vars). | **PASS** |
-| **3** | `validate_database_safety()` fail-closed guard | Intercepts `DATABASE_URL` at module load in `app/core/database.py`. Verified: Throws `RuntimeError: FATAL ENVIRONMENT SAFETY GUARD` on production Supabase host during test/dev/staging. | **PASS** |
-| **4** | Staging database isolation from Supabase | `render.yaml` links `rais-backend-staging` exclusively to `rais-postgres-staging` via `fromDatabase: connectionString`. Zero production credentials inherited. | **PASS** |
-| **5** | Zero committed secrets | `render.yaml` uses `generateValue: true` for `SECRET_KEY`; all `.env*` files excluded via `.gitignore`. Zero tokens committed. | **PASS** |
-| **6** | Independent Render blueprint services | Staging services are completely decoupled: `rais-postgres-staging` (dedicated DB), `rais-backend-staging`, `rais-frontend-staging`. | **PASS** |
-| **7** | Isolated migration execution | `seed_data.py` binds schema creation (`Base.metadata.create_all`) strictly to active engine. Guarded against production DB by check #3. | **PASS** |
-| **8** | APK workflow URL safety & zero fallback | `.github/workflows/build-apk.yml` uses python `urllib.parse` to validate staging URL and rejects `rais-backend.onrender.com`. `api.js` fails closed if URL missing. | **PASS** |
+The software remediation, cloud staging infrastructure, and staging APK artifact have achieved 100% verification:
+1. **Staging Environment is Active & Proven Isolated:**
+   - Backend: `https://rais-backend-staging.onrender.com/api/v1/health` returns `HTTP 200 OK` (`{"status":"healthy","service":"rais-backend","uptime":"active","environment":"staging"}`).
+   - Frontend: `https://rais-frontend-staging.onrender.com/` returns `HTTP 200 OK`.
+   - Production backend (`https://rais-backend.onrender.com/health`) is active and isolated (`{"environment": "production"}`). Zero production writes or mutations.
+2. **Staging APK Downloaded, Checksum-Verified & Internally Audited:**
+   - Downloaded `RAIS_Agencies_STAGING_DEBUG.apk` from GitHub Actions Run `38534533576`.
+   - Calculated SHA-256: `2ba3316a3b2afceb5dee5f71b9f4a2675f52e06766d2899f8fb3534ce75b1297` (exact match to published checksum).
+   - Contains native `@capacitor-community/speech-recognition` v6.0.1 in DEX (`classes2.dex`, `classes3.dex`) and `RECORD_AUDIO` permission in `AndroidManifest.xml`.
+   - Embedded web bundle targets `https://rais-backend-staging.onrender.com` exclusively.
+3. **Staging Database Transaction Reconciliation (0 Drift):**
+   - Reconciled 3 invoices (Rs. 1,800.00 invoiced, Rs. 1,500.00 outstanding), 1 payment (Rs. 300.00 paid), 6 stock movements (3 receipts, 3 order deductions), and 34 audit records.
+   - Mathematical ledger check: $	ext{Outstanding} + 	ext{Paid} = 	ext{Invoiced}$ holds 100% with zero drift.
+4. **Physical Warehouse Devices:**
+   - The development workstation is headless (`adb devices` reports 0 attached devices).
+   - In strict compliance with the audit charter, **physical execution is marked NOT RUN** and cannot be fabricated.
+   - Sideloading onto physical handsets in Rayachoty and execution of the 50-order runsheet remain the sole remaining prerequisite.
+5. **Production Release Status:**
+   - **STRICTLY ON HOLD.** Production release cannot be authorized until Rayachoty warehouse staff execute and sign off all 50 physical scenarios.
 
 ---
 
-## 3. Phase 2 — Render Staging Deployment Verification
+## 2. Phase 1 — Staging Environment & Isolation Audit Results
 
-### 3.1 Live Endpoint Verification
-- **Command:** `curl.exe -i https://rais-backend-staging.onrender.com/api/v1/health`
-- **Response Received:**
-  ```http
-  HTTP/1.1 200 OK
-  Date: Wed, 14 Oct 2026 08:15:03 GMT
-  Content-Type: application/json
-  Transfer-Encoding: chunked
-  Connection: keep-alive
-  rndr-id: b957fafb-242a-43e8
-  Server: cloudflare
-  x-render-origin-server: uvicorn
-  cf-cache-status: DYNAMIC
-  
-  {"status":"healthy","service":"rais-backend","uptime":"active","environment":"staging"}
-  ```
+All 6 required staging verification checks were executed and confirmed:
 
-- **Frontend Static Site:** `curl.exe -i https://rais-frontend-staging.onrender.com/` returns `HTTP 200 OK`.
-- **Swagger Documentation:** `https://rais-backend-staging.onrender.com/api/docs` returns `HTTP 200 OK`.
-
-### 3.2 Live Cloud PostgreSQL Transaction Verification (10/10 PASS)
-To prove live database isolation and transactional integrity on the newly provisioned Render PostgreSQL database (`rais-postgres-staging`), a live transactional suite was executed against `https://rais-backend-staging.onrender.com`:
-
-| Step | Operation Description | Live Staging API Request | Verified Outcome | Verdict |
+| # | Verification Check | Actual Command / Request | Verified Result | Verdict |
 |:--|:---|:---|:---|:---:|
-| **1** | Operator Authentication | `POST /api/auth/login` | JWT bearer token issued for user `operator` (`OPERATOR` role). | **PASS** |
-| **2** | Catalogue Query | `GET /api/catalogue/products` | 43 seeded products returned. Selected test SKU: `BLUECURCO`. | **PASS** |
-| **3** | Inward Stock Receipt | `POST /api/inventory/receive` | Received 100 units at Rs. 80.00 cost into warehouse batch `STG-BATCH-001`. Stock updated. | **PASS** |
-| **4** | Customer Onboarding | `POST /api/customers` | Created test customer `Rayachoty Pilot Test Store` (ID: `93cbbbf3`). Opening balance: Rs. 0.00. | **PASS** |
-| **5** | Wholesale Order Creation | `POST /api/orders` | Created Order `#ORD-202610-00003` for 5 units @ Rs. 120.00. Total: Rs. 600.00. | **PASS** |
-| **6** | Invoice Auto-Issuance | `POST /api/invoices` | Issued Invoice `#INV-202610-00003` (Rs. 600.00). Idempotency key verified. | **PASS** |
-| **7** | Ledger Balance Update | `GET /api/customers/93cbbbf3` | Customer `outstanding_balance` updated from Rs. 0.00 to Rs. 600.00. | **PASS** |
-| **8** | Physical Stock Decrement | `GET /api/catalogue/products/{id}` | Stock decremented by exactly 5 units on invoice issuance. | **PASS** |
-| **9** | Cash Payment Recording | `POST /api/payments` | Recorded partial cash receipt of Rs. 300.00 allocated to `#INV-202610-00003`. | **PASS** |
-| **10** | Final Balance Reconciliation | `GET /api/customers/93cbbbf3` | Customer `outstanding_balance` reduced to exactly Rs. 300.00 (Rs. 600 - Rs. 300). | **PASS** |
-
-### 3.3 Visual Playwright Audit on Mobile Viewport (390x844)
-A mobile Playwright browser instance connected to `https://rais-frontend-staging.onrender.com`:
-- **Login Screen:** Rendered brand header, role badges, credential inputs (`staging_01_login.png`).
-- **Live Mobile Dashboard:** Rendered Today's Revenue (Rs. 1,800.00), Active Outlets (5), Dues (Rs. 1.5k), Recent Invoices card displaying `#INV-202610-00003` as `PARTIALLY PAID` with Due `Rs. 300.00` (`staging_02_dashboard.png`).
+| **1** | Staging Backend Health Check | `GET /api/v1/health` on `rais-backend-staging.onrender.com` | `HTTP 200 OK`, `{"status":"healthy","service":"rais-backend","uptime":"active","environment":"staging"}` | **PASS** |
+| **2** | Staging Frontend Loading | `GET /` on `rais-frontend-staging.onrender.com` | `HTTP 200 OK`, HTML document loaded (1547 bytes) with title `RAIS AGENCIES` | **PASS** |
+| **3** | Staging Database Isolation | Inspected `render.yaml` & `validate_database_safety()` | Linked to `rais-postgres-staging` via `connectionString`. Throws `RuntimeError` if Supabase host contacted. | **PASS** |
+| **4** | Frontend / Native Routing Isolation | Inspected `render.yaml`, `build-apk.yml`, and `api.js` | `VITE_API_URL` set to staging host. Hardened URL parser blocks production host with fatal error. | **PASS** |
+| **5** | Zero Production Database Writes | `GET /health` on `rais-backend.onrender.com` | Production backend remains untouched (`{"environment":"production"}`). Zero writes or migrations. | **PASS** |
+| **6** | Production Safeguards Preservation | Inspected CI workflow & `database.py` | Production release step in CI skipped (`env.IS_STAGING == 'true'`). Database guard active. | **PASS** |
 
 ---
 
-## 4. Phase 3 — PostgreSQL Concurrency & Invariant Verification
+## 3. Phase 2 — Staging APK Packaging & Security Audit
 
-### 4.1 Cluster Configuration & Identity Map Hardening
-- **PostgreSQL Version:** 18.4 running on port **5433** (`scratch/pg_staging_cluster`, user `rais_staging_admin`, DB `rais_staging`).
-- **Remediation:** Added `.populate_existing().with_for_update()` across `deduct_stock_for_invoice`, `deduct_stock_for_order`, `receive_stock`, and `adjust_stock` in `backend/app/services/inventory_service.py`.
-- **Concurrency Test Execution:** `pytest backend/tests/test_postgres_concurrency.py -v` -> **8 passed in 1.86s**.
-- **Financial Calculation & Security Suite:** `pytest backend/tests/test_financial_calculations.py backend/tests/test_rbac_security.py backend/tests/test_reconciliation_and_reorder_alerts.py backend/tests/test_catalogue_integrity.py -v` -> **9 passed in 2.83s**.
-- **Combined Backend Pytest Result:** **17 passed, 0 failed**.
-
----
-
-## 5. Phase 4 & 5 — GitHub Actions Workflow & APK Safety Audit
-
-### 5.1 CI Build Execution Results
+### 3.1 GitHub Actions Workflow & Artifact Provenance
 - **Workflow:** `.github/workflows/build-apk.yml`
-- **Run ID:** `38534533576`
-- **Run URL:** https://github.com/dataengineer-irfan/RAIS_AGENCIES/actions/runs/38534533576
-- **Status:** **Completed**
-- **Conclusion:** **SUCCESS**
-- **Trigger:** Push commit `1b7b5b1df1f9e08f410bbf88e68caeaa371944b6`
-- **Total Duration:** 1 minute 45 seconds
+- **Run URL:** [https://github.com/dataengineer-irfan/RAIS_AGENCIES/actions/runs/38534533576](https://github.com/dataengineer-irfan/RAIS_AGENCIES/actions/runs/38534533576)
+- **Workflow Conclusion:** `SUCCESS` (Duration: 1m 45s)
+- **Git Commit:** `1b7b5b1df1f9e08f410bbf88e68caeaa371944b6` (Branch: `main`)
+- **Artifact Name:** `RAIS_Agencies_STAGING_DEBUG.apk` (Artifact ID: `11879936554`)
+- **Download Verification:** Artifact ZIP successfully retrieved via GitHub REST API (15,186,652 bytes / ~14.48 MB) and extracted cleanly.
+
+### 3.2 Cryptographic Checksum Verification
+- **Published Checksum (`RAIS_Agencies_STAGING_DEBUG.apk.sha256`):**
+  `2ba3316a3b2afceb5dee5f71b9f4a2675f52e06766d2899f8fb3534ce75b1297`
+- **Calculated SHA-256:**
+  `2ba3316a3b2afceb5dee5f71b9f4a2675f52e06766d2899f8fb3534ce75b1297`
+- **Integrity Status:** **100% EXACT MATCH (PASS)**.
+
+### 3.3 Deep Internal APK Inspection (`scratch/inspect_apk_internals.py`)
+| Component Inspected | Target Mechanism | Verified Internal Finding | Verdict |
+|:---|:---|:---|:---:|
+| **Capacitor Plugin Metadata** | `assets/capacitor.plugins.json` | Contains package `@capacitor-community/speech-recognition`, classpath `com.getcapacitor.community.speechrecognition.SpeechRecognition`. | **PASS** |
+| **DEX Executable Classes** | `classes2.dex`, `classes3.dex` | Native `SpeechRecognition` implementation present in Dalvik bytecode. | **PASS** |
+| **API Target Configuration** | `assets/public/assets/*.js` | Exclusively targets `https://rais-backend-staging.onrender.com`. Zero production endpoints found. | **PASS** |
+| **Microphone Permissions** | `AndroidManifest.xml` (AXML UTF-16LE) | `android.permission.RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, and `INTERNET` present in string pool. | **PASS** |
+| **Capacitor Configuration** | `assets/capacitor.config.json` | `appId: com.raisagencies.app`, `appName: RAIS Agencies`, `webDir: dist`. | **PASS** |
+| **Device Sideloading Status** | Workstation ADB Bus | `adb devices` returned 0 devices. Headless workstation cannot execute sideloading. | **NOT RUN** |
+
+---
+
+## 4. Phase 3 — Physical Warehouse Pilot Status
+
+### 4.1 Headless Environment Declaration
+- **Command:** `adb devices`
+- **Result:**
+  ```
+  * daemon not running; starting now at tcp:5037
+  * daemon started successfully
+  List of devices attached
+  ```
+- **Finding:** No physical Android handset is attached to this workstation.
+- **Status:** **NOT RUN (Awaiting Handset Sideloading at Rayachoty Depot)**.
+- **Integrity Rule:** In compliance with Section 11, automated software simulation results are NOT substituted for physical warehouse testing.
+
+### 4.2 Automated Pre-Pilot Baseline Evidence
+- **50-Scenario Simulation (`scratch/simulate_50_pilot_scenarios.mjs`):** **50 / 50 PASSED (100.0%)**, average parse latency: 0.64 ms.
+- **Adversarial NLP Benchmark (`scratch/adversarial_corpus_300.mjs`):** **325 / 325 PASSED (100.0%)**, median latency: 0.25 ms, P99: 0.96 ms.
+- **PostgreSQL 18 Concurrency Suite (`backend/tests/test_postgres_concurrency.py`):** **8 / 8 PASSED** in 1.86s.
+- **Financial Calculation & Security Suite:** **9 / 9 PASSED** in 2.83s.
+
+---
+
+## 5. Phase 4 — Staging Database Reconciliation Audit Results
+
+Executed against the live Render staging database (`rais-postgres-staging`) via `scratch/reconcile_staging_transactions.py`:
+
+### 5.1 Financial Invariants & Invoices
+- **Total Invoices Issued:** 3 (`#INV-202610-00001`, `#INV-202610-00002`, `#INV-202610-00003`)
+- **Aggregate Invoiced Amount:** Rs. 1,800.00
+- **Aggregate Payments Recorded:** Rs. 300.00 (`#PAY-202610-00001`, Cash)
+- **Aggregate Outstanding Balance:** Rs. 1,500.00
+- **Mathematical Balance Check:** $	ext{Invoiced} - 	ext{Paid} = 	ext{Outstanding} \implies 1800.00 - 300.00 = 1500.00$ (**0.00 Drift, PASS**).
+
+### 5.2 Inventory Movements & Stock Consistency
+- **Total Stock Movements Logged:** 6
+  1. `REC-202610-00001`: Inward Receipt (+100.00), stock 0.00 -> 100.00
+  2. `ORD-202610-00001`: Order Deduction (-5.00), stock 100.00 -> 95.00
+  3. `REC-202610-00002`: Inward Receipt (+100.00), stock 95.00 -> 195.00
+  4. `ORD-202610-00002`: Order Deduction (-5.00), stock 195.00 -> 190.00
+  5. `REC-202610-00003`: Inward Receipt (+100.00), stock 190.00 -> 290.00
+  6. `ORD-202610-00003`: Order Deduction (-5.00), stock 290.00 -> 285.00
+- **Inventory Discrepancies:** **0.00 (Zero overselling, zero phantom stock)**.
+
+### 5.3 Audit Trail & Governance Logs
+- **Total Audit Log Entries:** 34
+- **Logged Actions:** `LOGIN`, `CREATE` (Invoice, Payment, Order), `ALLOCATION`, `PRICE_OVERRIDE`.
+- **RBAC Association:** All operations associated with authenticated usernames (`admin`, `operator`) and roles.
+
+---
+
+## 6. Remaining Operator Steps for Physical Warehouse Pilot
+
+To complete the physical warehouse validation and advance the release gate from `BLOCKED — PHYSICAL PILOT NOT COMPLETED` to `PILOT PASSED — STAGING ONLY`:
 
 ```
-Step 1:  Set up job                          [SUCCESS]
-Step 2:  Checkout Code                       [SUCCESS]
-Step 3:  Validate Environment Isolation      [SUCCESS - Staging URL parsed & secure]
-Step 4:  Set up Java 21                      [SUCCESS]
-Step 5:  Set up Node.js 20                   [SUCCESS]
-Step 6:  Install Frontend Dependencies       [SUCCESS]
-Step 7:  Build Web App                       [SUCCESS - Target: rais-backend-staging]
-Step 8:  Sync Capacitor Assets               [SUCCESS - Speech Recognition 6.0.1 synced]
-Step 9:  Accept Android Licenses             [SUCCESS]
-Step 10: Build Debug APK                     [SUCCESS - assembleDebug exit code 0]
-Step 11: Prepare APK Output & Checksum       [SUCCESS - SHA-256 generated]
-Step 12: Upload APK Artifact                 [SUCCESS - 14.48 MB uploaded]
-Step 13: Publish Production GitHub Release   [SKIPPED - Staging release protection guarded]
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                        RAYACHOTY DEPOT OPERATOR PILOT RUNSHEET INSTRUCTIONS                            │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Generated Staging APK Details
-- **Artifact Name:** `RAIS_Agencies_STAGING_DEBUG.apk`
-- **Artifact ID:** `11879936554`
-- **File Size:** 15,186,652 bytes (~14.48 MB)
-- **Direct Web Download:** Available under artifacts on GitHub Actions Run `38534533576`.
-- **Speech Plugin Synchronization:** Capacitor Speech Recognition plugin v6.0.1 compiled natively into APK dex assets.
-- **Backend API Target:** Exclusively configured to `https://rais-backend-staging.onrender.com`.
-- **Production Guard:** Zero fallbacks to production API host.
+### Step 1: Handset Preparation & APK Sideloading
+1. Download `RAIS_Agencies_STAGING_DEBUG.apk` from GitHub Actions Run [38534533576](https://github.com/dataengineer-irfan/RAIS_AGENCIES/actions/runs/38534533576) (or transfer directly from `scratch/staging_apk_extracted/RAIS_Agencies_STAGING_DEBUG.apk`).
+2. Sideload onto the Rayachoty depot Android test smartphone:
+   ```bash
+   adb install -r RAIS_Agencies_STAGING_DEBUG.apk
+   ```
+3. Grant the requested **Microphone / Record Audio** permission upon initial launch.
+4. Verify the top banner displays `STAGING ENVIRONMENT` and points to `https://rais-backend-staging.onrender.com`.
 
-### 5.3 Obsolete APK Quarantine
-- **File:** `release/RAIS_Agencies.apk` (4.07 MB, built 05-Sep-2026).
-- **Status:** **STRICTLY QUARANTINED.** Zero native speech classes; must never be used for warehouse testing.
+### Step 2: Authentication
+- **Username:** `operator`
+- **Password:** `RaisOperator@2026`
+- Confirm successful entry to the mobile warehouse dashboard.
 
----
+### Step 3: Execute the 50 Physical Runsheet Scenarios
+Follow [`docs/PHYSICAL_PILOT_RUNSHEET.md`](file:///C:/Users/affra/Documents/RAIS/docs/PHYSICAL_PILOT_RUNSHEET.md) under active Rayachoty warehouse conditions (ambient noise, cold storage compressor running):
+- **Scenarios 1-10:** Standard order entry with Telugu and English numerals (*rendu*, *moodu*, *aidu*, *padi*).
+- **Scenarios 11-20:** Multi-item orders and disambiguation chips (e.g. 6mm vs 9mm fries).
+- **Scenarios 21-30:** Voice corrections, negations, and spoken quantity edits.
+- **Scenarios 31-40:** Insufficient stock rejection and payment allocations.
+- **Scenarios 41-50:** Network interruption, retry behavior, and Bluetooth headset testing.
 
-## 6. Phase 6 — Voice NLP Benchmark & Pilot Scenario Simulation
-
-### 6.1 Adversarial NLP Benchmark (`scratch/adversarial_corpus_300.mjs`)
-- **Total Corpus Size:** 325 labeled test cases
-- **Passed:** **325 / 325 (100.0%)**
-- **Customer Extraction Accuracy:** 235 / 235 (100.0%)
-- **Product Top-1 Accuracy:** 216 / 216 (100.0%)
-- **Numeric Field Accuracy:** 302 / 302 (100.0%)
-- **Ambiguity Detection Rate:** 25 / 25 (100.0%)
-- **Abstention / Safe Rejection:** 45 / 45 (100.0%)
-- **Median Latency:** 0.25 ms
-- **P99 Latency:** 0.96 ms
-
-### 6.2 50-Scenario Physical Warehouse Pilot Simulation (`scratch/simulate_50_pilot_scenarios.mjs`)
-- **Scenarios Evaluated:** 50
-- **Passed:** **50 / 50 (100.0%)**
-- **Average Parse Latency:** 0.64 ms
-- **Dialect Coverage:** Spoken Telugu numbers (*rendu*, *moodu*, *aidu*, *padi*, *iravai*, *muppai*), product disambiguation chips, compound spoken quantities, negations, overrides.
+### Step 4: Record Results & Final Sign-Off
+Record each scenario result (PASS / FAIL, latency, recognized transcript) on the sign-off sheet in `docs/PHYSICAL_PILOT_RUNSHEET.md`.
 
 ---
 
-## 7. Defect & Blocker Resolution Register
+## 7. Mandatory Production Safety Boundary
 
-| Identifier | Severity | Component | Issue Description | Initial Status | Final Resolved Status | Verification Evidence |
-|:---|:---|:---|:---|:---|:---|:---|
-| **BLK-01** | **P0** | Staging Backend | Remote staging service returned 404 `no-server`. | OPEN | **RESOLVED & LIVE** | `rais-backend-staging.onrender.com` returns HTTP 200 OK (`environment: staging`). |
-| **BLK-02** | **P0** | Staging Database | Risk of touching production Supabase database. | CONTAINED | **RESOLVED & ISOLATED** | `validate_database_safety()` active; dedicated Render PostgreSQL active; 10/10 cloud transactions pass. |
-| **BLK-03** | **P0** | Mobile Build | Missing local Android SDK prevented local APK generation. | BLOCKED | **RESOLVED VIA CI** | GitHub Actions Run #38534533576 built `RAIS_Agencies_STAGING_DEBUG.apk` (14.48 MB). |
-| **BLK-04** | **P1** | Concurrency | SQLAlchemy identity map race condition on row locks. | BLOCKED | **RESOLVED & VERIFIED** | `.populate_existing().with_for_update()` applied. 8/8 PostgreSQL 18 tests pass. |
-| **DEF-09** | **P1** | Voice NLP | Missing Telugu spoken numbers (*rendu*, *moodu*, etc.). | OPEN | **VERIFIED FIXED** | `TELUGU_NUMBER_UNITS/TENS` in `voiceAliases.js`. 10/10 dialect tests pass. |
-| **DEF-10** | **P1** | Customer Match | Acronym whitespace collision (`"J F C"` vs `"jfc"`). | OPEN | **VERIFIED FIXED** | Collapsed acronym matcher implemented. PILOT-05 passes 100%. |
-| **DEF-11** | **P1** | Product Match | Category collision (`"pizza box"` vs `"PIZZA BASE"`). | OPEN | **VERIFIED FIXED** | Category discriminators applied. 100% Top-1 accuracy. |
-| **DEF-12** | **P2** | Line Item Parser | Leading tokens before quantity causing regex failure. | OPEN | **VERIFIED FIXED** | Enhanced regex scanning active. 100% line item accuracy. |
-
----
-
-## 8. Physical Warehouse Pilot Clearance & Hand-Off Instructions
-
-The software, cloud staging infrastructure, and staging APK artifact have met all pre-pilot gates. Rayachoty depot operators may now execute the physical warehouse pilot:
-
-### 8.1 Sideloading the Staging APK
-1. Download `RAIS_Agencies_STAGING_DEBUG.apk` from GitHub Actions Run [38534533576](https://github.com/dataengineer-irfan/RAIS_AGENCIES/actions/runs/38534533576).
-2. Transfer APK to Android test handset via USB (`adb install -r build-output/RAIS_Agencies_STAGING_DEBUG.apk`) or direct browser download.
-3. Open the app and log in using:
-   - Username: `operator`
-   - Password: `RaisOperator@2026`
-4. Confirm app title bar displays `STAGING ENVIRONMENT` and connects to `rais-backend-staging.onrender.com`.
-
-### 8.2 Execution of Warehouse Runsheet
-1. Follow the 50 scenario scripts in `docs/PHYSICAL_PILOT_RUNSHEET.md`.
-2. Test under active Rayachoty depot conditions (ambient noise, cold storage compressors running, Bluetooth headset or built-in handset mic).
-3. Record each scenario result on the physical pilot sign-off sheet.
-4. **Mandatory Production Safety Rule:** Production release remains strictly on hold until all 50 physical warehouse runs are completed and signed off.
+- **Production Release Status:** **STRICTLY ON HOLD.**
+- Under no circumstances shall production migrations, DNS changes, or production application deployments occur until all 50 physical warehouse runs are completed, audited, and signed off by Rayachoty warehouse operations.
