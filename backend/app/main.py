@@ -63,9 +63,11 @@ def root():
 
 @app.get("/health")
 @app.get("/api/health")
+@app.get("/api/v1/health")
 def health_check():
     return {
         "status": "healthy",
         "service": "rais-backend",
-        "uptime": "active"
+        "uptime": "active",
+        "environment": settings.ENVIRONMENT
     }

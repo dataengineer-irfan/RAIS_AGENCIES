@@ -24,11 +24,19 @@ if (rawApiUrl) {
   }
   try {
     const parsedUrl = new URL(rawApiUrl);
-    if (isStagingMode && (parsedUrl.hostname === 'rais-backend.onrender.com' || parsedUrl.hostname.endsWith('rais-backend.onrender.com'))) {
-      throw new Error('[FATAL SAFETY GUARD] Staging build is pointing to production API host (rais-backend.onrender.com). Build blocked.');
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      throw new Error(`[FATAL API SAFETY ERROR] Invalid protocol '${parsedUrl.protocol}', must be http or https.`);
+    }
+    if (isStagingMode) {
+      if (parsedUrl.protocol !== 'https:' && parsedUrl.hostname !== 'localhost' && parsedUrl.hostname !== '127.0.0.1') {
+        throw new Error(`[FATAL API SAFETY ERROR] Staging API endpoint must use HTTPS, got: ${parsedUrl.protocol}`);
+      }
+      if (parsedUrl.hostname === 'rais-backend.onrender.com' || parsedUrl.hostname.endsWith('rais-backend.onrender.com')) {
+        throw new Error('[FATAL SAFETY GUARD] Staging build is pointing to production API host (rais-backend.onrender.com). Build blocked.');
+      }
     }
   } catch (err) {
-    if (err.message.includes('FATAL SAFETY GUARD')) throw err;
+    if (err.message.includes('FATAL SAFETY GUARD') || err.message.includes('FATAL API SAFETY ERROR')) throw err;
     throw new Error(`[FATAL API SAFETY ERROR] Malformed VITE_API_URL: ${rawApiUrl}`);
   }
 }

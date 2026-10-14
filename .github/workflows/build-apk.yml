@@ -46,11 +46,20 @@ jobs:
               if not parsed.scheme or not parsed.netloc:
                   print(f'::error::FATAL: Malformed Staging URL: {staging_url}')
                   sys.exit(1)
-              hostname = parsed.netloc.split(':')[0].lower()
-              if hostname == 'rais-backend.onrender.com' or hostname.endswith('rais-backend.onrender.com'):
+              if parsed.scheme.lower() != 'https':
+                  print(f'::error::FATAL SAFETY GUARD: Staging API URL must strictly use HTTPS scheme. Got: {parsed.scheme}')
+                  sys.exit(1)
+              hostname = (parsed.hostname or '').lower()
+              if not hostname:
+                  print(f'::error::FATAL: Hostname missing in URL: {staging_url}')
+                  sys.exit(1)
+              if hostname == 'rais-backend.onrender.com' or hostname.endswith('.rais-backend.onrender.com'):
                   print(f'::error::FATAL SAFETY GUARD: Staging build cannot target production host {hostname}.')
                   sys.exit(1)
-              print(f'Staging validation passed: targeting approved host {hostname}')
+              if parsed.port and parsed.port != 443:
+                  print(f'::error::FATAL SAFETY GUARD: Non-standard HTTPS port {parsed.port} is rejected.')
+                  sys.exit(1)
+              print(f'Staging validation passed: targeting approved secure host {hostname}')
           "
           BUILD_TYPE="${{ github.event.inputs.build_type || 'staging' }}"
           if [ "$BUILD_TYPE" = "staging" ]; then
