@@ -1,12 +1,12 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
 
 class OrderItemCreate(BaseModel):
     product_id: str
-    quantity: Decimal
-    unit_price: Optional[Decimal] = None
+    quantity: Decimal = Field(..., gt=Decimal("0.00"), description="Quantity must be strictly positive (> 0)")
+    unit_price: Optional[Decimal] = Field(None, gt=Decimal("0.00"), description="Unit price must be strictly positive (> 0) if provided")
 
 class OrderItemResponse(BaseModel):
     id: str
@@ -27,7 +27,7 @@ class OrderCreate(BaseModel):
     expected_delivery_date: Optional[date] = None
     delivery_address: Optional[str] = None
     notes: Optional[str] = None
-    items: List[OrderItemCreate]
+    items: List[OrderItemCreate] = Field(..., min_length=1, description="Order must contain at least one item")
 
 class OrderStatusUpdate(BaseModel):
     status: str

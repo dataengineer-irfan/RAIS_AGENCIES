@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
 
 class InvoiceItemCreate(BaseModel):
     product_id: str
-    quantity: Decimal
-    unit_price: Optional[Decimal] = None # Will pull from product base_price if not provided
-    discount_rate: Decimal = Decimal("0.00")
+    quantity: Decimal = Field(..., gt=Decimal("0.00"), description="Quantity must be strictly positive (> 0)")
+    unit_price: Optional[Decimal] = Field(None, gt=Decimal("0.00"), description="Unit price must be strictly positive (> 0) if provided")
+    discount_rate: Decimal = Field(Decimal("0.00"), ge=Decimal("0.00"), le=Decimal("100.00"), description="Discount rate between 0% and 100%")
 
 class InvoiceItemResponse(BaseModel):
     id: str
@@ -34,20 +34,21 @@ class InvoiceCreate(BaseModel):
     quotation_id: Optional[str] = None
     invoice_date: Optional[date] = None # Defaults to today
     due_date: Optional[date] = None     # Defaults to invoice_date (Cash business)
-    discount_amount: Decimal = Decimal("0.00") # Additional invoice-level discount
+    discount_amount: Decimal = Field(Decimal("0.00"), ge=Decimal("0.00"), description="Invoice-level discount cannot be negative")
     payment_terms: Optional[str] = "Cash on Delivery / Immediate Settlement"
     notes: Optional[str] = None
     auto_issue: bool = False # If True, mark as ISSUED immediately
-    items: List[InvoiceItemCreate]
+    idempotency_key: Optional[str] = Field(None, max_length=64, description="Client idempotency key for safe retries")
+    items: List[InvoiceItemCreate] = Field(..., min_length=1, description="Invoice must contain at least one item")
 
 class InvoiceUpdate(BaseModel):
     customer_id: Optional[str] = None
     invoice_date: Optional[date] = None
     due_date: Optional[date] = None
-    discount_amount: Optional[Decimal] = None
+    discount_amount: Optional[Decimal] = Field(None, ge=Decimal("0.00"))
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
-    items: Optional[List[InvoiceItemCreate]] = None  # If provided, replaces all line items
+    items: Optional[List[InvoiceItemCreate]] = Field(None, min_length=1, description="If provided, replaces all line items and cannot be empty list")
 
 class InvoiceStatusUpdate(BaseModel):
     status: str
@@ -87,6 +88,7 @@ class InvoiceResponse(BaseModel):
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
     qr_payload: Optional[str] = None
+    idempotency_key: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     items: List[InvoiceItemResponse] = []

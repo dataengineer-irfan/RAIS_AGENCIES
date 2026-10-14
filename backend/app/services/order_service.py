@@ -36,7 +36,13 @@ class OrderService:
                 raise EntityNotFoundException("Product", item_in.product_id)
 
             qty = Decimal(str(item_in.quantity))
-            price = Decimal(str(item_in.unit_price or product.base_price))
+            if qty <= Decimal("0.00"):
+                raise InvalidFinancialOperationException(f"Order item quantity must be strictly positive (> 0), got {qty}.")
+
+            price = Decimal(str(item_in.unit_price if item_in.unit_price is not None else product.base_price))
+            if price <= Decimal("0.00"):
+                raise InvalidFinancialOperationException(f"Order unit price must be strictly positive (> 0), got {price}.")
+
             line_sub = qty * price
             
             subtotal += line_sub

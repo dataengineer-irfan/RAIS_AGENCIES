@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Building2 } from 'lucide-react';
+import { X, UserPlus, Building2, Mic } from 'lucide-react';
 import { customerApi } from '../services/api';
+import { VoiceDictationModal } from './VoiceDictationModal';
 
 export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved }) => {
   const [businessName, setBusinessName] = useState('');
@@ -19,6 +20,46 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [voiceNotification, setVoiceNotification] = useState(null);
+  const [existingCustomers, setExistingCustomers] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      customerApi.list({ limit: 100 }).then(res => {
+        const list = Array.isArray(res) ? res : (res?.items || []);
+        setExistingCustomers(list);
+      }).catch(() => {});
+    }
+  }, [isOpen]);
+
+  const handleApplyVoiceData = (parsed) => {
+    if (!parsed) return;
+    setError('');
+
+    // Duplicate Phone Detection
+    if (parsed.phone && existingCustomers.length > 0) {
+      const cleanTargetPhone = parsed.phone.replace(/[^0-9]/g, '').slice(-10);
+      const duplicate = existingCustomers.find(c => {
+        const cPhone = (c.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        return cPhone === cleanTargetPhone && c.id !== customerToEdit?.id;
+      });
+      if (duplicate) {
+        setError(`Warning: An existing outlet with phone ${cleanTargetPhone} is already registered: "${duplicate.business_name}" (${duplicate.customer_code}).`);
+      }
+    }
+
+    if (parsed.business_name) setBusinessName(parsed.business_name);
+    if (parsed.contact_person) setContactPerson(parsed.contact_person);
+    if (parsed.phone) setPhone(parsed.phone);
+    if (parsed.city) setCity(parsed.city);
+    if (parsed.credit_limit) setCreditLimit(parsed.credit_limit);
+    if (parsed.opening_balance) setOpeningBalance(parsed.opening_balance);
+    if (parsed.address_line1) setAddressLine1(parsed.address_line1);
+
+    setVoiceNotification(`Voice applied: ${parsed.business_name || 'Customer'}${parsed.phone ? ` • ${parsed.phone}` : ''}`);
+    setTimeout(() => setVoiceNotification(null), 6000);
+  };
 
   useEffect(() => {
     if (customerToEdit) {
@@ -130,15 +171,42 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
               <p className="text-xs text-slate-400">Account details & balance</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setVoiceModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+              title="Voice dictation for customer onboarding"
+            >
+              <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>Voice Fill</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          {voiceNotification && (
+            <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-bold flex items-center justify-between animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <Mic className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                <span>{voiceNotification}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVoiceNotification(null)}
+                className="text-amber-400 hover:text-amber-200 p-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs font-semibold">
               {error}
@@ -308,6 +376,14 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
           </div>
         </form>
       </div>
+
+      {/* Voice Dictation Modal */}
+      <VoiceDictationModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        mode="CUSTOMER"
+        onApplyParsedData={handleApplyVoiceData}
+      />
     </div>
   );
 };

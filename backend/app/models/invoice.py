@@ -20,6 +20,7 @@ class Invoice(Base):
     status = Column(String(20), default=InvoiceStatus.DRAFT.value, nullable=False, index=True)
     invoice_date = Column(Date, default=date.today, nullable=False, index=True)
     due_date = Column(Date, nullable=False, index=True)
+    idempotency_key = Column(String(64), unique=True, nullable=True, index=True)
     
     # Financial breakdown
     subtotal = Column(Numeric(12, 2), default=0.00, nullable=False)

@@ -1,11 +1,18 @@
 import os
 import time
+import pytest
+import urllib.request
 from playwright.sync_api import sync_playwright
 
 ARTIFACT_DIR = r"C:\Users\affra\.gemini\antigravity\brain\7c0063e9-3ed5-4cd3-8b52-0515e8cd26cc"
 
 def test_flyer_visuals():
     print("[VISUAL QA] Testing Visual Catalogue & Official Flyer Enhancements...")
+    try:
+        urllib.request.urlopen("http://localhost:3000", timeout=2)
+        urllib.request.urlopen("http://localhost:8000/api/v1/health", timeout=2)
+    except Exception:
+        pytest.skip("Vite dev server or Backend API not running; skipping Playwright browser test.")
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)

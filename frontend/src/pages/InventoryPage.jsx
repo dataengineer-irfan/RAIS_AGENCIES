@@ -33,7 +33,8 @@ import {
   ArrowLeft,
   Truck,
   Camera,
-  FileUp
+  FileUp,
+  Mic
 } from 'lucide-react';
 import { inventoryApi, catalogueApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -43,6 +44,7 @@ import { StockMovementsDrawer } from '../components/StockMovementsDrawer';
 import { TruckIntakeModal } from '../components/TruckIntakeModal';
 import { BarcodeScanModal } from '../components/BarcodeScanModal';
 import { UploadInvoiceModal } from '../components/UploadInvoiceModal';
+import { VoiceDictationModal } from '../components/VoiceDictationModal';
 import { smartProductMatch, cleanProductName } from '../utils/productHelpers';
 
 export const InventoryPage = () => {
@@ -73,6 +75,19 @@ export const InventoryPage = () => {
   const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
   const [targetProductForAction, setTargetProductForAction] = useState(null);
   const [movementsDrawerOpen, setMovementsDrawerOpen] = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [stagedVoiceInventory, setStagedVoiceInventory] = useState(null);
+
+  const handleApplyVoiceInventory = (parsed) => {
+    if (!parsed) return;
+    setStagedVoiceInventory(parsed);
+    setTargetProductForAction(parsed.product?.id || selectedProductId || null);
+    if (parsed.intent === 'STOCK_RECEIPT') {
+      setReceiveModalOpen(true);
+    } else {
+      setAdjustModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     loadInventory();
@@ -527,6 +542,15 @@ export const InventoryPage = () => {
 
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <>
+              <button
+                onClick={() => setVoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold rounded-lg text-xs uppercase tracking-wider transition-all hover:scale-105 shrink-0"
+                title="Voice Stock Operations (e.g. Damage, Receipt)"
+              >
+                <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>Voice Stock</span>
+              </button>
+
               <button
                 onClick={() => setUploadInvoiceModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
@@ -1328,6 +1352,15 @@ export const InventoryPage = () => {
           product={selectedProduct}
         />
       )}
+
+      {/* Voice Dictation Modal */}
+      <VoiceDictationModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        mode="INVENTORY"
+        products={stockItems}
+        onApplyParsedData={handleApplyVoiceInventory}
+      />
 
     </div>
   );

@@ -48,3 +48,4 @@ class AuditAction(str, Enum):
     ALLOCATION = "ALLOCATION"
     LOGIN = "LOGIN"
     EXPORT = "EXPORT"
+    PRICE_OVERRIDE = "PRICE_OVERRIDE"

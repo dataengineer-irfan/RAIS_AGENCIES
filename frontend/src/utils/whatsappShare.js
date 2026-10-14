@@ -5,15 +5,14 @@ import { generateInvoiceFile, downloadInvoiceImage, formatInvoiceDateTime } from
  * Always returns the public production Render URL for PDF receipts.
  * Strictly avoids localhost/capacitor URLs so customers can open receipts anywhere.
  */
+import { API_BASE_URL } from '../services/api.js';
+
+/**
+ * Returns the active API URL for PDF receipts.
+ */
 export const getPublicInvoicePdfUrl = (invoiceId) => {
   if (!invoiceId) return '';
-  let prodHost = 'https://rais-backend.onrender.com';
-  const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-  const customApi = (env.VITE_PUBLIC_API_URL || env.VITE_API_URL || '').trim();
-  if (customApi && !customApi.includes('localhost') && !customApi.includes('127.0.0.1')) {
-    prodHost = customApi.startsWith('http') ? customApi : `https://${customApi}`;
-  }
-  return `${prodHost.replace(/\/$/, '')}/api/invoices/${invoiceId}/print-html`;
+  return `${API_BASE_URL}/invoices/${invoiceId}/print-html`;
 };
 
 export const shareInvoiceOnWhatsApp = async ({

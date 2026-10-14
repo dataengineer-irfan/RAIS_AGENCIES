@@ -8,13 +8,19 @@ if sys.stdout.encoding != 'utf-8':
     except Exception:
         pass
 
+import pytest
+
 BASE_URL = "http://localhost:8001/api"
 
 def test_v2_api():
     print("[TEST] Testing v2 Backend Intelligence Endpoints...")
     
-    # 1. Login
-    res = requests.post(f"{BASE_URL}/auth/login-json", json={"username": "admin", "password": "RaisAdmin@2026"})
+    # 1. Login (Skip gracefully if live server daemon is not active)
+    try:
+        res = requests.post(f"{BASE_URL}/auth/login-json", json={"username": "admin", "password": "RaisAdmin@2026"}, timeout=2)
+    except requests.exceptions.ConnectionError:
+        pytest.skip("Backend server not running on localhost:8001; skipping live HTTP test.")
+
     assert res.status_code == 200, f"Login failed: {res.text}"
     token = res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}

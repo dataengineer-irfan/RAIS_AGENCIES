@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { SlidersHorizontal, X, AlertCircle } from 'lucide-react';
+import { SlidersHorizontal, X, AlertCircle, Mic } from 'lucide-react';
 import { catalogueApi, inventoryApi } from '../services/api';
+import { VoiceDictationModal } from './VoiceDictationModal';
 
 export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselectedProductId }) => {
   const [products, setProducts] = useState([]);
@@ -12,6 +13,8 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState(null);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [voiceNotification, setVoiceNotification] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -19,6 +22,33 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
       resetForm();
     }
   }, [isOpen, preselectedProductId]);
+
+  const handleApplyVoiceData = (parsed) => {
+    if (!parsed) return;
+    setError('');
+
+    if (parsed.product?.id) {
+      setProductId(parsed.product.id);
+    }
+    if (parsed.quantity) {
+      setQuantity(String(parsed.quantity));
+    }
+    if (parsed.reason) {
+      setReason(parsed.reason);
+      if (['DAMAGED', 'EXPIRED', 'WASTAGE'].includes(parsed.reason)) {
+        setAdjustmentType('DECREASE');
+      } else if (parsed.reason === 'CORRECTION' && parsed.quantity < 0) {
+        setAdjustmentType('DECREASE');
+      }
+    }
+    if (parsed.notes) {
+      setNotes(parsed.notes);
+    }
+
+    const prodName = parsed.product?.name || 'Product';
+    setVoiceNotification(`Voice Staged: Decrease ${parsed.quantity || 1} for ${prodName} (${parsed.reason || 'DAMAGED'})`);
+    setTimeout(() => setVoiceNotification(null), 6000);
+  };
 
   const loadProducts = async () => {
     try {
@@ -42,6 +72,7 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
     setNotes('');
     setError('');
     setSuccessMsg(null);
+    setVoiceNotification(null);
   };
 
   const handleSubmit = async (e) => {
@@ -98,13 +129,39 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
               <p className="text-xs text-slate-400">Record damage, expiry, wastage, or physical count correction</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setVoiceModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+              title="Voice dictation for stock adjustment"
+            >
+              <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>Voice Adjust</span>
+            </button>
+            <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          {voiceNotification && (
+            <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-bold flex items-center justify-between animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <Mic className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                <span>{voiceNotification}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVoiceNotification(null)}
+                className="text-amber-400 hover:text-amber-200 p-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           {error && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -242,6 +299,15 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
         </form>
 
       </div>
+
+      {/* Voice Dictation Modal */}
+      <VoiceDictationModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        mode="INVENTORY"
+        products={products}
+        onApplyParsedData={handleApplyVoiceData}
+      />
     </div>
   );
 };

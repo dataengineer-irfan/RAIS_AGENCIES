@@ -77,8 +77,16 @@ class BillingService:
             })
 
         net_discount = quantize_amount(total_item_discounts + invoice_level_discount)
+        if net_discount > subtotal:
+            raise InvalidFinancialOperationException(
+                f"Total discount (₹{net_discount}) cannot exceed invoice subtotal (₹{subtotal}). "
+                "Persisted invoice totals cannot be negative."
+            )
+
         final_taxable = quantize_amount(subtotal - net_discount)
         grand_total = quantize_amount(final_taxable) # Pure subtotal minus discount (No GST)
+        if grand_total < Decimal("0.00"):
+            raise InvalidFinancialOperationException("Persisted invoice totals cannot be negative.")
 
         return {
             "subtotal": subtotal,
@@ -112,26 +120,63 @@ class BillingService:
         if not customer:
             raise EntityNotFoundException("Customer", data.customer_id)
 
+        # Idempotency guard: return existing invoice if idempotency_key was already processed
+        idempotency_key = getattr(data, "idempotency_key", None)
+        if idempotency_key:
+            existing_inv = db.query(Invoice).filter(Invoice.idempotency_key == idempotency_key).first()
+            if existing_inv:
+                return existing_inv
+
         if not data.items:
             raise InvalidFinancialOperationException("An invoice must contain at least one line item.")
 
         # Prepare items data
         prepared_items = []
         for itm in data.items:
+            qty = Decimal(str(itm.quantity))
+            if qty <= Decimal("0.00"):
+                raise InvalidFinancialOperationException(f"Item quantity must be strictly positive (> 0), got {qty}.")
+            if itm.discount_rate < Decimal("0.00") or itm.discount_rate > Decimal("100.00"):
+                raise InvalidFinancialOperationException("Discount rate must be between 0% and 100%.")
+
             product = db.query(Product).filter(Product.id == itm.product_id).first()
             if not product:
                 raise EntityNotFoundException("Product", itm.product_id)
             if not product.is_active:
                 raise RaisAppException(detail=f"Product '{product.name}' is inactive.")
             
-            unit_price = itm.unit_price if itm.unit_price is not None else product.base_price
+            if itm.unit_price is None:
+                unit_price = product.base_price
+            else:
+                unit_price = Decimal(str(itm.unit_price))
+                if unit_price <= Decimal("0.00"):
+                    raise InvalidFinancialOperationException(f"Unit price must be strictly positive (> 0), got {unit_price}.")
+                if unit_price != product.base_price:
+                    # Negotiated pricing override: log audit trail
+                    diff_pct = (((unit_price - product.base_price) / product.base_price) * 100).quantize(Decimal("0.1"))
+                    AuditService.log(
+                        db=db,
+                        action=AuditAction.PRICE_OVERRIDE,
+                        entity_name="ProductPricing",
+                        entity_id=product.id,
+                        user_id=user_id,
+                        username=username,
+                        user_role=user_role,
+                        after_state={
+                            "product_sku": product.sku,
+                            "catalogue_base_price": str(product.base_price),
+                            "negotiated_unit_price": str(unit_price),
+                            "variance_pct": str(diff_pct)
+                        }
+                    )
+
             prepared_items.append({
                 "product_id": product.id,
                 "item_description": product.name,
                 "brand": product.brand,
                 "packaging_unit": product.packaging_unit,
                 "hsn_code": product.hsn_code,
-                "quantity": itm.quantity,
+                "quantity": qty,
                 "unit_price": unit_price,
                 "discount_rate": itm.discount_rate,
                 "tax_rate": product.tax_rate
@@ -153,6 +198,7 @@ class BillingService:
             status=init_status,
             invoice_date=inv_date,
             due_date=due_date,
+            idempotency_key=idempotency_key,
             subtotal=calc["subtotal"],
             discount_amount=calc["discount_amount"],
             taxable_amount=calc["taxable_amount"],
@@ -273,6 +319,8 @@ class BillingService:
 
         # ─── Replace line items if provided ───
         if data.items is not None:
+            if len(data.items) == 0:
+                raise InvalidFinancialOperationException("An invoice cannot have an empty list of line items.")
             from app.services.inventory_service import InventoryService
 
             # 1. Build previous items dict: product_id → quantity
@@ -281,19 +329,49 @@ class BillingService:
             # 2. Validate and prepare new items
             prepared_items = []
             for itm in data.items:
+                qty = Decimal(str(itm.quantity))
+                if qty <= Decimal("0.00"):
+                    raise InvalidFinancialOperationException(f"Item quantity must be strictly positive (> 0), got {qty}.")
+                if itm.discount_rate < Decimal("0.00") or itm.discount_rate > Decimal("100.00"):
+                    raise InvalidFinancialOperationException("Discount rate must be between 0% and 100%.")
+
                 product = db.query(Product).filter(Product.id == itm.product_id).first()
                 if not product:
                     raise EntityNotFoundException("Product", itm.product_id)
                 if not product.is_active:
                     raise RaisAppException(detail=f"Product '{product.name}' is inactive.")
-                unit_price = itm.unit_price if itm.unit_price is not None else product.base_price
+                
+                if itm.unit_price is None:
+                    unit_price = product.base_price
+                else:
+                    unit_price = Decimal(str(itm.unit_price))
+                    if unit_price <= Decimal("0.00"):
+                        raise InvalidFinancialOperationException(f"Unit price must be strictly positive (> 0), got {unit_price}.")
+                    if unit_price != product.base_price:
+                        diff_pct = (((unit_price - product.base_price) / product.base_price) * 100).quantize(Decimal("0.1"))
+                        AuditService.log(
+                            db=db,
+                            action=AuditAction.PRICE_OVERRIDE,
+                            entity_name="ProductPricing",
+                            entity_id=product.id,
+                            user_id=user_id,
+                            username=username,
+                            user_role=user_role,
+                            after_state={
+                                "product_sku": product.sku,
+                                "catalogue_base_price": str(product.base_price),
+                                "negotiated_unit_price": str(unit_price),
+                                "variance_pct": str(diff_pct)
+                            }
+                        )
+
                 prepared_items.append({
                     "product_id": product.id,
                     "item_description": product.name,
                     "brand": product.brand,
                     "packaging_unit": product.packaging_unit,
                     "hsn_code": product.hsn_code,
-                    "quantity": itm.quantity,
+                    "quantity": qty,
                     "unit_price": unit_price,
                     "discount_rate": itm.discount_rate,
                     "tax_rate": product.tax_rate
@@ -416,10 +494,16 @@ class BillingService:
         reason: Optional[str] = None,
         user_id: Optional[str] = None
     ) -> Invoice:
-        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).with_for_update().first()
         if not invoice:
             raise EntityNotFoundException("Invoice", invoice_id)
         
+        # Guard: Cannot cancel or void an already cancelled or void invoice (prevents duplicate stock restoration)
+        if invoice.status in [InvoiceStatus.CANCELLED.value, InvoiceStatus.VOID.value]:
+            raise InvalidFinancialOperationException(
+                f"Invoice '{invoice.invoice_number}' is already {invoice.status}. Cannot cancel or reverse again."
+            )
+
         if invoice.paid_amount > Decimal("0.00"):
             raise InvalidFinancialOperationException(
                 f"Cannot {target_status.lower()} invoice '{invoice.invoice_number}' because payments totaling ₹{invoice.paid_amount} are already allocated. Unallocate payments first."

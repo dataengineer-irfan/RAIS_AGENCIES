@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle } from 'lucide-react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { VoiceDictationModal } from './VoiceDictationModal';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -12,7 +13,8 @@ export const InvoiceBuilderModal = ({
   onInvoiceCreated,
   preselectedCustomer = null,
   preselectedProduct = null,
-  invoiceToEdit = null   // Pass existing invoice object to enter Edit Bill mode
+  invoiceToEdit = null,   // Pass existing invoice object to enter Edit Bill mode
+  initialVoiceData = null
 }) => {
   useBodyScrollLock(isOpen);
   const isEditMode = Boolean(invoiceToEdit?.id);
@@ -24,6 +26,9 @@ export const InvoiceBuilderModal = ({
   const [error, setError] = useState('');
   const [successInvoice, setSuccessInvoice] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [voiceNotification, setVoiceNotification] = useState(null);
+  const [voiceConflictPrompt, setVoiceConflictPrompt] = useState(null);
 
   // Form State - Cash business default: invoiceDate and dueDate are identical today
   const todayStr = new Date().toISOString().split('T')[0];
@@ -128,12 +133,106 @@ export const InvoiceBuilderModal = ({
           { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }
         ]);
       }
+
+      // 3. If initialVoiceData was passed upon modal launch, apply it immediately
+      if (initialVoiceData) {
+        setTimeout(() => {
+          handleApplyVoiceData(initialVoiceData);
+        }, 50);
+      }
     } catch (err) {
       console.error("Failed to load invoice builder dependencies:", err);
       setError('Failed to load customers or catalogue items. Please check network connection.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyStagedVoiceData = (parsedResult, mode = 'REPLACE') => {
+    if (!parsedResult) return;
+    const appliedSummary = [];
+
+    // 1. Customer
+    if (parsedResult.customer?.id) {
+      setCustomerId(parsedResult.customer.id);
+      appliedSummary.push(`Customer: ${parsedResult.customer.business_name}`);
+    }
+
+    // 2. Discount
+    if (parsedResult.discountAmount > 0) {
+      setInvoiceDiscount(String(parsedResult.discountAmount));
+      appliedSummary.push(`Discount: ₹${parsedResult.discountAmount}`);
+    }
+
+    // 3. Line Items
+    if (parsedResult.items && parsedResult.items.length > 0) {
+      const incomingItems = parsedResult.items.map(itm => {
+        const prod = products.find(p => p.id === itm.product_id);
+        return {
+          product_id: itm.product_id || (prod ? prod.id : ''),
+          quantity: itm.quantity || 1,
+          unit_price: parseFloat(itm.unit_price) || (prod ? parseFloat(prod.base_price || 0) : 0),
+          discount_rate: itm.discount_rate || 0,
+          packaging_unit: itm.packaging_unit || prod?.packaging_unit || 'PKT',
+          isAmbiguous: Boolean(itm.isAmbiguous),
+          alternatives: Array.isArray(itm.alternatives) ? itm.alternatives : []
+        };
+      });
+
+      if (mode === 'APPEND') {
+        const currentValid = items.filter(it => Boolean(it.product_id));
+        const combined = [...currentValid, ...incomingItems];
+        setItems(combined.length > 0 ? combined : incomingItems);
+        appliedSummary.push(`Appended ${incomingItems.length} item(s)`);
+      } else {
+        setItems(incomingItems);
+        appliedSummary.push(`${incomingItems.length} item(s)`);
+      }
+    }
+
+    setVoiceNotification(`Voice Staged: ${appliedSummary.join(' • ')}`);
+    setTimeout(() => setVoiceNotification(null), 6000);
+  };
+
+  const handleApplyVoiceData = (parsedResult) => {
+    if (!parsedResult) return;
+    const hasExistingItems = items.some(it => Boolean(it.product_id) && (parseFloat(it.quantity) > 0));
+
+    if (hasExistingItems && parsedResult.items && parsedResult.items.length > 0) {
+      setVoiceConflictPrompt({ pendingData: parsedResult });
+      if (parsedResult.customer?.id) setCustomerId(parsedResult.customer.id);
+      if (parsedResult.discountAmount > 0) setInvoiceDiscount(String(parsedResult.discountAmount));
+      return;
+    }
+
+    applyStagedVoiceData(parsedResult, 'REPLACE');
+  };
+
+  const handleResolveDisambiguation = (index, altProduct) => {
+    setItems(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        product_id: altProduct.id,
+        unit_price: parseFloat(altProduct.base_price || 0),
+        packaging_unit: altProduct.packaging_unit || updated[index].packaging_unit || 'PKT',
+        isAmbiguous: false,
+        alternatives: []
+      };
+      return updated;
+    });
+  };
+
+  const handleDismissDisambiguation = (index) => {
+    setItems(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        isAmbiguous: false,
+        alternatives: []
+      };
+      return updated;
+    });
   };
 
   const handleInvoiceDateChange = (val) => {
@@ -177,13 +276,17 @@ export const InvoiceBuilderModal = ({
         ...newItems[index],
         product_id: prod.id,
         unit_price: parseFloat(prod.base_price || 0),
-        packaging_unit: prod.packaging_unit || 'PKT'
+        packaging_unit: prod.packaging_unit || 'PKT',
+        isAmbiguous: false,
+        alternatives: []
       };
     } else {
       newItems[index] = {
         ...newItems[index],
         product_id: '',
-        unit_price: 0
+        unit_price: 0,
+        isAmbiguous: false,
+        alternatives: []
       };
     }
     setItems(newItems);
@@ -329,6 +432,10 @@ export const InvoiceBuilderModal = ({
       setError('Please ensure all line items have a selected SKU and valid quantity > 0.');
       return false;
     }
+    if (parseFloat(totals.discount) > parseFloat(totals.subtotal)) {
+      setError(`Total discounts (₹${totals.discount}) cannot exceed invoice subtotal (₹${totals.subtotal}). Negative balances are strictly prohibited.`);
+      return false;
+    }
     return true;
   };
 
@@ -373,7 +480,11 @@ export const InvoiceBuilderModal = ({
         setShowPreview(false);
         if (onInvoiceCreated) onInvoiceCreated(res);
       } else {
-        // ─── CREATE BILL MODE ───
+        // ─── CREATE BILL MODE (With Client Idempotency Key) ───
+        const idempotencyKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : `inv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
         const payload = {
           customer_id: customerId,
           invoice_date: invoiceDate,
@@ -382,6 +493,7 @@ export const InvoiceBuilderModal = ({
           payment_terms: paymentTerms,
           notes: notes.trim() || null,
           auto_issue: autoIssue,
+          idempotency_key: idempotencyKey,
           items: itemsPayload
         };
         res = await billingApi.createInvoice(payload);
@@ -435,12 +547,25 @@ export const InvoiceBuilderModal = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!showPreview && !successInvoice && (
+              <button
+                type="button"
+                onClick={() => setVoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+                title="Voice dictation for customer and items"
+              >
+                <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="hidden sm:inline">Voice Bill</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* ─── CASE A: INVOICE CREATED SUCCESS SCREEN (Singular CTA Hierarchy) ─── */}
@@ -698,6 +823,22 @@ export const InvoiceBuilderModal = ({
           <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
             {/* Scrollable Form Body with ample bottom clearance */}
             <div className="p-3 sm:p-6 pb-28 sm:pb-24 space-y-4 sm:space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+              {voiceNotification && (
+                <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-bold flex items-center justify-between animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2">
+                    <Mic className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                    <span>{voiceNotification}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVoiceNotification(null)}
+                    className="text-amber-400 hover:text-amber-200 p-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
               {error && (
                 <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
@@ -1105,6 +1246,40 @@ export const InvoiceBuilderModal = ({
                             </div>
                           )}
                         </div>
+
+                        {/* ─── DISAMBIGUATION VARIANT CHIPS ─── */}
+                        {item.isAmbiguous && item.alternatives && item.alternatives.length > 0 && (
+                          <div className="p-2.5 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex flex-wrap items-center gap-2 animate-in fade-in duration-200">
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 shrink-0">
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Multiple matches:</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+                              {item.alternatives.map((alt) => {
+                                const { cleanName, brandName } = formatProductDisplay(alt);
+                                return (
+                                  <button
+                                    key={alt.id}
+                                    type="button"
+                                    onClick={() => handleResolveDisambiguation(index, alt)}
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-slate-200 border border-amber-500/30 transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
+                                    title={`Switch to ${alt.name} (₹${parseFloat(alt.base_price || 0).toFixed(2)})`}
+                                  >
+                                    <span>{cleanName}{brandName ? ` (${brandName})` : ''}</span>
+                                    <span className="font-mono text-[10px] opacity-80">₹{parseFloat(alt.base_price || 0).toFixed(2)}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDismissDisambiguation(index)}
+                              className="text-[10px] font-medium text-slate-400 hover:text-slate-200 px-2 py-1 rounded bg-slate-900/60 hover:bg-slate-800 border border-slate-700/50 transition-colors shrink-0 ml-auto"
+                            >
+                              Keep current ✓
+                            </button>
+                          </div>
+                        )}
                       </React.Fragment>
                     );
                   })}
@@ -1158,6 +1333,14 @@ export const InvoiceBuilderModal = ({
                 </div>
               )}
 
+              {/* Excessive Discount Alert */}
+              {parseFloat(totals.discount) > parseFloat(totals.subtotal) && (
+                <div className="p-3 bg-rose-500/15 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-rose-400 text-xs font-bold animate-in fade-in duration-200">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>Total discount (₹{totals.discount}) exceeds subtotal (₹{totals.subtotal}). Excessive discounts resulting in negative balances are strictly prohibited.</span>
+                </div>
+              )}
+
               {/* Totals Summary Card */}
               <div className="p-4 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
                 <div className="flex items-center gap-2.5 text-xs text-slate-400">
@@ -1177,7 +1360,9 @@ export const InvoiceBuilderModal = ({
                   {parseFloat(totals.discount) > 0 && (
                     <div>
                       <span className="text-slate-500 block text-[10px] uppercase font-sans">Total Discount</span>
-                      <span className="text-emerald-400 font-bold text-sm">-₹{totals.discount}</span>
+                      <span className={`font-bold text-sm ${parseFloat(totals.discount) > parseFloat(totals.subtotal) ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        -₹{totals.discount}
+                      </span>
                     </div>
                   )}
                   <div className="text-right pl-3 border-l border-slate-800">
@@ -1206,7 +1391,8 @@ export const InvoiceBuilderModal = ({
                 <button
                   type="button"
                   onClick={handleOpenPreview}
-                  className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-750 text-amber-400 hover:text-amber-300 border border-amber-500/30 font-bold text-xs rounded-xl uppercase tracking-wider flex items-center gap-1.5 transition-all hover:scale-105 shrink-0"
+                  disabled={parseFloat(totals.discount) > parseFloat(totals.subtotal)}
+                  className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-750 text-amber-400 hover:text-amber-300 border border-amber-500/30 font-bold text-xs rounded-xl uppercase tracking-wider flex items-center gap-1.5 transition-all hover:scale-105 shrink-0 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span className="text-[11px] sm:text-xs">Preview</span>
@@ -1214,8 +1400,8 @@ export const InvoiceBuilderModal = ({
 
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all transform active:scale-95 truncate"
+                  disabled={submitting || parseFloat(totals.discount) > parseFloat(totals.subtotal)}
+                  className="flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all transform active:scale-95 truncate disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {submitting 
                     ? (isEditMode ? 'Updating...' : 'Generating...') 
@@ -1228,6 +1414,69 @@ export const InvoiceBuilderModal = ({
           </form>
         )}
       </div>
+
+      {/* Voice Dictation Modal */}
+      <VoiceDictationModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        mode="INVOICE"
+        customers={customers}
+        products={products}
+        onApplyParsedData={handleApplyVoiceData}
+      />
+
+      {/* Voice Items Append vs Replace Conflict Modal */}
+      {voiceConflictPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <Mic className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Apply Voice Items</h4>
+                <p className="text-xs text-slate-400">
+                  This bill already has {items.filter(i => Boolean(i.product_id)).length} line item(s).
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              You spoke <strong className="text-amber-400 font-bold">{voiceConflictPrompt.pendingData.items?.length || 0} new item(s)</strong>. How would you like to stage them onto this invoice?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  applyStagedVoiceData(voiceConflictPrompt.pendingData, 'APPEND');
+                  setVoiceConflictPrompt(null);
+                }}
+                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+              >
+                Append to Existing
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  applyStagedVoiceData(voiceConflictPrompt.pendingData, 'REPLACE');
+                  setVoiceConflictPrompt(null);
+                }}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs transition-all shadow-md active:scale-95"
+              >
+                Replace All Items
+              </button>
+            </div>
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setVoiceConflictPrompt(null)}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

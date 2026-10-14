@@ -77,7 +77,7 @@ class InventoryService:
 
     @staticmethod
     def receive_stock(db: Session, req: ReceiveStockRequest, user_id: Optional[str] = None) -> dict:
-        product = db.query(Product).filter(Product.id == req.product_id).with_for_update().first()
+        product = db.query(Product).filter(Product.id == req.product_id).populate_existing().with_for_update().first()
         if not product:
             raise EntityNotFoundException("Product", req.product_id)
 
@@ -138,7 +138,7 @@ class InventoryService:
         batch_rec_number = SequenceService.get_next_sequence(db, "REC")
         
         for item in items:
-            product = db.query(Product).filter(Product.id == item.product_id).with_for_update().first()
+            product = db.query(Product).filter(Product.id == item.product_id).populate_existing().with_for_update().first()
             if not product:
                 continue
             qty = Decimal(str(item.quantity))
@@ -183,7 +183,7 @@ class InventoryService:
 
     @staticmethod
     def adjust_stock(db: Session, req: AdjustStockRequest, user_id: Optional[str] = None) -> dict:
-        product = db.query(Product).filter(Product.id == req.product_id).with_for_update().first()
+        product = db.query(Product).filter(Product.id == req.product_id).populate_existing().with_for_update().first()
         if not product:
             raise EntityNotFoundException("Product", req.product_id)
 
@@ -281,15 +281,22 @@ class InventoryService:
 
     @staticmethod
     def deduct_stock_for_order(db: Session, product_id: str, quantity: Decimal, order_number: str, user_id: Optional[str] = None):
-        product = db.query(Product).filter(Product.id == product_id).with_for_update().first()
-        if not product:
-            return
-        
         qty = Decimal(str(quantity))
+        if qty <= Decimal("0.00"):
+            raise InvalidFinancialOperationException(f"Order stock deduction quantity must be strictly positive (> 0), got {qty}.")
+
+        product = db.query(Product).filter(Product.id == product_id).populate_existing().with_for_update().first()
+        if not product:
+            raise EntityNotFoundException("Product", product_id)
+        
         prev_stock = Decimal(str(product.current_stock or 0))
+        if prev_stock < qty:
+            raise InvalidFinancialOperationException(
+                f"Insufficient stock for product '{product.name}' (SKU: {product.sku}). "
+                f"Available in warehouse: {prev_stock} {product.packaging_unit}, ordered: {qty} {product.packaging_unit}."
+            )
+
         new_stock = prev_stock - qty
-        if new_stock < 0:
-            new_stock = Decimal("0.00")
         product.current_stock = new_stock
 
         movement = StockMovement(
@@ -308,20 +315,27 @@ class InventoryService:
 
     @staticmethod
     def deduct_stock_for_invoice(db: Session, product_id: str, quantity: Decimal, invoice_number: str, user_id: Optional[str] = None):
-        product = db.query(Product).filter(Product.id == product_id).with_for_update().first()
-        if not product:
-            return
-        
         qty = Decimal(str(quantity))
+        if qty <= Decimal("0.00"):
+            raise InvalidFinancialOperationException(f"Stock deduction quantity must be strictly positive (> 0), got {qty}.")
+
+        product = db.query(Product).filter(Product.id == product_id).populate_existing().with_for_update().first()
+        if not product:
+            raise EntityNotFoundException("Product", product_id)
+        
         prev_stock = Decimal(str(product.current_stock or 0))
+        if prev_stock < qty:
+            raise InvalidFinancialOperationException(
+                f"Insufficient stock for product '{product.name}' (SKU: {product.sku}). "
+                f"Available in warehouse: {prev_stock} {product.packaging_unit}, requested: {qty} {product.packaging_unit}."
+            )
+
         new_stock = prev_stock - qty
-        if new_stock < 0:
-            new_stock = Decimal("0.00")
         product.current_stock = new_stock
 
         movement = StockMovement(
             product_id=product.id,
-            movement_type="ORDER_DEDUCTION",
+            movement_type="INVOICE_DEDUCTION",
             quantity_change=-qty,
             previous_stock=prev_stock,
             new_stock=new_stock,
@@ -335,19 +349,45 @@ class InventoryService:
 
     @staticmethod
     def restore_stock_for_invoice(db: Session, product_id: str, quantity: Decimal, invoice_number: str, reason: Optional[str] = None, user_id: Optional[str] = None):
-        product = db.query(Product).filter(Product.id == product_id).with_for_update().first()
+        qty = Decimal(str(quantity))
+        if qty <= Decimal("0.00"):
+            return
+
+        product = db.query(Product).filter(Product.id == product_id).populate_existing().with_for_update().first()
         if not product:
             return
-        
-        qty = Decimal(str(quantity))
+
+        # Guard: Check if a restoration movement already exists for this product and invoice
+        existing_restore = db.query(StockMovement).filter(
+            StockMovement.product_id == product_id,
+            StockMovement.reference_type == "INVOICE_RESTORE",
+            StockMovement.reference_number == invoice_number
+        ).first()
+        if existing_restore:
+            # Already restored; do not restore twice
+            return
+
+        # Guard: Check original deduction movement to ensure we only reverse actual committed movements
+        original_deduction = db.query(StockMovement).filter(
+            StockMovement.product_id == product_id,
+            StockMovement.reference_type == "INVOICE",
+            StockMovement.reference_number == invoice_number
+        ).first()
+        if not original_deduction:
+            # No deduction recorded for this product on this invoice; do not fabricate stock
+            return
+
+        actual_deducted = abs(Decimal(str(original_deduction.quantity_change)))
+        qty_to_restore = min(qty, actual_deducted)
+
         prev_stock = Decimal(str(product.current_stock or 0))
-        new_stock = prev_stock + qty
+        new_stock = prev_stock + qty_to_restore
         product.current_stock = new_stock
 
         movement = StockMovement(
             product_id=product.id,
-            movement_type="ADJUSTMENT_INCREASE",
-            quantity_change=qty,
+            movement_type="INVOICE_RESTORE",
+            quantity_change=qty_to_restore,
             previous_stock=prev_stock,
             new_stock=new_stock,
             unit=product.packaging_unit,

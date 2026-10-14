@@ -101,3 +101,72 @@ def test_full_invoice_and_payment_lifecycle(test_db):
     assert inv.status == InvoiceStatus.PAID.value
     assert inv.paid_amount == Decimal("600.00")
     assert inv.outstanding_amount == Decimal("0.00")
+
+
+def test_invoice_insufficient_stock_rejection(test_db):
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+    initial_stock = prod.current_stock
+
+    inv_data = InvoiceCreate(
+        customer_id=cust.id,
+        items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("150.00"), unit_price=Decimal("300.00"))],
+        auto_issue=True
+    )
+
+    with pytest.raises(InvalidFinancialOperationException) as exc_info:
+        BillingService.create_invoice(test_db, inv_data)
+
+    assert "Insufficient stock" in str(exc_info.value)
+    test_db.refresh(prod)
+    assert prod.current_stock == initial_stock
+
+
+def test_order_insufficient_stock_rejection(test_db):
+    from app.services.order_service import OrderService
+    from app.schemas.order import OrderCreate, OrderItemCreate
+
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+    initial_stock = prod.current_stock
+
+    order_data = OrderCreate(
+        customer_id=cust.id,
+        items=[OrderItemCreate(product_id=prod.id, quantity=Decimal("150.00"), unit_price=Decimal("300.00"))]
+    )
+
+    with pytest.raises(InvalidFinancialOperationException) as exc_info:
+        OrderService.create_order(test_db, order_data)
+
+    assert "Insufficient stock" in str(exc_info.value)
+    test_db.refresh(prod)
+    assert prod.current_stock == initial_stock
+
+
+def test_order_creation_and_stock_deduction(test_db):
+    from app.services.order_service import OrderService
+    from app.schemas.order import OrderCreate, OrderItemCreate
+    from app.models.inventory import StockMovement
+
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+    initial_stock = prod.current_stock
+
+    order_data = OrderCreate(
+        customer_id=cust.id,
+        items=[OrderItemCreate(product_id=prod.id, quantity=Decimal("20.00"), unit_price=Decimal("300.00"))]
+    )
+
+    order = OrderService.create_order(test_db, order_data)
+    test_db.commit()
+
+    test_db.refresh(prod)
+    assert prod.current_stock == initial_stock - Decimal("20.00")
+
+    movement = test_db.query(StockMovement).filter(
+        StockMovement.product_id == prod.id,
+        StockMovement.movement_type == "ORDER_DEDUCTION"
+    ).first()
+    assert movement is not None
+    assert movement.quantity_change == Decimal("-20.00")
+    assert movement.new_stock == initial_stock - Decimal("20.00")

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const DEFAULT_PROD_API = 'https://rais-backend.onrender.com';
+const PROD_API_HOST = 'https://rais-backend.onrender.com';
 let rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
 
 // Detect native Capacitor Android/iOS WebView
@@ -10,13 +10,39 @@ const isNativePlatform = typeof window !== 'undefined' && (
   (window.location.hostname === 'localhost' && !import.meta.env.DEV)
 );
 
-// Fallback to production cloud backend if running in native mobile shell without env
+// Safety validation guard: Staging builds must never point to production
+const isStagingMode = Boolean(
+  import.meta.env.VITE_STAGING_MODE === 'true' || 
+  import.meta.env.VITE_STAGING_MODE === true || 
+  import.meta.env.MODE === 'staging'
+);
+
+// Validate API endpoint and prevent accidental production usage
+if (rawApiUrl) {
+  if (!rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
+    rawApiUrl = `https://${rawApiUrl}`;
+  }
+  try {
+    const parsedUrl = new URL(rawApiUrl);
+    if (isStagingMode && (parsedUrl.hostname === 'rais-backend.onrender.com' || parsedUrl.hostname.endsWith('rais-backend.onrender.com'))) {
+      throw new Error('[FATAL SAFETY GUARD] Staging build is pointing to production API host (rais-backend.onrender.com). Build blocked.');
+    }
+  } catch (err) {
+    if (err.message.includes('FATAL SAFETY GUARD')) throw err;
+    throw new Error(`[FATAL API SAFETY ERROR] Malformed VITE_API_URL: ${rawApiUrl}`);
+  }
+}
+
+// In native shell, missing VITE_API_URL must fail closed rather than silently falling back to production
 if (!rawApiUrl) {
-  rawApiUrl = isNativePlatform ? DEFAULT_PROD_API : '';
-} else if (!rawApiUrl.includes('.')) {
-  rawApiUrl = isNativePlatform ? DEFAULT_PROD_API : '';
-} else if (!rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
-  rawApiUrl = `https://${rawApiUrl}`;
+  if (isNativePlatform) {
+    throw new Error('[FATAL API SAFETY ERROR] Native shell requires an explicit API endpoint. Missing VITE_API_URL.');
+  } else if (isStagingMode) {
+    throw new Error('[FATAL API SAFETY ERROR] Staging mode requires an explicit staging API URL. Missing VITE_API_URL.');
+  } else {
+    // Web browser local development proxies /api to local backend
+    rawApiUrl = '';
+  }
 }
 
 export const API_BASE_URL = rawApiUrl 
@@ -496,22 +522,7 @@ export const backupApi = {
   downloadExport: async () => {
     const token = localStorage.getItem('rais_token') || '';
     
-    // Resolve public production backend URL
-    let prodHost = 'https://rais-backend.onrender.com';
-    const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-    const customApi = (env.VITE_PUBLIC_API_URL || env.VITE_API_URL || '').trim();
-    if (customApi && !customApi.includes('localhost') && !customApi.includes('127.0.0.1')) {
-      prodHost = customApi.startsWith('http') ? customApi : `https://${customApi}`;
-    }
-
-    // Check if running on native mobile platform (Capacitor Android APK) or mobile touch device
-    const isNativePlatform = typeof window !== 'undefined' && (
-      window.Capacitor?.isNativePlatform?.() || 
-      window.location.protocol === 'capacitor:' || 
-      (window.location.hostname === 'localhost' && !import.meta.env.DEV)
-    );
-
-    const exportUrl = `${prodHost.replace(/\/$/, '')}/api/backup/export?token=${encodeURIComponent(token)}`;
+    const exportUrl = `${API_BASE_URL}/backup/export?token=${encodeURIComponent(token)}`;
 
     // Fetch the backup data
     const response = await api.get('/backup/export', {

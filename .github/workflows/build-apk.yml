@@ -4,6 +4,20 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Target Environment (staging or production)'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      staging_api_url:
+        description: 'Staging API URL (Required for staging builds)'
+        required: false
+        default: 'https://rais-backend-staging.onrender.com'
+        type: string
 
 permissions:
   contents: write
@@ -16,6 +30,39 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Validate Environment Isolation
+        run: |
+          python3 -c "
+          import sys, urllib.parse
+          build_type = '${{ github.event.inputs.build_type || 'staging' }}'.strip().lower()
+          staging_url = '${{ github.event.inputs.staging_api_url || 'https://rais-backend-staging.onrender.com' }}'.strip()
+          
+          if build_type == 'staging':
+              if not staging_url:
+                  print('::error::FATAL: Staging API URL must be explicitly provided.')
+                  sys.exit(1)
+              parsed = urllib.parse.urlparse(staging_url)
+              if not parsed.scheme or not parsed.netloc:
+                  print(f'::error::FATAL: Malformed Staging URL: {staging_url}')
+                  sys.exit(1)
+              hostname = parsed.netloc.split(':')[0].lower()
+              if hostname == 'rais-backend.onrender.com' or hostname.endswith('rais-backend.onrender.com'):
+                  print(f'::error::FATAL SAFETY GUARD: Staging build cannot target production host {hostname}.')
+                  sys.exit(1)
+              print(f'Staging validation passed: targeting approved host {hostname}')
+          "
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'staging' }}"
+          if [ "$BUILD_TYPE" = "staging" ]; then
+            STAGING_URL="${{ github.event.inputs.staging_api_url || 'https://rais-backend-staging.onrender.com' }}"
+            echo "TARGET_API_URL=$STAGING_URL" >> $GITHUB_ENV
+            echo "IS_STAGING=true" >> $GITHUB_ENV
+            echo "OUTPUT_APK_NAME=RAIS_Agencies_STAGING_DEBUG.apk" >> $GITHUB_ENV
+          else
+            echo "TARGET_API_URL=https://rais-backend.onrender.com" >> $GITHUB_ENV
+            echo "IS_STAGING=false" >> $GITHUB_ENV
+            echo "OUTPUT_APK_NAME=RAIS_Agencies.apk" >> $GITHUB_ENV
+          fi
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -36,7 +83,8 @@ jobs:
 
       - name: Build Web App
         env:
-          VITE_API_URL: https://rais-backend.onrender.com
+          VITE_API_URL: ${{ env.TARGET_API_URL }}
+          VITE_STAGING_MODE: ${{ env.IS_STAGING }}
         run: |
           cd frontend
           npm run build
@@ -57,26 +105,30 @@ jobs:
           ./gradlew clean
           ./gradlew assembleDebug --no-daemon
 
-      - name: Prepare APK Output
+      - name: Prepare APK Output & Checksum
         run: |
           mkdir -p build-output
-          cp frontend/android/app/build/outputs/apk/debug/app-debug.apk build-output/RAIS_Agencies.apk
+          cp frontend/android/app/build/outputs/apk/debug/app-debug.apk "build-output/${{ env.OUTPUT_APK_NAME }}"
+          echo "Calculating SHA-256 Checksum for ${{ env.OUTPUT_APK_NAME }}..."
+          sha256sum "build-output/${{ env.OUTPUT_APK_NAME }}" | tee "build-output/${{ env.OUTPUT_APK_NAME }}.sha256"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RAIS_Agencies_APK
-          path: build-output/RAIS_Agencies.apk
+          name: ${{ env.OUTPUT_APK_NAME }}
+          path: |
+            build-output/${{ env.OUTPUT_APK_NAME }}
+            build-output/${{ env.OUTPUT_APK_NAME }}.sha256
           retention-days: 30
 
-      - name: Publish Latest GitHub Release
+      - name: Publish Production GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && env.IS_STAGING == 'false'
         with:
           tag_name: latest
-          name: "RAIS Agencies Mobile App (Latest)"
+          name: "RAIS Agencies Mobile App (Production)"
           body: |
-            ### 📱 RAIS Agencies Wholesale Mobile App
+            ### 📱 RAIS Agencies Wholesale Mobile App (Production)
             - **Depot**: Near Reddies Colony, Rayachoty - 516269
             - **Direct Download**: Tap the `RAIS_Agencies.apk` asset below to install or update on your Android phone.
           files: build-output/RAIS_Agencies.apk
