@@ -68,7 +68,7 @@ export const shareInvoiceOnWhatsApp = async ({
   let imageSection = '';
   if (invoice?.id) {
     const pdfUrl = getPublicInvoicePdfUrl(invoice.id);
-    const imgUrl = `https://rais-backend.onrender.com/api/invoices/${invoice.id}/image`;
+    const imgUrl = `${API_BASE_URL}/invoices/${invoice.id}/image`;
     imageSection = `🖼️ *Digital Invoice Receipt (Image Card):*\n👉 ${imgUrl}\n\n`;
     pdfSection = `📄 *Official Tax Invoice Receipt (PDF):*\n👉 ${pdfUrl}\n\n`;
   }
