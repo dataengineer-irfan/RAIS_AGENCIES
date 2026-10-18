@@ -11,7 +11,8 @@ export const RecentPaymentsCard = ({ payments = [], onNavigateToPayments }) => {
               <CreditCard className="w-3.5 h-3.5" />
             </div>
             <h3 className="text-xs sm:text-sm font-black text-white tracking-wide truncate">
-              Recent Collections & Settlements
+              <span className="sm:hidden">Recent Collections</span>
+              <span className="hidden sm:inline">Recent Collections & Settlements</span>
             </h3>
           </div>
 
