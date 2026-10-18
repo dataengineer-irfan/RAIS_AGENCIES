@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Bell, 
   X, 
@@ -11,17 +11,36 @@ import {
   Building2, 
   ChevronRight, 
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  SlidersHorizontal,
+  ArrowUpDown
 } from 'lucide-react';
 import { customerApi } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
 
 export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustomerForOrder }) => {
   const [daysThreshold, setDaysThreshold] = useState(5);
+  const [sortBy, setSortBy] = useState('priority');
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [contactedMap, setContactedMap] = useState({});
+
+  const sortedAlerts = useMemo(() => {
+    const list = [...alerts];
+    if (sortBy === 'priority') {
+      list.sort((a, b) => (a.priority_tier || 3) - (b.priority_tier || 3) || b.days_inactive - a.days_inactive);
+    } else if (sortBy === 'days') {
+      list.sort((a, b) => b.days_inactive - a.days_inactive);
+    } else if (sortBy === 'amount') {
+      list.sort((a, b) => (b.last_order_amount || 0) - (a.last_order_amount || 0));
+    } else if (sortBy === 'balance') {
+      list.sort((a, b) => (b.outstanding_balance || 0) - (a.outstanding_balance || 0));
+    } else if (sortBy === 'name') {
+      list.sort((a, b) => (a.business_name || '').localeCompare(b.business_name || ''));
+    }
+    return list;
+  }, [alerts, sortBy]);
 
   useEffect(() => {
     if (isOpen) {
@@ -115,30 +134,50 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
           </button>
         </div>
 
-        {/* ─── FILTER THRESHOLD SLICER BAR ─── */}
-        <div className="px-4 py-2 bg-slate-950/40 border-b border-slate-800/80 flex items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="font-medium text-[11px]">Inactivity Filter:</span>
+        {/* ─── FILTER THRESHOLD SLICER BAR + SORTING CONTROL ─── */}
+        <div className="px-4 py-2.5 bg-slate-950/60 border-b border-slate-800/80 flex items-center justify-between gap-2 shrink-0 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span className="font-bold text-[11px] uppercase tracking-wider text-slate-300">Inactivity:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[
+                { label: '5D', val: 5, title: '5 Days (Standard)' },
+                { label: '7D', val: 7, title: '7 Days (Critical)' },
+                { label: '14D', val: 14, title: '14 Days (Dormant)' }
+              ].map(tab => (
+                <button
+                  key={tab.val}
+                  onClick={() => setDaysThreshold(tab.val)}
+                  title={tab.title}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    daysThreshold === tab.val
+                      ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20 font-black'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            {[
-              { label: '5 Days (Standard)', val: 5 },
-              { label: '7 Days (Critical)', val: 7 },
-              { label: '14 Days (Dormant)', val: 14 }
-            ].map(tab => (
-              <button
-                key={tab.val}
-                onClick={() => setDaysThreshold(tab.val)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                  daysThreshold === tab.val
-                    ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+
+          {/* Sorting Control */}
+          <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300">
+            <ArrowUpDown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-[10px] font-bold uppercase text-slate-400 shrink-0">Sort:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent text-xs font-bold text-amber-300 focus:outline-none cursor-pointer"
+            >
+              <option value="priority" className="bg-slate-900 text-white">⭐ Priority (High Value First)</option>
+              <option value="days" className="bg-slate-900 text-white">⏳ Inactivity (Longest First)</option>
+              <option value="amount" className="bg-slate-900 text-white">💰 Last Bill Amount (Highest First)</option>
+              <option value="balance" className="bg-slate-900 text-white">⚠️ Due Balance (Highest First)</option>
+              <option value="name" className="bg-slate-900 text-white">🔤 Outlet Name (A-Z)</option>
+            </select>
           </div>
         </div>
 
@@ -159,7 +198,7 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
                 Retry
               </button>
             </div>
-          ) : alerts.length === 0 ? (
+          ) : sortedAlerts.length === 0 ? (
             <div className="py-12 text-center text-slate-400 space-y-3">
               <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
@@ -172,7 +211,7 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
               </div>
             </div>
           ) : (
-            alerts.map((cust) => {
+            sortedAlerts.map((cust) => {
               const hasContacted = contactedMap[cust.customer_id];
               const balance = parseFloat(cust.outstanding_balance || 0);
 
@@ -187,13 +226,23 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
                 >
                   {/* Left: Outlet Details */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                         {cust.customer_code}
                       </span>
                       <h4 className="font-bold text-white text-xs truncate">
                         {cust.business_name}
                       </h4>
+                      {cust.priority_tier === 1 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          ⭐ Priority 1
+                        </span>
+                      )}
+                      {cust.priority_tier === 2 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          Priority 2
+                        </span>
+                      )}
                       <span className="text-[10px] text-slate-400 font-mono">
                         📍 {cust.city}
                       </span>
@@ -205,6 +254,11 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
                         <Clock className="w-3 h-3" />
                         {cust.last_activity_str}
                       </span>
+                      {parseFloat(cust.last_order_amount || 0) > 0 && (
+                        <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          Last Bill: ₹{parseFloat(cust.last_order_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
                       {balance > 0 && (
                         <span className="text-amber-400 font-mono font-bold">
                           Due: ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}

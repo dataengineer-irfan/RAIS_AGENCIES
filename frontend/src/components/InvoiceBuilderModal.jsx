@@ -72,7 +72,7 @@ export const InvoiceBuilderModal = ({
 
       // ─── EDIT BILL MODE: Pre-populate from invoiceToEdit ───
       if (isEditMode && invoiceToEdit) {
-        setCustomerId(invoiceToEdit.customer_id || (custData[0]?.id || ''));
+        setCustomerId(invoiceToEdit.customer_id || '');
         setInvoiceDate(invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
         setDueDate(invoiceToEdit.due_date || invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
         setInvoiceDiscount(String(parseFloat(invoiceToEdit.discount_amount || 0)));
@@ -102,8 +102,8 @@ export const InvoiceBuilderModal = ({
       // 1. Resolve initial customer
       if (preselectedCustomer) {
         setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
-      } else if (custData.length > 0) {
-        setCustomerId(custData[0].id);
+      } else {
+        setCustomerId('');
       }
 
       // 2. Resolve initial product line items

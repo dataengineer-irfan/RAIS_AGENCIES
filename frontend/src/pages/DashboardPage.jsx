@@ -221,14 +221,20 @@ const ExecutivePulseBanner = ({ customers, kpis, onNavigate, onOpenPaymentModal,
   const concentrationPct = totalOutstanding > 0 ? Math.round((top3Sum / totalOutstanding) * 100) : 0;
   const topDebtor = sortedDebtors[0];
 
-  // Cash Realization Metrics: Actual Collections vs Invoiced Dispatch
+  // Cash Realization Metrics: Actual Collections vs Invoiced Dispatch (Uses real DB daily totals)
   const totalCollections = useMemo(() => {
+    if (kpis?.revenue_periods?.today?.collections !== undefined) {
+      return parseFloat(kpis.revenue_periods.today.collections || 0);
+    }
     return (kpis?.recent_payments || []).reduce((sum, p) => sum + parseFloat(p?.amount || 0), 0);
-  }, [kpis?.recent_payments]);
+  }, [kpis?.revenue_periods, kpis?.recent_payments]);
 
   const totalInvoiced = useMemo(() => {
+    if (kpis?.revenue_periods?.today?.revenue !== undefined) {
+      return parseFloat(kpis.revenue_periods.today.revenue || 0);
+    }
     return (kpis?.recent_invoices || []).reduce((sum, inv) => sum + parseFloat(inv?.total_amount || 0), 0);
-  }, [kpis?.recent_invoices]);
+  }, [kpis?.revenue_periods, kpis?.recent_invoices]);
 
   const cashRealizationPct = totalInvoiced > 0
     ? Math.min(100, Math.round((totalCollections / totalInvoiced) * 100))
@@ -545,15 +551,17 @@ export const DashboardPage = ({
       setLoading(true);
     }
     try {
-      const [kpiRes, catRes, custRes, invRes] = await Promise.allSettled([
+      const [kpiRes, catRes, custRes] = await Promise.allSettled([
         reportApi.getDashboard(),
         catalogueApi.listCategories(true),
-        customerApi.list({ limit: 100 }),
-        billingApi.listInvoices({ limit: 500 })
+        customerApi.list({ limit: 100 })
       ]);
 
       if (kpiRes.status === 'fulfilled' && kpiRes.value) {
         setRawKpis(kpiRes.value);
+        if (kpiRes.value.recent_invoices) {
+          setAllInvoices(kpiRes.value.recent_invoices);
+        }
       }
       if (catRes.status === 'fulfilled' && catRes.value) {
         setCategories(catRes.value || []);
@@ -561,10 +569,6 @@ export const DashboardPage = ({
       if (custRes.status === 'fulfilled' && custRes.value) {
         const cItems = Array.isArray(custRes.value) ? custRes.value : (custRes.value?.items || custRes.value?.data || []);
         if (cItems.length > 0) setCustomers(cItems);
-      }
-      if (invRes.status === 'fulfilled' && invRes.value) {
-        const iItems = Array.isArray(invRes.value) ? invRes.value : (invRes.value?.items || invRes.value?.data || []);
-        if (iItems.length > 0) setAllInvoices(iItems);
       }
 
       const hadFailure = [kpiRes, custRes].some(r => r.status === 'rejected');
@@ -602,7 +606,21 @@ export const DashboardPage = ({
   };
 
   const monthlyRevenue = parseFloat(kpis?.total_revenue_month || 0);
-  const activeRevenue = parseFloat(kpis?.active_period_revenue ?? kpis?.total_revenue_month ?? 0);
+  
+  // ─── DYNAMIC PERIOD SLICER FOR REVENUE & COLLECTIONS HERO ───
+  const selectedPeriod = (filters.dateRange || 'today').toLowerCase();
+  const setSelectedPeriod = useCallback((p) => {
+    handleFilterChange('dateRange', p);
+  }, [handleFilterChange]);
+
+  const activePeriodStats = kpis?.revenue_periods?.[selectedPeriod] || {};
+  const activeRevenue = parseFloat(activePeriodStats.revenue ?? kpis?.active_period_revenue ?? kpis?.total_revenue_month ?? 0);
+  const activeCollections = parseFloat(activePeriodStats.collections ?? 0);
+  const activeCash = parseFloat(activePeriodStats.cash_collected ?? 0);
+  const activeUpi = parseFloat(activePeriodStats.upi_collected ?? 0);
+  const activeBillsCount = activePeriodStats.invoices_count ?? (kpis?.total_invoices_count ?? (kpis?.recent_invoices || []).length);
+  const activePaymentsCount = activePeriodStats.payments_count ?? 0;
+
   const revenueVal = activeRevenue;
   const outstandingVal = parseFloat(kpis?.total_outstanding || 0);
   const overdueVal = parseFloat(kpis?.total_overdue || 0);
@@ -625,12 +643,6 @@ export const DashboardPage = ({
     return `₹${projectedMonthlyPacing.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
   }, [projectedMonthlyPacing]);
 
-  // ─── DYNAMIC PERIOD SLICER FOR REVENUE HERO (Derived directly from active dateRange) ───
-  const selectedPeriod = (filters.dateRange || 'today').toLowerCase();
-  const setSelectedPeriod = useCallback((p) => {
-    handleFilterChange('dateRange', p);
-  }, [handleFilterChange]);
-
   const [billsDrawerOpen, setBillsDrawerOpen] = useState(false);
   // Notify parent layout if any sub-modal or drawer is open (for suppressing floating action button)
   useEffect(() => {
@@ -649,18 +661,37 @@ export const DashboardPage = ({
     all_time: "All-Time Revenue"
   };
 
+  const periodCollectionTitles = {
+    today: "Today's Collections",
+    yesterday: "Yesterday's Collections",
+    this_week: "This Week's Collections",
+    last_week: "Past Week's Collections",
+    this_month: "This Month's Collections",
+    last_month: "Past Month's Collections",
+    all_time: "All-Time Collections"
+  };
+
   const periodInvoices = useMemo(() => {
     return (kpis?.recent_invoices || []).filter(inv => inv.status !== 'CANCELLED');
   }, [kpis?.recent_invoices]);
 
-  const activeBillsCount = kpis?.total_invoices_count ?? periodInvoices.length;
-
-  // ─── 7-Day Micro-Trend Sparkline Series (Power BI Fabric Telemetry) ───
-  // Declared BEFORE early returns to strictly honor React Rules of Hooks
+  // ─── 7-Day Rolling Telemetry (Using real daily historical aggregates from backend) ───
+  const realDailyTrend = kpis?.daily_trend_7d;
   const revenueTrend = useMemo(() => {
+    if (realDailyTrend && realDailyTrend.length === 7) {
+      return realDailyTrend.map(d => d.revenue);
+    }
     const base = activeRevenue || 1000;
     return [base * 0.65, base * 0.72, base * 0.68, base * 0.82, base * 0.89, base * 0.92, base];
-  }, [activeRevenue]);
+  }, [realDailyTrend, activeRevenue]);
+
+  const collectionsTrend = useMemo(() => {
+    if (realDailyTrend && realDailyTrend.length === 7) {
+      return realDailyTrend.map(d => d.collections);
+    }
+    const base = activeCollections || 500;
+    return [base * 0.7, base * 0.75, base * 0.8, base * 0.85, base * 0.9, base * 0.95, base];
+  }, [realDailyTrend, activeCollections]);
 
   const receivablesTrend = useMemo(() => {
     const base = outstandingVal || 500;
@@ -830,19 +861,24 @@ export const DashboardPage = ({
 
             {/* Row 2: 6 Executive KPI Cards (Desktop Power BI Fabric Standard) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 shrink-0">
-              {/* Revenue (Dynamic for active period: Today, Yesterday, This Week, Past Week, This Month) */}
+              {/* Card 1: Revenue (Dynamic for active period: Today, Yesterday, This Week, Past Week, This Month) */}
               <div 
                 onClick={() => openDrilldown('revenue', `${periodTitles[selectedPeriod] || 'Revenue'} Breakdown`)}
                 className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-1">
                     <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider truncate">
                       {periodTitles[selectedPeriod] || 'Revenue'}
                     </span>
-                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setBillsDrawerOpen(true); }}
+                      className="px-1.5 py-0.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30 shrink-0 transition-colors"
+                      title="Click to view bills for this period"
+                    >
+                      {activeBillsCount} Bills ↗
+                    </button>
                   </div>
                   <p className="text-base lg:text-lg font-bold text-white mt-1.5 font-mono truncate">
                     ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -850,13 +886,37 @@ export const DashboardPage = ({
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80">
                   <MiniSparkline data={revenueTrend} color="blue" width={48} height={16} />
-                  <span className="text-amber-400 font-semibold flex items-center gap-0.5 text-[11px]">
-                    {activeBillsCount} ord <ArrowUpRight className="w-3 h-3" />
+                  <span className="text-blue-400 font-semibold text-[10px]">
+                    Invoiced
                   </span>
                 </div>
               </div>
 
-              {/* Total Outstanding / Outlets Receivables */}
+              {/* Card 2: Cash & UPI Collections (BESIDE REVENUE!) */}
+              <div 
+                onClick={() => onNavigate('payments')}
+                className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider truncate">
+                      {periodCollectionTitles[selectedPeriod] || 'Collections'}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30 shrink-0">
+                      {activePaymentsCount} Rec
+                    </span>
+                  </div>
+                  <p className="text-base lg:text-lg font-bold text-emerald-400 mt-1.5 font-mono truncate">
+                    ₹{activeCollections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono mt-2 pt-1.5 border-t border-slate-800/80 text-slate-400">
+                  <span className="text-emerald-300 font-semibold truncate">💵 ₹{activeCash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className="text-blue-300 font-semibold truncate">📱 ₹{activeUpi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </div>
+              </div>
+
+              {/* Card 3: Total Outstanding / Outlets Receivables */}
               <div 
                 onClick={() => setActivePage('receivables')}
                 className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
@@ -880,7 +940,7 @@ export const DashboardPage = ({
                 </div>
               </div>
 
-              {/* Overall Profit */}
+              {/* Card 4: Overall Profit */}
               <div 
                 onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive')}
                 className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500/70 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
@@ -902,30 +962,7 @@ export const DashboardPage = ({
                 </div>
               </div>
 
-              {/* Overall Loss */}
-              <div 
-                className="bg-slate-900 p-3 rounded-2xl border border-rose-500/30 shadow-md transition-all hover:scale-[1.01] group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">Overall Loss</span>
-                    <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                  <p className="text-base lg:text-lg font-bold text-rose-400 mt-1.5 font-mono truncate">
-                    ₹{lossVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80 font-medium">
-                  <MiniSparkline data={lossTrend} color="rose" width={48} height={16} />
-                  <span className={`text-[11px] ${lossVal > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
-                    {lossVal > 0 ? 'Deficit' : '₹0'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Overdue */}
+              {/* Card 5: Overdue */}
               <div 
                 onClick={() => setActivePage('receivables')}
                 className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-rose-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
@@ -1101,75 +1138,92 @@ export const DashboardPage = ({
                 </div>
               )}
 
-              {/* Card 1: Executive Financial Hero Card (Instant Numbers & Actions at Top of Screen) */}
+              {/* Card 1: Executive Financial Hero Card — Twin Pillars: Revenue & Collections */}
               <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-xl">
-                {/* Consolidated Hero Row: Dynamic Period + Revenue + Alerts + Interactive Bills */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                      <span className="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-wider font-mono">
-                        {periodTitles[selectedPeriod] || "Today's Revenue"}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[9px] font-bold border border-emerald-500/30">
-                        Live
-                      </span>
-                    </div>
-
-                    <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight mt-1">
-                      ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </div>
-
-                    {/* Comparison Pill / Subtext */}
-                    {selectedPeriod === 'today' && kpis?.today_comparison && (
-                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        {kpis.today_comparison.trend === 'up' && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black text-[10px] border border-emerald-500/30">
-                            <TrendingUp className="w-3 h-3" />
-                            <span>+{kpis.today_comparison.pct}%</span>
-                          </span>
-                        )}
-                        {kpis.today_comparison.trend === 'down' && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 font-black text-[10px] border border-rose-500/30">
-                            <TrendingDown className="w-3 h-3" />
-                            <span>{kpis.today_comparison.pct}%</span>
-                          </span>
-                        )}
-                        {kpis.today_comparison.trend === 'flat' && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold text-[10px] border border-slate-700">
-                            <span>Same as yesterday</span>
-                          </span>
-                        )}
-                        <span className="text-slate-400 font-mono text-[10px]">
-                          vs y'day (₹{parseFloat(kpis.today_comparison.yesterday_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })})
+                {/* Twin Hero Section: Invoiced Revenue (Left) + Collections / Cash Received (Right) */}
+                <div className="grid grid-cols-2 gap-2.5 items-stretch">
+                  {/* Left Pillar: Invoiced Revenue */}
+                  <div 
+                    onClick={() => openDrilldown('revenue', `${periodTitles[selectedPeriod] || 'Revenue'} Breakdown`)}
+                    className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/90 flex flex-col justify-between cursor-pointer hover:border-amber-500/50 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider font-mono truncate">
+                          {periodTitles[selectedPeriod] || "Revenue"}
+                        </span>
+                        <span className="px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[8px] font-bold border border-emerald-500/30">
+                          Live
                         </span>
                       </div>
-                    )}
-                    {selectedPeriod === 'yesterday' && (
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
-                        <span>Today so far: ₹{parseFloat(kpis?.revenue_periods?.today?.revenue || 0).toLocaleString('en-IN')}</span>
+                      <div className="text-base sm:text-lg font-black text-white font-mono tracking-tight mt-1 truncate">
+                        ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
-                    )}
-                    {selectedPeriod === 'this_month' && kpis?.revenue_periods?.last_month && (
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
-                        <span>Last month: ₹{parseFloat(kpis.revenue_periods.last_month.revenue || 0).toLocaleString('en-IN')}</span>
-                      </div>
-                    )}
+                    </div>
+
+                    <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setBillsDrawerOpen(true); }}
+                        className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 hover:bg-slate-800 active:scale-95 text-amber-300 border border-slate-700 font-mono shadow-sm transition-all"
+                        title="Tap to inspect bills"
+                      >
+                        <FileText className="w-2.5 h-2.5 text-amber-400" />
+                        <span>{activeBillsCount} Bills ↗</span>
+                      </button>
+                      <MiniSparkline data={revenueTrend} color="blue" width={38} height={12} />
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setBillsDrawerOpen(true)}
-                      className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-750 active:scale-95 text-slate-200 hover:text-white border border-slate-700 font-mono shadow-sm transition-all cursor-pointer"
-                      title="Tap to inspect bills for this period"
-                    >
-                      <FileText className="w-3 h-3 text-amber-400" />
-                      <span>{activeBillsCount} Bills</span>
-                    </button>
-                    <MiniSparkline data={revenueTrend} color="blue" width={60} height={18} />
+                  {/* Right Pillar: Collections / Cash Received */}
+                  <div 
+                    onClick={() => onNavigate('payments')}
+                    className="bg-slate-950/70 p-2.5 rounded-xl border border-emerald-500/30 flex flex-col justify-between cursor-pointer hover:border-emerald-500/60 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider font-mono truncate">
+                          {periodCollectionTitles[selectedPeriod] || "Collections"}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[8px] font-bold border border-emerald-500/30 font-mono">
+                          {activePaymentsCount} Rec
+                        </span>
+                      </div>
+                      <div className="text-base sm:text-lg font-black text-emerald-400 font-mono tracking-tight mt-1 truncate">
+                        ₹{activeCollections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+
+                    <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[9px] font-mono">
+                      <span className="text-emerald-300 font-bold truncate">💵 ₹{activeCash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                      <span className="text-blue-300 font-bold truncate">📱 ₹{activeUpi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Sub-text: Comparison & Realization info */}
+                {selectedPeriod === 'today' && kpis?.today_comparison && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 px-1 flex-wrap gap-1">
+                    <div className="flex items-center gap-1">
+                      {kpis.today_comparison.trend === 'up' && (
+                        <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+                          <TrendingUp className="w-3 h-3" /> +{kpis.today_comparison.pct}% vs y'day
+                        </span>
+                      )}
+                      {kpis.today_comparison.trend === 'down' && (
+                        <span className="text-rose-400 font-bold flex items-center gap-0.5">
+                          <TrendingDown className="w-3 h-3" /> {kpis.today_comparison.pct}% vs y'day
+                        </span>
+                      )}
+                      {kpis.today_comparison.trend === 'flat' && <span>Same as yesterday</span>}
+                    </div>
+                    {activeRevenue > 0 && (
+                      <span className="text-slate-300 font-mono font-semibold">
+                        Realized: <strong className="text-emerald-400">{Math.min(100, Math.round((activeCollections / activeRevenue) * 100))}%</strong>
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Period Slicer Strip (Inside Hero Card) */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 mt-2 border-t border-slate-800/80 scroll-smooth">
@@ -1467,82 +1521,98 @@ export const DashboardPage = ({
         {/* ═══════════════════════════════════════════════════════════════════════
             PAGE 5: ACTIVITY & RECEIPTS
            ═══════════════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════════════════════
+            PAGE 5: ACTIVITY & RECEIPTS (Mobile-First Touch Architecture)
+           ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'activity' && (
-          <div className="h-full flex flex-col gap-2 overflow-hidden animate-fadeIn">
+          <div className="h-full flex flex-col gap-3 overflow-y-auto pb-10 animate-fadeIn custom-scrollbar">
             
-            {/* Invoice History (fills remaining space, internal scroll) */}
-            <div className="flex-1 min-h-0 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-lg flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between mb-3 shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            {/* Invoice History & Counter Slips */}
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 shadow-lg flex flex-col shrink-0">
+              <div className="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-800/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
                     <FileText className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white tracking-wide">
+                    <h3 className="text-xs sm:text-sm font-black text-white tracking-wide">
                       Invoice History & Counter Thermal Slips
                     </h3>
                     <p className="text-[10px] text-slate-400">
-                      1-Click Thermal Print with Dynamic UPI QR Code.
+                      1-Click Thermal POS Print & Fast Account Settlement
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => onNavigate('billing')}
-                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors"
                 >
                   Full Billing <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
 
               {/* Table with internal scroll (Responsive: Desktop Table + Mobile Cards) */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="w-full">
                 {/* Mobile Cards View (< sm) */}
-                <div className="sm:hidden space-y-2.5 pb-4">
+                <div className="sm:hidden space-y-3 pb-2">
                   {(kpis?.recent_invoices || []).map((inv) => (
-                    <div key={inv.id} className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-2 shadow-sm">
+                    <div key={inv.id} className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/90 space-y-2.5 shadow-sm">
+                      {/* Row 1: Invoice Header & Status */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                          <span className="font-mono font-black text-amber-400 text-xs tracking-tight">{inv.invoice_number}</span>
                           {inv.invoice_date && (
-                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
                               {formatShortDate(inv.invoice_date)}
                             </span>
                           )}
-                          <StatusBadge status={inv.status} />
+                        </div>
+                        <StatusBadge status={inv.status} />
+                      </div>
+
+                      {/* Row 2: Customer Name & Financial Balance */}
+                      <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-900">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Customer</span>
+                          <span className="text-sm text-white font-bold truncate block">{inv.customer_name}</span>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="font-mono text-white font-bold text-xs">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</span>
-                          {parseFloat(inv.outstanding_amount || 0) > 0 && (
-                            <span className="block text-[10px] font-mono text-amber-400 font-semibold">Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}</span>
+                          <span className="font-mono text-white font-black text-sm block">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</span>
+                          {parseFloat(inv.outstanding_amount || 0) > 0 ? (
+                            <span className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30 mt-0.5">
+                              Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-emerald-400 font-bold block mt-0.5">Paid Full</span>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/60 text-xs">
-                        <span className="text-slate-300 font-medium truncate max-w-[190px]">{inv.customer_name}</span>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => openThermalReceipt(inv.id)}
-                            className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
-                          >
-                            <Printer className="w-3 h-3" />
-                            <span>Thermal</span>
-                          </button>
-                          <a
-                            href={billingApi.getPrintHtmlUrl(inv.id)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-1 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-lg border border-slate-800 transition-colors"
-                            title="View PDF"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
+                      {/* Row 3: Touch-Friendly Quick Action Buttons (Min 44px Height for Warehouse Gloves/Fingers) */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800/60">
+                        <button
+                          type="button"
+                          onClick={() => openThermalReceipt(inv.id)}
+                          className="min-h-[44px] px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                        >
+                          <Printer className="w-4 h-4 text-blue-400" />
+                          <span>Thermal 58mm</span>
+                        </button>
+                        <a
+                          href={billingApi.getPrintHtmlUrl(inv.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="min-h-[44px] px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                          title="View PDF"
+                        >
+                          <Eye className="w-4 h-4 text-slate-400" />
+                          <span>View Bill</span>
+                        </a>
                       </div>
                     </div>
                   ))}
                   {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
-                    <div className="text-center py-6 text-slate-500 text-xs">No invoices found.</div>
+                    <div className="text-center py-8 text-slate-500 text-xs">No recent invoices recorded.</div>
                   )}
                 </div>
 
@@ -1597,8 +1667,8 @@ export const DashboardPage = ({
               </div>
             </div>
 
-            {/* Recent Payments (fixed height) */}
-            <div className="shrink-0 max-h-48">
+            {/* Recent Payments Section */}
+            <div className="shrink-0">
               <RecentPaymentsCard 
                 payments={kpis?.recent_payments || []} 
                 onNavigateToPayments={() => onNavigate('payments')} 

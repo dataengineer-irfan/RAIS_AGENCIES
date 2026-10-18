@@ -256,6 +256,21 @@ class CustomerService:
             ).group_by(Payment.customer_id).all()
             pay_tot_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in pay_totals}
 
+            # Query recent invoices to map the most recent invoice total per customer
+            recent_invoices_query = db.query(
+                Invoice.customer_id,
+                Invoice.total_amount,
+                Invoice.invoice_date
+            ).filter(
+                Invoice.customer_id.in_(cust_ids),
+                Invoice.status != InvoiceStatus.CANCELLED.value
+            ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).all()
+            
+            last_inv_amount_map = {}
+            for r_cust_id, r_amount, _ in recent_invoices_query:
+                if r_cust_id not in last_inv_amount_map:
+                    last_inv_amount_map[r_cust_id] = float(r_amount or 0.0)
+
             all_alerts = []
             for c in customers:
                 candidates = [d for d in [last_ord_map.get(c.id), last_inv_map.get(c.id)] if d is not None]
@@ -267,6 +282,23 @@ class CustomerService:
                 tot_pay = pay_tot_map.get(c.id, Decimal("0.00"))
                 outstanding = ob + tot_inv - tot_pay
 
+                last_order_amount = last_inv_amount_map.get(c.id, 0.0)
+                tot_invoiced_val = float(tot_inv)
+
+                # Prioritize:
+                # Priority 1: High lifetime value (>= ₹20,000) OR high last invoice (>= ₹5,000) and inactive >= 5 days
+                # Priority 2: Critical dormant (days_inactive >= 7)
+                # Priority 3: Standard dormant
+                if tot_invoiced_val >= 20000 or last_order_amount >= 5000:
+                    priority_tier = 1
+                    priority_label = "Priority 1 (High Value)"
+                elif days_inactive >= 7:
+                    priority_tier = 2
+                    priority_label = "Priority 2 (Critical)"
+                else:
+                    priority_tier = 3
+                    priority_label = "Priority 3 (Standard)"
+
                 all_alerts.append({
                     "customer_id": c.id,
                     "customer_code": c.customer_code,
@@ -277,10 +309,14 @@ class CustomerService:
                     "days_inactive": days_inactive,
                     "last_activity_date": str(last_activity),
                     "last_activity_str": f"{days_inactive} days ago ({last_activity.strftime('%d-%b-%Y')})",
-                    "outstanding_balance": float(outstanding)
+                    "outstanding_balance": float(outstanding),
+                    "last_order_amount": last_order_amount,
+                    "lifetime_spend": tot_invoiced_val,
+                    "priority_tier": priority_tier,
+                    "priority_label": priority_label
                 })
 
-            all_alerts.sort(key=lambda x: x["days_inactive"], reverse=True)
+            all_alerts.sort(key=lambda x: (x["priority_tier"], -x["days_inactive"]))
             cls._ALERTS_CACHE = all_alerts
             cls._ALERTS_CACHE_TIME = now_ts
 

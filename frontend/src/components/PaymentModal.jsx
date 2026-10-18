@@ -42,12 +42,15 @@ export const PaymentModal = ({
       const custList = await customerApi.list();
       const safeCustomers = Array.isArray(custList) ? custList : (custList?.items || []);
       setCustomers(safeCustomers);
-
-      const targetCustId = activeCustomer?.id || (safeCustomers.length > 0 ? safeCustomers[0].id : '');
+      // Strictly prioritize activeInvoice's customer or preselected customer. Never auto-select safeCustomers[0]!
+      const targetCustId = activeInvoice?.customer_id || activeCustomer?.id || '';
       setCustomerId(targetCustId);
 
       if (targetCustId) {
         await loadCustomerInvoices(targetCustId);
+      } else {
+        setOpenInvoices([]);
+        setSelectedInvoiceId('');
       }
 
       if (activeInvoice) {
@@ -80,12 +83,21 @@ export const PaymentModal = ({
 
   const handleCustomerChange = async (cId) => {
     setCustomerId(cId);
-    await loadCustomerInvoices(cId);
+    setSelectedInvoiceId('');
+    if (cId) {
+      await loadCustomerInvoices(cId);
+    } else {
+      setOpenInvoices([]);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!customerId) {
+      setError('Please select a customer to record payment.');
+      return;
+    }
     const amtNum = parseFloat(amount);
     if (!amtNum || amtNum <= 0) {
       setError('Please enter a valid payment amount greater than zero.');

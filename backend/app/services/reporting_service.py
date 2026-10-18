@@ -3,7 +3,7 @@ from decimal import Decimal
 from datetime import date, datetime, timedelta, timezone
 from collections import defaultdict
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, desc, or_
+from sqlalchemy import func, desc, or_, case
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment
 from app.models.customer import Customer
@@ -12,7 +12,7 @@ from app.schemas.reports import (
     DashboardKPIs, SalesReportItem, AgingBucket,
     CustomerAgingReportItem, ProductPerformanceItem
 )
-from app.domain.enums import InvoiceStatus, CustomerStatus
+from app.domain.enums import InvoiceStatus, CustomerStatus, PaymentMethod
 
 # 60-Second In-Memory Response Caches
 _DASHBOARD_CACHE = {"timestamp": 0, "data": None}
@@ -138,57 +138,111 @@ class ReportingService:
         first_day_prev_month = date(last_day_prev_month.year, last_day_prev_month.month, 1)
 
         def get_period_stats(start_d: Optional[date], end_d: Optional[date]):
-            q = db.query(
+            iq = db.query(
                 func.coalesce(func.sum(Invoice.total_amount), 0),
                 func.count(Invoice.id)
             ).filter(Invoice.status.in_(valid_statuses))
             if start_d:
-                q = q.filter(Invoice.invoice_date >= start_d)
+                iq = iq.filter(Invoice.invoice_date >= start_d)
             if end_d:
-                q = q.filter(Invoice.invoice_date <= end_d)
-            rev, cnt = q.first() or (0, 0)
-            return float(rev or 0), int(cnt or 0)
+                iq = iq.filter(Invoice.invoice_date <= end_d)
+            rev, cnt = iq.first() or (0, 0)
 
-        today_rev, today_cnt = get_period_stats(today, today)
-        yest_rev, yest_cnt = get_period_stats(yesterday, yesterday)
-        week_rev, week_cnt = get_period_stats(start_of_week, today)
-        last_week_rev, last_week_cnt = get_period_stats(start_of_last_week, end_of_last_week)
-        month_rev, month_cnt = float(total_revenue_month), int(invoices_count)
-        last_month_rev, last_month_cnt = get_period_stats(first_day_prev_month, last_day_prev_month)
-        all_time_rev, all_time_cnt = get_period_stats(None, None)
+            # Collections & Payment Method breakdown
+            pq = db.query(
+                func.coalesce(func.sum(Payment.amount), 0).label("tot_coll"),
+                func.count(Payment.id).label("pay_cnt"),
+                func.coalesce(func.sum(case((Payment.payment_method == PaymentMethod.CASH.value, Payment.amount), else_=0)), 0).label("cash_coll"),
+                func.coalesce(func.sum(case((Payment.payment_method.in_([
+                    PaymentMethod.UPI.value, PaymentMethod.NEFT_RTGS.value, PaymentMethod.CARD.value
+                ]), Payment.amount), else_=0)), 0).label("upi_coll")
+            )
+            if start_d:
+                pq = pq.filter(Payment.payment_date >= start_d)
+            if end_d:
+                pq = pq.filter(Payment.payment_date <= end_d)
+            p_row = pq.first()
+            tot_coll = float(p_row.tot_coll or 0) if p_row else 0.0
+            pay_cnt = int(p_row.pay_cnt or 0) if p_row else 0
+            cash_coll = float(p_row.cash_coll or 0) if p_row else 0.0
+            upi_coll = float(p_row.upi_coll or 0) if p_row else 0.0
 
-        diff_amount = round(today_rev - yest_rev, 2)
-        if yest_rev > 0:
-            pct = round((diff_amount / yest_rev) * 100, 1)
-        elif today_rev > 0:
+            return {
+                "revenue": float(rev or 0),
+                "invoices_count": int(cnt or 0),
+                "collections": tot_coll,
+                "cash_collected": cash_coll,
+                "upi_collected": upi_coll,
+                "payments_count": pay_cnt
+            }
+
+        today_stats = get_period_stats(today, today)
+        yest_stats = get_period_stats(yesterday, yesterday)
+        week_stats = get_period_stats(start_of_week, today)
+        last_week_stats = get_period_stats(start_of_last_week, end_of_last_week)
+        month_stats = get_period_stats(first_day_month, today)
+        last_month_stats = get_period_stats(first_day_prev_month, last_day_prev_month)
+        all_time_stats = get_period_stats(None, None)
+
+        diff_amount = round(today_stats["revenue"] - yest_stats["revenue"], 2)
+        if yest_stats["revenue"] > 0:
+            pct = round((diff_amount / yest_stats["revenue"]) * 100, 1)
+        elif today_stats["revenue"] > 0:
             pct = 100.0
         else:
             pct = 0.0
 
-        if today_rev > yest_rev:
+        if today_stats["revenue"] > yest_stats["revenue"]:
             trend = "up"
-        elif today_rev < yest_rev:
+        elif today_stats["revenue"] < yest_stats["revenue"]:
             trend = "down"
         else:
             trend = "flat"
 
         revenue_periods = {
-            "today": {"revenue": today_rev, "invoices_count": today_cnt, "label": "Today"},
-            "yesterday": {"revenue": yest_rev, "invoices_count": yest_cnt, "label": "Yesterday"},
-            "this_week": {"revenue": week_rev, "invoices_count": week_cnt, "label": "This Week"},
-            "last_week": {"revenue": last_week_rev, "invoices_count": last_week_cnt, "label": "Past Week"},
-            "this_month": {"revenue": month_rev, "invoices_count": month_cnt, "label": "This Month"},
-            "last_month": {"revenue": last_month_rev, "invoices_count": last_month_cnt, "label": "Past Month"},
-            "all_time": {"revenue": all_time_rev, "invoices_count": all_time_cnt, "label": "All Time"}
+            "today": {**today_stats, "label": "Today"},
+            "yesterday": {**yest_stats, "label": "Yesterday"},
+            "this_week": {**week_stats, "label": "This Week"},
+            "last_week": {**last_week_stats, "label": "Past Week"},
+            "this_month": {**month_stats, "label": "This Month"},
+            "last_month": {**last_month_stats, "label": "Past Month"},
+            "all_time": {**all_time_stats, "label": "All Time"}
         }
 
         today_comparison = {
-            "today_revenue": today_rev,
-            "yesterday_revenue": yest_rev,
+            "today_revenue": today_stats["revenue"],
+            "yesterday_revenue": yest_stats["revenue"],
+            "today_collections": today_stats["collections"],
+            "today_cash": today_stats["cash_collected"],
+            "today_upi": today_stats["upi_collected"],
+            "yesterday_collections": yest_stats["collections"],
             "diff_amount": diff_amount,
             "pct": pct,
             "trend": trend
         }
+
+        # Real 7-Day Rolling Telemetry (Replaces hardcoded sparkline multipliers)
+        d_7d_start = today - timedelta(days=6)
+        inv_by_date = dict(db.query(Invoice.invoice_date, func.coalesce(func.sum(Invoice.total_amount), 0)).filter(
+            Invoice.invoice_date >= d_7d_start,
+            Invoice.invoice_date <= today,
+            Invoice.status.in_(valid_statuses)
+        ).group_by(Invoice.invoice_date).all())
+
+        pay_by_date = dict(db.query(Payment.payment_date, func.coalesce(func.sum(Payment.amount), 0)).filter(
+            Payment.payment_date >= d_7d_start,
+            Payment.payment_date <= today
+        ).group_by(Payment.payment_date).all())
+
+        daily_trend_7d = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            daily_trend_7d.append({
+                "date": str(d),
+                "day_label": d.strftime("%a"),
+                "revenue": float(inv_by_date.get(d, 0)),
+                "collections": float(pay_by_date.get(d, 0))
+            })
 
         # 10. Recent Invoices (expanded to 30 for high-density audit & period inspection)
         recent_invs = db.query(Invoice).options(
@@ -281,7 +335,8 @@ class ReportingService:
             recent_invoices=recent_invoices,
             recent_payments=recent_payments,
             revenue_periods=revenue_periods,
-            today_comparison=today_comparison
+            today_comparison=today_comparison,
+            daily_trend_7d=daily_trend_7d
         )
 
         _DASHBOARD_CACHE["timestamp"] = now_ts

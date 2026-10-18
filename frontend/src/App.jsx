@@ -266,7 +266,7 @@ export const App = () => {
             <BillingPage
               key={dataRefreshKey}
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
-              onOpenPaymentForInvoice={(inv) => handleOpenPayment(null, inv)}
+              onOpenPaymentForInvoice={(inv) => handleOpenPayment({ id: inv.customer_id, business_name: inv.customer_name }, inv)}
             />
           )}
 
