@@ -1527,27 +1527,24 @@ export const DashboardPage = ({
         {activePage === 'activity' && (
           <div className="h-full flex flex-col gap-3 overflow-y-auto pb-10 animate-fadeIn custom-scrollbar">
             
-            {/* Invoice History & Counter Slips */}
+            {/* Invoice History & Counter Slips (Compact 1-Line Mobile-First Header) */}
             <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 shadow-lg flex flex-col shrink-0">
-              <div className="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-800/80">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    <FileText className="w-4 h-4" />
+              <div className="flex items-center justify-between mb-2.5 shrink-0 pb-2 border-b border-slate-800/80">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                    <FileText className="w-3.5 h-3.5" />
                   </div>
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-black text-white tracking-wide">
-                      Invoice History & Counter Thermal Slips
-                    </h3>
-                    <p className="text-[10px] text-slate-400">
-                      1-Click Thermal POS Print & Fast Account Settlement
-                    </p>
-                  </div>
+                  <h3 className="text-xs sm:text-sm font-black text-white tracking-wide truncate">
+                    Invoice Slips & Billing
+                  </h3>
                 </div>
                 <button
+                  type="button"
                   onClick={() => onNavigate('billing')}
-                  className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors shrink-0 active:scale-95"
                 >
-                  Full Billing <ArrowRight className="w-3 h-3" />
+                  <span>Full Billing</span>
+                  <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
 
