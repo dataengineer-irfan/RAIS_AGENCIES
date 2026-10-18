@@ -31,6 +31,34 @@ class BillingService:
     def invalidate_cache():
         global _INVOICES_CACHE
         _INVOICES_CACHE.clear()
+        try:
+            from app.services.reporting_service import invalidate_reporting_caches
+            invalidate_reporting_caches()
+        except Exception:
+            pass
+        try:
+            from app.services.customer_service import CustomerService
+            CustomerService.invalidate_alerts_cache()
+        except Exception:
+            pass
+        try:
+            from app.services.customer_health_service import _HEALTH_CACHE
+            _HEALTH_CACHE["timestamp"] = 0
+            _HEALTH_CACHE["data"] = None
+        except Exception:
+            pass
+        try:
+            from app.services.forecasting_service import _FORECAST_CACHE
+            _FORECAST_CACHE["timestamp"] = 0
+            _FORECAST_CACHE["data"] = None
+        except Exception:
+            pass
+        try:
+            from app.services.product_performance_service import _MATRIX_CACHE
+            _MATRIX_CACHE["timestamp"] = 0
+            _MATRIX_CACHE["data"] = None
+        except Exception:
+            pass
 
     @staticmethod
     def calculate_invoice_totals(

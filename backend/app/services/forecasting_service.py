@@ -65,14 +65,17 @@ class ForecastingService:
 
         # 3. Trailing 3 Months History (Single 90-day query instead of 3 sequential queries)
         start_90d = today - timedelta(days=90)
+        is_sqlite = db.bind.dialect.name == "sqlite" if db.bind else False
+        m_expr = func.strftime('%Y-%m', Invoice.invoice_date) if is_sqlite else func.to_char(Invoice.invoice_date, 'YYYY-MM')
+
         past_revenue_records = db.query(
-            func.to_char(Invoice.invoice_date, 'YYYY-MM').label("m_str"),
+            m_expr.label("m_str"),
             func.sum(Invoice.total_amount).label("m_total")
         ).filter(
             Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT"]),
             Invoice.invoice_date >= start_90d,
             Invoice.invoice_date < date(year, month, 1)
-        ).group_by("m_str").order_by("m_str").all()
+        ).group_by(m_expr).order_by(m_expr).all()
 
         past_map = {r.m_str: float(r.m_total or 0) for r in past_revenue_records}
         past_values = list(past_map.values())
