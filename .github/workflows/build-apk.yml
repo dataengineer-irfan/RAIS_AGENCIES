@@ -35,7 +35,16 @@ jobs:
         run: |
           python3 -c "
           import sys, urllib.parse
-          build_type = '${{ github.event.inputs.build_type || 'staging' }}'.strip().lower()
+          event_name = '${{ github.event_name }}'
+          raw_build_type = '${{ github.event.inputs.build_type }}'.strip().lower()
+          
+          # On git push to main, ALWAYS build production APK.
+          # On workflow_dispatch, respect selected input (default to staging if unspecified).
+          if event_name == 'push':
+              build_type = 'production'
+          else:
+              build_type = raw_build_type if raw_build_type else 'staging'
+          
           staging_url = '${{ github.event.inputs.staging_api_url || 'https://rais-backend-staging.onrender.com' }}'.strip()
           
           if build_type == 'staging':
@@ -60,17 +69,20 @@ jobs:
                   print(f'::error::FATAL SAFETY GUARD: Non-standard HTTPS port {parsed.port} is rejected.')
                   sys.exit(1)
               print(f'Staging validation passed: targeting approved secure host {hostname}')
+          else:
+              print(f'Production build confirmed for event: {event_name}')
           "
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'staging' }}"
-          if [ "$BUILD_TYPE" = "staging" ]; then
+          EVENT_NAME="${{ github.event_name }}"
+          RAW_BUILD_TYPE="${{ github.event.inputs.build_type }}"
+          if [ "$EVENT_NAME" = "push" ] || [ "$RAW_BUILD_TYPE" = "production" ]; then
+            echo "TARGET_API_URL=https://rais-backend.onrender.com" >> $GITHUB_ENV
+            echo "IS_STAGING=false" >> $GITHUB_ENV
+            echo "OUTPUT_APK_NAME=RAIS_Agencies.apk" >> $GITHUB_ENV
+          else
             STAGING_URL="${{ github.event.inputs.staging_api_url || 'https://rais-backend-staging.onrender.com' }}"
             echo "TARGET_API_URL=$STAGING_URL" >> $GITHUB_ENV
             echo "IS_STAGING=true" >> $GITHUB_ENV
             echo "OUTPUT_APK_NAME=RAIS_Agencies_STAGING_DEBUG.apk" >> $GITHUB_ENV
-          else
-            echo "TARGET_API_URL=https://rais-backend.onrender.com" >> $GITHUB_ENV
-            echo "IS_STAGING=false" >> $GITHUB_ENV
-            echo "OUTPUT_APK_NAME=RAIS_Agencies.apk" >> $GITHUB_ENV
           fi
 
       - name: Set up Java 21
@@ -141,4 +153,5 @@ jobs:
             - **Depot**: Near Reddies Colony, Rayachoty - 516269
             - **Direct Download**: Tap the `RAIS_Agencies.apk` asset below to install or update on your Android phone.
           files: build-output/RAIS_Agencies.apk
+          overwrite_files: true
 
