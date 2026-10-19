@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAIS Agencies - Official Wholesale Product Catalogue (Print / Shop Counter)</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0a192f;
+      --secondary: #0f172a;
+      --accent: #d97706;
+      --accent-light: #f59e0b;
+      --cyan: #0284c7;
+      --border-color: #cbd5e1;
+      --bg-light: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Screen Action Bar */
+    .screen-bar {
+      width: 100%;
+      max-width: 900px;
+      background: #0a192f;
+      color: #ffffff;
+      padding: 16px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .screen-bar h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--accent-light);
+    }
+    .screen-bar p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent-light);
+      color: #000;
+    }
+    .btn-primary:hover {
+      background: #fbbf24;
+    }
+
+    .btn-outline {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* A4 Sheet Container */
+    .a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      padding: 12mm 14mm;
+      margin-bottom: 24px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+      border: 3px solid #0a192f;
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Header Section */
+    .cat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 10px;
+      margin-bottom: 8px;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .brand-text h2 {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .brand-text .sub {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .brand-text .address {
+      font-size: 0.68rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .header-qr {
+      text-align: center;
+      background: #ffffff;
+      padding: 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+
+    .header-qr img {
+      width: 58px;
+      height: 58px;
+      display: block;
+    }
+
+    .header-qr span {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* Brand Ribbon */
+    .brand-strip {
+      background: var(--primary);
+      color: var(--accent-light);
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Page Title Bar */
+    .title-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 5px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .title-strip .no-price-tag {
+      color: #dc2626;
+      font-size: 0.65rem;
+    }
+
+    /* Category Section */
+    .category-group {
+      margin-bottom: 12px;
+    }
+
+    .cat-title-bar {
+      background: var(--secondary);
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 4px 4px 0 0;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .cat-title-bar .storage-tag {
+      font-size: 0.65rem;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Product Table */
+    .prod-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      border: 1px solid #e2e8f0;
+      border-top: none;
+    }
+
+    .prod-table th {
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 800;
+      text-align: left;
+      padding: 5px 8px;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .prod-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #1e293b;
+    }
+
+    .prod-table tr:nth-child(even) td {
+      background-color: var(--bg-light);
+    }
+
+    .col-name {
+      font-weight: 700;
+      color: #0f172a;
+      width: 50%;
+    }
+
+    .col-brand {
+      color: var(--cyan);
+      font-weight: 600;
+      width: 25%;
+    }
+
+    .col-pack {
+      color: #475569;
+      width: 25%;
+    }
+
+    /* Depot Dispatch Terms Box */
+    .terms-box {
+      border: 1.5px solid #1e3a5f;
+      background: var(--bg-light);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .terms-title {
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 4px;
+    }
+
+    .terms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 14px;
+      font-size: 0.66rem;
+    }
+
+    .term-item strong {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    /* Footer */
+    .cat-footer {
+      background: var(--primary);
+      color: #ffffff;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-top: auto;
+    }
+
+    .cat-footer .hotline {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--accent-light);
+    }
+
+    .cat-footer .subline {
+      font-size: 0.62rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: transparent !important;
+        padding: 0 !important;
+      }
+
+      .screen-bar {
+        display: none !important;
+      }
+
+      .a4-page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        page-break-after: always;
+        width: 100% !important;
+        min-height: 100vh !important;
+        padding: 8mm 10mm !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Top Control Bar (Hidden when printing) -->
+  <div class="screen-bar">
+    <div>
+      <h1>RAIS Agencies - Official Shop Counter Catalogue</h1>
+      <p>Clean A4 2-Page Product List (No Prices) • Keep in shop for walk-in customers or print to PDF</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="window.print()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/><path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/></svg>
+        Print Catalogue (A4)
+      </button>
+      <a class="btn btn-outline" href="/shop_counter_catalogue_page1.png" download="RAIS_Catalogue_Page1.png">
+        Download Page 1 Image
+      </a>
+      <a class="btn btn-outline" href="/shop_counter_catalogue_page2.png" download="RAIS_Catalogue_Page2.png">
+        Download Page 2 Image
+      </a>
+    </div>
+  </div>
+
+  <!-- PAGE 1 OF 2 -->
+  <div class="a4-page">
+    <div>
+      <!-- Header -->
+      <div class="cat-header">
+        <div class="brand-block">
+          <img src="/assets/hercules/rais_logo_1024.png" alt="RAIS Logo" class="logo-img">
+          <div class="brand-text">
+            <h2>RAIS AGENCIES</h2>
+            <div class="sub">RAYACHOTY'S AUTHORIZED FOODSERVICE & COLD-CHAIN DISTRIBUTOR</div>
+            <div class="address">Depot: Near Reddies Colony, Rayachoty, YSR Kadapa Dist, AP | Order Desk: 9347453135, 9573261696</div>
+          </div>
+        </div>
+        <div class="header-qr">
+          <img src="/visiting_card_qr_code.png" alt="Scan QR">
+          <span>SCAN LIVE LIST</span>
+        </div>
+      </div>
+
+      <!-- Brands Strip -->
+      <div class="brand-strip">
+        AUTHORIZED BRANDS: McCain • ITC Master Chef • Milky Mist • Godrej Yummiez • Del Monte • Venky's • Ayamas • Foodrite • VKL • Amul
+      </div>
+
+      <!-- Page Banner -->
+      <div class="title-strip">
+        <span>OFFICIAL WHOLESALE PRODUCT CATALOGUE (PAGE 1 OF 2)</span>
+        <span class="no-price-tag">• WHOLESALE SLABS ON INQUIRY | NO PRICES DISPLAYED •</span>
+      </div>
+
+      <!-- 1. DEEP FROZEN CHICKEN -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>1. DEEP FROZEN CHICKEN ITEMS</span>
+          <span class="storage-tag">Storage: -18°C Deep Frozen</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Nutrich Chicken Burger Patty</td><td class="col-brand">Nutrich</td><td class="col-pack">1 KG Packet (10-12 Patties)</td></tr>
+            <tr><td class="col-name">• Nutrich Chicken Popcorn Balls</td><td class="col-brand">Nutrich</td><td class="col-pack">1 KG Packet</td></tr>
+            <tr><td class="col-name">• ITC Master Chef Chicken Nuggets</td><td class="col-brand">ITC Master Chef</td><td class="col-pack">1 KG Commercial Pack</td></tr>
+            <tr><td class="col-name">• Chicken Fingers (RAIS Master)</td><td class="col-brand">RAIS Master</td><td class="col-pack">1 KG Packet</td></tr>
+            <tr><td class="col-name">• Triken Chicken Momos</td><td class="col-brand">Triken</td><td class="col-pack">1 Packet (20-25 Pcs)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 2. CHEESE & DAIRY -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>2. CHEESE & DAIRY SPECIALTIES</span>
+          <span class="storage-tag">Storage: 0°C to 4°C Chilled / Frozen</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Milky Mist Mozzarella Diced Cheese</td><td class="col-brand">Milky Mist</td><td class="col-pack">2 KG Commercial Block Pack</td></tr>
+            <tr><td class="col-name">• Milky Mist Mozzarella Diced Cheese</td><td class="col-brand">Milky Mist</td><td class="col-pack">1 KG Retail Pack</td></tr>
+            <tr><td class="col-name">• Milky Mist Processed Cheese Slices</td><td class="col-brand">Milky Mist</td><td class="col-pack">765g Pack (48 Slices)</td></tr>
+            <tr><td class="col-name">• Milky Mist Fresh Paneer (Diced Cubes)</td><td class="col-brand">Milky Mist</td><td class="col-pack">1 KG Packet</td></tr>
+            <tr><td class="col-name">• Nutrilite Commercial Table Butter</td><td class="col-brand">RAIS Master</td><td class="col-pack">500g / 1 KG Block</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3. FRENCH FRIES & VEG SNACKS -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>3. FRENCH FRIES & VEG APPETIZERS</span>
+          <span class="storage-tag">Storage: -18°C Deep Frozen</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Hup Hup French Fries (6mm Thin Cut)</td><td class="col-brand">Hup Hup</td><td class="col-pack">2.5 KG Bag</td></tr>
+            <tr><td class="col-name">• Amul French Fries (6mm Crisp)</td><td class="col-brand">Amul</td><td class="col-pack">2.5 KG Bag</td></tr>
+            <tr><td class="col-name">• ITC Cheesy Corn Triangles</td><td class="col-brand">ITC Master Chef</td><td class="col-pack">1 KG Pack</td></tr>
+            <tr><td class="col-name">• ITC Crispy Veg Burger Patty</td><td class="col-brand">ITC Master Chef</td><td class="col-pack">1.2 KG Pack (12 Patties)</td></tr>
+            <tr><td class="col-name">• ITC Paneer Patty</td><td class="col-brand">ITC Master Chef</td><td class="col-pack">1.02 KG Pack</td></tr>
+            <tr><td class="col-name">• Godrej Paneer Pops</td><td class="col-brand">Godrej Yummiez</td><td class="col-pack">1 KG Pack</td></tr>
+            <tr><td class="col-name">• Godrej Tandoori Paneer Nuggets</td><td class="col-brand">Godrej Yummiez</td><td class="col-pack">1 KG Pack</td></tr>
+            <tr><td class="col-name">• ITC Veg Momos</td><td class="col-brand">ITC Master Chef</td><td class="col-pack">1 Packet</td></tr>
+            <tr><td class="col-name">• McCain Smiles</td><td class="col-brand">McCain</td><td class="col-pack">1.25 KG Pack</td></tr>
+            <tr><td class="col-name">• Chilli Fill Veg Burger Patty</td><td class="col-brand">Chilli Fill</td><td class="col-pack">1.2 KG Pack</td></tr>
+            <tr><td class="col-name">• Fresh Burger Buns & Pizza Bases (8" / 9")</td><td class="col-brand">RAIS Master</td><td class="col-pack">Pack of 6 / 10</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 4. GOURMET SAUCES & MAYO -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>4. GOURMET SAUCES, MAYO & CONDIMENTS</span>
+          <span class="storage-tag">Storage: Cool Dry / Ambient</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Del Monte Tandoori Mayonnaise</td><td class="col-brand">Del Monte</td><td class="col-pack">1 KG Pouch</td></tr>
+            <tr><td class="col-name">• Del Monte Creamy Cheese Sauce</td><td class="col-brand">Del Monte</td><td class="col-pack">1 KG Pouch</td></tr>
+            <tr><td class="col-name">• Del Monte Pizza & Pasta Sauce</td><td class="col-brand">Del Monte</td><td class="col-pack">1 KG Pouch</td></tr>
+            <tr><td class="col-name">• Del Monte Eggless Mayonnaise</td><td class="col-brand">Del Monte</td><td class="col-pack">1 KG Pouch</td></tr>
+            <tr><td class="col-name">• Del Monte Rich Tomato Ketchup</td><td class="col-brand">Del Monte</td><td class="col-pack">1.1 KG Standee Pouch</td></tr>
+            <tr><td class="col-name">• Foodrite Salad Mayo & Tomato Ketchup</td><td class="col-brand">Foodrite</td><td class="col-pack">1 KG Pouch</td></tr>
+            <tr><td class="col-name">• Commercial Tomato Ketchup (Bulk)</td><td class="col-brand">Foodrite / RAIS</td><td class="col-pack">5 KG Jar / Pouch</td></tr>
+            <tr><td class="col-name">• Single-Serve Dip Sachets (Ketchup / Mayo)</td><td class="col-brand">Del Monte / Foodrite</td><td class="col-pack">8g / 9g (Box of 500)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer Page 1 -->
+    <div class="cat-footer">
+      <div class="hotline">RAIS AGENCIES • ORDER DESK: +91 9347453135 / +91 9573261696</div>
+      <div class="subline">Near Reddies Colony, Rayachoty, YSR Kadapa Dist, AP - 516269 | Same-Day Route Dispatch</div>
+    </div>
+  </div>
+
+
+  <!-- PAGE 2 OF 2 -->
+  <div class="a4-page">
+    <div>
+      <!-- Header -->
+      <div class="cat-header">
+        <div class="brand-block">
+          <img src="/assets/hercules/rais_logo_1024.png" alt="RAIS Logo" class="logo-img">
+          <div class="brand-text">
+            <h2>RAIS AGENCIES</h2>
+            <div class="sub">RAYACHOTY'S AUTHORIZED FOODSERVICE & PACKAGING DISTRIBUTOR</div>
+            <div class="address">Depot: Near Reddies Colony, Rayachoty, YSR Kadapa Dist, AP | Order Desk: 9347453135, 9573261696</div>
+          </div>
+        </div>
+        <div class="header-qr">
+          <img src="/visiting_card_qr_code.png" alt="Scan QR">
+          <span>SCAN LIVE LIST</span>
+        </div>
+      </div>
+
+      <!-- Brands Strip -->
+      <div class="brand-strip">
+        AUTHORIZED BRANDS: McCain • ITC Master Chef • Milky Mist • Godrej Yummiez • Del Monte • Venky's • Ayamas • Foodrite • VKL • Amul
+      </div>
+
+      <!-- Page Banner -->
+      <div class="title-strip">
+        <span>OFFICIAL WHOLESALE PRODUCT CATALOGUE (PAGE 2 OF 2)</span>
+        <span class="no-price-tag">• WHOLESALE SLABS ON INQUIRY | NO PRICES DISPLAYED •</span>
+      </div>
+
+      <!-- 5. BREADING & SEASONINGS -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>5. BREADING, MARINADES & SEASONINGS</span>
+          <span class="storage-tag">Storage: Cool Dry Ambient</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• VKL Crispy Cajun Breading Mix</td><td class="col-brand">VKL Seasonings</td><td class="col-pack">1 KG Sealed Bag</td></tr>
+            <tr><td class="col-name">• VKL Extra Hot & Spicy Marinade</td><td class="col-brand">VKL Seasonings</td><td class="col-pack">1 KG Sealed Bag</td></tr>
+            <tr><td class="col-name">• VKL Peri Peri Sprinkler Seasoning</td><td class="col-brand">VKL Seasonings</td><td class="col-pack">250g / 1 KG Pack</td></tr>
+            <tr><td class="col-name">• Pure Oregano Herb Seasoning</td><td class="col-brand">RAIS Select</td><td class="col-pack">1 KG Sealed Pack</td></tr>
+            <tr><td class="col-name">• VKL Dried Chilli Flakes</td><td class="col-brand">VKL / RAIS</td><td class="col-pack">1 KG Sealed Pack</td></tr>
+            <tr><td class="col-name">• Signature Tortilla Wraps (8.5" & 10")</td><td class="col-brand">Signature</td><td class="col-pack">Pack of 15 Wraps</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 6. PIZZA BOXES & PACKAGING -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>6. PIZZA BOXES & PACKAGING SUPPLIES</span>
+          <span class="storage-tag">Storage: Dry Storage</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Pizza Box 8" x 8" Printed & Laminated</td><td class="col-brand">Packaging Solutions</td><td class="col-pack">Pack of 100 Nos</td></tr>
+            <tr><td class="col-name">• Pizza Box 9" x 9" Plain Sturdy Kraft</td><td class="col-brand">Packaging Solutions</td><td class="col-pack">Pack of 100 Nos</td></tr>
+            <tr><td class="col-name">• Burger Box 4" x 4" Printed (Sturdy Board)</td><td class="col-brand">Packaging Solutions</td><td class="col-pack">Pack of 100 Nos</td></tr>
+            <tr><td class="col-name">• Burger Box 5" x 5" Printed (Sturdy Board)</td><td class="col-brand">Packaging Solutions</td><td class="col-pack">Pack of 100 Nos</td></tr>
+            <tr><td class="col-name">• Fried Chicken Meal Box (4.5" x 8")</td><td class="col-brand">Packaging Solutions</td><td class="col-pack">Pack of 100 Nos</td></tr>
+            <tr><td class="col-name">• KFC Style Fried Chicken Buckets with Lid</td><td class="col-brand">Packaging Solutions</td><td class="col-pack">500ml / 1000ml (100 Nos)</td></tr>
+            <tr><td class="col-name">• Clear Mayonnaise & Dip Cups (35mm)</td><td class="col-brand">RAIS Packaging</td><td class="col-pack">Pack of 100 Nos</td></tr>
+            <tr><td class="col-name">• Commercial Greaseproof Butter Paper</td><td class="col-brand">RAIS Master</td><td class="col-pack">Ream of 500 Sheets</td></tr>
+            <tr><td class="col-name">• Food Grade Table Tissues & Napkins</td><td class="col-brand">RAIS Master</td><td class="col-pack">Pack of 1000 Sheets</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 7. MOJITOS -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>7. MOJITOS & BEVERAGE SYRUPS</span>
+          <span class="storage-tag">Storage: Ambient / Chilled</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Fresh Lime & Mint Mojito Syrup</td><td class="col-brand">RAIS Beverages</td><td class="col-pack">750ml / 1 Litre Bottle</td></tr>
+            <tr><td class="col-name">• Blue Curacao Mocktail Syrup</td><td class="col-brand">RAIS Beverages</td><td class="col-pack">750ml / 1 Litre Bottle</td></tr>
+            <tr><td class="col-name">• Strawberry Mojito Flavor Syrup</td><td class="col-brand">RAIS Beverages</td><td class="col-pack">750ml / 1 Litre Bottle</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 8. SPICES -->
+      <div class="category-group">
+        <div class="cat-title-bar">
+          <span>8. COMMERCIAL SPICES & ESSENTIALS</span>
+          <span class="storage-tag">Storage: Dry Cool Storage</span>
+        </div>
+        <table class="prod-table">
+          <thead>
+            <tr>
+              <th class="col-name">Product Description</th>
+              <th class="col-brand">Brand</th>
+              <th class="col-pack">Standard Packaging Spec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="col-name">• Chilly Powder No. 1 (Special Pickle Grade)</td><td class="col-brand">RAIS Spices</td><td class="col-pack">1 KG Sealed Commercial Bag</td></tr>
+            <tr><td class="col-name">• Pure Hot Red Chilly Powder</td><td class="col-brand">RAIS Spices</td><td class="col-pack">1 KG Sealed Bag</td></tr>
+            <tr><td class="col-name">• Fine Mesh Coriander Powder</td><td class="col-brand">RAIS Spices</td><td class="col-pack">1 KG Sealed Bag</td></tr>
+            <tr><td class="col-name">• Commercial Batch Pure Turmeric Powder</td><td class="col-brand">RAIS Spices</td><td class="col-pack">1 KG Sealed Bag</td></tr>
+            <tr><td class="col-name">• Food Grade White Synthetic Vinegar</td><td class="col-brand">RAIS Master</td><td class="col-pack">5 Litre Commercial Can</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Depot Dispatch Terms Box -->
+      <div class="terms-box">
+        <div class="terms-title">DEPOT DISPATCH & COMMERCIAL ORDERING TERMS</div>
+        <div class="terms-grid">
+          <div class="term-item"><strong>[+] COLD CHAIN:</strong> Strict -18°C temperature-controlled deep freezers and insulated transit boxes ensure zero thaw during transport.</div>
+          <div class="term-item"><strong>[+] DAILY DISPATCH:</strong> Orders booked before 11:00 AM are dispatched same-day afternoon across Rayachoty, Madanapalle & Kadapa route.</div>
+          <div class="term-item"><strong>[+] AUTHENTIC BRANDS:</strong> 100% direct company allocations from McCain, Milky Mist, ITC Master Chef, Godrej Yummiez and Del Monte.</div>
+          <div class="term-item"><strong>[+] VOLUME SLABS:</strong> Customized carton slabs and institutional wholesale credit terms available for commercial food outlets.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Page 2 -->
+    <div class="cat-footer">
+      <div class="hotline">RAIS AGENCIES • ORDER DESK: +91 9347453135 / +91 9573261696</div>
+      <div class="subline">Near Reddies Colony, Rayachoty, YSR Kadapa Dist, AP - 516269 | Same-Day Route Dispatch</div>
+    </div>
+  </div>
+
+</body>
+</html>
