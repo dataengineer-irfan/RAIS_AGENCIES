@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAIS Agencies - Official B2B Wholesale Catalogue & Shop Poster</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070d17;
+      --card-bg: #0c1626;
+      --card-border: #1e2e47;
+      --gold: #f59e0b;
+      --gold-light: #fbbf24;
+      --cyan: #38bdf8;
+      --green: #10b981;
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: #040810;
+      color: var(--text-white);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Print & Action Controls Header */
+    .action-bar {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111e33;
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: 1px solid #1e3a5f;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .action-bar h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold-light);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+    }
+    .btn-gold:hover {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      border: 1px solid #334155;
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #64748b;
+    }
+
+    /* Poster Container */
+    .poster-container {
+      width: 100%;
+      max-width: 1100px;
+      background-color: var(--bg-dark);
+      border: 4px solid var(--gold);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Ambient background glows */
+    .glow-top {
+      position: absolute;
+      top: -100px;
+      left: 20%;
+      width: 600px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .glow-bottom {
+      position: absolute;
+      bottom: -100px;
+      right: 20%;
+      width: 600px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Header Section */
+    .header-box {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      background: linear-gradient(180deg, rgba(16, 29, 49, 0.9) 0%, rgba(10, 19, 34, 0.9) 100%);
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+    }
+
+    .logo-img {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    }
+
+    .header-content {
+      flex: 1;
+    }
+
+    .header-content h2 {
+      font-size: 2.3rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffffff;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .header-content .tagline {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .header-content .depot {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .header-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .header-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      background: rgba(30, 58, 95, 0.6);
+      border: 1px solid #294c7a;
+      color: #93c5fd;
+      text-transform: uppercase;
+    }
+    .badge-cyan { color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); }
+    .badge-green { color: #34d399; border-color: rgba(52, 211, 153, 0.4); }
+    .badge-gold { color: #fbbf24; border-color: rgba(251, 191, 36, 0.4); }
+    .badge-purple { color: #c084fc; border-color: rgba(192, 132, 252, 0.4); }
+
+    /* Brands Banner */
+    .brands-section {
+      background: rgba(12, 22, 38, 0.8);
+      border: 1px solid #1e3352;
+      border-radius: 14px;
+      padding: 16px 24px;
+      margin-bottom: 24px;
+    }
+
+    .brands-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .brands-title span:first-child {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .brands-title span:last-child {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .brands-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .brand-pill {
+      background: rgba(26, 43, 70, 0.5);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 0.3px;
+    }
+
+    /* Product Grid */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .cat-card {
+      background: linear-gradient(180deg, #0e1b2f 0%, #091322 100%);
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cat-header {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ffffff;
+      border-left: 4px solid var(--gold);
+      padding-left: 10px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cat-body {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .cat-items {
+      list-style: none;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cat-items li {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.35;
+    }
+
+    .cat-items li::before {
+      content: "•";
+      color: var(--cyan);
+      font-weight: bold;
+    }
+
+    .cat-image-wrapper {
+      width: 100px;
+      height: 100px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cat-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cat-footer {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      font-size: 0.68rem;
+      color: #64748b;
+      letter-spacing: 0.3px;
+    }
+
+    /* Footer Order Box */
+    .order-box {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      background: linear-gradient(135deg, #0f1e35 0%, #0a1424 100%);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      padding: 24px 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .qr-wrapper {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .qr-wrapper img {
+      width: 130px;
+      height: 130px;
+      display: block;
+    }
+
+    .order-info {
+      flex: 1;
+    }
+
+    .order-info h3 {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .order-info .subtext {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+
+    .order-info .url-link {
+      font-size: 0.78rem;
+      color: var(--cyan);
+      margin-bottom: 14px;
+      font-family: monospace;
+    }
+
+    .phone-box {
+      background: rgba(16, 32, 56, 0.8);
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 10px 18px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    .phone-box .phone-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .phone-box .phone-numbers {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #34d399;
+      letter-spacing: 1px;
+    }
+
+    .delivery-note {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #fbbf24;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: transparent !important;
+        padding: 0 !important;
+      }
+
+      .action-bar {
+        display: none !important;
+      }
+
+      .poster-container {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        padding: 20px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .categories-grid {
+        grid-template-columns: 1fr;
+      }
+      .header-box {
+        flex-direction: column;
+        text-align: center;
+      }
+      .order-box {
+        flex-direction: column;
+        text-align: center;
+      }
+      .btn-group {
+        flex-direction: column;
+        width: 100%;
+      }
+      .action-bar {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Top Control Bar (Hidden on Print) -->
+  <div class="action-bar">
+    <div>
+      <h1>RAIS Agencies - Official B2B Wall Poster & Product Display</h1>
+      <p style="font-size: 0.78rem; color: #94a3b8;">High-resolution commercial display • Ready for print, TV screen, or counter framing</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-gold" onclick="window.print()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/><path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/></svg>
+        Print Poster / Save PDF
+      </button>
+      <a class="btn btn-outline" href="/shop_catalogue_poster.png" download="RAIS_Agencies_Shop_Poster_2400x3600.png">
+        Download 300 DPI PNG
+      </a>
+      <a class="btn btn-outline" href="/catalogue.html" target="_blank">
+        Open Mobile Web Catalogue
+      </a>
+    </div>
+  </div>
+
+  <!-- Poster Body -->
+  <div class="poster-container">
+    <div class="glow-top"></div>
+    <div class="glow-bottom"></div>
+
+    <!-- Header Section -->
+    <div class="header-box">
+      <img src="/assets/hercules/rais_logo_1024.png" alt="RAIS Agencies Logo" class="logo-img">
+      <div class="header-content">
+        <h2>RAIS AGENCIES</h2>
+        <div class="tagline">RAYACHOTY'S NO. 1 WHOLESALE FROZEN FOOD & PACKAGING DISTRIBUTOR</div>
+        <div class="depot">Depot: Near Reddies Colony, Rayachoty, YSR Kadapa Dist, AP - 516269</div>
+        <div class="header-badges">
+          <span class="header-badge badge-cyan">-18°C COLD-CHAIN STORAGE</span>
+          <span class="header-badge badge-green">SAME-DAY ROUTE DISPATCH</span>
+          <span class="header-badge badge-gold">65+ COMMERCIAL SKUS</span>
+          <span class="header-badge badge-purple">100% QUALITY ASSURED</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brands Banner -->
+    <div class="brands-section">
+      <div class="brands-title">
+        <span>OUR AUTHORIZED & TRUSTED PARTNER BRANDS</span>
+        <span>Guaranteed Authentic Factory Supply • Direct Depot Allocations</span>
+      </div>
+      <div class="brands-grid">
+        <div class="brand-pill">• McCain</div>
+        <div class="brand-pill">• ITC Master Chef</div>
+        <div class="brand-pill">• Milky Mist</div>
+        <div class="brand-pill">• Godrej Yummiez</div>
+        <div class="brand-pill">• Del Monte</div>
+        <div class="brand-pill">• Venky's</div>
+        <div class="brand-pill">• Ayamas</div>
+        <div class="brand-pill">• Foodrite</div>
+        <div class="brand-pill">• VKL Food Solutions</div>
+        <div class="brand-pill">• Nutrich</div>
+        <div class="brand-pill">• Amul</div>
+        <div class="brand-pill">• Mrs. Bector's Cremica</div>
+        <div class="brand-pill">• Dr. Oetker FunFoods</div>
+        <div class="brand-pill">• Wingreens Farms</div>
+      </div>
+    </div>
+
+    <!-- Product Category Matrix (8 Categories) -->
+    <div class="categories-grid">
+
+      <!-- 1. Deep Frozen Chicken -->
+      <div class="cat-card">
+        <div class="cat-header">1. CHICKEN ITEMS (DEEP FROZEN -18°C)</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Nutrich Chicken Burger Patty (1 KG)</li>
+            <li>Nutrich Chicken Popcorn Balls (1 KG)</li>
+            <li>Chicken Nuggets Master Chef (1 KG)</li>
+            <li>Chicken Fingers (RAIS Master)</li>
+            <li>Chicken Momos Triken (1 Packet)</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_chicken.png" alt="Chicken Items">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 2. Cheese & Dairy -->
+      <div class="cat-card">
+        <div class="cat-header">2. CHEESE & DAIRY (FROZEN / CHILLED)</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Milky Mist Mozzarella Diced (2 KG Pack)</li>
+            <li>Milky Mist Mozzarella Diced (1 KG Pack)</li>
+            <li>Milky Mist Cheese Slices (765g Pack)</li>
+            <li>Milky Mist Paneer Diced Cubes (1 KG)</li>
+            <li>Nutrilite Table Butter (Commercial Pack)</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_cheese.png" alt="Cheese & Dairy">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 3. French Fries & Veg Snacks -->
+      <div class="cat-card">
+        <div class="cat-header">3. FRENCH FRIES & VEG SNACKS</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Hup Hup 6mm French Fries (2.5 KG)</li>
+            <li>Amul 6mm French Fries (2.5 KG)</li>
+            <li>ITC Cheesy Corn Triangles (1 KG)</li>
+            <li>Godrej Paneer Pops & Tandoori Nuggets</li>
+            <li>ITC Crispy Veg Burger Patty (1.2 KG)</li>
+            <li>ITC Veg Momos & McCain Smiles</li>
+            <li>Fresh Burger Buns & Pizza Bases 8"/9"</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_veg.png" alt="French Fries & Veg Snacks">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 4. Sauces & Mayonnaise -->
+      <div class="cat-card">
+        <div class="cat-header">4. GOURMET SAUCES & MAYONNAISE</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Del Monte Tandoori Mayonnaise (1 KG)</li>
+            <li>Del Monte Creamy Cheese Sauce (1 KG)</li>
+            <li>Del Monte Pizza Pasta Sauce (1 KG)</li>
+            <li>Del Monte Mayonnaise 1 KG</li>
+            <li>Foodrite Salad Mayo & Tomato Ketchup</li>
+            <li>Tomato Ketchup 1.1 KG & 5 KG Commercial</li>
+            <li>Single-Serve Dip Sachets (8g & 9g)</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_sauces.png" alt="Sauces & Mayo">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 5. Breading, Marinades & Seasonings -->
+      <div class="cat-card">
+        <div class="cat-header">5. BREADING, MARINADES & SEASONINGS</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>VKL Crispy Cajun Breading Mix (1 KG)</li>
+            <li>VKL Extra Hot & Spicy Marinade (1 KG)</li>
+            <li>VKL Peri Peri Seasoning Powder</li>
+            <li>Pure Oregano Herb Mix</li>
+            <li>VKL Dried Chilli Flakes</li>
+            <li>Signature Tortilla Wraps 8.5" & 10"</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_breadmix.png" alt="Breading & Marinades">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 6. Pizza Boxes & Food Packaging -->
+      <div class="cat-card">
+        <div class="cat-header">6. PIZZA BOXES & FOOD PACKAGING</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Pizza Boxes 8"x8" Printed Laminated</li>
+            <li>Pizza Boxes 9"x9" Plain Sturdy Kraft</li>
+            <li>Burger Boxes 4"x4" & 5"x5" Printed</li>
+            <li>Fried Chicken Boxes (4.5"x8")</li>
+            <li>KFC Style Fried Chicken Buckets</li>
+            <li>Mayonnaise Dip Cups (35mm)</li>
+            <li>Butter Paper & Food Grade Tissues</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_boxes.png" alt="Boxes & Packaging">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 7. Mojitos & Beverage Syrups -->
+      <div class="cat-card">
+        <div class="cat-header">7. MOJITOS & BEVERAGE SYRUPS</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Lime & Mint Mojito Syrup</li>
+            <li>Blue Curacao Syrup</li>
+            <li>Strawberry Mojito Syrup</li>
+            <li>Commercial Soda & Mocktail Bases</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_mojitos.png" alt="Mojitos & Syrups">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+      <!-- 8. Spices & Essentials -->
+      <div class="cat-card">
+        <div class="cat-header">8. CULINARY SPICES & ESSENTIALS</div>
+        <div class="cat-body">
+          <ul class="cat-items">
+            <li>Chilly Powder No. 1 (Pickle Grade)</li>
+            <li>Pure Hot Chilly Powder</li>
+            <li>Coriander Powder (Fine Mesh)</li>
+            <li>Turmeric Powder (Commercial Batch)</li>
+            <li>Food Grade White Vinegar</li>
+          </ul>
+          <div class="cat-image-wrapper">
+            <img src="/assets/hercules/cat_spices.png" alt="Spices & Essentials">
+          </div>
+        </div>
+        <div class="cat-footer">100% Genuine Factory Packs • Wholesale Volume Slabs on Request</div>
+      </div>
+
+    </div>
+
+    <!-- Order CTA Box with QR Code -->
+    <div class="order-box">
+      <div class="qr-wrapper">
+        <img src="/visiting_card_qr_code.png" alt="Scan QR for Catalogue">
+      </div>
+      <div class="order-info">
+        <h3>SCAN WITH PHONE CAMERA TO ORDER ON WHATSAPP</h3>
+        <div class="subtext">Instant Digital Catalogue • Live Stock Availability • Direct WhatsApp Order Desk</div>
+        <div class="url-link">https://rais-frontend.onrender.com/catalogue.html</div>
+        <div class="phone-box">
+          <div class="phone-label">Order Hotline & WhatsApp</div>
+          <div class="phone-numbers">+91 9347453135 &nbsp;/&nbsp; +91 9573261696</div>
+        </div>
+        <div class="delivery-note">Orders confirmed before 11:00 AM dispatched same-day afternoon across Rayachoty & Madanapalle route</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
