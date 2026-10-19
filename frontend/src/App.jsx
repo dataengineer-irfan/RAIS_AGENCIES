@@ -155,6 +155,10 @@ export const App = () => {
   };
 
   if (!isAuthenticated) {
+    if (window.location.pathname.startsWith('/catalogue')) {
+      window.location.replace('/catalogue.html');
+      return null;
+    }
     return <LoginPage />;
   }
 
