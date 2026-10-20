@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   CreditCard, 
   PlusCircle, 
@@ -29,11 +29,13 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeMethodFilter, setActiveMethodFilter] = useState('ALL'); // ALL, CASH, UPI, BANK
   
   // Master-Detail State
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [activeInspectorTab, setActiveInspectorTab] = useState('metadata'); // metadata, allocations, actions
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedCardPaymentId, setCopiedCardPaymentId] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Edit and Delete State
@@ -105,16 +107,44 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
     }
   };
 
-  const filteredPayments = payments.filter(p => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      (p.payment_number || '').toLowerCase().includes(term) ||
-      (p.customer_name && p.customer_name.toLowerCase().includes(term)) ||
-      (p.reference_number && p.reference_number.toLowerCase().includes(term)) ||
-      (p.payment_method && p.payment_method.toLowerCase().includes(term))
-    );
-  });
+  // Micro-Metrics & Payment Method Counts for 1-Click Ribbon
+  const methodCounts = useMemo(() => {
+    let cash = 0;
+    let upi = 0;
+    let bank = 0;
+    for (const p of payments) {
+      const m = (p.payment_method || '').toUpperCase();
+      if (m.includes('CASH')) cash++;
+      else if (m.includes('UPI')) upi++;
+      else if (m.includes('BANK') || m.includes('NEFT') || m.includes('RTGS') || m.includes('CHEQUE')) bank++;
+    }
+    return {
+      total: payments.length,
+      cash,
+      upi,
+      bank
+    };
+  }, [payments]);
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter(p => {
+      if (activeMethodFilter !== 'ALL') {
+        const m = (p.payment_method || '').toUpperCase();
+        if (activeMethodFilter === 'CASH' && !m.includes('CASH')) return false;
+        if (activeMethodFilter === 'UPI' && !m.includes('UPI')) return false;
+        if (activeMethodFilter === 'BANK' && (!m.includes('BANK') && !m.includes('NEFT') && !m.includes('RTGS') && !m.includes('CHEQUE'))) return false;
+      }
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase().trim();
+      return (
+        (p.payment_number || '').toLowerCase().includes(term) ||
+        (p.customer_name && p.customer_name.toLowerCase().includes(term)) ||
+        (p.reference_number && p.reference_number.toLowerCase().includes(term)) ||
+        (p.payment_method && p.payment_method.toLowerCase().includes(term)) ||
+        (p.notes && p.notes.toLowerCase().includes(term))
+      );
+    });
+  }, [payments, activeMethodFilter, searchTerm]);
 
   const selectedPayment = payments.find(p => p.id === selectedPaymentId) || payments[0];
   const totalCollected = payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
@@ -122,62 +152,111 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
-      {/* ─── DESKTOP TOP ACTION & SUMMARY HEADER BAR (>= md) ─── */}
-      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+      {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
+      <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
+        {/* Left: Icon & Title */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <CreditCard className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 mt-0.5">
-              <h1 className="text-sm sm:text-base font-black text-white">
-                Payment Settlements & Collection Ledger
-              </h1>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/15 text-emerald-300 rounded-full border border-emerald-500/30 font-mono">
-                  All-Time: ₹{(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-                {summaryData?.total_collected_this_month !== undefined && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                    {summaryData.current_month_str}: ₹{summaryData.total_collected_this_month.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                )}
-                {payments.length >= 100 && (
-                  <span className="text-[9px] text-slate-500 font-mono hidden md:inline">
-                    (Page: ₹{totalCollected.toLocaleString('en-IN', { minimumFractionDigits: 0 })})
-                  </span>
-                )}
-              </div>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Master-Detail UPI, Cash & Bank Settlement Reconciliation with Invoices
-            </p>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-sm font-black text-white whitespace-nowrap">
+              Payments Ledger
+            </h1>
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-full border border-slate-700 font-mono">
+              {loading && payments.length === 0 ? 'Syncing...' : `${filteredPayments.length}/${payments.length}`}
+            </span>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search receipt #, customer, UTR..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-48 sm:w-60"
-            />
-          </div>
+        {/* Center: 1-Click Method Filter Pills */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+          <button
+            onClick={() => setActiveMethodFilter('ALL')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeMethodFilter === 'ALL'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            All ({methodCounts.total})
+          </button>
+          <button
+            onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeMethodFilter === 'CASH'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
+            }`}
+          >
+            <span>💵 Cash</span>
+            <span className="font-mono text-[11px]">({methodCounts.cash})</span>
+          </button>
+          <button
+            onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeMethodFilter === 'UPI'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400'
+                : 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30'
+            }`}
+          >
+            <span>📱 UPI</span>
+            <span className="font-mono text-[11px]">({methodCounts.upi})</span>
+          </button>
+          <button
+            onClick={() => setActiveMethodFilter(activeMethodFilter === 'BANK' ? 'ALL' : 'BANK')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeMethodFilter === 'BANK'
+                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20 ring-1 ring-purple-400'
+                : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'
+            }`}
+          >
+            <span>🏦 Bank</span>
+            <span className="font-mono text-[11px]">({methodCounts.bank})</span>
+          </button>
+        </div>
 
-          {hasRole(['ADMIN', 'OPERATOR']) && (
+        {/* Center-Right: Omni-Search Input with Clear */}
+        <div className="relative flex-1 max-w-[240px] min-w-[140px]">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search receipt #, outlet, UTR..."
+            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+          {searchTerm && (
             <button
-              onClick={() => onOpenPaymentModal && onOpenPaymentModal(null, null)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
             >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ Settlement</span>
+              ✕
             </button>
           )}
         </div>
+
+        {/* Live Collection Micro-Ticker */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
+          <span className="text-emerald-400">All-Time: <strong className="font-bold">₹{(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+          {summaryData?.total_collected_this_month !== undefined && (
+            <>
+              <span className="text-slate-700">|</span>
+              <span className="text-amber-400">{summaryData.current_month_str}: <strong className="font-bold">₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+            </>
+          )}
+        </div>
+
+        {/* Right: + Settlement CTA */}
+        {hasRole(['ADMIN', 'OPERATOR']) && (
+          <button
+            onClick={() => onOpenPaymentModal && onOpenPaymentModal(null, null)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 shrink-0"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>+ Settlement</span>
+          </button>
+        )}
       </div>
 
       {/* ─── MOBILE SLEEK ACTION BAR (< md) ─── */}
@@ -190,8 +269,16 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={`Search ${payments.length} vouchers...`}
-              className="w-full pl-8 pr-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {hasRole(['ADMIN', 'OPERATOR']) && (
@@ -206,15 +293,42 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[10px] font-mono">
-          <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-300 rounded-md border border-emerald-500/30 whitespace-nowrap font-bold">
-            Total: ₹{parseFloat(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+        {/* Mobile 1-Click Method Filter & Ticker Strip */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[11px] font-mono">
+          <button
+            onClick={() => setActiveMethodFilter('ALL')}
+            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+              activeMethodFilter === 'ALL'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'bg-slate-950 text-slate-400 border border-slate-800'
+            }`}
+          >
+            All ({methodCounts.total})
+          </button>
+          <button
+            onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
+            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+              activeMethodFilter === 'CASH'
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+            }`}
+          >
+            💵 Cash ({methodCounts.cash})
+          </button>
+          <button
+            onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
+            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+              activeMethodFilter === 'UPI'
+                ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+            }`}
+          >
+            📱 UPI ({methodCounts.upi})
+          </button>
+          <span className="text-slate-700 mx-0.5">|</span>
+          <span className="text-emerald-400/90 whitespace-nowrap px-1 py-0.5 font-bold">
+            ₹{parseFloat(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </span>
-          {summaryData?.total_collected_this_month !== undefined && (
-            <span className="px-2 py-0.5 bg-slate-800 text-amber-400 rounded-md border border-slate-700 whitespace-nowrap font-bold">
-              {summaryData.current_month_str}: ₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </span>
-          )}
         </div>
       </div>
 
@@ -244,6 +358,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
               (filteredPayments || []).map(p => {
                 const isSelected = p?.id === selectedPaymentId;
                 const amount = parseFloat(p?.amount || 0);
+                const isCopied = copiedCardPaymentId === p?.id;
 
                 return (
                   <div
@@ -252,18 +367,31 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                       setSelectedPaymentId(p?.id);
                       setMobileView('detail');
                     }}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
                         ? 'bg-emerald-500/10 border-emerald-500/50 shadow-md shadow-emerald-500/10'
                         : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
-                    <div className="overflow-hidden pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-[11px] text-emerald-400">
+                    <div className="overflow-hidden pr-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-[11px] text-emerald-400 flex items-center gap-1">
                           {p?.payment_number || 'REC'}
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await copyToClipboard(p?.payment_number || '');
+                              setCopiedCardPaymentId(p?.id);
+                              setTimeout(() => setCopiedCardPaymentId(null), 1500);
+                            }}
+                            className="text-slate-500 hover:text-emerald-300 p-0.5 rounded transition"
+                            title="Copy Receipt #"
+                          >
+                            {isCopied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />}
+                          </button>
                         </span>
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700/50">
                           {p?.payment_method || 'CASH'}
                         </span>
                       </div>
@@ -271,7 +399,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                         {p?.customer_name || 'Customer'}
                       </h4>
                       <p className="text-[10px] text-slate-400 truncate">
-                        {p?.payment_date || '-'} {p?.reference_number ? `• UTR: ${p.reference_number}` : ''}
+                        {p?.payment_date || '-'} {p?.reference_number ? `• Ref: ${p.reference_number}` : ''}
                       </p>
                     </div>
 
@@ -280,14 +408,26 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                         <div className="font-mono font-black text-xs text-emerald-400">
                           +₹{parseFloat(amount || 0).toFixed(2)}
                         </div>
-                        <span className="text-[9px] text-slate-500">
+                        <span className="text-[9px] text-slate-500 block font-mono">
                           Alloc: ₹{parseFloat(p?.allocated_amount || 0).toFixed(2)}
                         </span>
                       </div>
 
-                      {/* Quick Edit/Delete buttons */}
+                      {/* Quick WhatsApp Receipt & Edit/Delete buttons */}
                       <div className="flex items-center gap-1 pl-1 border-l border-slate-800">
                         <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendWhatsAppReceipt(p);
+                          }}
+                          className="p-1 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded-lg transition-colors"
+                          title="Share WhatsApp Settlement Receipt"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingPayment(p);
@@ -298,6 +438,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                           <Pencil className="w-3 h-3" />
                         </button>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteConfirmModal(p);

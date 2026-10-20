@@ -189,92 +189,57 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
-      <div className="flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
-        <div className="hidden md:flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+      {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
+      <div className="hidden md:flex flex-col gap-2 bg-slate-900/95 border border-slate-800 rounded-2xl p-2.5 shrink-0 shadow-md">
+        <div className="flex items-center justify-between gap-2.5">
+          {/* Left: Icon & Title */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Package className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-black text-white">
-                  Product Catalogue
-                </h1>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 font-mono flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                  <span>{products.length === 55 ? 'All 55 SKUs Live & Categorized' : `${products.length} Active SKUs`}</span>
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                Wholesale Master SKU Matrix & Cash Pricing (0 Uncategorized)
-              </p>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-black text-white whitespace-nowrap">
+                Product Catalogue
+              </h1>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+                {filteredProducts.length}/{products.length} SKUs
+              </span>
             </div>
           </div>
 
-          {/* Quick CTA on Mobile / Desktop */}
-          {hasRole(['ADMIN', 'OPERATOR']) && (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => setBulkPriceModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all shrink-0"
-                title="Category Bulk Price Adjuster"
-              >
-                <DollarSign className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Bulk Adjust</span>
-                <span className="sm:hidden">Bulk</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setProductToEdit(null);
-                  setProductModalOpen(true);
-                }}
-                className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>+ SKU</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ─── DESKTOP FILTER CONTROLS ROW (md and above) ─── */}
-        <div className="hidden md:flex flex-wrap items-center gap-2">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[150px]">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search SKU, name, brand..."
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
+          {/* 1-Click Category Filter Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 max-w-[500px]">
+            <button
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                selectedCategory === 'ALL'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              All ({products.length})
+            </button>
+            {categories.map(c => {
+              const count = products.filter(p => p.category_id === c.id).length;
+              const isSelected = selectedCategory === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCategory(isSelected ? 'ALL' : c.id)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  <span>{c.name}</span>
+                  <span className="font-mono text-[10px] opacity-80">({count})</span>
+                </button>
+              );
+            })}
           </div>
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer flex-1 sm:flex-initial max-w-[140px] truncate"
-          >
-            <option value="ALL">All Categories</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedBrand}
-            onChange={(e) => setSelectedBrand(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer flex-1 sm:flex-initial max-w-[120px] truncate"
-          >
-            <option value="ALL">All Brands</option>
-            {uniqueBrands.map(b => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-
-          {/* Action Chips */}
+          {/* Right Action Launchers */}
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             {/* View Toggle */}
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
@@ -301,7 +266,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             {viewMode === 'matrix' && (
               <button
                 onClick={handleToggleExpandAll}
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
                 title="Expand / Collapse All Categories"
               >
                 <Layers className="w-3.5 h-3.5 text-amber-400" />
@@ -313,7 +278,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
             <button
               onClick={handleExportCSV}
-              className="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
               title="Export CSV"
             >
               <Download className="w-3.5 h-3.5" />
@@ -321,23 +286,82 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
             <button
               onClick={() => setPriceListModalOpen(true)}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+              className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
               title="WhatsApp Wholesale Price List"
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">WhatsApp</span>
+              <span>WhatsApp</span>
             </button>
 
             <button
               onClick={() => setFlyerModalOpen(true)}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+              className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
               title="Official PDF Flyer"
             >
               <FileImage className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Flyer</span>
+              <span>Flyer</span>
             </button>
+
+            {hasRole(['ADMIN', 'OPERATOR']) && (
+              <>
+                <button
+                  onClick={() => setBulkPriceModalOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all shrink-0"
+                  title="Category Bulk Price Adjuster"
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Bulk</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setProductToEdit(null);
+                    setProductModalOpen(true);
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>+ SKU</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Tier 2: Omni-Search Input and Brand Filter */}
+        <div className="flex items-center gap-2">
+          {/* Search Input with Clear */}
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filter SKU, item name, brand..."
+              className="w-full pl-8 pr-7 py-1 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <select
+            value={selectedBrand}
+            onChange={(e) => setSelectedBrand(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer max-w-[140px] truncate"
+          >
+            <option value="ALL">All Brands ({uniqueBrands.length})</option>
+            {uniqueBrands.map(b => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
         {/* ─── MOBILE FILTER & CHIP CONTROLS (< md) ─── */}
         <div className="md:hidden flex flex-col gap-2">
@@ -432,7 +456,6 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             ))}
           </div>
         </div>
-      </div>
 
       {/* ─── HIERARCHICAL MATRIX / CARDS CONTAINER ─── */}
       <div className="flex-1 min-h-0 bg-slate-900 rounded-2xl border border-slate-800 p-2 sm:p-3 shadow-xl flex flex-col overflow-hidden">

@@ -160,49 +160,127 @@ export const ReportsPage = () => {
         </div>
       )}
 
-      {/* ─── DESKTOP TOP ACTION & HEADER BAR (md and above) ─── */}
-      <div className="hidden md:flex sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+      {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
+      <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
+        {/* Left: Icon & Title */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <BarChart3 className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-black text-white">
-                Financial Reports & Aging Matrix
-              </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                ₹{totalOutstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Outstanding
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Accounts Receivable Aging & Product Sales Velocity Analytics
-            </p>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-sm font-black text-white whitespace-nowrap">
+              Financial Reports
+            </h1>
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+              {filteredCustomerAging.length}/{customerAging.length} Outlets
+            </span>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search customer aging..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-36 sm:w-52"
-            />
-          </div>
-
+        {/* Center: 1-Click Aging Bucket Filter Pills */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
           <button
-            onClick={() => setFifoModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95"
-            title="Open FIFO Reconciliation Dialog"
+            onClick={() => setSelectedAgingBucket('ALL')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              selectedAgingBucket === 'ALL'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>FIFO Reconcile</span>
+            All Dues
+          </button>
+          <button
+            onClick={() => setSelectedAgingBucket(prev => prev === '0-15' ? 'ALL' : '0-15')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              selectedAgingBucket === '0-15'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+            }`}
+            title="Filter 0–15 Days Balances"
+          >
+            <span>🟢 0–15d</span>
+            <span className="font-mono text-[10px]">
+              ₹{parseFloat(reconciledAging?.current_0_15_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.current_0_15_days || 0)/1000).toFixed(0)}k` : parseFloat(reconciledAging?.current_0_15_days || 0).toFixed(0)}
+            </span>
+          </button>
+          <button
+            onClick={() => setSelectedAgingBucket(prev => prev === '16-30' ? 'ALL' : '16-30')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              selectedAgingBucket === '16-30'
+                ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20 ring-1 ring-blue-400'
+                : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30'
+            }`}
+            title="Filter 16–30 Days Balances"
+          >
+            <span>🔵 16–30d</span>
+            <span className="font-mono text-[10px]">
+              ₹{parseFloat(reconciledAging?.aging_16_30_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_16_30_days || 0)/1000).toFixed(0)}k` : parseFloat(reconciledAging?.aging_16_30_days || 0).toFixed(0)}
+            </span>
+          </button>
+          <button
+            onClick={() => setSelectedAgingBucket(prev => prev === '31-60' ? 'ALL' : '31-60')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              selectedAgingBucket === '31-60'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
+            }`}
+            title="Filter 31–60 Days Balances"
+          >
+            <span>🟡 31–60d</span>
+            <span className="font-mono text-[10px]">
+              ₹{parseFloat(reconciledAging?.aging_31_60_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_31_60_days || 0)/1000).toFixed(0)}k` : parseFloat(reconciledAging?.aging_31_60_days || 0).toFixed(0)}
+            </span>
+          </button>
+          <button
+            onClick={() => setSelectedAgingBucket(prev => prev === '60+' ? 'ALL' : '60+')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              selectedAgingBucket === '60+'
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20 ring-1 ring-rose-400'
+                : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
+            }`}
+            title="Filter 60+ Days Severe Risk Balances"
+          >
+            <span>🔴 60+d</span>
+            <span className="font-mono text-[10px]">
+              ₹{parseFloat(reconciledAging?.aging_60_plus_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_60_plus_days || 0)/1000).toFixed(0)}k` : parseFloat(reconciledAging?.aging_60_plus_days || 0).toFixed(0)}
+            </span>
           </button>
         </div>
+
+        {/* Center-Right: Omni-Search Input with Clear */}
+        <div className="relative flex-1 max-w-[220px] min-w-[130px]">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search outlet, phone..."
+            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Live Total Outstanding Micro-Ticker */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
+          <span className="text-amber-400">Due: <strong className="font-bold">₹{totalOutstandingVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+        </div>
+
+        {/* Right: FIFO Reconcile CTA */}
+        <button
+          onClick={() => setFifoModalOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+          title="Open FIFO Reconciliation Dialog"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>FIFO Reconcile</span>
+        </button>
       </div>
 
       {/* ─── MOBILE NATIVE ULTRA-COMPACT CONTROLS (< md) ─── */}

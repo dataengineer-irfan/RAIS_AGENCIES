@@ -75,6 +75,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState('items'); // items, payment, print
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedCardInvoiceId, setCopiedCardInvoiceId] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
   // Modals
@@ -231,19 +232,70 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
     }
   };
 
+  // Micro-Metrics & Status Counts for 1-Click Filter Ribbon
+  const statusCounts = useMemo(() => {
+    let due = 0;
+    let paid = 0;
+    let partial = 0;
+    let draft = 0;
+    let totalBilled = 0;
+    let totalDue = 0;
+
+    for (const inv of invoices) {
+      const tot = parseFloat(inv.total_amount || 0);
+      const out = parseFloat(inv.outstanding_amount || 0);
+      totalBilled += tot;
+      totalDue += out;
+
+      if (inv.status === 'PAID') {
+        paid++;
+      } else if (inv.status === 'PARTIALLY_PAID') {
+        partial++;
+        due++;
+      } else if (inv.status === 'DRAFT') {
+        draft++;
+      } else if (inv.status === 'ISSUED' || inv.status === 'OVERDUE' || out > 0) {
+        due++;
+      }
+    }
+
+    return {
+      total: invoices.length,
+      due,
+      paid,
+      partial,
+      draft,
+      totalBilled,
+      totalDue
+    };
+  }, [invoices]);
+
   const filteredInvoices = useMemo(() => {
     const term = (searchTerm || '').trim().toLowerCase();
     return invoices.filter(inv => {
-      if (activeStatusFilter !== 'ALL') {
+      if (activeStatusFilter === 'DUE') {
+        const out = parseFloat(inv.outstanding_amount || 0);
+        if (out <= 0 && inv.status !== 'ISSUED' && inv.status !== 'PARTIALLY_PAID' && inv.status !== 'OVERDUE') return false;
+      } else if (activeStatusFilter !== 'ALL') {
         if (inv.status !== activeStatusFilter) return false;
       }
       if (term) {
-        const matches = (
+        const matchesHeader = (
           (inv.invoice_number || '').toLowerCase().includes(term) ||
           (inv.customer_name || '').toLowerCase().includes(term) ||
-          (inv.customer_code || '').toLowerCase().includes(term)
+          (inv.customer_code || '').toLowerCase().includes(term) ||
+          (inv.notes || '').toLowerCase().includes(term)
         );
-        if (!matches) return false;
+        if (matchesHeader) return true;
+
+        if (Array.isArray(inv.items)) {
+          const matchesItems = inv.items.some(it => 
+            (it.item_description || it.product_name || '').toLowerCase().includes(term)
+          );
+          if (matchesItems) return true;
+        }
+
+        return false;
       }
       return true;
     });
@@ -266,103 +318,202 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
-      {/* ─── DESKTOP TOP ACTION & FILTER HEADER BAR (>= md) ─── */}
-      <div className="hidden md:flex flex-col gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0 shadow-md">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <FileText className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-black text-white">
-                  Billing & Wholesale Invoices Hub
-                </h1>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                  {loading && invoices.length === 0 ? 'Syncing...' : invoices.length > 0 ? `${invoices.length} Invoices` : 'Invoices'}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Wholesale Invoicing, 58mm Thermal POS Print & Direct Settlement
-              </p>
-            </div>
+      {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
+      <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
+        {/* Left: Icon & Title */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <FileText className="w-4 h-4" />
           </div>
-
-          {hasRole(['ADMIN', 'OPERATOR']) && (
-            <button
-              onClick={onOpenInvoiceBuilder}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ Invoice</span>
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-sm font-black text-white whitespace-nowrap">
+              Invoices Hub
+            </h1>
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+              {loading && invoices.length === 0 ? 'Syncing...' : `${filteredInvoices.length}/${invoices.length}`}
+            </span>
+          </div>
         </div>
 
-        {/* Filter Controls Row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[150px]">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search invoice # or customer..."
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <select
-            value={activeStatusFilter}
-            onChange={(e) => setActiveStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[140px]"
+        {/* Center: 1-Click Status Filter Pills */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+          <button
+            onClick={() => setActiveStatusFilter('ALL')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeStatusFilter === 'ALL'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
           >
-            <option value="ALL">All Status</option>
-            <option value="ISSUED">Issued / Open</option>
-            <option value="PARTIALLY_PAID">Partially Paid</option>
-            <option value="PAID">Fully Paid</option>
-            <option value="OVERDUE">Overdue</option>
-            <option value="DRAFT">Drafts</option>
-          </select>
+            All ({statusCounts.total})
+          </button>
+          <button
+            onClick={() => setActiveStatusFilter(activeStatusFilter === 'DUE' ? 'ALL' : 'DUE')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeStatusFilter === 'DUE'
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20 ring-1 ring-rose-400'
+                : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
+            }`}
+          >
+            <span>🚨 Due</span>
+            <span className="font-mono text-[11px]">({statusCounts.due})</span>
+          </button>
+          <button
+            onClick={() => setActiveStatusFilter(activeStatusFilter === 'PAID' ? 'ALL' : 'PAID')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeStatusFilter === 'PAID'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+            }`}
+          >
+            <span>🟢 Paid</span>
+            <span className="font-mono text-[11px]">({statusCounts.paid})</span>
+          </button>
+          <button
+            onClick={() => setActiveStatusFilter(activeStatusFilter === 'PARTIALLY_PAID' ? 'ALL' : 'PARTIALLY_PAID')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeStatusFilter === 'PARTIALLY_PAID'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
+            }`}
+          >
+            <span>Partial</span>
+            <span className="font-mono text-[11px]">({statusCounts.partial})</span>
+          </button>
+          <button
+            onClick={() => setActiveStatusFilter(activeStatusFilter === 'DRAFT' ? 'ALL' : 'DRAFT')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeStatusFilter === 'DRAFT'
+                ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-600'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            Draft ({statusCounts.draft})
+          </button>
         </div>
-      </div>
 
-      {/* ─── MOBILE COMPACT SEARCH & ACTION BAR (< md) ─── */}
-      <div className="md:hidden flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1.5 shrink-0 shadow-sm">
-        <div className="relative flex-1 min-w-0">
+        {/* Center-Right: Omni-Search Input with Clear */}
+        <div className="relative flex-1 max-w-[240px] min-w-[140px]">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={invoices.length > 0 ? `Search ${invoices.length} invoices...` : "Search invoices..."}
-            className="w-full pl-8 pr-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            placeholder="Search bill #, outlet, item..."
+            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
-        <select
-          value={activeStatusFilter}
-          onChange={(e) => setActiveStatusFilter(e.target.value)}
-          className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer shrink-0 max-w-[95px]"
-        >
-          <option value="ALL">All</option>
-          <option value="ISSUED">Open</option>
-          <option value="PARTIALLY_PAID">Partial</option>
-          <option value="PAID">Paid</option>
-          <option value="OVERDUE">Overdue</option>
-          <option value="DRAFT">Draft</option>
-        </select>
+        {/* Live Financial Micro-Ticker */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
+          <span className="text-slate-400">Billed: <strong className="text-white">₹{statusCounts.totalBilled.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+          <span className="text-slate-700">|</span>
+          <span className="text-amber-400">Due: <strong className="font-bold">₹{statusCounts.totalDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+        </div>
 
+        {/* Right: + Invoice CTA */}
         {hasRole(['ADMIN', 'OPERATOR']) && (
           <button
             onClick={onOpenInvoiceBuilder}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
-            title="Create Tax Invoice"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Bill</span>
+            <span>+ Invoice</span>
           </button>
         )}
+      </div>
+
+      {/* ─── MOBILE COMPACT SEARCH & ACTION BAR (< md) ─── */}
+      <div className="md:hidden flex flex-col gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2 shrink-0 shadow-sm">
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={invoices.length > 0 ? `Search ${invoices.length} invoices, items...` : "Search invoices..."}
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <select
+            value={activeStatusFilter}
+            onChange={(e) => setActiveStatusFilter(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer shrink-0 max-w-[95px]"
+          >
+            <option value="ALL">All ({statusCounts.total})</option>
+            <option value="DUE">🚨 Due ({statusCounts.due})</option>
+            <option value="PAID">Paid ({statusCounts.paid})</option>
+            <option value="PARTIALLY_PAID">Partial</option>
+            <option value="DRAFT">Draft</option>
+          </select>
+
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <button
+              onClick={onOpenInvoiceBuilder}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
+              title="Create Tax Invoice"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Bill</span>
+            </button>
+          )}
+        </div>
+
+        {/* Mobile 1-Click Status & Financial Strip */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[11px] font-mono">
+          <button
+            onClick={() => setActiveStatusFilter('ALL')}
+            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+              activeStatusFilter === 'ALL'
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                : 'bg-slate-950 text-slate-400 border border-slate-800'
+            }`}
+          >
+            All ({statusCounts.total})
+          </button>
+          <button
+            onClick={() => setActiveStatusFilter(activeStatusFilter === 'DUE' ? 'ALL' : 'DUE')}
+            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+              activeStatusFilter === 'DUE'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+            }`}
+          >
+            🚨 Due ({statusCounts.due})
+          </button>
+          <button
+            onClick={() => setActiveStatusFilter(activeStatusFilter === 'PAID' ? 'ALL' : 'PAID')}
+            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+              activeStatusFilter === 'PAID'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+            }`}
+          >
+            🟢 Paid ({statusCounts.paid})
+          </button>
+          <span className="text-slate-700 mx-0.5">|</span>
+          <span className="text-amber-400/90 whitespace-nowrap px-1 py-0.5">
+            Due: ₹{statusCounts.totalDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
+        </div>
       </div>
 
       {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
@@ -419,30 +570,62 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                 const isSelected = inv?.id === selectedInvoiceId;
                 const total = parseFloat(inv?.total_amount || 0);
                 const outstanding = parseFloat(inv?.outstanding_amount || 0);
+                const isCopied = copiedCardInvoiceId === inv?.id;
+
+                // Item description preview (e.g. "French Fries 6mm + 2 more")
+                const itemsList = Array.isArray(inv?.items) ? inv.items : [];
+                const firstItemName = itemsList.length > 0 ? (itemsList[0].item_description || itemsList[0].product_name) : null;
+                const remainingItemsCount = itemsList.length > 1 ? itemsList.length - 1 : 0;
 
                 return (
                   <div
                     key={inv?.id}
                     onClick={() => handleSelectInvoice(inv)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
+                    className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
                         ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/10'
                         : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
-                    <div className="overflow-hidden pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-xs text-amber-400">
+                    <div className="overflow-hidden pr-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-xs text-amber-400 flex items-center gap-1">
                           {inv?.invoice_number || 'INV'}
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await copyToClipboard(inv?.invoice_number || '');
+                              setCopiedCardInvoiceId(inv?.id);
+                              setTimeout(() => setCopiedCardInvoiceId(null), 1500);
+                            }}
+                            className="text-slate-500 hover:text-amber-300 p-0.5 rounded transition"
+                            title="Copy Invoice #"
+                          >
+                            {isCopied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />}
+                          </button>
                         </span>
                         <StatusBadge status={inv?.status} />
                       </div>
+
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
                         {inv?.customer_name || 'Customer'}
                       </h4>
-                      <p className="text-xs text-slate-400 truncate">
-                        {formatInvoiceDateTime(inv?.invoice_date, inv?.created_at).fullText} • {inv?.items_count || (inv?.items ? inv.items.length : 0)} line items
-                      </p>
+
+                      {/* Items Preview Chip */}
+                      {firstItemName ? (
+                        <p className="text-[11px] text-amber-200/80 truncate mt-0.5 flex items-center gap-1 font-mono">
+                          <span className="text-slate-500 font-sans">📦</span>
+                          <span>{firstItemName}</span>
+                          {remainingItemsCount > 0 && (
+                            <span className="text-[10px] text-slate-400 font-sans">+{remainingItemsCount} more</span>
+                          )}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                          {formatInvoiceDateTime(inv?.invoice_date, inv?.created_at).fullText} • {inv?.items_count || 0} line items
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
@@ -450,10 +633,26 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                         <div className="font-mono font-bold text-xs text-white">
                           ₹{parseFloat(total || 0).toFixed(2)}
                         </div>
-                        <span className={`text-xs font-mono ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
+                        <span className={`text-[11px] font-mono block ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
                           Due: ₹{parseFloat(outstanding || 0).toFixed(2)}
                         </span>
                       </div>
+
+                      {/* Quick 1-Click Thermal Print Icon */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedInvoiceId(inv.id);
+                          setSelectedInvoiceDetails(inv);
+                          setThermalModalOpen(true);
+                        }}
+                        className="p-1 rounded-lg bg-slate-800/80 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-700/50 transition opacity-80 group-hover:opacity-100"
+                        title="Print 58mm Thermal Slip"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </button>
+
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-600'}`} />
                     </div>
                   </div>
