@@ -191,7 +191,8 @@ class CustomerService:
             InvoiceItem.product_id,
             InvoiceItem.quantity,
             InvoiceItem.line_total,
-            Product.base_price
+            Product.base_price,
+            InvoiceItem.item_description
         ).join(InvoiceItem, Invoice.id == InvoiceItem.invoice_id)\
          .outerjoin(Product, Product.id == InvoiceItem.product_id)\
          .filter(
@@ -200,12 +201,17 @@ class CustomerService:
         ).all()
 
         profit_map = {cid: Decimal("0.00") for cid in cust_ids}
+        items_map = {cid: [] for cid in cust_ids}
         for row in inv_item_rows:
             cid = row[0]
             pid = row[1]
             qty = Decimal(str(row[2] or "0"))
             ltotal = Decimal(str(row[3] or "0"))
             base_p = Decimal(str(row[4] or "0")) if row[4] is not None else Decimal("0")
+            desc = (row[5] or "").strip()
+
+            if desc and desc not in items_map[cid] and len(items_map[cid]) < 8:
+                items_map[cid].append(desc)
 
             pcost = cost_map.get(pid)
             if pcost and pcost > Decimal("0"):
@@ -249,6 +255,7 @@ class CustomerService:
                 total_paid=total_paid,
                 outstanding_balance=outstanding,
                 gross_profit=profit_map.get(c.id, Decimal("0.00")).quantize(Decimal("0.01")),
+                top_items=items_map.get(c.id, []),
                 first_invoice_date=first_inv,
                 customer_since=cust_since,
                 created_at=c.created_at,
@@ -265,6 +272,14 @@ class CustomerService:
         
         total_invoiced, total_paid, outstanding = CustomerService.get_customer_balances(db, c.id)
         gross_profit = CustomerService.get_customer_profit(db, c.id)
+
+        top_items_rows = db.query(InvoiceItem.item_description).join(
+            Invoice, Invoice.id == InvoiceItem.invoice_id
+        ).filter(
+            Invoice.customer_id == c.id,
+            Invoice.status != InvoiceStatus.CANCELLED.value
+        ).distinct().limit(8).all()
+        top_items = [r[0] for r in top_items_rows if r[0]]
 
         first_inv = db.query(func.min(Invoice.invoice_date)).filter(
             Invoice.customer_id == c.id,
@@ -294,6 +309,7 @@ class CustomerService:
             total_paid=total_paid,
             outstanding_balance=outstanding,
             gross_profit=gross_profit,
+            top_items=top_items,
             first_invoice_date=first_inv,
             customer_since=cust_since,
             created_at=c.created_at,

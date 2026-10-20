@@ -73,6 +73,7 @@ export const CustomersPage = ({
   const [activeInspectorTab, setActiveInspectorTab] = useState('overview'); // overview, invoices, ledger, actions
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
+  const [invoiceSearch, setInvoiceSearch] = useState('');
 
   // Modal
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -180,14 +181,16 @@ export const CustomersPage = ({
   // ─── POWER BI REACTIVE SLICING & FILTERING ───
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => {
-      // 1. Search Query
+      // 1. Omni-Search Query: Matches Outlet name, contact person, customer code, phone, area, and purchased products/SKUs!
       const q = searchTerm.toLowerCase().trim();
       const matchesSearch = !q || (
         (c.business_name || '').toLowerCase().includes(q) ||
         (c.contact_person || '').toLowerCase().includes(q) ||
         (c.customer_code || '').toLowerCase().includes(q) ||
         (c.phone || '').includes(q) ||
-        (c.address_line1 || '').toLowerCase().includes(q)
+        (c.address_line1 || '').toLowerCase().includes(q) ||
+        (c.city || '').toLowerCase().includes(q) ||
+        (Array.isArray(c.top_items) && c.top_items.some(item => (item || '').toLowerCase().includes(q)))
       );
 
       // 2. Status Slicer
@@ -257,95 +260,117 @@ export const CustomersPage = ({
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId) || filteredCustomers[0] || customers[0];
 
+  const filteredCustomerInvoices = useMemo(() => {
+    if (!invoiceSearch.trim()) return customerInvoices;
+    const q = invoiceSearch.toLowerCase().trim();
+    return customerInvoices.filter(inv => {
+      const numMatch = (inv.invoice_number || '').toLowerCase().includes(q);
+      const dateMatch = (inv.invoice_date || '').includes(q);
+      const statusMatch = (inv.status || '').toLowerCase().includes(q);
+      const itemsMatch = Array.isArray(inv.items) && inv.items.some(it => 
+        (it.item_description || '').toLowerCase().includes(q) ||
+        (it.product?.name || '').toLowerCase().includes(q)
+      );
+      return numMatch || dateMatch || statusMatch || itemsMatch;
+    });
+  }, [customerInvoices, invoiceSearch]);
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
       
-      {/* ─── ROW 1: DESKTOP PERSISTENT SLICER & FILTER RIBBON (md and above) ─── */}
-      <div className="hidden md:flex bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 shrink-0 shadow-md flex-wrap items-center justify-between gap-2 text-xs">
-        {/* Left: Search & Customer Quick Jump Slicer */}
-        <div className="flex items-center gap-2 flex-1 min-w-[280px]">
-          {/* Customer Dropdown Quick Slicer */}
-          <div className="relative min-w-[160px] sm:min-w-[200px]">
-            <select
-              value={selectedCustomerId || ''}
-              onChange={(e) => {
-                const found = customers.find(c => c.id === e.target.value);
-                if (found) handleSelectCustomer(found);
-              }}
-              className="w-full bg-slate-950 border border-amber-500/30 text-amber-300 font-bold rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-400 font-mono truncate"
+      {/* ─── ROW 1: DESKTOP SLEEK COMMAND RIBBON (Single Unified 46px Header) ─── */}
+      <div className="hidden md:flex bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shrink-0 shadow-md items-center justify-between gap-2 text-xs">
+        {/* Left: Omni-Search Input (with Instant Clear button) */}
+        <div className="relative flex-1 min-w-[220px] max-w-[320px] lg:max-w-[360px]">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search outlets, phone, or items (e.g. Fries, Cheese)..."
+            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 text-xs font-bold"
+              title="Clear Search"
             >
-              <option value="">-- Jump to Customer --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.customer_code} • {c.business_name} (₹{parseFloat(c.outstanding_balance || 0).toFixed(0)})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search outlet name, code, phone, area..."
-              className="w-full pl-8 pr-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
-          </div>
+              ✕
+            </button>
+          )}
         </div>
 
-        {/* Center/Right: Route Slicer & Balance Slicer */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Territory / Route Slicer */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:inline">Route:</span>
-            <select
-              value={areaFilter}
-              onChange={(e) => setAreaFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Territories ({totalOutlets})</option>
-              <option value="RAYACHOTY_TOWN">Rayachoty Town</option>
-              <option value="MADANAPALLE_RD">Madanapalle Rd</option>
-              <option value="KADAPA_RD">Kadapa Bypass</option>
-              <option value="CHINNAMANDEM">Chinnamandem & Nearby</option>
-            </select>
+        {/* Center: 1-Click Interactive Pill Sorters */}
+        <div className="flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar">
+          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mr-1 hidden xl:inline">Sort:</span>
+          {[
+            { id: 'BALANCE_DESC', label: '🚨 Due ↓' },
+            { id: 'REVENUE_DESC', label: '💰 Revenue ↓' },
+            { id: 'PAID_DESC', label: '💳 Collections ↓' },
+            { id: 'PROFIT_DESC', label: '📈 Profit ↓' },
+            { id: 'NAME_ASC', label: '🔤 A → Z' },
+          ].map((pill) => {
+            const isActive = sortBy === pill.id;
+            return (
+              <button
+                key={pill.id}
+                onClick={() => setSortBy(pill.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20 font-black'
+                    : 'bg-slate-950/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Territory / Route Slicer Dropdown */}
+        <div className="flex items-center gap-1 shrink-0">
+          <select
+            value={areaFilter}
+            onChange={(e) => setAreaFilter(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer"
+            title="Filter by Territory / Delivery Route"
+          >
+            <option value="ALL">All Territories ({totalOutlets})</option>
+            <option value="RAYACHOTY_TOWN">Rayachoty Town</option>
+            <option value="MADANAPALLE_RD">Madanapalle Rd</option>
+            <option value="KADAPA_RD">Kadapa Bypass</option>
+            <option value="CHINNAMANDEM">Chinnamandem</option>
+          </select>
+        </div>
+
+        {/* Right: Live Financial Micro-Ticker + Action */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
+          {/* Micro-Ticker Badge */}
+          <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-slate-950/80 border border-slate-800 rounded-lg text-[11px] font-mono">
+            <span className="text-slate-400 font-sans font-bold">
+              <strong className="text-white font-mono">{filteredCount}</strong>/{totalOutlets}
+            </span>
+            <span className="text-slate-700">•</span>
+            <span className="text-amber-300">
+              <span className="text-slate-500 text-[10px] font-sans font-semibold">Rev:</span> ₹{totalRevenue >= 100000 ? `${(totalRevenue / 100000).toFixed(1)}L` : Math.round(totalRevenue).toLocaleString('en-IN')}
+            </span>
+            <span className="text-slate-700">•</span>
+            <span className="text-emerald-400">
+              <span className="text-slate-500 text-[10px] font-sans font-semibold">Paid:</span> ₹{totalPaid >= 100000 ? `${(totalPaid / 100000).toFixed(1)}L` : Math.round(totalPaid).toLocaleString('en-IN')}
+            </span>
+            <span className="text-slate-700">•</span>
+            <span className="text-purple-300 font-bold">
+              <span className="text-slate-500 text-[10px] font-sans font-semibold">Profit:</span> ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')} ({overallMargin}%)
+            </span>
+            <span className="text-slate-700">•</span>
+            <span className="text-rose-400 font-bold">
+              <span className="text-slate-500 text-[10px] font-sans font-semibold">Due:</span> ₹{Math.round(totalReceivables).toLocaleString('en-IN')}
+            </span>
           </div>
 
-          {/* Balance Slicer */}
-          <div className="flex items-center gap-1">
-            <select
-              value={balanceFilter}
-              onChange={(e) => setBalanceFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Balances</option>
-              <option value="HAS_DUE">🚨 Has Balance Due ({customersWithDues})</option>
-              <option value="ZERO_DUE">✅ Zero Due ({totalOutlets - customersWithDues})</option>
-            </select>
-          </div>
-
-          {/* Sort Slicer */}
-          <div className="flex items-center gap-1">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
-            >
-              <option value="BALANCE_DESC">🚨 Balance Due (High → Low)</option>
-              <option value="REVENUE_DESC">💰 Revenue (High → Low)</option>
-              <option value="PAID_DESC">💳 Collections (High → Low)</option>
-              <option value="PROFIT_DESC">📈 Gross Profit (High → Low)</option>
-              <option value="NAME_ASC">🔤 Name (A → Z)</option>
-              <option value="LIMIT_DESC">Credit Limit (High → Low)</option>
-              <option value="CODE_ASC">Code (CUST-0001)</option>
-            </select>
-          </div>
-
-          {/* Reset Filters */}
-          {(searchTerm || statusFilter !== 'ALL' || areaFilter !== 'ALL' || balanceFilter !== 'ALL' || sortBy !== 'NAME_ASC') && (
+          {/* Reset Filters button */}
+          {(searchTerm || statusFilter !== 'ALL' || areaFilter !== 'ALL' || balanceFilter !== 'ALL' || sortBy !== 'BALANCE_DESC') && (
             <button
               onClick={handleResetFilters}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
@@ -362,7 +387,7 @@ export const CustomersPage = ({
                 setCustomerToEdit(null);
                 setCustomerModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>+ Outlet</span>
@@ -540,83 +565,6 @@ export const CustomersPage = ({
         </div>
       </div>
 
-      {/* ─── ROW 2: DESKTOP CUSTOMER KPI METRIC RIBBON (md and above) ─── */}
-      <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-2 shrink-0">
-        {/* KPI 1: Active Accounts */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-amber-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Filtered Outlets</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-white font-mono">{filteredCount}</span>
-              <span className="text-[10px] text-slate-400 font-mono">/ {totalOutlets} total</span>
-            </div>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-            <Building2 className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* KPI 2: Total Filtered Revenue */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-amber-400 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Filtered Revenue</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-amber-300 font-mono">
-                ₹{totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-            <DollarSign className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* KPI 3: Total Collections */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-emerald-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Payments Received</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-emerald-400 font-mono">
-                ₹{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <CreditCard className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* KPI 4: Total Gross Profit */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-purple-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Gross Profit ({overallMargin}%)</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-purple-300 font-mono">
-                ₹{totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-        </div>
-
-        {/* KPI 5: Book Receivables Outstanding */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-rose-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Receivables Due</span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-rose-400 font-mono">
-                ₹{totalReceivables.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-        </div>
-      </div>
-
       {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
       <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
         <button
@@ -691,78 +639,106 @@ export const CustomersPage = ({
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      {/* Line 1: Code, Business Name, Location */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-[11px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                           {cust.customer_code}
                         </span>
-                        <span className="text-xs text-slate-400 font-mono truncate">
+                        <h4 className="font-bold text-white text-xs truncate max-w-[200px] sm:max-w-[260px]">
+                          {cust.business_name}
+                        </h4>
+                        <span className="text-[10px] text-slate-400 font-mono truncate">
                           📍 {cust.city || 'Rayachoty'}
                         </span>
                       </div>
                       
-                      <h4 className="font-bold text-white text-xs truncate mt-0.5">
-                        {cust.business_name}
-                      </h4>
-                      
-                      <p className="text-xs text-slate-400 truncate">
-                        {cust.contact_person} • {cust.phone}
-                        {(cust.first_invoice_date || cust.customer_since || cust.created_at) && (
-                          <span className="text-[10px] text-amber-400/80 font-mono ml-1">
-                            • Since {new Date(cust.first_invoice_date || cust.customer_since || cust.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </span>
+                      {/* Line 2: Contact, Phone & Top Purchased Items */}
+                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px] truncate mt-0.5 flex-wrap">
+                        <span>{cust.contact_person} • {cust.phone}</span>
+                        {Array.isArray(cust.top_items) && cust.top_items.length > 0 && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {cust.top_items.slice(0, 2).map((item, idx) => (
+                              <span key={idx} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate max-w-[120px]" title={item}>
+                                🏷️ {item}
+                              </span>
+                            ))}
+                            {cust.top_items.length > 2 && (
+                              <span className="text-[9px] text-slate-500 font-mono">+{cust.top_items.length - 2}</span>
+                            )}
+                          </div>
                         )}
-                      </p>
-
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectCustomer(cust, 'invoices');
-                          }}
-                          className="text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-1 rounded-lg border border-blue-500/20 flex items-center gap-1 transition-colors"
-                        >
-                          <FileText className="w-3 h-3" />
-                          <span>Invoices</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectCustomer(cust, 'ledger');
-                          }}
-                          className="text-[9px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1 transition-colors"
-                        >
-                          <History className="w-2.5 h-2.5" />
-                          <span>Ledger</span>
-                        </button>
                       </div>
 
-                      {/* Financial Performance Badges: Revenue, Collections, Profit */}
-                      <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-800/60 text-[10px] font-mono flex-wrap">
-                        <span className="inline-flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-slate-300">
-                          <span className="text-[9px] font-bold text-slate-500 font-sans">REV</span>
-                          <span className="font-bold text-slate-200">₹{Math.round(parseFloat(cust.total_invoiced || 0)).toLocaleString('en-IN')}</span>
+                      {/* Line 3: Commercial Performance Pills with Dynamic Active Metric Highlight */}
+                      <div className="flex items-center gap-1 mt-1.5 pt-1 border-t border-slate-800/60 text-[10px] font-mono flex-wrap">
+                        {/* REV */}
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
+                          sortBy === 'REVENUE_DESC'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-black ring-1 ring-amber-500/30'
+                            : 'bg-slate-900 border-slate-800 text-slate-300'
+                        }`}>
+                          <span className="text-[9px] font-bold text-slate-500 font-sans">REV:</span>
+                          <span className="font-bold">₹{Math.round(parseFloat(cust.total_invoiced || 0)).toLocaleString('en-IN')}</span>
                         </span>
-                        <span className="inline-flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 text-emerald-300">
-                          <span className="text-[9px] font-bold text-emerald-500 font-sans">PAID</span>
-                          <span className="font-bold text-emerald-400">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
+
+                        {/* PAID */}
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
+                          sortBy === 'PAID_DESC'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-black ring-1 ring-emerald-500/30'
+                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                        }`}>
+                          <span className="text-[9px] font-bold text-emerald-500 font-sans">PAID:</span>
+                          <span className="font-bold">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
                         </span>
-                        <span className="inline-flex items-center gap-1 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-300">
-                          <span className="text-[9px] font-bold text-purple-400 font-sans">PROFIT</span>
-                          <span className="font-bold text-purple-300">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
+
+                        {/* PROFIT */}
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
+                          sortBy === 'PROFIT_DESC'
+                            ? 'bg-purple-500/25 text-purple-200 border-purple-400/50 font-black ring-1 ring-purple-500/40'
+                            : 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                        }`}>
+                          <span className="text-[9px] font-bold text-purple-400 font-sans">PROFIT:</span>
+                          <span className="font-bold">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
                           {parseFloat(cust.total_invoiced || 0) > 0 && (
-                            <span className="text-[9px] text-purple-400/80">
+                            <span className="text-[8px] text-purple-400/80 font-normal">
                               ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
                             </span>
                           )}
                         </span>
+
+                        {/* Invoices & Ledger Quick Jump Buttons */}
+                        <div className="flex items-center gap-1 ml-auto">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectCustomer(cust, 'invoices');
+                            }}
+                            className="text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-0.5 transition-colors"
+                          >
+                            <FileText className="w-2.5 h-2.5" />
+                            <span>Invoices</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectCustomer(cust, 'ledger');
+                            }}
+                            className="text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-0.5 transition-colors"
+                          >
+                            <History className="w-2.5 h-2.5" />
+                            <span>Ledger</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0 flex items-center gap-2">
+                    <div className="text-right shrink-0 flex items-center gap-2 pl-2">
                       <div>
                         <div className={`font-mono font-black text-xs ${
+                          sortBy === 'BALANCE_DESC' ? 'ring-1 ring-amber-500/40 px-1 rounded bg-amber-500/10 ' : ''
+                        }${
                           creditLimit > 0 && balance > creditLimit 
                             ? 'text-rose-400' 
                             : balance > 0 
@@ -926,6 +902,54 @@ export const CustomersPage = ({
                 </div>
               </div>
 
+              {/* Persistent Commercial Standing Strip (Always visible across all tabs) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 py-2 border-b border-slate-800 shrink-0">
+                <div className="p-2 bg-slate-950/80 border border-amber-500/20 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-amber-500 uppercase block font-sans">💰 Billed Revenue</span>
+                  <div className="text-xs sm:text-sm font-black font-mono text-white mt-0.5 truncate">
+                    ₹{parseFloat(selectedCustomer.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-emerald-400 uppercase block font-sans">💳 Collections</span>
+                  <div className="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5 truncate">
+                    ₹{parseFloat(selectedCustomer.total_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className="p-2 bg-slate-950/80 border border-purple-500/20 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-purple-400 uppercase block font-sans">📈 Gross Profit</span>
+                  <div className="text-xs sm:text-sm font-black font-mono text-purple-300 mt-0.5 truncate">
+                    ₹{parseFloat(selectedCustomer.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    {parseFloat(selectedCustomer.total_invoiced || 0) > 0 && (
+                      <span className="text-[9px] text-purple-400/80 font-normal ml-1">
+                        ({Math.round((parseFloat(selectedCustomer.gross_profit || 0) / parseFloat(selectedCustomer.total_invoiced || 1)) * 100)}%)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-2 bg-slate-950/80 border border-rose-500/20 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-rose-400 uppercase block font-sans">🚨 Balance Due</span>
+                  <div className="text-xs sm:text-sm font-black font-mono text-rose-300 mt-0.5 truncate">
+                    ₹{parseFloat(selectedCustomer.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Frequent SKUs Pill Strip */}
+              {Array.isArray(selectedCustomer.top_items) && selectedCustomer.top_items.length > 0 && (
+                <div className="flex items-center gap-1.5 py-1.5 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar text-xs">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 font-sans">Frequent SKUs:</span>
+                  {selectedCustomer.top_items.map((sku, idx) => (
+                    <span key={idx} className="text-[10px] bg-slate-950 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800 font-mono whitespace-nowrap shrink-0">
+                      📦 {sku}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Inspector Tab Navigation Bar */}
               <div className="flex items-center gap-1.5 pt-2 pb-2 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
                 {[
@@ -959,44 +983,6 @@ export const CustomersPage = ({
                 {/* ─── TAB 1: 360° DOSSIER & FINANCIAL EXPOSURE ─── */}
                 {activeInspectorTab === 'overview' && (
                   <div className="space-y-3">
-                    
-                    {/* Commercial Performance Matrix (Revenue, Collections, Gross Profit) */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="p-2.5 sm:p-3 bg-gradient-to-br from-slate-950 to-slate-900 border border-amber-500/30 rounded-xl shadow-sm">
-                        <span className="text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1">
-                          💰 Total Revenue
-                        </span>
-                        <div className="text-sm sm:text-base font-black font-mono text-white mt-0.5">
-                          ₹{parseFloat(selectedCustomer.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </div>
-                        <span className="text-[9px] text-slate-500 font-mono">Cumulative Billed</span>
-                      </div>
-
-                      <div className="p-2.5 sm:p-3 bg-gradient-to-br from-slate-950 to-slate-900 border border-emerald-500/30 rounded-xl shadow-sm">
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase flex items-center gap-1">
-                          💳 Collections
-                        </span>
-                        <div className="text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5">
-                          ₹{parseFloat(selectedCustomer.total_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </div>
-                        <span className="text-[9px] text-slate-500 font-mono">Received & Settled</span>
-                      </div>
-
-                      <div className="p-2.5 sm:p-3 bg-gradient-to-br from-slate-950 to-slate-900 border border-purple-500/30 rounded-xl shadow-sm">
-                        <span className="text-[10px] font-bold text-purple-400 uppercase flex items-center gap-1">
-                          📈 Gross Profit
-                        </span>
-                        <div className="text-sm sm:text-base font-black font-mono text-purple-300 mt-0.5">
-                          ₹{parseFloat(selectedCustomer.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </div>
-                        <span className="text-[9px] text-purple-400/80 font-mono font-bold">
-                          {parseFloat(selectedCustomer.total_invoiced || 0) > 0 
-                            ? `${((parseFloat(selectedCustomer.gross_profit || 0) / parseFloat(selectedCustomer.total_invoiced || 1)) * 100).toFixed(1)}% Realized Margin`
-                            : '0.0% Margin'}
-                        </span>
-                      </div>
-                    </div>
-
                     {/* Financial Matrix Cards */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
@@ -1082,14 +1068,27 @@ export const CustomersPage = ({
 
                 {/* ─── TAB 2: COMMERCIAL INVOICES STREAM ─── */}
                 {activeInspectorTab === 'invoices' && (
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between pb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Invoices for {selectedCustomer.business_name} ({customerInvoices.length})
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2 pb-1 flex-wrap">
+                      <div className="relative flex-1 min-w-[180px] max-w-[320px]">
+                        <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={invoiceSearch}
+                          onChange={(e) => setInvoiceSearch(e.target.value)}
+                          placeholder="Filter invoices or items..."
+                          className="w-full pl-7 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
+                        />
+                        {invoiceSearch && (
+                          <button onClick={() => setInvoiceSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5">✕</button>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">
+                        {filteredCustomerInvoices.length} of {customerInvoices.length} Invoices
                       </span>
                       <button
                         onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
-                        className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all"
+                        className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all shrink-0"
                       >
                         <FileText className="w-3 h-3" />
                         <span>+ New Invoice</span>
@@ -1100,34 +1099,42 @@ export const CustomersPage = ({
                       <div className="space-y-2 animate-pulse py-4">
                         <div className="h-14 bg-slate-800 rounded-xl" />
                         <div className="h-14 bg-slate-800 rounded-xl" />
-                        <div className="h-14 bg-slate-800 rounded-xl" />
                       </div>
-                    ) : customerInvoices.length === 0 ? (
-                      <div className="text-center py-12 text-slate-500 text-xs space-y-2">
+                    ) : filteredCustomerInvoices.length === 0 ? (
+                      <div className="text-center py-8 text-slate-500 text-xs space-y-2">
                         <FileText className="w-8 h-8 mx-auto text-slate-600" />
-                        <p>No invoices created for this outlet yet.</p>
-                        <button
-                          onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
-                          className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold transition-all"
-                        >
-                          Create First Invoice
-                        </button>
+                        <p>{invoiceSearch ? 'No invoices match your item/invoice search.' : 'No invoices created for this outlet yet.'}</p>
+                        {invoiceSearch ? (
+                          <button onClick={() => setInvoiceSearch('')} className="px-2.5 py-1 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold">Clear Filter</button>
+                        ) : (
+                          <button
+                            onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
+                            className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold transition-all"
+                          >
+                            Create First Invoice
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {customerInvoices.map((inv) => (
+                        {filteredCustomerInvoices.map((inv) => (
                           <div 
                             key={inv.id}
-                            className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between text-xs hover:border-slate-700 transition-colors"
+                            className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-xs hover:border-slate-700 transition-colors"
                           >
-                            <div className="min-w-0 pr-2">
+                            <div className="min-w-0 pr-2 flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-amber-400 text-xs">{inv.invoice_number}</span>
                                 <StatusBadge status={inv.status} />
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {inv.invoice_date} {inv.due_date ? `| Due: ${inv.due_date}` : ''}
+                                </span>
                               </div>
-                              <p className="text-[10px] text-slate-400 mt-0.5">
-                                Date: {inv.invoice_date} {inv.due_date ? `| Due: ${inv.due_date}` : ''} • {inv.items?.length || 0} Items
-                              </p>
+                              {Array.isArray(inv.items) && inv.items.length > 0 && (
+                                <p className="text-[10px] text-slate-400 mt-1 truncate">
+                                  📦 {inv.items.map(it => `${it.quantity}x ${it.item_description}`).join(', ')}
+                                </p>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-2.5 shrink-0">
