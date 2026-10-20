@@ -35,56 +35,61 @@ export const useVoiceRecognition = (options = {}) => {
 
   // Check support on mount
   useEffect(() => {
+    let isMounted = true;
     const checkSupport = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
           const res = await CapSpeech.available();
-          setIsSupported(Boolean(res?.available ?? true));
+          if (isMounted && res && res.available) {
+            setIsSupported(true);
+            return;
+          }
         } catch (e) {
-          setIsSupported(true);
+          console.warn('CapSpeech.available error:', e);
         }
-      } else {
-        const SpeechRecognition = typeof window !== 'undefined' && (
-          window.SpeechRecognition ||
-          window.webkitSpeechRecognition
-        );
+      }
+      const SpeechRecognition = typeof window !== 'undefined' && (
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition
+      );
+      if (isMounted) {
         setIsSupported(Boolean(SpeechRecognition));
       }
     };
     checkSupport();
+    return () => { isMounted = false; };
   }, []);
 
   const stopListening = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
       try {
         await CapSpeech.stop();
-        if (nativeListenerRef.current) {
-          nativeListenerRef.current.remove();
-          nativeListenerRef.current = null;
-        }
-        if (nativeStateListenerRef.current) {
-          nativeStateListenerRef.current.remove();
-          nativeStateListenerRef.current = null;
-        }
       } catch (err) {
         // Safe guard against native state
       }
-      setIsListening(false);
-      if (callbacksRef.current.onEnd) {
-        callbacksRef.current.onEnd(latestTranscriptRef.current.trim());
+      if (nativeListenerRef.current) {
+        try { nativeListenerRef.current.remove(); } catch (e) {}
+        nativeListenerRef.current = null;
       }
-      return;
+      if (nativeStateListenerRef.current) {
+        try { nativeStateListenerRef.current.remove(); } catch (e) {}
+        nativeStateListenerRef.current = null;
+      }
     }
 
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
       } catch (err) {
         // Safe guard against invalid state
       }
     }
+
     setIsListening(false);
-  }, [isListening]);
+    if (callbacksRef.current.onEnd) {
+      callbacksRef.current.onEnd(latestTranscriptRef.current.trim());
+    }
+  }, []);
 
   const startListening = useCallback(async (overrideCallbacks = {}) => {
     setError(null);
@@ -97,15 +102,22 @@ export const useVoiceRecognition = (options = {}) => {
     // ─── 1. NATIVE ANDROID CAPACITOR PLATFORM ───
     if (Capacitor.isNativePlatform()) {
       try {
-        const hasPerm = await CapSpeech.hasPermissions();
-        if (!hasPerm?.permission) {
-          const req = await CapSpeech.requestPermissions();
-          if (!req?.permission) {
-            const permMsg = 'Microphone permission was denied on your Android device. Please enable in Android Settings.';
-            setError(permMsg);
-            if (overrideCallbacks.onError) overrideCallbacks.onError(permMsg);
-            return;
-          }
+        // Check permissions via checkPermissions (returns { speechRecognition: PermissionState })
+        let perm = await CapSpeech.checkPermissions().catch(() => null);
+        if (perm?.speechRecognition !== 'granted') {
+          perm = await CapSpeech.requestPermissions().catch(() => null);
+        }
+
+        if (perm?.speechRecognition !== 'granted') {
+          const permMsg = 'Microphone permission was denied on your Android device. Please allow microphone access in Android Settings > Apps > RAIS.';
+          setError(permMsg);
+          if (overrideCallbacks.onError) overrideCallbacks.onError(permMsg);
+          return;
+        }
+
+        const avail = await CapSpeech.available().catch(() => ({ available: true }));
+        if (avail && avail.available === false) {
+          throw new Error('Google Speech Recognition service is not available on this Android device.');
         }
 
         setIsListening(true);
@@ -114,9 +126,11 @@ export const useVoiceRecognition = (options = {}) => {
         // Remove any prior listeners
         if (nativeListenerRef.current) {
           try { nativeListenerRef.current.remove(); } catch (e) {}
+          nativeListenerRef.current = null;
         }
         if (nativeStateListenerRef.current) {
           try { nativeStateListenerRef.current.remove(); } catch (e) {}
+          nativeStateListenerRef.current = null;
         }
 
         nativeListenerRef.current = await CapSpeech.addListener('partialResults', (data) => {
@@ -148,12 +162,12 @@ export const useVoiceRecognition = (options = {}) => {
         });
         return;
       } catch (err) {
-        console.warn('Capacitor native speech start failed, falling back to Web Speech API:', err);
+        console.warn('Capacitor native speech failed, attempting Web Speech API:', err);
         // Fall through to browser Web Speech API below
       }
     }
 
-    // ─── 2. BROWSER WEB SPEECH API PLATFORM ───
+    // ─── 2. BROWSER WEB SPEECH API PLATFORM (Desktop, Mobile Chrome, Safari, WebView) ───
     const SpeechRecognition = typeof window !== 'undefined' && (
       window.SpeechRecognition ||
       window.webkitSpeechRecognition
@@ -199,12 +213,13 @@ export const useVoiceRecognition = (options = {}) => {
           }
         }
 
-        const currentText = finalAccumulated || interim;
-        setTranscript(finalAccumulated);
-        setInterimTranscript(interim);
+        const currentText = (finalAccumulated ? finalAccumulated + ' ' : '') + interim;
+        latestTranscriptRef.current = currentText.trim();
+        setTranscript(finalAccumulated.trim());
+        setInterimTranscript(interim.trim());
 
         if (callbacksRef.current.onTranscript) {
-          callbacksRef.current.onTranscript(currentText, Boolean(finalAccumulated));
+          callbacksRef.current.onTranscript(currentText.trim(), Boolean(finalAccumulated));
         }
       };
 
@@ -217,6 +232,8 @@ export const useVoiceRecognition = (options = {}) => {
           errorMsg = 'No speech detected. Please speak into the microphone.';
         } else if (event.error === 'network') {
           errorMsg = 'Network connection needed for browser voice transcription.';
+        } else if (event.error === 'audio-capture') {
+          errorMsg = 'No microphone was found or microphone is busy.';
         }
 
         setError(errorMsg);
@@ -226,7 +243,7 @@ export const useVoiceRecognition = (options = {}) => {
 
       recognition.onend = () => {
         setIsListening(false);
-        const resolvedText = finalAccumulated.trim();
+        const resolvedText = (latestTranscriptRef.current || finalAccumulated).trim();
         if (callbacksRef.current.onEnd) {
           callbacksRef.current.onEnd(resolvedText);
         }
@@ -236,7 +253,7 @@ export const useVoiceRecognition = (options = {}) => {
       recognition.start();
     } catch (err) {
       console.error('Failed to initialize speech recognition:', err);
-      const errMsg = 'Failed to start microphone listening.';
+      const errMsg = err?.message || 'Failed to start microphone listening.';
       setError(errMsg);
       setIsListening(false);
       if (overrideCallbacks.onError) overrideCallbacks.onError(errMsg);
@@ -246,6 +263,7 @@ export const useVoiceRecognition = (options = {}) => {
   const resetTranscript = useCallback(() => {
     setTranscript('');
     setInterimTranscript('');
+    latestTranscriptRef.current = '';
     setError(null);
   }, []);
 

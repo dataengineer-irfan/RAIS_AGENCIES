@@ -28,17 +28,22 @@ export const VoiceDictationModal = ({
 
   const [parsedResult, setParsedResult] = useState(null);
   const [activeMode, setActiveMode] = useState(mode);
+  const [inputText, setInputText] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       resetTranscript();
+      setInputText('');
       setParsedResult(null);
       setActiveMode(mode);
       // Auto start listening on open if supported
       const timer = setTimeout(() => {
         startListening({
           onEnd: (finalText) => {
-            handleResolve(finalText);
+            if (finalText) {
+              setInputText(finalText);
+              handleResolve(finalText);
+            }
           }
         });
       }, 200);
@@ -48,9 +53,10 @@ export const VoiceDictationModal = ({
     }
   }, [isOpen, mode]);
 
-  // When live transcript updates, dynamically parse
+  // When live transcript updates, dynamically parse and sync input
   useEffect(() => {
     if (fullTranscript) {
+      setInputText(fullTranscript);
       handleResolve(fullTranscript);
     }
   }, [fullTranscript]);
@@ -86,12 +92,22 @@ export const VoiceDictationModal = ({
 
   const handleRestart = () => {
     resetTranscript();
+    setInputText('');
     setParsedResult(null);
     startListening({
       onEnd: (finalText) => {
-        handleResolve(finalText);
+        if (finalText) {
+          setInputText(finalText);
+          handleResolve(finalText);
+        }
       }
     });
+  };
+
+  const handleManualTextChange = (e) => {
+    const val = e.target.value;
+    setInputText(val);
+    handleResolve(val);
   };
 
   if (!isOpen) return null;
@@ -150,15 +166,24 @@ export const VoiceDictationModal = ({
           </div>
 
           <p className="text-xs font-semibold text-slate-300">
-            {isListening ? 'Listening... Speak clearly now' : 'Dictation paused'}
+            {isListening ? 'Listening... Speak clearly now' : 'Dictation paused • Tap microphone to speak'}
           </p>
 
-          {/* Transcript Box */}
-          <div className="mt-4 w-full min-h-[50px] p-3 rounded-xl bg-slate-950/90 border border-slate-800 text-left">
-            <p className="text-xs text-slate-400 font-mono text-[10px] uppercase mb-1">Live Transcript:</p>
-            <p className="text-xs sm:text-sm text-amber-200 font-medium leading-relaxed italic">
-              {fullTranscript ? `"${fullTranscript}"` : 'Awaiting speech input...'}
-            </p>
+          {/* Transcript Box (Editable & Real-Time Synced) */}
+          <div className="mt-4 w-full p-3 rounded-xl bg-slate-950/90 border border-slate-800 text-left">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-slate-400 font-mono text-[10px] uppercase">
+                {isListening ? '🎙️ Live Voice Transcript:' : 'Spoken / Editable Text:'}
+              </p>
+              <span className="text-[10px] text-slate-500">Tap to edit</span>
+            </div>
+            <textarea
+              rows={2}
+              value={inputText}
+              onChange={handleManualTextChange}
+              placeholder={isListening ? "Listening... Speak your command..." : "Tap mic to speak or edit text here..."}
+              className="w-full bg-transparent text-xs sm:text-sm text-amber-200 font-medium placeholder-slate-600 focus:outline-none resize-none leading-relaxed"
+            />
           </div>
 
           {error && (
