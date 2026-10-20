@@ -6,6 +6,7 @@ import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { VoiceDictationModal } from './VoiceDictationModal';
+import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -508,7 +509,7 @@ export const InvoiceBuilderModal = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!showPreview && !successInvoice && (
+            {!showPreview && !successInvoice && IS_VOICE_ENABLED && (
               <button
                 type="button"
                 onClick={() => setVoiceModalOpen(true)}

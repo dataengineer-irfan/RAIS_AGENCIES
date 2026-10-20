@@ -260,7 +260,9 @@ export const CustomersPage = ({
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId) || filteredCustomers[0] || customers[0];
 
+  const selectedCustomerOpeningBalance = parseFloat(selectedCustomer?.opening_balance || 0);
   const selectedCustomerBilledRev = parseFloat(selectedCustomer?.total_invoiced || 0);
+  const selectedCustomerTotalClaim = selectedCustomerOpeningBalance + selectedCustomerBilledRev;
   const selectedCustomerProfit = parseFloat(selectedCustomer?.gross_profit || 0);
   const selectedCustomerCogs = Math.max(0, selectedCustomerBilledRev - selectedCustomerProfit);
   const selectedCustomerMarginPct = selectedCustomerBilledRev > 0 
@@ -270,8 +272,8 @@ export const CustomersPage = ({
     ? ((selectedCustomerProfit / selectedCustomerCogs) * 100).toFixed(1) 
     : '0.0';
   const selectedCustomerPaid = parseFloat(selectedCustomer?.total_paid || 0);
-  const selectedCustomerRealizationPct = selectedCustomerBilledRev > 0 
-    ? Math.min(100, Math.round((selectedCustomerPaid / selectedCustomerBilledRev) * 100)) 
+  const selectedCustomerRealizationPct = selectedCustomerTotalClaim > 0 
+    ? Math.min(100, Math.round((selectedCustomerPaid / selectedCustomerTotalClaim) * 100)) 
     : 0;
   const selectedCustomerBalance = parseFloat(selectedCustomer?.outstanding_balance || 0);
 
@@ -411,174 +413,85 @@ export const CustomersPage = ({
         </div>
       </div>
 
-      {/* ─── ROW 1 (MOBILE): NATIVE MOBILE SEARCH, COMPACT FILTERS & STATS (< md) ─── */}
-      <div className="md:hidden flex flex-col gap-1.5 shrink-0">
-        {/* Mobile Search, Quick Sort & + Outlet Bar */}
-        <div className="flex items-center gap-1.5">
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search outlets, phone, area..."
-              className="w-full pl-8 pr-7 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
-            />
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold p-0.5">
-                ✕
+      {/* ─── ROW 1 (MOBILE): NATIVE MOBILE SEARCH, SORT & STATS (Only in Outlets List View) ─── */}
+      {mobileView === 'list' && (
+        <div className="md:hidden flex flex-col gap-1.5 shrink-0">
+          {/* Mobile Search, Quick Sort & + Outlet Bar */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search outlets, phone, area..."
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-sm"
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold p-0.5">
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Compact Sort Select on Mobile */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
+              title="Sort Outlets"
+            >
+              <option value="BALANCE_DESC">🚨 Due ↓</option>
+              <option value="REVENUE_DESC">💰 Revenue ↓</option>
+              <option value="PAID_DESC">💳 Paid ↓</option>
+              <option value="PROFIT_DESC">📈 Profit ↓</option>
+              <option value="NAME_ASC">🔤 A → Z</option>
+              <option value="LIMIT_DESC">💳 Limit ↓</option>
+              <option value="CODE_ASC">🏷️ Code</option>
+            </select>
+
+            {hasRole(['ADMIN', 'OPERATOR']) && (
+              <button
+                onClick={() => {
+                  setCustomerToEdit(null);
+                  setCustomerModalOpen(true);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 shrink-0"
+                title="Add New Customer Outlet"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Outlet</span>
               </button>
             )}
           </div>
 
-          {/* Compact Sort Select on Mobile */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
-            title="Sort Outlets"
-          >
-            <option value="BALANCE_DESC">🚨 Due ↓</option>
-            <option value="REVENUE_DESC">💰 Revenue ↓</option>
-            <option value="PAID_DESC">💳 Paid ↓</option>
-            <option value="PROFIT_DESC">📈 Profit ↓</option>
-            <option value="NAME_ASC">🔤 A → Z</option>
-            <option value="LIMIT_DESC">💳 Limit ↓</option>
-            <option value="CODE_ASC">🏷️ Code</option>
-          </select>
-
-          {hasRole(['ADMIN', 'OPERATOR']) && (
-            <button
-              onClick={() => {
-                setCustomerToEdit(null);
-                setCustomerModalOpen(true);
-              }}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 shrink-0"
-              title="Add New Customer Outlet"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>+ Outlet</span>
-            </button>
-          )}
-        </div>
-
-        {/* Swipeable Horizontal Filter & Ranking Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
-          <button
-            onClick={() => { setAreaFilter('ALL'); setBalanceFilter('ALL'); setSortBy('BALANCE_DESC'); }}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              areaFilter === 'ALL' && balanceFilter === 'ALL' && sortBy === 'BALANCE_DESC'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-400'
-            }`}
-          >
-            All Outlets ({totalOutlets})
-          </button>
-
-          <button
-            onClick={() => setSortBy(sortBy === 'REVENUE_DESC' ? 'BALANCE_DESC' : 'REVENUE_DESC')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              sortBy === 'REVENUE_DESC'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-300'
-            }`}
-          >
-            💰 Top Revenue
-          </button>
-
-          <button
-            onClick={() => setSortBy(sortBy === 'PAID_DESC' ? 'BALANCE_DESC' : 'PAID_DESC')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              sortBy === 'PAID_DESC'
-                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-300'
-            }`}
-          >
-            💳 Top Collections
-          </button>
-
-          <button
-            onClick={() => setSortBy(sortBy === 'PROFIT_DESC' ? 'BALANCE_DESC' : 'PROFIT_DESC')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              sortBy === 'PROFIT_DESC'
-                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-300'
-            }`}
-          >
-            📈 Top Profit
-          </button>
-
-          <button
-            onClick={() => setBalanceFilter(balanceFilter === 'HAS_DUE' ? 'ALL' : 'HAS_DUE')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              balanceFilter === 'HAS_DUE'
-                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-400'
-            }`}
-          >
-            🚨 Balance Due ({customersWithDues})
-          </button>
-
-          <button
-            onClick={() => setAreaFilter(areaFilter === 'RAYACHOTY_TOWN' ? 'ALL' : 'RAYACHOTY_TOWN')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              areaFilter === 'RAYACHOTY_TOWN'
-                ? 'bg-amber-500 text-slate-950'
-                : 'bg-slate-900 border border-slate-800 text-slate-400'
-            }`}
-          >
-            Rayachoty Town
-          </button>
-
-          <button
-            onClick={() => setAreaFilter(areaFilter === 'MADANAPALLE_RD' ? 'ALL' : 'MADANAPALLE_RD')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              areaFilter === 'MADANAPALLE_RD'
-                ? 'bg-amber-500 text-slate-950'
-                : 'bg-slate-900 border border-slate-800 text-slate-400'
-            }`}
-          >
-            Madanapalle Rd
-          </button>
-
-          <button
-            onClick={() => setAreaFilter(areaFilter === 'CHINNAMANDEM' ? 'ALL' : 'CHINNAMANDEM')}
-            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              areaFilter === 'CHINNAMANDEM'
-                ? 'bg-amber-500 text-slate-950'
-                : 'bg-slate-900 border border-slate-800 text-slate-400'
-            }`}
-          >
-            Chinnamandem
-          </button>
-        </div>
-
-        {/* Mobile Quick Metric Strip: Clean, Smooth 4-stat responsive summary */}
-        <div className="grid grid-cols-4 gap-1 px-2.5 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-center shadow-sm">
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-[9px] uppercase font-bold text-slate-500 font-sans">Outlets</span>
-            <span className="text-xs font-black text-white font-mono">{filteredCount}</span>
-          </div>
-          <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
-            <span className="text-[9px] uppercase font-bold text-amber-500 font-sans">Revenue</span>
-            <span className="text-xs font-black text-amber-400 font-mono">
-              ₹{totalRevenue >= 100000 ? `${(totalRevenue / 100000).toFixed(1)}L` : Math.round(totalRevenue).toLocaleString('en-IN')}
-            </span>
-          </div>
-          <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
-            <span className="text-[9px] uppercase font-bold text-emerald-500 font-sans">Paid</span>
-            <span className="text-xs font-black text-emerald-400 font-mono">
-              ₹{totalPaid >= 100000 ? `${(totalPaid / 100000).toFixed(1)}L` : Math.round(totalPaid).toLocaleString('en-IN')}
-            </span>
-          </div>
-          <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
-            <span className="text-[9px] uppercase font-bold text-purple-400 font-sans">Profit</span>
-            <span className="text-xs font-black text-purple-300 font-mono">
-              ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')}
-            </span>
+          {/* Mobile Quick Metric Strip: Clean, Smooth 4-stat responsive summary */}
+          <div className="grid grid-cols-4 gap-1 px-2.5 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-center shadow-sm">
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-[9px] uppercase font-bold text-slate-500 font-sans">Outlets</span>
+              <span className="text-xs font-black text-white font-mono">{filteredCount}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
+              <span className="text-[9px] uppercase font-bold text-amber-500 font-sans">Revenue</span>
+              <span className="text-xs font-black text-amber-400 font-mono">
+                ₹{totalRevenue >= 100000 ? `${(totalRevenue / 100000).toFixed(1)}L` : Math.round(totalRevenue).toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
+              <span className="text-[9px] uppercase font-bold text-emerald-500 font-sans">Paid</span>
+              <span className="text-xs font-black text-emerald-400 font-mono">
+                ₹{totalPaid >= 100000 ? `${(totalPaid / 100000).toFixed(1)}L` : Math.round(totalPaid).toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
+              <span className="text-[9px] uppercase font-bold text-purple-400 font-sans">Profit</span>
+              <span className="text-xs font-black text-purple-300 font-mono">
+                ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ─── MOBILE VIEW SWITCHER (< lg) ─── */}
       <div className="lg:hidden flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
@@ -825,17 +738,16 @@ export const CustomersPage = ({
                   <h2 className="text-base sm:text-lg font-black text-white mt-1 tracking-tight">
                     {selectedCustomer.business_name}
                   </h2>
-                  <div className="flex items-center gap-2.5 text-xs text-slate-400 mt-0.5 flex-wrap">
-                    <span>Contact: <strong className="text-slate-200">{selectedCustomer.contact_person || 'Authorized Dealer'}</strong></span>
-                    <span>•</span>
-                    <span>Ph: <strong className="text-slate-200 font-mono">{selectedCustomer.phone}</strong></span>
+                  <div className="flex flex-col gap-0.5 text-xs text-slate-400 mt-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span>Contact: <strong className="text-slate-200">{selectedCustomer.contact_person || 'Authorized Dealer'}</strong></span>
+                      <span className="text-slate-600">•</span>
+                      <span>Ph: <strong className="text-slate-200 font-mono">{selectedCustomer.phone}</strong></span>
+                    </div>
                     {(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at) && (
-                      <>
-                        <span>•</span>
-                        <span className="text-amber-400/90 font-medium">
-                          🤝 Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
-                      </>
+                      <span className="text-[11px] text-amber-400/90 font-medium">
+                        🤝 Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -909,13 +821,23 @@ export const CustomersPage = ({
                 </div>
               </div>
 
-              {/* Persistent Commercial Standing Strip (5-Card Complete Economics Strip) */}
+              {/* Persistent Commercial Standing Strip (5-Card Complete Economics Strip with Opening Balance Transparency) */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 py-2 border-b border-slate-800 shrink-0">
                 <div className="p-2 bg-slate-950/80 border border-amber-500/20 rounded-lg shadow-sm">
-                  <span className="text-[9px] font-bold text-amber-500 uppercase block font-sans">💰 Billed Revenue</span>
-                  <div className="text-xs sm:text-sm font-black font-mono text-white mt-0.5 truncate">
-                    ₹{selectedCustomerBilledRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-amber-500 uppercase font-sans">💰 Total Claim</span>
+                    {selectedCustomerOpeningBalance > 0 && (
+                      <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono" title={`Opening Balance: ₹${selectedCustomerOpeningBalance.toFixed(2)}`}>
+                        +Op.Bal
+                      </span>
+                    )}
                   </div>
+                  <div className="text-xs sm:text-sm font-black font-mono text-white mt-0.5 truncate">
+                    ₹{selectedCustomerTotalClaim.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[9px] text-slate-400 block font-mono truncate">
+                    Billed ₹{selectedCustomerBilledRev >= 1000 ? `${(selectedCustomerBilledRev/1000).toFixed(1)}k` : selectedCustomerBilledRev.toFixed(0)} {selectedCustomerOpeningBalance > 0 ? `+ ₹${selectedCustomerOpeningBalance >= 1000 ? `${(selectedCustomerOpeningBalance/1000).toFixed(1)}k` : selectedCustomerOpeningBalance.toFixed(0)} Op` : ''}
+                  </span>
                 </div>
 
                 <div className="p-2 bg-slate-950/80 border border-slate-700/60 rounded-lg shadow-sm">
@@ -923,6 +845,7 @@ export const CustomersPage = ({
                   <div className="text-xs sm:text-sm font-black font-mono text-slate-300 mt-0.5 truncate">
                     ₹{selectedCustomerCogs.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
+                  <span className="text-[9px] text-slate-500 block font-mono truncate">Wholesale Base</span>
                 </div>
 
                 <div className="p-2 bg-slate-950/80 border border-purple-500/20 rounded-lg shadow-sm">
@@ -937,12 +860,13 @@ export const CustomersPage = ({
                   <div className="text-xs sm:text-sm font-black font-mono text-purple-300 mt-0.5 truncate">
                     ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
+                  <span className="text-[9px] text-purple-400/80 block font-mono truncate">Margin Rate</span>
                 </div>
 
                 <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold text-emerald-400 uppercase font-sans">💳 Collections</span>
-                    {selectedCustomerBilledRev > 0 && (
+                    {selectedCustomerTotalClaim > 0 && (
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">
                         {selectedCustomerRealizationPct}%
                       </span>
@@ -951,6 +875,9 @@ export const CustomersPage = ({
                   <div className="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5 truncate">
                     ₹{selectedCustomerPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
+                  <span className="text-[9px] text-emerald-500/80 block font-mono truncate">
+                    {selectedCustomerRealizationPct}% Realized
+                  </span>
                 </div>
 
                 <div className={`p-2 bg-slate-950/80 border rounded-lg shadow-sm col-span-2 sm:col-span-1 ${
@@ -962,6 +889,9 @@ export const CustomersPage = ({
                   <div className={`text-xs sm:text-sm font-black font-mono mt-0.5 truncate ${selectedCustomerBalance > 0.01 ? 'text-rose-300' : 'text-emerald-400'}`}>
                     ₹{selectedCustomerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
+                  <span className="text-[9px] text-slate-500 block font-mono truncate">
+                    Claim − Collections
+                  </span>
                 </div>
               </div>
 
@@ -1004,18 +934,27 @@ export const CustomersPage = ({
                 })}
               </div>
 
-              {/* Inspector Tab Viewport (Internal Scroll) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pt-2.5 pr-1 custom-scrollbar space-y-3">
+              {/* Inspector Tab Viewport (Internal Scroll with FAB clearance) */}
+              <div className="flex-1 min-h-0 overflow-y-auto pt-2.5 pr-1 custom-scrollbar space-y-3 pb-28">
                 
                 {/* ─── TAB 1: 360° DOSSIER & FINANCIAL EXPOSURE ─── */}
                 {activeInspectorTab === 'overview' && (
                   <div className="space-y-3">
                     {/* Financial Matrix Cards */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">Current Balance Due</span>
-                        <div className="text-base font-black font-mono text-emerald-400 mt-0.5">
-                          ₹{parseFloat(selectedCustomer.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        <div className={`text-base font-black font-mono mt-0.5 ${
+                          selectedCustomerBalance > 0.01 ? 'text-rose-400' : 'text-emerald-400'
+                        }`}>
+                          ₹{selectedCustomerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">Opening Ledger Balance</span>
+                        <div className="text-base font-black font-mono text-slate-300 mt-0.5">
+                          ₹{selectedCustomerOpeningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
 

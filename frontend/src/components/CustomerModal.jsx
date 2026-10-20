@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Building2, Mic } from 'lucide-react';
 import { customerApi } from '../services/api';
 import { VoiceDictationModal } from './VoiceDictationModal';
+import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 
 export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved }) => {
   const [businessName, setBusinessName] = useState('');
@@ -172,15 +173,17 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setVoiceModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
-              title="Voice dictation for customer onboarding"
-            >
-              <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              <span>Voice Fill</span>
-            </button>
+            {IS_VOICE_ENABLED && (
+              <button
+                type="button"
+                onClick={() => setVoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+                title="Voice dictation for customer onboarding"
+              >
+                <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>Voice Fill</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"

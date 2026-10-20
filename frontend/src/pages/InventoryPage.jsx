@@ -45,6 +45,7 @@ import { TruckIntakeModal } from '../components/TruckIntakeModal';
 import { BarcodeScanModal } from '../components/BarcodeScanModal';
 import { UploadInvoiceModal } from '../components/UploadInvoiceModal';
 import { VoiceDictationModal } from '../components/VoiceDictationModal';
+import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 import { smartProductMatch, cleanProductName } from '../utils/productHelpers';
 
 export const InventoryPage = () => {
@@ -512,14 +513,16 @@ export const InventoryPage = () => {
 
             {hasRole(['ADMIN', 'OPERATOR']) && (
               <>
-                <button
-                  onClick={() => setVoiceModalOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold rounded-lg text-xs transition-all hover:scale-105 shrink-0"
-                  title="Voice Stock Operations (e.g. Damage, Receipt)"
-                >
-                  <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                  <span className="hidden sm:inline">Voice</span>
-                </button>
+                {IS_VOICE_ENABLED && (
+                  <button
+                    onClick={() => setVoiceModalOpen(true)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold rounded-lg text-xs transition-all hover:scale-105 shrink-0"
+                    title="Voice Stock Operations (e.g. Damage, Receipt)"
+                  >
+                    <Mic className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                    <span className="hidden sm:inline">Voice</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => setBarcodeModalOpen(true)}

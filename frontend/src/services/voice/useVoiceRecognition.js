@@ -146,14 +146,11 @@ export const useVoiceRecognition = (options = {}) => {
           partialResults: true,
           popup: false
         });
+        return;
       } catch (err) {
-        console.error('Capacitor native speech start failed:', err);
-        const errMsg = 'Failed to start microphone on Android device.';
-        setError(errMsg);
-        setIsListening(false);
-        if (overrideCallbacks.onError) overrideCallbacks.onError(errMsg);
+        console.warn('Capacitor native speech start failed, falling back to Web Speech API:', err);
+        // Fall through to browser Web Speech API below
       }
-      return;
     }
 
     // ─── 2. BROWSER WEB SPEECH API PLATFORM ───

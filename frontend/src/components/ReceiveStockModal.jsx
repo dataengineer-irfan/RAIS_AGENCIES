@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PackagePlus, X, AlertCircle, Mic } from 'lucide-react';
 import { catalogueApi, inventoryApi } from '../services/api';
 import { VoiceDictationModal } from './VoiceDictationModal';
+import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 
 export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, onStockReceived }) => {
   const [products, setProducts] = useState([]);
@@ -133,15 +134,17 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setVoiceModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all shadow-sm active:scale-95"
-              title="Voice dictation for receiving stock"
-            >
-              <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-              <span>Voice Receive</span>
-            </button>
+            {IS_VOICE_ENABLED && (
+              <button
+                type="button"
+                onClick={() => setVoiceModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all shadow-sm active:scale-95"
+                title="Voice dictation for receiving stock"
+              >
+                <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>Voice Receive</span>
+              </button>
+            )}
             <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
               <X className="w-5 h-5" />
             </button>
