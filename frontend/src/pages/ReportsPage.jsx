@@ -15,7 +15,10 @@ import {
   CheckCircle2,
   X,
   RefreshCw,
-  Info
+  Info,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { reportApi, paymentApi, getLocalCachedSnapshot } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
@@ -36,6 +39,30 @@ export const ReportsPage = () => {
   const [drillModal, setDrillModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
   const [mobileTab, setMobileTab] = useState('aging'); // 'aging' | 'velocity'
   const [selectedAgingBucket, setSelectedAgingBucket] = useState('ALL'); // 'ALL' | '0-15' | '16-30' | '31-60' | '60+'
+
+  // Multi-Column Interactive Sort States
+  const [agingSortField, setAgingSortField] = useState('total_due'); // 'total_due', 'name', '0-15', '16-30', '31-60', '60+'
+  const [agingSortAsc, setAgingSortAsc] = useState(false);
+  const [velocitySortField, setVelocitySortField] = useState('revenue'); // 'revenue', 'volume', 'name', 'sku'
+  const [velocitySortAsc, setVelocitySortAsc] = useState(false);
+
+  const handleAgingSort = (field) => {
+    if (agingSortField === field) {
+      setAgingSortAsc(!agingSortAsc);
+    } else {
+      setAgingSortField(field);
+      setAgingSortAsc(field === 'name');
+    }
+  };
+
+  const handleVelocitySort = (field) => {
+    if (velocitySortField === field) {
+      setVelocitySortAsc(!velocitySortAsc);
+    } else {
+      setVelocitySortField(field);
+      setVelocitySortAsc(field === 'name' || field === 'sku');
+    }
+  };
 
   // 150ms Debounced Search for smooth 60fps input response
   useEffect(() => {
@@ -113,17 +140,73 @@ export const ReportsPage = () => {
       list = list.filter(c => parseFloat(c?.aging_60_plus_days ?? c?.days_60_plus ?? 0) > 0);
     }
 
-    if (!debouncedSearch) return list;
-    const term = debouncedSearch.toLowerCase();
-    return list.filter(c => {
-      const name = (c.business_name || c.customer_name || '').toLowerCase();
-      return (
-        name.includes(term) ||
-        (c.customer_code || '').toLowerCase().includes(term) ||
-        (c.phone || '').includes(term)
-      );
+    if (debouncedSearch) {
+      const term = debouncedSearch.toLowerCase();
+      list = list.filter(c => {
+        const name = (c.business_name || c.customer_name || '').toLowerCase();
+        return (
+          name.includes(term) ||
+          (c.customer_code || '').toLowerCase().includes(term) ||
+          (c.phone || '').includes(term)
+        );
+      });
+    }
+
+    // Apply interactive column sort
+    return list.slice().sort((a, b) => {
+      if (agingSortField === 'name') {
+        const aN = (a.business_name || a.customer_name || '').toLowerCase();
+        const bN = (b.business_name || b.customer_name || '').toLowerCase();
+        return agingSortAsc ? aN.localeCompare(bN) : bN.localeCompare(aN);
+      }
+      let aVal = 0;
+      let bVal = 0;
+      if (agingSortField === '0-15') {
+        aVal = parseFloat(a?.current_0_15_days ?? a?.current_0_15 ?? 0);
+        bVal = parseFloat(b?.current_0_15_days ?? b?.current_0_15 ?? 0);
+      } else if (agingSortField === '16-30') {
+        aVal = parseFloat(a?.aging_16_30_days ?? a?.days_16_30 ?? 0);
+        bVal = parseFloat(b?.aging_16_30_days ?? b?.days_16_30 ?? 0);
+      } else if (agingSortField === '31-60') {
+        aVal = parseFloat(a?.aging_31_60_days ?? a?.days_31_60 ?? 0);
+        bVal = parseFloat(b?.aging_31_60_days ?? b?.days_31_60 ?? 0);
+      } else if (agingSortField === '60+') {
+        aVal = parseFloat(a?.aging_60_plus_days ?? a?.days_60_plus ?? 0);
+        bVal = parseFloat(b?.aging_60_plus_days ?? b?.days_60_plus ?? 0);
+      } else {
+        // 'total_due'
+        aVal = parseFloat(a?.total_outstanding ?? a?.total_due ?? 0);
+        bVal = parseFloat(b?.total_outstanding ?? b?.total_due ?? 0);
+      }
+      return agingSortAsc ? aVal - bVal : bVal - aVal;
     });
-  }, [customerAging, debouncedSearch, selectedAgingBucket]);
+  }, [customerAging, debouncedSearch, selectedAgingBucket, agingSortField, agingSortAsc]);
+
+  // Sorted SKU Sales Velocity
+  const sortedProductSales = useMemo(() => {
+    let list = productSales || [];
+    return list.slice().sort((a, b) => {
+      if (velocitySortField === 'name') {
+        const aN = (a.name || a.product_name || '').toLowerCase();
+        const bN = (b.name || b.product_name || '').toLowerCase();
+        return velocitySortAsc ? aN.localeCompare(bN) : bN.localeCompare(aN);
+      }
+      if (velocitySortField === 'sku') {
+        const aS = (a.sku || '').toLowerCase();
+        const bS = (b.sku || '').toLowerCase();
+        return velocitySortAsc ? aS.localeCompare(bS) : bS.localeCompare(aS);
+      }
+      if (velocitySortField === 'volume') {
+        const aV = parseFloat(a.units_sold ?? a.total_quantity_sold ?? 0);
+        const bV = parseFloat(b.units_sold ?? b.total_quantity_sold ?? 0);
+        return velocitySortAsc ? aV - bV : bV - aV;
+      }
+      // default: revenue
+      const aR = parseFloat(a.revenue ?? a.total_revenue ?? 0);
+      const bR = parseFloat(b.revenue ?? b.total_revenue ?? 0);
+      return velocitySortAsc ? aR - bR : bR - aR;
+    });
+  }, [productSales, velocitySortField, velocitySortAsc]);
 
   // Derive mathematically reconciled aging summary directly from ground-truth customer rows:
   const reconciledAging = useMemo(() => {
@@ -496,12 +579,68 @@ export const ReportsPage = () => {
             <table className="hidden sm:table min-w-[550px] w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
-                  <th className="py-2 px-2">Customer</th>
-                  <th className="py-2 px-2 text-right">0–15d</th>
-                  <th className="py-2 px-2 text-right">16–30d</th>
-                  <th className="py-2 px-2 text-right">31–60d</th>
-                  <th className="py-2 px-2 text-right">60+d</th>
-                  <th className="py-2 px-2 text-right">Total Due</th>
+                  <th 
+                    onClick={() => handleAgingSort('name')}
+                    className="py-2 px-2 cursor-pointer select-none hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Customer</span>
+                      {agingSortField === 'name' ? (
+                        agingSortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />
+                      ) : (
+                        <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleAgingSort('0-15')}
+                    className="py-2 px-2 text-right cursor-pointer select-none hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>0–15d</span>
+                      {agingSortField === '0-15' && (agingSortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />)}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleAgingSort('16-30')}
+                    className="py-2 px-2 text-right cursor-pointer select-none hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>16–30d</span>
+                      {agingSortField === '16-30' && (agingSortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />)}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleAgingSort('31-60')}
+                    className="py-2 px-2 text-right cursor-pointer select-none hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>31–60d</span>
+                      {agingSortField === '31-60' && (agingSortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />)}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleAgingSort('60+')}
+                    className="py-2 px-2 text-right cursor-pointer select-none hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>60+d</span>
+                      {agingSortField === '60+' && (agingSortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />)}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleAgingSort('total_due')}
+                    className="py-2 px-2 text-right cursor-pointer select-none hover:text-white transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Total Due</span>
+                      {agingSortField === 'total_due' ? (
+                        agingSortAsc ? <ArrowUp className="w-3 h-3 text-amber-400" /> : <ArrowDown className="w-3 h-3 text-amber-400" />
+                      ) : (
+                        <ArrowUpDown className="w-2.5 h-2.5 text-slate-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-2 px-2 text-center">Remind</th>
                 </tr>
               </thead>
@@ -549,35 +688,67 @@ export const ReportsPage = () => {
 
         {/* Right Column: Product Velocity Leaderboard (45% = 5 cols) */}
         <div className={`${mobileTab === 'aging' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-xl flex flex-col overflow-hidden`}>
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white shrink-0 flex-wrap gap-1.5">
             <div className="flex items-center gap-1.5">
               <Package className="w-3.5 h-3.5 text-emerald-400" />
-              <span>SKU Sales Velocity ({productSales.length})</span>
+              <span>SKU Velocity ({productSales.length})</span>
             </div>
+
+            {/* Quick 1-Click Sort Pills for SKU Velocity */}
+            <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+              <button
+                onClick={() => handleVelocitySort('revenue')}
+                className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+                  velocitySortField === 'revenue' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Sort by Revenue"
+              >
+                ₹ Rev {velocitySortField === 'revenue' && (velocitySortAsc ? '↑' : '↓')}
+              </button>
+              <button
+                onClick={() => handleVelocitySort('volume')}
+                className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+                  velocitySortField === 'volume' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Sort by Volume (Packs Sold)"
+              >
+                Packs {velocitySortField === 'volume' && (velocitySortAsc ? '↑' : '↓')}
+              </button>
+              <button
+                onClick={() => handleVelocitySort('name')}
+                className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+                  velocitySortField === 'name' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Sort A-Z"
+              >
+                A-Z {velocitySortField === 'name' && (velocitySortAsc ? '↑' : '↓')}
+              </button>
+            </div>
+
             <button
               onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: 'Product Category Sales Deep-Dive' })}
-              className="text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 transition active:scale-95"
+              className="text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 transition active:scale-95 ml-auto sm:ml-0"
               title="Drilldown into product categories and SKUs"
             >
-              <span>Category Drill</span>
+              <span>Drill</span>
               <span>→</span>
             </button>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5 pb-20 sm:pb-2">
-            {productSales.map((prod, idx) => (
+            {sortedProductSales.map((prod, idx) => (
               <div 
                 key={idx}
-                className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs hover:border-slate-700 transition-colors"
               >
                 <div className="overflow-hidden pr-2">
-                  <span className="font-mono text-[10px] text-amber-400 font-bold">{prod.sku}</span>
+                  <span className="font-mono text-[10px] text-amber-400 font-bold bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">{prod.sku}</span>
                   <h5 className="font-bold text-white text-xs truncate mt-0.5">{prod.name || prod.product_name}</h5>
                   <p className="text-[10px] text-slate-400">{prod.units_sold ?? prod.total_quantity_sold ?? 0} packs sold</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="font-mono font-bold text-emerald-400 text-xs">
-                    ₹{parseFloat(prod.revenue ?? prod.total_revenue ?? 0).toFixed(2)}
+                  <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">
+                    ₹{parseFloat(prod.revenue ?? prod.total_revenue ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                   <span className="text-[9px] text-slate-500 font-bold uppercase">Volume Val</span>
                 </div>

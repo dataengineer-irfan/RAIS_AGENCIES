@@ -260,6 +260,21 @@ export const CustomersPage = ({
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId) || filteredCustomers[0] || customers[0];
 
+  const selectedCustomerBilledRev = parseFloat(selectedCustomer?.total_invoiced || 0);
+  const selectedCustomerProfit = parseFloat(selectedCustomer?.gross_profit || 0);
+  const selectedCustomerCogs = Math.max(0, selectedCustomerBilledRev - selectedCustomerProfit);
+  const selectedCustomerMarginPct = selectedCustomerBilledRev > 0 
+    ? ((selectedCustomerProfit / selectedCustomerBilledRev) * 100).toFixed(1) 
+    : '0.0';
+  const selectedCustomerMarkupPct = selectedCustomerCogs > 0 
+    ? ((selectedCustomerProfit / selectedCustomerCogs) * 100).toFixed(1) 
+    : '0.0';
+  const selectedCustomerPaid = parseFloat(selectedCustomer?.total_paid || 0);
+  const selectedCustomerRealizationPct = selectedCustomerBilledRev > 0 
+    ? Math.min(100, Math.round((selectedCustomerPaid / selectedCustomerBilledRev) * 100)) 
+    : 0;
+  const selectedCustomerBalance = parseFloat(selectedCustomer?.outstanding_balance || 0);
+
   const filteredCustomerInvoices = useMemo(() => {
     if (!invoiceSearch.trim()) return customerInvoices;
     const q = invoiceSearch.toLowerCase().trim();
@@ -787,57 +802,49 @@ export const CustomersPage = ({
           {selectedCustomer ? (
             <div className="h-full flex flex-col overflow-hidden">
               
-              {/* Sticky Inspector Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800 shrink-0">
+              {/* Sleek Modern Inspector Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800 shrink-0">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold text-xs text-amber-300 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 shadow-xs flex items-center gap-1.5">
                       {selectedCustomer.customer_code}
                       <button 
                         onClick={() => handleCopyCode(selectedCustomer.customer_code)}
-                        className="hover:text-white"
+                        className="hover:text-white transition-colors"
                         title="Copy Customer Code"
                       >
-                        {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-400" />}
                       </button>
                     </span>
                     <StatusBadge status={selectedCustomer.status} />
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[11px] text-slate-400 font-medium">
                       📍 {selectedCustomer.city || 'Rayachoty'}, AP
                     </span>
                   </div>
                   
-                  <h2 className="text-sm sm:text-base font-black text-white mt-1">
+                  <h2 className="text-base sm:text-lg font-black text-white mt-1 tracking-tight">
                     {selectedCustomer.business_name}
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    {selectedCustomer.contact_person} • Ph: <strong className="text-slate-200">{selectedCustomer.phone}</strong>
+                  <div className="flex items-center gap-2.5 text-xs text-slate-400 mt-0.5 flex-wrap">
+                    <span>Contact: <strong className="text-slate-200">{selectedCustomer.contact_person || 'Authorized Dealer'}</strong></span>
+                    <span>•</span>
+                    <span>Ph: <strong className="text-slate-200 font-mono">{selectedCustomer.phone}</strong></span>
                     {(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at) && (
-                      <span className="block mt-0.5 text-[11px] text-amber-400/90 font-medium">
-                        🤝 Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
+                      <>
+                        <span>•</span>
+                        <span className="text-amber-400/90 font-medium">
+                          🤝 Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </>
                     )}
-                  </p>
+                  </div>
                 </div>
 
-                {/* Primary Quick-Action Launchers */}
-                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                  <button
-                    onClick={() => setActiveInspectorTab('invoices')}
-                    className={`px-2.5 py-1.5 font-bold rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105 ${
-                      activeInspectorTab === 'invoices'
-                        ? 'bg-blue-600 text-white shadow-blue-500/20'
-                        : 'bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700'
-                    }`}
-                    title="View Customer Invoices"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Invoices ({customerInvoices.length})</span>
-                  </button>
-
+                {/* Primary Quick-Action Launchers Ribbon */}
+                <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:justify-end">
                   <button
                     onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
                     title="Create Commercial Invoice"
                   >
                     <FileText className="w-3.5 h-3.5" />
@@ -846,7 +853,7 @@ export const CustomersPage = ({
 
                   <button
                     onClick={() => onOpenOrderForCustomer && onOpenOrderForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105"
+                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
                     title="Book Wholesale Order"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
@@ -855,7 +862,7 @@ export const CustomersPage = ({
 
                   <button
                     onClick={() => onOpenPaymentForCustomer && onOpenPaymentForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-sm transition-all hover:scale-105"
+                    className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
                     title="Record Cash/UPI Payment"
                   >
                     <CreditCard className="w-3.5 h-3.5" />
@@ -864,7 +871,7 @@ export const CustomersPage = ({
 
                   <button
                     onClick={() => handleSendWhatsApp(selectedCustomer)}
-                    className="p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold transition-all"
+                    className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
                     title="Send Statement via WhatsApp"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -877,7 +884,7 @@ export const CustomersPage = ({
                           setCustomerToEdit(selectedCustomer);
                           setCustomerModalOpen(true);
                         }}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-all"
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
                         title="Edit Customer Profile"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -892,7 +899,7 @@ export const CustomersPage = ({
                             error: null
                           });
                         }}
-                        className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold transition-all"
+                        className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all"
                         title="Delete Outlet Account"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -902,38 +909,58 @@ export const CustomersPage = ({
                 </div>
               </div>
 
-              {/* Persistent Commercial Standing Strip (Always visible across all tabs) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 py-2 border-b border-slate-800 shrink-0">
+              {/* Persistent Commercial Standing Strip (5-Card Complete Economics Strip) */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 py-2 border-b border-slate-800 shrink-0">
                 <div className="p-2 bg-slate-950/80 border border-amber-500/20 rounded-lg shadow-sm">
                   <span className="text-[9px] font-bold text-amber-500 uppercase block font-sans">💰 Billed Revenue</span>
                   <div className="text-xs sm:text-sm font-black font-mono text-white mt-0.5 truncate">
-                    ₹{parseFloat(selectedCustomer.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹{selectedCustomerBilledRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
-                <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase block font-sans">💳 Collections</span>
-                  <div className="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5 truncate">
-                    ₹{parseFloat(selectedCustomer.total_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                <div className="p-2 bg-slate-950/80 border border-slate-700/60 rounded-lg shadow-sm">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block font-sans">📦 Procurement COGS</span>
+                  <div className="text-xs sm:text-sm font-black font-mono text-slate-300 mt-0.5 truncate">
+                    ₹{selectedCustomerCogs.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
                 <div className="p-2 bg-slate-950/80 border border-purple-500/20 rounded-lg shadow-sm">
-                  <span className="text-[9px] font-bold text-purple-400 uppercase block font-sans">📈 Gross Profit</span>
-                  <div className="text-xs sm:text-sm font-black font-mono text-purple-300 mt-0.5 truncate">
-                    ₹{parseFloat(selectedCustomer.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    {parseFloat(selectedCustomer.total_invoiced || 0) > 0 && (
-                      <span className="text-[9px] text-purple-400/80 font-normal ml-1">
-                        ({Math.round((parseFloat(selectedCustomer.gross_profit || 0) / parseFloat(selectedCustomer.total_invoiced || 1)) * 100)}%)
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-purple-400 uppercase font-sans">📈 Gross Profit</span>
+                    {selectedCustomerBilledRev > 0 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">
+                        {selectedCustomerMarginPct}%
                       </span>
                     )}
                   </div>
+                  <div className="text-xs sm:text-sm font-black font-mono text-purple-300 mt-0.5 truncate">
+                    ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
                 </div>
 
-                <div className="p-2 bg-slate-950/80 border border-rose-500/20 rounded-lg shadow-sm">
-                  <span className="text-[9px] font-bold text-rose-400 uppercase block font-sans">🚨 Balance Due</span>
-                  <div className="text-xs sm:text-sm font-black font-mono text-rose-300 mt-0.5 truncate">
-                    ₹{parseFloat(selectedCustomer.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-emerald-400 uppercase font-sans">💳 Collections</span>
+                    {selectedCustomerBilledRev > 0 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">
+                        {selectedCustomerRealizationPct}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5 truncate">
+                    ₹{selectedCustomerPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className={`p-2 bg-slate-950/80 border rounded-lg shadow-sm col-span-2 sm:col-span-1 ${
+                  selectedCustomerBalance > 0.01 ? 'border-rose-500/30' : 'border-emerald-500/20'
+                }`}>
+                  <span className={`text-[9px] font-bold uppercase block font-sans ${selectedCustomerBalance > 0.01 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {selectedCustomerBalance > 0.01 ? '🚨 Balance Due' : '✅ Balance Due'}
+                  </span>
+                  <div className={`text-xs sm:text-sm font-black font-mono mt-0.5 truncate ${selectedCustomerBalance > 0.01 ? 'text-rose-300' : 'text-emerald-400'}`}>
+                    ₹{selectedCustomerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
@@ -1036,6 +1063,83 @@ export const CustomersPage = ({
                         </div>
                       );
                     })()}
+
+                    {/* Account Profitability & Wholesale Economics Breakdown */}
+                    <div className="bg-slate-950/70 border border-purple-500/30 rounded-xl p-3.5 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm">📈</span>
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                            Account Profitability & Wholesale Economics
+                          </h4>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          parseFloat(selectedCustomerMarginPct) >= 10
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : parseFloat(selectedCustomerMarginPct) >= 5
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                        }`}>
+                          {parseFloat(selectedCustomerMarginPct) >= 10 ? '🟢 High Margin (>10%)' : parseFloat(selectedCustomerMarginPct) >= 5 ? '🟡 Standard Wholesale' : '🔵 High Volume / Slim'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Total Billed Revenue</span>
+                          <span className="font-mono font-bold text-white text-sm">
+                            ₹{selectedCustomerBilledRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">{customerInvoices.length} Invoices</span>
+                        </div>
+
+                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Procurement Cost (COGS)</span>
+                          <span className="font-mono font-bold text-slate-300 text-sm">
+                            ₹{selectedCustomerCogs.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">Wholesale Cost Base</span>
+                        </div>
+
+                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-purple-500/30">
+                          <span className="text-[10px] text-purple-400 block font-bold">Net Gross Profit</span>
+                          <span className="font-mono font-black text-purple-300 text-sm">
+                            ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-[9px] text-purple-400/80 block mt-0.5 font-mono">Margin: {selectedCustomerMarginPct}%</span>
+                        </div>
+
+                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">Avg Profit / Invoice</span>
+                          <span className="font-mono font-bold text-emerald-400 text-sm">
+                            ₹{customerInvoices.length > 0 ? (selectedCustomerProfit / customerInvoices.length).toFixed(2) : '0.00'}
+                          </span>
+                          <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">Markup: {selectedCustomerMarkupPct}% on cost</span>
+                        </div>
+                      </div>
+
+                      {/* Visual Revenue vs COGS vs Profit split bar */}
+                      {selectedCustomerBilledRev > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[10px] text-slate-400">
+                            <span>Cost Breakdown</span>
+                            <span>Procurement COGS ({(100 - parseFloat(selectedCustomerMarginPct)).toFixed(1)}%) • Gross Profit ({selectedCustomerMarginPct}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden flex border border-slate-800">
+                            <div 
+                              className="bg-slate-600 h-full transition-all" 
+                              style={{ width: `${Math.max(0, 100 - parseFloat(selectedCustomerMarginPct))}%` }} 
+                              title="Procurement Cost" 
+                            />
+                            <div 
+                              className="bg-purple-500 h-full transition-all" 
+                              style={{ width: `${Math.min(100, parseFloat(selectedCustomerMarginPct))}%` }} 
+                              title="Gross Profit" 
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Business Metadata & Route */}
                     <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 text-xs">

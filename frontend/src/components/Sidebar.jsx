@@ -12,9 +12,12 @@ import {
   Package,
   Boxes,
   ShoppingBag,
-  PanelLeftClose
+  PanelLeftClose,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { RaisLogo } from './RaisLogo';
 
 export const Sidebar = ({ 
@@ -28,6 +31,7 @@ export const Sidebar = ({
   onMouseLeave
 }) => {
   const { user, logout, hasRole } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -140,13 +144,22 @@ export const Sidebar = ({
               </span>
             </div>
           </div>
-          <button
-            onClick={logout}
-            title="Sign Out"
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors shrink-0"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? "Switch to Light Theme" : "Switch to Dark Theme"}
+              className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={logout}
+              title="Sign Out"
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>

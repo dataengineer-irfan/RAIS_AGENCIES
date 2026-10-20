@@ -18,7 +18,7 @@ import {
   ShieldCheck,
   Snowflake,
   Truck,
-  DollarSign,
+  Tag,
   Download,
   ChevronDown,
   ChevronRight,
@@ -109,6 +109,52 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
       setSortAsc(true);
     }
   };
+
+  const handleSortChange = (value) => {
+    switch (value) {
+      case 'sku_asc':
+        setSortField('sku');
+        setSortAsc(true);
+        break;
+      case 'name_asc':
+        setSortField('name');
+        setSortAsc(true);
+        break;
+      case 'name_desc':
+        setSortField('name');
+        setSortAsc(false);
+        break;
+      case 'price_desc':
+        setSortField('base_price');
+        setSortAsc(false);
+        break;
+      case 'price_asc':
+        setSortField('base_price');
+        setSortAsc(true);
+        break;
+      case 'stock_desc':
+        setSortField('current_stock');
+        setSortAsc(false);
+        break;
+      case 'stock_asc':
+        setSortField('current_stock');
+        setSortAsc(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const currentSortKey = useMemo(() => {
+    if (sortField === 'sku' && sortAsc) return 'sku_asc';
+    if (sortField === 'name' && sortAsc) return 'name_asc';
+    if (sortField === 'name' && !sortAsc) return 'name_desc';
+    if (sortField === 'base_price' && !sortAsc) return 'price_desc';
+    if (sortField === 'base_price' && sortAsc) return 'price_asc';
+    if (sortField === 'current_stock' && !sortAsc) return 'stock_desc';
+    if (sortField === 'current_stock' && sortAsc) return 'stock_asc';
+    return 'name_asc';
+  }, [sortField, sortAsc]);
 
   const uniqueBrands = useMemo(() => {
     return Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
@@ -296,10 +342,10 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             <button
               onClick={() => setFlyerModalOpen(true)}
               className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-              title="Official PDF Flyer"
+              title="Official PDF Price Flyer"
             >
               <FileImage className="w-3.5 h-3.5" />
-              <span>Flyer</span>
+              <span>Price Flyer</span>
             </button>
 
             {hasRole(['ADMIN', 'OPERATOR']) && (
@@ -307,10 +353,10 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 <button
                   onClick={() => setBulkPriceModalOpen(true)}
                   className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all shrink-0"
-                  title="Category Bulk Price Adjuster"
+                  title="Category Bulk Wholesale Price Adjuster"
                 >
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span>Bulk</span>
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>₹ Bulk Rates</span>
                 </button>
 
                 <button
@@ -328,7 +374,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           </div>
         </div>
 
-        {/* Tier 2: Omni-Search Input and Brand Filter */}
+        {/* Tier 2: Omni-Search Input, Brand Filter, and Sort Dropdown */}
         <div className="flex items-center gap-2">
           {/* Search Input with Clear */}
           <div className="relative flex-1">
@@ -354,11 +400,27 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
             className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer max-w-[140px] truncate"
+            title="Filter by Brand"
           >
             <option value="ALL">All Brands ({uniqueBrands.length})</option>
             {uniqueBrands.map(b => (
               <option key={b} value={b}>{b}</option>
             ))}
+          </select>
+
+          <select
+            value={currentSortKey}
+            onChange={(e) => handleSortChange(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer shrink-0"
+            title="Sort Products"
+          >
+            <option value="name_asc">🔤 Name (A → Z)</option>
+            <option value="name_desc">🔤 Name (Z → A)</option>
+            <option value="sku_asc">🏷️ SKU (A → Z)</option>
+            <option value="price_desc">💰 Price: High → Low</option>
+            <option value="price_asc">💰 Price: Low → High</option>
+            <option value="stock_desc">📦 Stock: High → Low</option>
+            <option value="stock_asc">📦 Stock: Low → High</option>
           </select>
         </div>
       </div>
@@ -427,6 +489,35 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 <span>+ SKU</span>
               </button>
             )}
+          </div>
+
+          {/* Mobile Secondary Row: Brand & Sort Slicers */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate"
+              title="Filter by Brand"
+            >
+              <option value="ALL">All Brands ({uniqueBrands.length})</option>
+              {uniqueBrands.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+
+            <select
+              value={currentSortKey}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate"
+              title="Sort Products"
+            >
+              <option value="name_asc">🔤 Name (A-Z)</option>
+              <option value="sku_asc">🏷️ SKU (A-Z)</option>
+              <option value="price_desc">💰 Price (High-Low)</option>
+              <option value="price_asc">💰 Price (Low-High)</option>
+              <option value="stock_desc">📦 Stock (High-Low)</option>
+              <option value="stock_asc">📦 Stock (Low-High)</option>
+            </select>
           </div>
 
           {/* Swipeable Category Chips */}
@@ -519,7 +610,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="font-mono font-bold text-[11px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                    <span className="font-mono font-bold text-[11px] text-amber-300 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 shadow-xs">
                                       {prod.sku}
                                     </span>
                                     <span className="text-[10px] font-semibold text-slate-400">
@@ -689,8 +780,10 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                               key={prod.id} 
                               className="border-b border-slate-800/50 hover:bg-slate-950/40 transition-colors group"
                             >
-                              <td className="py-2 px-3 font-mono font-bold text-amber-400 text-xs pl-6">
-                                {prod.sku}
+                              <td className="py-2 px-3 pl-6">
+                                <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 shadow-xs tracking-wide inline-block">
+                                  {prod.sku}
+                                </span>
                               </td>
                               <td className="py-2 px-3">
                                 <div className="flex items-center gap-2 min-w-0">
@@ -770,8 +863,10 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-amber-400">{prod.sku}</span>
-                    <span className="text-xs font-bold text-slate-400 uppercase">{prod.brand}</span>
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 shadow-xs tracking-wide">
+                      {prod.sku}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{prod.brand || 'RAIS'}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5 min-w-0">
                     <ProductVisualBadge product={prod} size="sm" />

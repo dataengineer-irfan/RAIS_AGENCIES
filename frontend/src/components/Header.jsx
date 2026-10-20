@@ -24,9 +24,12 @@ import {
   Download,
   HardDrive,
   RefreshCw,
-  Bell
+  Bell,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { backupApi } from '../services/api';
 import { RaisLogo } from './RaisLogo';
 
@@ -44,6 +47,7 @@ export const Header = ({
   alertsCount = 0
 }) => {
   const { user, logout, hasRole } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileNavDrawerOpen, setMobileNavDrawerOpen] = useState(false);
@@ -151,6 +155,25 @@ export const Header = ({
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             <span className="hidden sm:inline">AI Assistant</span>
           </button>
+
+          {/* Theme Switcher Toggle (Desktop) */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-500/50 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 active:scale-95"
+            title={theme === 'dark' ? "Switch to High-Clarity Light Theme" : "Switch to Executive Midnight Dark Theme"}
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden xl:inline text-slate-200">Light</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden xl:inline text-slate-800">Dark</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -177,6 +200,19 @@ export const Header = ({
 
           {/* Mobile Right Action Icons */}
           <div className="flex items-center gap-1.5">
+            {/* Theme Toggle Button (Mobile) */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+              title="Toggle Theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-500" />
+              )}
+            </button>
+
             {/* Search Expand Toggle */}
             <button
               onClick={() => setMobileSearchExpanded(!mobileSearchExpanded)}
@@ -479,6 +515,22 @@ export const Header = ({
                   )}
                 </div>
               )}
+
+              {/* Drawer Theme Switcher */}
+              <div className="pt-2 pb-1 shrink-0">
+                <button
+                  onClick={toggleTheme}
+                  className="w-full flex items-center justify-between p-2.5 bg-slate-950/80 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold transition-all active:scale-95"
+                >
+                  <div className="flex items-center gap-2">
+                    {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+                    <span className="text-white">Appearance Theme</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                    {theme === 'dark' ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
+                  </span>
+                </button>
+              </div>
 
               {/* Return to Main Screen Button inside drawer */}
               <div className="pt-2 pb-1 shrink-0">

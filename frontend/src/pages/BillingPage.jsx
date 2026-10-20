@@ -62,6 +62,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
   });
   const [activeStatusFilter, setActiveStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('DATE_DESC'); // DATE_DESC, DATE_ASC, AMOUNT_DESC, AMOUNT_ASC, DUE_DESC, INV_DESC
   
   // Master-Detail State (Pre-seeded at Frame 0 from persistent cache)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(() => {
@@ -272,7 +273,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
 
   const filteredInvoices = useMemo(() => {
     const term = (searchTerm || '').trim().toLowerCase();
-    return invoices.filter(inv => {
+    const list = invoices.filter(inv => {
       if (activeStatusFilter === 'DUE') {
         const out = parseFloat(inv.outstanding_amount || 0);
         if (out <= 0 && inv.status !== 'ISSUED' && inv.status !== 'PARTIALLY_PAID' && inv.status !== 'OVERDUE') return false;
@@ -299,7 +300,17 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       }
       return true;
     });
-  }, [invoices, activeStatusFilter, searchTerm]);
+
+    return list.slice().sort((a, b) => {
+      if (sortBy === 'AMOUNT_DESC') return (parseFloat(b.total_amount) || 0) - (parseFloat(a.total_amount) || 0);
+      if (sortBy === 'AMOUNT_ASC') return (parseFloat(a.total_amount) || 0) - (parseFloat(b.total_amount) || 0);
+      if (sortBy === 'DUE_DESC') return (parseFloat(b.outstanding_amount) || 0) - (parseFloat(a.outstanding_amount) || 0);
+      if (sortBy === 'INV_DESC') return (b.invoice_number || '').localeCompare(a.invoice_number || '');
+      if (sortBy === 'DATE_ASC') return new Date(a.invoice_date || a.created_at || 0) - new Date(b.invoice_date || b.created_at || 0);
+      // Default: DATE_DESC
+      return new Date(b.invoice_date || b.created_at || 0) - new Date(a.invoice_date || a.created_at || 0);
+    });
+  }, [invoices, activeStatusFilter, searchTerm, sortBy]);
 
   const selectedInvoice = selectedInvoiceDetails || invoices.find(i => i.id === selectedInvoiceId);
 
@@ -410,6 +421,23 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
               ✕
             </button>
           )}
+        </div>
+
+        {/* Sort Selector */}
+        <div className="flex items-center gap-1 shrink-0">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-500 font-mono font-medium cursor-pointer"
+            title="Sort Invoices Order"
+          >
+            <option value="DATE_DESC">📅 Newest Date</option>
+            <option value="DATE_ASC">📅 Oldest Date</option>
+            <option value="AMOUNT_DESC">💰 Amount (High → Low)</option>
+            <option value="AMOUNT_ASC">💰 Amount (Low → High)</option>
+            <option value="DUE_DESC">🚨 Due (High → Low)</option>
+            <option value="INV_DESC"># Invoice Number</option>
+          </select>
         </div>
 
         {/* Live Financial Micro-Ticker */}
@@ -680,15 +708,16 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           {selectedInvoice ? (
             <div className="h-full flex flex-col overflow-hidden">
               
-              {/* Inspector Header */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-slate-800 shrink-0">
-                <div>
+              {/* Sleek Inspector Command Header */}
+              <div className="flex flex-col gap-2 pb-2.5 border-b border-slate-800 shrink-0">
+                {/* Top Row: Invoice #, Status, & Quick Actions Ribbon */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                    <span className="font-mono font-bold text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 flex items-center gap-1.5 shadow-xs">
                       {selectedInvoice.invoice_number}
                       <button 
                         onClick={() => handleCopyCode(selectedInvoice.invoice_number)}
-                        className="hover:text-white"
+                        className="hover:text-white transition-colors"
                         title="Copy Invoice #"
                       >
                         {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -696,81 +725,93 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                     </span>
                     <StatusBadge status={selectedInvoice.status} />
                   </div>
-                  <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                    {selectedInvoice.customer_name}
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Billed on {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText} {selectedInvoice.due_date ? `• Due: ${selectedInvoice.due_date}` : ''}
-                    {selectedInvoice.customer_since && (
-                      <span className="block mt-0.5 text-[11px] text-amber-400/90 font-medium">
-                        🤝 Associated Since: {new Date(selectedInvoice.customer_since).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
-                    )}
-                  </p>
-                </div>
 
-                {/* Direct Action Chips - Partitioned with Fitts's Law Touch Target Safety (Min 44-48px targets) */}
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  {/* Primary Dispatch Action: High-contrast Thermal Slip */}
-                  <button
-                    onClick={() => setThermalModalOpen(true)}
-                    className="min-h-[44px] sm:min-h-[48px] px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-blue-600/20"
-                    title="Print 58mm/80mm Thermal Receipt with UPI QR"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Thermal Slip</span>
-                  </button>
-
-                  {/* Secondary Dispatch Action: WhatsApp Bill */}
-                  <button
-                    onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
-                    className="min-h-[44px] sm:min-h-[48px] px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow-sm"
-                    title="Send Invoice via WhatsApp"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>WhatsApp Bill</span>
-                  </button>
-
-                  {/* Secondary Utilities: A4 PDF & Edit Bill */}
-                  <a
-                    href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex items-center justify-center p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-xs font-bold transition-colors"
-                    title="Standard A4 Tax Invoice PDF"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </a>
-
-                  {parseFloat(selectedInvoice.paid_amount || 0) === 0 && hasRole(['ADMIN', 'OPERATOR']) && (
+                  {/* Clean Action Buttons Ribbon */}
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                    {/* Thermal Slip */}
                     <button
-                      onClick={() => {
-                        setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
-                        setEditInvoiceModalOpen(true);
-                      }}
-                      className="min-h-[44px] sm:min-h-[48px] px-3.5 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-                      title="Edit Customer, Line Items, or Quantities (Stock Auto-Reconciled)"
+                      onClick={() => setThermalModalOpen(true)}
+                      className="h-8 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shadow-blue-600/20"
+                      title="Print 58mm Thermal Slip"
                     >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Edit</span>
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Thermal Slip</span>
                     </button>
-                  )}
 
-                  {/* Danger Group: Delete (Isolated border to prevent accidental mis-taps) */}
-                  {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
-                    <div className="flex items-center pl-1.5 border-l border-slate-800">
+                    {/* WhatsApp Bill */}
+                    <button
+                      onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
+                      className="h-8 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                      title="Send Invoice via WhatsApp"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>WhatsApp Bill</span>
+                    </button>
+
+                    {/* A4 PDF View */}
+                    <a
+                      href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="h-8 px-2.5 flex items-center justify-center text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-bold transition-colors"
+                      title="Standard A4 Tax Invoice PDF"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </a>
+
+                    {/* Edit Bill */}
+                    {parseFloat(selectedInvoice.paid_amount || 0) === 0 && hasRole(['ADMIN', 'OPERATOR']) && (
+                      <button
+                        onClick={() => {
+                          setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
+                          setEditInvoiceModalOpen(true);
+                        }}
+                        className="h-8 px-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                        title="Edit Customer, Line Items, or Quantities"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Edit</span>
+                      </button>
+                    )}
+
+                    {/* Delete Bill */}
+                    {selectedInvoice.status !== 'PAID' && hasRole(['ADMIN']) && (
                       <button
                         onClick={() => {
                           setInvoiceToDelete(selectedInvoice);
                           setDeleteModalOpen(true);
                         }}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex items-center justify-center p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 rounded-xl text-xs font-bold transition-all active:scale-95"
+                        className="h-8 px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center"
                         title="Delete Invoice & Restore Stock"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Row: Customer Name & Meta Context */}
+                <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+                  <div>
+                    <h2 className="text-sm sm:text-base font-black text-white leading-tight">
+                      {selectedInvoice.customer_name}
+                    </h2>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                      <span>Billed: {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText}</span>
+                      {selectedInvoice.due_date && (
+                        <>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-amber-400/90 font-mono font-medium">Due: {selectedInvoice.due_date}</span>
+                        </>
+                      )}
+                      {selectedInvoice.customer_since && (
+                        <>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-slate-400">Customer Since: {new Date(selectedInvoice.customer_since).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
