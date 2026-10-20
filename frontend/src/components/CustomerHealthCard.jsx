@@ -7,7 +7,8 @@ import {
   Search,
   Users,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  X
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
@@ -65,11 +66,11 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
 
   if (loading) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl animate-pulse space-y-3">
-        <div className="h-6 w-48 bg-slate-800 rounded"></div>
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-12 bg-slate-800/40 rounded-xl"></div>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl animate-pulse space-y-3 h-full flex flex-col">
+        <div className="h-8 bg-slate-800/60 rounded-xl"></div>
+        <div className="space-y-2 flex-1">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-14 bg-slate-800/40 rounded-xl"></div>
           ))}
         </div>
       </div>
@@ -81,85 +82,75 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
   const totalOverdue = parseFloat(healthData?.total_overdue_risk || 0);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xl flex flex-col h-full overflow-hidden gap-2.5">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-xl flex flex-col h-full overflow-hidden gap-2">
       
-      {/* ─── TOP SEARCH & FILTER BAR ─── */}
+      {/* ─── 46px COMMAND RIBBON (SEARCH + RISK PILLS + OVERDUE ALERT) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-56 min-w-0">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search outlet name, phone..."
-              className="w-full pl-8 pr-6 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')} 
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-0.5"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {totalOverdue > 0 && (
-            <span className="hidden sm:inline-flex text-[10px] font-mono font-bold px-2.5 py-1 bg-rose-500/10 text-rose-300 rounded-xl border border-rose-500/30 whitespace-nowrap">
-              Overdue Risk: ₹{totalOverdue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </span>
+        
+        {/* Left: Omni-Search Input */}
+        <div className="relative flex-1 sm:max-w-xs min-w-0">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search outlet name, phone, code..."
+            className="w-full pl-8 pr-6 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')} 
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-0.5"
+            >
+              <X className="w-3 h-3" />
+            </button>
           )}
         </div>
 
-        {/* Traffic Light Filter Pills */}
-        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1 overflow-x-auto no-scrollbar shrink-0">
-          <button
-            onClick={() => setFilter('ALL')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-              filter === 'ALL' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            All ({healthData?.total_customers ?? 0})
-          </button>
-          <button
-            onClick={() => setFilter('AT_RISK')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-              filter === 'AT_RISK' 
-                ? 'bg-rose-500 text-white shadow-sm' 
-                : 'text-rose-400 hover:bg-rose-500/10'
-            }`}
-          >
-            🔴 Risk ({healthData?.at_risk_count ?? 0})
-          </button>
-          <button
-            onClick={() => setFilter('WATCH')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-              filter === 'WATCH' 
-                ? 'bg-amber-500 text-slate-950 shadow-sm' 
-                : 'text-amber-400 hover:bg-amber-500/10'
-            }`}
-          >
-            🟡 Watch ({healthData?.watch_count ?? 0})
-          </button>
-          <button
-            onClick={() => setFilter('HEALTHY')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 ${
-              filter === 'HEALTHY' 
-                ? 'bg-emerald-500 text-white shadow-sm' 
-                : 'text-emerald-400 hover:bg-emerald-500/10'
-            }`}
-          >
-            🟢 Good ({healthData?.healthy_count ?? 0})
-          </button>
+        {/* Center / Right: 1-Click Risk Filter Pills */}
+        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 overflow-x-auto no-scrollbar shrink-0">
+          {[
+            { id: 'ALL', label: `All (${healthData?.total_customers ?? 0})`, activeClass: 'bg-amber-500 text-slate-950' },
+            { id: 'AT_RISK', label: `🔴 Risk (${healthData?.at_risk_count ?? 0})`, activeClass: 'bg-rose-500 text-white' },
+            { id: 'WATCH', label: `🟡 Watch (${healthData?.watch_count ?? 0})`, activeClass: 'bg-amber-500 text-slate-950' },
+            { id: 'HEALTHY', label: `🟢 Good (${healthData?.healthy_count ?? 0})`, activeClass: 'bg-emerald-500 text-white' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all shrink-0 ${
+                filter === tab.id
+                  ? `${tab.activeClass} shadow-sm`
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {/* Overdue Alert Badge */}
+        {totalOverdue > 0 && (
+          <span className="hidden xl:inline-flex text-[10px] font-mono font-bold px-2 py-1 bg-rose-500/10 text-rose-300 rounded-lg border border-rose-500/30 whitespace-nowrap shrink-0">
+            Overdue Risk: ₹{totalOverdue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
+        )}
       </div>
 
       {/* ─── OUTLET HEALTH LIST (HIGH-DENSITY, INTERNAL SCROLL) ─── */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 custom-scrollbar pr-0.5">
         {filteredCustomers.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-xs">
-            No outlets matching your filter.
+          <div className="py-12 text-center text-slate-500 text-xs space-y-1">
+            <Users className="w-8 h-8 mx-auto text-slate-600" />
+            <p>No outlets matching your filter or search query.</p>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-2.5 py-0.5 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold mt-1"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           filteredCustomers.map(c => {
@@ -171,7 +162,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
             return (
               <div
                 key={c?.customer_id}
-                className={`p-2.5 sm:p-3 rounded-xl border transition-all text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                className={`p-2.5 rounded-xl border transition-all text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
                   isAtRisk 
                     ? 'bg-rose-950/15 border-rose-500/30 hover:border-rose-500/50' 
                     : isWatch
@@ -185,7 +176,11 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                     <span className={`w-2 h-2 rounded-full shrink-0 ${
                       isAtRisk ? 'bg-rose-500 animate-pulse' : isWatch ? 'bg-amber-400' : 'bg-emerald-400'
                     }`} />
-                    <h4 className="font-bold text-white text-xs truncate max-w-[180px] sm:max-w-[260px]">
+                    <h4 
+                      onClick={() => onSelectCustomer && onSelectCustomer(c)}
+                      className="font-bold text-white text-xs truncate max-w-[180px] sm:max-w-[260px] cursor-pointer hover:text-amber-400 transition-colors"
+                      title="View Customer Dossier"
+                    >
                       {c?.name}
                     </h4>
                     <span className="text-[10px] text-slate-400 font-mono">
@@ -198,14 +193,14 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
                         : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                     }`}>
-                      {isAtRisk ? 'At Risk' : isWatch ? 'Watch' : 'Healthy'}
+                      {isAtRisk ? '🚨 At Risk' : isWatch ? '🟡 Watch' : '🟢 Healthy'}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400 flex-wrap">
                     <span>{c?.contact_person || 'Owner'}</span>
                     <span>•</span>
-                    <span className="font-mono">{c?.phone}</span>
+                    <span className="font-mono text-slate-300">{c?.phone}</span>
                     {c?.avg_days_late > 0 && (
                       <>
                         <span>•</span>
@@ -237,7 +232,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                     {overdue > 0 && (
                       <button
                         onClick={() => handleSendWhatsAppReminder(c)}
-                        className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition"
+                        className="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition"
                         title="Send WhatsApp Payment Statement"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
@@ -259,7 +254,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                       <button
                         onClick={() => onSelectCustomer(c)}
                         className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition"
-                        title="View Customer Ledgers"
+                        title="View Customer Dossier"
                       >
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>

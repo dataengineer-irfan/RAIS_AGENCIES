@@ -1842,12 +1842,16 @@ export const DashboardPage = ({
         {/* ═══════════════════════════════════════════════════════════════════════
             PAGE 5: ACTIVITY & RECEIPTS (Mobile-First Touch Architecture)
            ═══════════════════════════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════════════════════════
+            PAGE 5: ACTIVITY & RECEIPTS (Split-Screen High-Density Hub)
+           ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'activity' && (
-          <div className="h-full flex flex-col gap-3 overflow-y-auto pb-10 animate-fadeIn custom-scrollbar">
+          <div className="h-full flex flex-col lg:grid lg:grid-cols-12 gap-2.5 overflow-y-auto lg:overflow-hidden pb-16 sm:pb-0 animate-fadeIn">
             
-            {/* Invoice History & Counter Slips (Compact 1-Line Mobile-First Header) */}
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 shadow-lg flex flex-col shrink-0">
-              <div className="flex items-center justify-between mb-2.5 shrink-0 pb-2 border-b border-slate-800/80">
+            {/* ─── LEFT: INVOICE SLIPS & BILLING STREAM (7 cols on Desktop) ─── */}
+            <div className="lg:col-span-7 bg-slate-900 rounded-xl border border-slate-800 p-2.5 sm:p-3 shadow-lg flex flex-col overflow-hidden min-h-[400px] lg:min-h-0 h-full">
+              {/* Command Ribbon */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-800/80 shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
                     <FileText className="w-3.5 h-3.5" />
@@ -1855,140 +1859,199 @@ export const DashboardPage = ({
                   <h3 className="text-xs sm:text-sm font-black text-white tracking-wide truncate">
                     Invoice Slips & Billing
                   </h3>
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-950 text-slate-300 border border-slate-800">
+                    {filteredRecentInvoices.length}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('billing')}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors shrink-0 active:scale-95"
-                >
-                  <span>Full Billing</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+
+                <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0">
+                  {/* Search Input */}
+                  <div className="relative w-32 sm:w-36 min-w-0">
+                    <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={dashboardInvoiceSearch}
+                      onChange={(e) => setDashboardInvoiceSearch(e.target.value)}
+                      placeholder="Search #, buyer..."
+                      className="w-full pl-6 pr-5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    />
+                    {dashboardInvoiceSearch && (
+                      <button
+                        onClick={() => setDashboardInvoiceSearch('')}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div className="flex items-center gap-0.5 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    {[
+                      { id: 'ALL', label: 'All' },
+                      { id: 'DUE', label: '🚨 Due' },
+                      { id: 'PAID', label: '🟢 Paid' },
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setDashboardInvoiceFilter(f.id)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                          dashboardInvoiceFilter === f.id
+                            ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('billing')}
+                    className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-colors shrink-0 active:scale-95 ml-auto sm:ml-0"
+                    title="Open Full Billing Register"
+                  >
+                    <span>Full Billing</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
-              {/* Table with internal scroll (Responsive: Desktop Table + Mobile Cards) */}
-              <div className="w-full">
-                {/* Mobile Cards View (< sm) */}
-                <div className="sm:hidden space-y-3 pb-2">
-                  {(kpis?.recent_invoices || []).map((inv) => (
-                    <div key={inv.id} className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/90 space-y-2.5 shadow-sm">
-                      {/* Row 1: Invoice Header & Status */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono font-black text-amber-400 text-xs tracking-tight">{inv.invoice_number}</span>
-                          {inv.invoice_date && (
-                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
-                              {formatShortDate(inv.invoice_date)}
+              {/* Invoice List (High-Density, Internal Scroll) */}
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
+                {filteredRecentInvoices.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500 text-xs space-y-1">
+                    <FileText className="w-8 h-8 mx-auto text-slate-600" />
+                    <p>{dashboardInvoiceSearch ? 'No invoices match your search query.' : 'No invoices recorded.'}</p>
+                    {dashboardInvoiceSearch && (
+                      <button
+                        onClick={() => setDashboardInvoiceSearch('')}
+                        className="px-2.5 py-0.5 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold mt-1"
+                      >
+                        Clear Search
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  filteredRecentInvoices.map((inv) => {
+                    const total = parseFloat(inv.total_amount || 0);
+                    const due = parseFloat(inv.outstanding_amount || 0);
+                    const isPaid = due <= 0.01;
+                    const isCopied = copiedInvId === inv.id;
+
+                    return (
+                      <div
+                        key={inv.id}
+                        className="bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 rounded-xl p-2.5 text-xs transition-all flex flex-col gap-1.5"
+                      >
+                        {/* Row 1: Invoice #, Date, Status, Total & Due */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span 
+                              onClick={() => handleCopyInvoiceNumber(inv.id, inv.invoice_number)}
+                              className="font-mono font-bold text-white text-xs bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 flex items-center gap-1 cursor-pointer hover:border-amber-500/50"
+                              title="Click to copy invoice number"
+                            >
+                              {inv.invoice_number}
+                              {isCopied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-500" />}
                             </span>
-                          )}
-                        </div>
-                        <StatusBadge status={inv.status} />
-                      </div>
-
-                      {/* Row 2: Customer Name & Financial Balance */}
-                      <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-900">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Customer</span>
-                          <span className="text-sm text-white font-bold truncate block">{inv.customer_name}</span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="font-mono text-white font-black text-sm block">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</span>
-                          {parseFloat(inv.outstanding_amount || 0) > 0 ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30 mt-0.5">
-                              Due: ₹{parseFloat(inv.outstanding_amount).toFixed(2)}
+                            {inv.invoice_date && (
+                              <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                                {formatShortDate(inv.invoice_date)}
+                              </span>
+                            )}
+                            <StatusBadge status={inv.status} />
+                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                              isPaid
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-mono font-black'
+                            }`}>
+                              {isPaid ? '🟢 Settled' : `Due: ₹${due.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-emerald-400 font-bold block mt-0.5">Paid Full</span>
-                          )}
-                        </div>
-                      </div>
+                          </div>
 
-                      {/* Row 3: Touch-Friendly Quick Action Buttons (Min 44px Height for Warehouse Gloves/Fingers) */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800/60">
-                        <button
-                          type="button"
-                          onClick={() => openThermalReceipt(inv.id)}
-                          className="min-h-[44px] px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                        >
-                          <Printer className="w-4 h-4 text-blue-400" />
-                          <span>Thermal 58mm</span>
-                        </button>
-                        <a
-                          href={billingApi.getPrintHtmlUrl(inv.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="min-h-[44px] px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                          title="View PDF"
-                        >
-                          <Eye className="w-4 h-4 text-slate-400" />
-                          <span>View Bill</span>
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                  {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
-                    <div className="text-center py-8 text-slate-500 text-xs">No recent invoices recorded.</div>
-                  )}
-                </div>
-
-                {/* Desktop Table View (sm and up) */}
-                <table className="hidden sm:table w-full text-[11px]">
-                  <thead className="sticky top-0 bg-slate-900 z-10">
-                    <tr className="border-b border-slate-800 text-xs">
-                      <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Invoice #</th>
-                      <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Date</th>
-                      <th className="text-left font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Customer</th>
-                      <th className="text-right font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Total</th>
-                      <th className="text-right font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Balance</th>
-                      <th className="text-center font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Status</th>
-                      <th className="text-center font-bold text-slate-400 uppercase tracking-wider py-2.5 px-3">Print</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs">
-                    {(kpis?.recent_invoices || []).map((inv) => (
-                      <tr key={inv.id} className="hover:bg-slate-950/50 transition-colors">
-                        <td className="py-2.5 px-3 font-mono font-bold text-white">{inv.invoice_number}</td>
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">{formatShortDate(inv.invoice_date)}</td>
-                        <td className="py-2.5 px-3 text-slate-200 font-medium truncate max-w-[180px]">{inv.customer_name}</td>
-                        <td className="py-2.5 px-3 text-right font-mono text-white font-bold">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</td>
-                        <td className={`py-2.5 px-3 text-right font-mono font-bold ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
-                          ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
-                        </td>
-                        <td className="py-2.5 px-3 text-center"><StatusBadge status={inv.status} /></td>
-                        <td className="py-2.5 px-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                          {/* Total Billed & Action Buttons */}
+                          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                            <span className="font-mono font-black text-white text-xs sm:text-sm">
+                              ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
                             <button
                               onClick={() => openThermalReceipt(inv.id)}
-                              className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                              className="px-2 py-0.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors active:scale-95"
+                              title="Print Thermal 58mm Slip"
                             >
-                              <Printer className="w-3.5 h-3.5" />
-                              <span>Thermal</span>
+                              <Printer className="w-3 h-3" />
+                              <span>Slip</span>
                             </button>
                             <a
                               href={billingApi.getPrintHtmlUrl(inv.id)}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-lg transition-colors"
-                              title="View PDF"
+                              className="p-1 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors"
+                              title="View Full Bill PDF"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <Eye className="w-3 h-3" />
                             </a>
+                            {!isPaid && onOpenPaymentModal && (
+                              <button
+                                onClick={() => onOpenPaymentModal(inv)}
+                                className="px-2 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors active:scale-95"
+                                title="Record Settlement for this invoice"
+                              >
+                                <CreditCard className="w-3 h-3" />
+                                <span>Pay</span>
+                              </button>
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+
+                        {/* Row 2: Customer Name, City & Items Preview */}
+                        <div className="flex items-center justify-between gap-2 text-slate-300 text-[11px] pt-1 border-t border-slate-900">
+                          <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                            <span 
+                              onClick={() => onNavigate('customers')}
+                              className="font-bold text-white hover:text-amber-400 cursor-pointer truncate"
+                              title="View Customer Dossier"
+                            >
+                              {inv.customer_name}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono truncate">
+                              📍 {inv.customer_city || 'Rayachoty'}
+                            </span>
+                          </div>
+
+                          {/* Line items preview pills */}
+                          {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
+                            <div className="flex items-center gap-1 overflow-hidden shrink-0 max-w-[220px]">
+                              {inv.items_preview.slice(0, 2).map((it, i) => (
+                                <span key={i} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate" title={it}>
+                                  📦 {it}
+                                </span>
+                              ))}
+                              {inv.items_preview.length > 2 && (
+                                <span className="text-[9px] text-slate-500 font-mono font-bold">
+                                  +{inv.items_preview.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
-            {/* Recent Payments Section */}
-            <div className="shrink-0">
+            {/* ─── RIGHT: RECENT COLLECTIONS & RECEIPTS (5 cols on Desktop) ─── */}
+            <div className="lg:col-span-5 flex flex-col h-full min-h-[350px] lg:min-h-0">
               <RecentPaymentsCard 
                 payments={kpis?.recent_payments || []} 
                 onNavigateToPayments={() => onNavigate('payments')} 
               />
             </div>
+
           </div>
         )}
 

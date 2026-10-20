@@ -10,7 +10,8 @@ import {
   Grid, 
   Search, 
   Package, 
-  ArrowUpRight 
+  ArrowUpRight,
+  X
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons';
@@ -56,11 +57,11 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
 
   if (loading) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl animate-pulse space-y-3">
-        <div className="h-6 w-48 bg-slate-800 rounded"></div>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl animate-pulse space-y-3 h-full flex flex-col">
+        <div className="h-8 bg-slate-800/60 rounded-xl"></div>
         <div className="h-10 bg-slate-800/40 rounded-xl"></div>
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map(i => (
+        <div className="space-y-2 flex-1">
+          {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="h-12 bg-slate-800/30 rounded-xl"></div>
           ))}
         </div>
@@ -71,63 +72,89 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   if (!data) return null;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xl flex flex-col h-full overflow-hidden gap-2.5 animate-fadeIn">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-xl flex flex-col h-full overflow-hidden gap-2 animate-fadeIn">
       
-      {/* ─── TOP ACTION & SEARCH BAR ─── */}
+      {/* ─── 46px COMMAND RIBBON (SEARCH + FILTER PILLS + VIEW TOGGLE) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+        
+        {/* Left: Title & SKU Count */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
             <Award className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-black text-white">
-                Product Performance & Velocity
-              </h2>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                {data.total_skus} SKUs
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              30-day velocity, growth trends, and cold-room stock intelligence
-            </p>
+          <div className="flex items-center gap-1.5 truncate">
+            <h2 className="text-xs sm:text-sm font-black text-white truncate">
+              Product Intelligence
+            </h2>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-md bg-slate-950 text-slate-300 border border-slate-800 shrink-0">
+              {data.total_skus} SKUs
+            </span>
           </div>
         </div>
 
-        {/* Search & View Switcher */}
-        <div className="flex items-center gap-1.5 self-stretch sm:self-auto">
-          <div className="relative flex-1 sm:w-48 min-w-0">
+        {/* Center: 1-Click Classification Filter Pills */}
+        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 overflow-x-auto no-scrollbar shrink-0">
+          {[
+            { id: 'ALL', label: `All (${data.total_skus})`, activeClass: 'bg-amber-500 text-slate-950' },
+            { id: 'WINNER', label: `⭐ Winners (${data?.winners_count ?? 0})`, activeClass: 'bg-emerald-500 text-white' },
+            { id: 'STEADY', label: `📦 Steady (${data?.steady_count ?? 0})`, activeClass: 'bg-amber-500 text-slate-950' },
+            { id: 'DECLINING', label: `📉 Declining (${data?.declining_count ?? 0})`, activeClass: 'bg-orange-500 text-white' },
+            { 
+              id: 'ZERO_MOVER', 
+              label: data.total_dead_stock_value > 0 
+                ? `❄️ Dead Stock (${data?.zero_movers_count ?? 0}) • ₹${Math.round(data.total_dead_stock_value/1000)}k` 
+                : `❄️ Dead Stock (${data?.zero_movers_count ?? 0})`, 
+              activeClass: 'bg-rose-500 text-white' 
+            }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all shrink-0 ${
+                activeTab === tab.id
+                  ? `${tab.activeClass} shadow-sm font-black`
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right: Search & View Switcher */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+          <div className="relative w-40 sm:w-48 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search SKU, brand..."
-              className="w-full pl-8 pr-6 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              className="w-full pl-8 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-0.5"
               >
-                ✕
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
 
-          <div className="flex bg-slate-950 border border-slate-800 rounded-xl p-0.5 shrink-0">
+          <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5 shrink-0">
             <button
               onClick={() => setViewMode('TABLE')}
-              className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`p-1 rounded-md text-xs font-semibold transition-all ${
                 viewMode === 'TABLE' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
-              title="Table View"
+              title="High-Density Table View"
             >
               <TableIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setViewMode('MATRIX')}
-              className={`p-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`p-1 rounded-md text-xs font-semibold transition-all ${
                 viewMode === 'MATRIX' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
               title="Card Matrix View"
@@ -138,52 +165,20 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
         </div>
       </div>
 
-      {/* ─── 1-LINE MICRO-STRIP / DEAD STOCK ALERT ─── */}
-      {data.total_dead_stock_value > 0 && (
-        <div className="bg-rose-950/25 border border-rose-500/30 rounded-xl px-3 py-1.5 flex items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-2 overflow-hidden min-w-0">
-            <Snowflake className="w-3.5 h-3.5 text-rose-400 animate-pulse shrink-0" />
-            <span className="text-xs text-rose-200 font-bold truncate">
-              Cold Room Risk: <strong className="text-white font-mono">₹{data.total_dead_stock_value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong> in {data.zero_movers_count} stationary SKUs
-            </span>
-          </div>
-          <button
-            onClick={() => setActiveTab('ZERO_MOVER')}
-            className="text-[10px] font-bold text-rose-300 hover:text-white bg-rose-500/20 px-2 py-0.5 rounded-md border border-rose-500/30 whitespace-nowrap shrink-0 active:scale-95 transition"
-          >
-            Filter Dead Stock →
-          </button>
-        </div>
-      )}
-
-      {/* ─── COMPACT FILTER PILL STRIP ─── */}
-      <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1 overflow-x-auto no-scrollbar shrink-0">
-        {[
-          { id: 'ALL', label: `All (${data.total_skus})`, activeClass: 'bg-amber-500 text-slate-950' },
-          { id: 'WINNER', label: `⭐ Winners (${data?.winners_count ?? 0})`, activeClass: 'bg-emerald-500 text-white' },
-          { id: 'STEADY', label: `📦 Steady (${data?.steady_count ?? 0})`, activeClass: 'bg-amber-500 text-slate-950' },
-          { id: 'DECLINING', label: `📉 Declining (${data?.declining_count ?? 0})`, activeClass: 'bg-orange-500 text-white' },
-          { id: 'ZERO_MOVER', label: `❄️ Dead Stock (${data?.zero_movers_count ?? 0})`, activeClass: 'bg-rose-500 text-white' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0 ${
-              activeTab === tab.id
-                ? `${tab.activeClass} shadow-sm`
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* ─── DATA VIEW (flex-1 min-h-0 overflow-y-auto) ─── */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         {filteredItems.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-xs">
-            No products match this filter or search query.
+          <div className="py-12 text-center text-slate-500 text-xs space-y-1">
+            <Package className="w-8 h-8 mx-auto text-slate-600" />
+            <p>No products match this filter or search query.</p>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-2.5 py-0.5 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold mt-1"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : viewMode === 'TABLE' ? (
           /* TABLE VIEW (HIGH DENSITY) */
@@ -211,7 +206,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                     <tr 
                       key={item.product_id}
                       onClick={() => onSelectProduct && onSelectProduct(item)}
-                      className="hover:bg-slate-950/50 cursor-pointer transition-colors"
+                      className="hover:bg-slate-950/60 cursor-pointer transition-colors"
                     >
                       <td className="py-2 px-2.5">
                         <div className="flex items-center gap-2">
@@ -274,7 +269,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                 <div
                   key={item.product_id}
                   onClick={() => onSelectProduct && onSelectProduct(item)}
-                  className={`bg-slate-950/70 border rounded-xl p-3 cursor-pointer transition-all hover:scale-[1.01] ${
+                  className={`bg-slate-950/70 border rounded-xl p-2.5 cursor-pointer transition-all hover:scale-[1.01] ${
                     isWinner ? 'border-emerald-500/40 hover:border-emerald-500' :
                     isZeroMover ? 'border-rose-500/40 hover:border-rose-500' :
                     isDeclining ? 'border-orange-500/40 hover:border-orange-500' :
