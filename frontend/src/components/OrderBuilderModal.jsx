@@ -45,22 +45,20 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
 
       if (effectiveCustomerId) {
         setCustomerId(effectiveCustomerId);
-      } else if (customerList.length > 0) {
-        setCustomerId(customerList[0].id);
+      } else {
+        setCustomerId('');
       }
 
-      if (productList.length > 0) {
-        setItems([
-          {
-            product_id: productList[0].id,
-            quantity: 1,
-            unit_price: parseFloat(productList[0].base_price),
-            tax_rate: parseFloat(productList[0].tax_rate || 0),
-            packaging_unit: productList[0].packaging_unit || 'PKT',
-            current_stock: parseFloat(productList[0].current_stock || 0)
-          }
-        ]);
-      }
+      setItems([
+        {
+          product_id: '',
+          quantity: 1,
+          unit_price: 0,
+          tax_rate: 0,
+          packaging_unit: '',
+          current_stock: 0
+        }
+      ]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -144,17 +142,15 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
   };
 
   const handleAddItem = () => {
-    if (products.length === 0) return;
-    const firstProd = products[0];
     setItems([
       ...items,
       {
-        product_id: firstProd.id,
+        product_id: '',
         quantity: 1,
-        unit_price: parseFloat(firstProd.base_price),
-        tax_rate: parseFloat(firstProd.tax_rate || 0),
-        packaging_unit: firstProd.packaging_unit || 'PKT',
-        current_stock: parseFloat(firstProd.current_stock || 0)
+        unit_price: 0,
+        tax_rate: 0,
+        packaging_unit: '',
+        current_stock: 0
       }
     ]);
   };
@@ -282,18 +278,16 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                 type="button"
                 onClick={() => {
                   setCreatedOrder(null);
-                  if (products.length > 0) {
-                    setItems([
-                      {
-                        product_id: products[0].id,
-                        quantity: 1,
-                        unit_price: parseFloat(products[0].base_price),
-                        tax_rate: parseFloat(products[0].tax_rate || 0),
-                        packaging_unit: products[0].packaging_unit || 'PKT',
-                        current_stock: parseFloat(products[0].current_stock || 0)
-                      }
-                    ]);
-                  }
+                  setItems([
+                    {
+                      product_id: '',
+                      quantity: 1,
+                      unit_price: 0,
+                      tax_rate: 0,
+                      packaging_unit: '',
+                      current_stock: 0
+                    }
+                  ]);
                 }}
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors"
               >

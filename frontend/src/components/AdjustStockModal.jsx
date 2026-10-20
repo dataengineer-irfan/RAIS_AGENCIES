@@ -57,8 +57,8 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
       setProducts(safeData);
       if (preselectedProductId) {
         setProductId(preselectedProductId);
-      } else if (safeData.length > 0) {
-        setProductId(safeData[0]?.id || '');
+      } else {
+        setProductId('');
       }
     } catch (err) {
       console.error(err);
@@ -78,7 +78,7 @@ export const AdjustStockModal = ({ isOpen, onClose, onStockAdjusted, preselected
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const targetProdId = productId || (products.length > 0 ? products[0].id : null);
+    const targetProdId = productId;
     if (!targetProdId) {
       setError('Please select a product.');
       return;

@@ -117,18 +117,8 @@ export const InvoiceBuilderModal = ({
             packaging_unit: preselectedProduct.packaging_unit || 'PKT'
           }
         ]);
-      } else if (prodData.length > 0) {
-        const firstProd = prodData[0];
-        setItems([
-          {
-            product_id: firstProd.id,
-            quantity: 1,
-            unit_price: parseFloat(firstProd.base_price || 0),
-            discount_rate: 0,
-            packaging_unit: firstProd.packaging_unit || 'PKT'
-          }
-        ]);
       } else {
+        // Blank item row: user must choose product from dropdown or quick catalog
         setItems([
           { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }
         ]);
@@ -252,20 +242,8 @@ export const InvoiceBuilderModal = ({
     const curToday = new Date().toISOString().split('T')[0];
     setInvoiceDate(curToday);
     setDueDate(curToday);
-    if (products.length > 0) {
-      const firstProd = products[0];
-      setItems([
-        {
-          product_id: firstProd.id,
-          quantity: 1,
-          unit_price: parseFloat(firstProd.base_price || 0),
-          discount_rate: 0,
-          packaging_unit: firstProd.packaging_unit || 'PKT'
-        }
-      ]);
-    } else {
-      setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
-    }
+    // Do not pre-select any product by default - user chooses SKU
+    setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
   };
 
   const handleProductChange = (index, prodId) => {
@@ -299,26 +277,8 @@ export const InvoiceBuilderModal = ({
   };
 
   const addItemRow = () => {
-    let defaultProd = products.length > 0 ? products[0] : null;
-    if (products.length > items.length) {
-      const unusedProd = products.find(p => !items.some(i => i.product_id === p.id));
-      if (unusedProd) defaultProd = unusedProd;
-    }
-
-    if (defaultProd) {
-      setItems([
-        ...items,
-        {
-          product_id: defaultProd.id,
-          quantity: 1,
-          unit_price: parseFloat(defaultProd.base_price || 0),
-          discount_rate: 0,
-          packaging_unit: defaultProd.packaging_unit || 'PKT'
-        }
-      ]);
-    } else {
-      setItems([...items, { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
-    }
+    // Add clean empty line item row - user selects SKU from dropdown or quick catalog
+    setItems([...items, { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
   };
 
   const handleQuickAddProduct = (prod) => {

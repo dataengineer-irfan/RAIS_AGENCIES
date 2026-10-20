@@ -57,8 +57,8 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
       setProducts(items);
       if (initialProductId) {
         setProductId(initialProductId);
-      } else if (items.length > 0) {
-        setProductId(items[0].id);
+      } else {
+        setProductId('');
       }
     } catch (err) {
       console.error(err);
@@ -79,7 +79,7 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const targetProdId = productId || (products.length > 0 ? products[0].id : null);
+    const targetProdId = productId;
     if (!targetProdId) {
       setError('Please select a product.');
       return;

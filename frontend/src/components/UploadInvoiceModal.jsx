@@ -283,23 +283,22 @@ export const UploadInvoiceModal = ({
   };
 
   const handleAddItem = () => {
-    const firstProd = products[0];
     setItems(prev => [
       ...prev,
       {
         id: Date.now(),
-        supplier_item: 'Custom Inward Item',
-        productId: firstProd ? (firstProd.product_id || firstProd.id) : '',
-        sku: firstProd ? firstProd.sku : '',
-        productName: firstProd ? firstProd.name : '',
-        invoiced_qty: 10,
+        supplier_item: '',
+        productId: '',
+        sku: '',
+        productName: '',
+        invoiced_qty: 1,
         unit_description: '1 Packet',
         pack_ratio: 1,
-        packets: 10,
-        purchase_cost: 100,
+        packets: 1,
+        purchase_cost: 0,
         batch_number: 'LOT-' + Date.now().toString().slice(-4),
-        is_matched: Boolean(firstProd),
-        confidence: firstProd ? 100 : 0
+        is_matched: false,
+        confidence: 0
       }
     ]);
   };
