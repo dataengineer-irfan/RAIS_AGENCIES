@@ -223,6 +223,18 @@ export const CustomersPage = ({
         const diff = parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
         if (Math.abs(diff) > 0.001) return diff;
         return (a.business_name || '').localeCompare(b.business_name || '');
+      } else if (sortBy === 'REVENUE_DESC') {
+        const diff = parseFloat(b.total_invoiced || 0) - parseFloat(a.total_invoiced || 0);
+        if (Math.abs(diff) > 0.001) return diff;
+        return (a.business_name || '').localeCompare(b.business_name || '');
+      } else if (sortBy === 'PAID_DESC') {
+        const diff = parseFloat(b.total_paid || 0) - parseFloat(a.total_paid || 0);
+        if (Math.abs(diff) > 0.001) return diff;
+        return (a.business_name || '').localeCompare(b.business_name || '');
+      } else if (sortBy === 'PROFIT_DESC') {
+        const diff = parseFloat(b.gross_profit || 0) - parseFloat(a.gross_profit || 0);
+        if (Math.abs(diff) > 0.001) return diff;
+        return (a.business_name || '').localeCompare(b.business_name || '');
       } else if (sortBy === 'LIMIT_DESC') {
         return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
       } else if (sortBy === 'CODE_ASC') {
@@ -235,7 +247,11 @@ export const CustomersPage = ({
   // Slicer Stats
   const totalOutlets = customers.length;
   const filteredCount = filteredCustomers.length;
-  const totalReceivables = customers.reduce((acc, c) => acc + parseFloat(c.outstanding_balance || 0), 0);
+  const totalReceivables = filteredCustomers.reduce((acc, c) => acc + parseFloat(c.outstanding_balance || 0), 0);
+  const totalRevenue = filteredCustomers.reduce((acc, c) => acc + parseFloat(c.total_invoiced || 0), 0);
+  const totalPaid = filteredCustomers.reduce((acc, c) => acc + parseFloat(c.total_paid || 0), 0);
+  const totalProfit = filteredCustomers.reduce((acc, c) => acc + parseFloat(c.gross_profit || 0), 0);
+  const overallMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0.0';
   const totalCreditExposure = customers.reduce((acc, c) => acc + parseFloat(c.credit_limit || 0), 0);
   const customersWithDues = customers.filter(c => parseFloat(c.outstanding_balance || 0) > 0.01).length;
 
@@ -318,8 +334,11 @@ export const CustomersPage = ({
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
             >
-              <option value="NAME_ASC">Name (A → Z)</option>
-              <option value="BALANCE_DESC">Balance (High → Low)</option>
+              <option value="BALANCE_DESC">🚨 Balance Due (High → Low)</option>
+              <option value="REVENUE_DESC">💰 Revenue (High → Low)</option>
+              <option value="PAID_DESC">💳 Collections (High → Low)</option>
+              <option value="PROFIT_DESC">📈 Gross Profit (High → Low)</option>
+              <option value="NAME_ASC">🔤 Name (A → Z)</option>
               <option value="LIMIT_DESC">Credit Limit (High → Low)</option>
               <option value="CODE_ASC">Code (CUST-0001)</option>
             </select>
@@ -376,10 +395,13 @@ export const CustomersPage = ({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
+            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
             title="Sort Outlets"
           >
             <option value="BALANCE_DESC">🚨 Due ↓</option>
+            <option value="REVENUE_DESC">💰 Revenue ↓</option>
+            <option value="PAID_DESC">💳 Paid ↓</option>
+            <option value="PROFIT_DESC">📈 Profit ↓</option>
             <option value="NAME_ASC">🔤 A → Z</option>
             <option value="LIMIT_DESC">💳 Limit ↓</option>
             <option value="CODE_ASC">🏷️ Code</option>
@@ -400,17 +422,50 @@ export const CustomersPage = ({
           )}
         </div>
 
-        {/* Swipeable Horizontal Filter Chips */}
+        {/* Swipeable Horizontal Filter & Ranking Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
           <button
-            onClick={() => { setAreaFilter('ALL'); setBalanceFilter('ALL'); }}
+            onClick={() => { setAreaFilter('ALL'); setBalanceFilter('ALL'); setSortBy('BALANCE_DESC'); }}
             className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-              areaFilter === 'ALL' && balanceFilter === 'ALL'
+              areaFilter === 'ALL' && balanceFilter === 'ALL' && sortBy === 'BALANCE_DESC'
                 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                 : 'bg-slate-900 border border-slate-800 text-slate-400'
             }`}
           >
             All Outlets ({totalOutlets})
+          </button>
+
+          <button
+            onClick={() => setSortBy(sortBy === 'REVENUE_DESC' ? 'BALANCE_DESC' : 'REVENUE_DESC')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              sortBy === 'REVENUE_DESC'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-300'
+            }`}
+          >
+            💰 Top Revenue
+          </button>
+
+          <button
+            onClick={() => setSortBy(sortBy === 'PAID_DESC' ? 'BALANCE_DESC' : 'PAID_DESC')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              sortBy === 'PAID_DESC'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-300'
+            }`}
+          >
+            💳 Top Collections
+          </button>
+
+          <button
+            onClick={() => setSortBy(sortBy === 'PROFIT_DESC' ? 'BALANCE_DESC' : 'PROFIT_DESC')}
+            className={`px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+              sortBy === 'PROFIT_DESC'
+                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20'
+                : 'bg-slate-900 border border-slate-800 text-slate-300'
+            }`}
+          >
+            📈 Top Profit
           </button>
 
           <button
@@ -458,30 +513,37 @@ export const CustomersPage = ({
           </button>
         </div>
 
-        {/* Mobile Quick Metric Strip: Ultra-compact 1-line summary badge */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-xs">
-          <div className="flex items-center gap-1.5 text-slate-300">
-            <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="font-extrabold text-white font-mono">{filteredCount}</span>
-            <span className="text-slate-500 text-[11px] font-mono">/ {totalOutlets}</span>
+        {/* Mobile Quick Metric Strip: Clean, Smooth 4-stat responsive summary */}
+        <div className="grid grid-cols-4 gap-1 px-2.5 py-1.5 bg-slate-900/90 border border-slate-800 rounded-xl text-center shadow-sm">
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-[9px] uppercase font-bold text-slate-500 font-sans">Outlets</span>
+            <span className="text-xs font-black text-white font-mono">{filteredCount}</span>
           </div>
-          <div className="h-3 w-[1px] bg-slate-800" />
-          <div className="flex items-center gap-1 text-emerald-400 font-mono">
-            <span className="text-[10px] uppercase font-bold text-slate-500 font-sans">Due:</span>
-            <span className="font-extrabold">₹{parseFloat(totalReceivables || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+          <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
+            <span className="text-[9px] uppercase font-bold text-amber-500 font-sans">Revenue</span>
+            <span className="text-xs font-black text-amber-400 font-mono">
+              ₹{totalRevenue >= 100000 ? `${(totalRevenue / 100000).toFixed(1)}L` : Math.round(totalRevenue).toLocaleString('en-IN')}
+            </span>
           </div>
-          <div className="h-3 w-[1px] bg-slate-800" />
-          <div className="flex items-center gap-1 text-blue-400 font-mono">
-            <span className="text-[10px] uppercase font-bold text-slate-500 font-sans">Cap:</span>
-            <span className="font-bold">₹{(parseFloat(totalCreditExposure || 0) / 100000).toFixed(1)}L</span>
+          <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
+            <span className="text-[9px] uppercase font-bold text-emerald-500 font-sans">Paid</span>
+            <span className="text-xs font-black text-emerald-400 font-mono">
+              ₹{totalPaid >= 100000 ? `${(totalPaid / 100000).toFixed(1)}L` : Math.round(totalPaid).toLocaleString('en-IN')}
+            </span>
+          </div>
+          <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
+            <span className="text-[9px] uppercase font-bold text-purple-400 font-sans">Profit</span>
+            <span className="text-xs font-black text-purple-300 font-mono">
+              ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')}
+            </span>
           </div>
         </div>
       </div>
 
       {/* ─── ROW 2: DESKTOP CUSTOMER KPI METRIC RIBBON (md and above) ─── */}
-      <div className="hidden md:grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-2 shrink-0">
         {/* KPI 1: Active Accounts */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-amber-500 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between">
+        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-amber-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Filtered Outlets</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
@@ -494,46 +556,63 @@ export const CustomersPage = ({
           </div>
         </div>
 
-        {/* KPI 2: Total Open Receivables */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-emerald-500 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between">
+        {/* KPI 2: Total Filtered Revenue */}
+        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-amber-400 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Book Receivables</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Filtered Revenue</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-emerald-400 font-mono">
-                ₹{totalReceivables.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              <span className="text-base font-black text-amber-300 font-mono">
+                ₹{totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
             <DollarSign className="w-4 h-4" />
           </div>
         </div>
 
-        {/* KPI 3: Total Credit Exposure */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-blue-500 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between">
+        {/* KPI 3: Total Collections */}
+        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-emerald-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Credit Exposure Cap</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Payments Received</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-base font-black text-blue-400 font-mono">
-                ₹{(totalCreditExposure / 100000).toFixed(2)} Lakhs
+              <span className="text-base font-black text-emerald-400 font-mono">
+                ₹{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <CreditCard className="w-4 h-4" />
           </div>
         </div>
 
-        {/* KPI 4: Settlement Standard */}
-        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-purple-500 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between">
+        {/* KPI 4: Total Gross Profit */}
+        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-purple-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Settlement Model</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Gross Profit ({overallMargin}%)</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xs font-black text-purple-300">Cash on Delivery</span>
+              <span className="text-base font-black text-purple-300 font-mono">
+                ₹{totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-            <CreditCard className="w-4 h-4" />
+            <TrendingUp className="w-4 h-4" />
+          </div>
+        </div>
+
+        {/* KPI 5: Book Receivables Outstanding */}
+        <div className="bg-slate-900 border border-slate-800 border-t-2 border-t-rose-500 rounded-xl px-3.5 py-2 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Receivables Due</span>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-base font-black text-rose-400 font-mono">
+                ₹{totalReceivables.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+            <ShieldCheck className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -657,6 +736,27 @@ export const CustomersPage = ({
                           <History className="w-2.5 h-2.5" />
                           <span>Ledger</span>
                         </button>
+                      </div>
+
+                      {/* Financial Performance Badges: Revenue, Collections, Profit */}
+                      <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-slate-800/60 text-[10px] font-mono flex-wrap">
+                        <span className="inline-flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-slate-300">
+                          <span className="text-[9px] font-bold text-slate-500 font-sans">REV</span>
+                          <span className="font-bold text-slate-200">₹{Math.round(parseFloat(cust.total_invoiced || 0)).toLocaleString('en-IN')}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 text-emerald-300">
+                          <span className="text-[9px] font-bold text-emerald-500 font-sans">PAID</span>
+                          <span className="font-bold text-emerald-400">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-purple-300">
+                          <span className="text-[9px] font-bold text-purple-400 font-sans">PROFIT</span>
+                          <span className="font-bold text-purple-300">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
+                          {parseFloat(cust.total_invoiced || 0) > 0 && (
+                            <span className="text-[9px] text-purple-400/80">
+                              ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
 
@@ -860,6 +960,43 @@ export const CustomersPage = ({
                 {activeInspectorTab === 'overview' && (
                   <div className="space-y-3">
                     
+                    {/* Commercial Performance Matrix (Revenue, Collections, Gross Profit) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2.5 sm:p-3 bg-gradient-to-br from-slate-950 to-slate-900 border border-amber-500/30 rounded-xl shadow-sm">
+                        <span className="text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1">
+                          💰 Total Revenue
+                        </span>
+                        <div className="text-sm sm:text-base font-black font-mono text-white mt-0.5">
+                          ₹{parseFloat(selectedCustomer.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-mono">Cumulative Billed</span>
+                      </div>
+
+                      <div className="p-2.5 sm:p-3 bg-gradient-to-br from-slate-950 to-slate-900 border border-emerald-500/30 rounded-xl shadow-sm">
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase flex items-center gap-1">
+                          💳 Collections
+                        </span>
+                        <div className="text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5">
+                          ₹{parseFloat(selectedCustomer.total_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-mono">Received & Settled</span>
+                      </div>
+
+                      <div className="p-2.5 sm:p-3 bg-gradient-to-br from-slate-950 to-slate-900 border border-purple-500/30 rounded-xl shadow-sm">
+                        <span className="text-[10px] font-bold text-purple-400 uppercase flex items-center gap-1">
+                          📈 Gross Profit
+                        </span>
+                        <div className="text-sm sm:text-base font-black font-mono text-purple-300 mt-0.5">
+                          ₹{parseFloat(selectedCustomer.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                        <span className="text-[9px] text-purple-400/80 font-mono font-bold">
+                          {parseFloat(selectedCustomer.total_invoiced || 0) > 0 
+                            ? `${((parseFloat(selectedCustomer.gross_profit || 0) / parseFloat(selectedCustomer.total_invoiced || 1)) * 100).toFixed(1)}% Realized Margin`
+                            : '0.0% Margin'}
+                        </span>
+                      </div>
+                    </div>
+
                     {/* Financial Matrix Cards */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">

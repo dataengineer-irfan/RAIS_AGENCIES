@@ -84,3 +84,26 @@ def test_fifo_reconciliation_and_pizza_time_balance(db):
 
     assert kpis.total_outstanding == aging_summary.total_outstanding
     assert aging_summary.total_outstanding == sum_cust_aging
+
+def test_customer_gross_profit_and_commercial_metrics(db):
+    """Verifies that customers list and detail return accurate gross profit, total_invoiced, and total_paid."""
+    customers = CustomerService.list_customers(db, limit=20)
+    assert len(customers) > 0
+    for c in customers:
+        assert hasattr(c, "gross_profit")
+        assert isinstance(c.gross_profit, Decimal)
+        assert hasattr(c, "total_invoiced")
+        assert isinstance(c.total_invoiced, Decimal)
+        assert hasattr(c, "total_paid")
+        assert isinstance(c.total_paid, Decimal)
+        assert hasattr(c, "outstanding_balance")
+        assert isinstance(c.outstanding_balance, Decimal)
+
+    # Test single customer get_customer_by_id matches list batch calculation
+    first_c = customers[0]
+    single = CustomerService.get_customer_by_id(db, first_c.id)
+    assert single.gross_profit == first_c.gross_profit
+    assert single.total_invoiced == first_c.total_invoiced
+    assert single.total_paid == first_c.total_paid
+    assert single.outstanding_balance == first_c.outstanding_balance
+

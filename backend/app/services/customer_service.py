@@ -5,9 +5,11 @@ from datetime import datetime, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from app.models.customer import Customer
-from app.models.invoice import Invoice
+from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment, PaymentAllocation
 from app.models.order import Order
+from app.models.catalogue import Product
+from app.models.inventory import StockMovement
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse, CustomerSummary
 from app.schemas.reports import CustomerLedgerEntry
 from app.core.exceptions import EntityNotFoundException, RaisAppException
@@ -49,6 +51,61 @@ class CustomerService:
         outstanding_balance = opening_balance + total_invoiced - total_paid
 
         return total_invoiced, total_paid, outstanding_balance
+
+    @staticmethod
+    def get_customer_profit(db: Session, customer_id: str) -> Decimal:
+        """
+        Calculates live cumulative gross profit for a single customer:
+        gross_profit = sum(line_total - (quantity * purchase_cost))
+        Fallback cost is 80% of wholesale base_price (or line_total) if purchase cost is unrecorded.
+        """
+        valid_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+
+        cost_rows = db.query(
+            StockMovement.product_id,
+            StockMovement.purchase_cost
+        ).filter(StockMovement.purchase_cost.isnot(None))\
+         .order_by(StockMovement.created_at.desc()).all()
+        cost_map = {}
+        for row in cost_rows:
+            if row.product_id not in cost_map and row.purchase_cost is not None:
+                cost_map[row.product_id] = Decimal(str(row.purchase_cost))
+
+        inv_items = db.query(
+            InvoiceItem.product_id,
+            InvoiceItem.quantity,
+            InvoiceItem.line_total,
+            Product.base_price
+        ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+         .outerjoin(Product, Product.id == InvoiceItem.product_id)\
+         .filter(
+            Invoice.customer_id == customer_id,
+            Invoice.status.in_(valid_statuses)
+        ).all()
+
+        total_profit = Decimal("0.00")
+        for row in inv_items:
+            pid = row[0]
+            qty = Decimal(str(row[1] or "0"))
+            ltotal = Decimal(str(row[2] or "0"))
+            base_p = Decimal(str(row[3] or "0")) if row[3] is not None else Decimal("0")
+
+            pcost = cost_map.get(pid)
+            if pcost and pcost > Decimal("0"):
+                cogs = pcost * qty
+            elif base_p > Decimal("0"):
+                cogs = base_p * Decimal("0.80") * qty
+            else:
+                cogs = ltotal * Decimal("0.80")
+
+            total_profit += (ltotal - cogs)
+
+        return total_profit.quantize(Decimal("0.01"))
 
     @staticmethod
     def list_customers(
@@ -117,6 +174,50 @@ class CustomerService:
         ).group_by(Invoice.customer_id).all()
         first_inv_map = {row[0]: row[1] for row in first_inv_rows}
 
+        # Single batch query for product purchase costs (latest cost per SKU)
+        cost_rows = db.query(
+            StockMovement.product_id,
+            StockMovement.purchase_cost
+        ).filter(StockMovement.purchase_cost.isnot(None))\
+         .order_by(StockMovement.created_at.desc()).all()
+        cost_map = {}
+        for row in cost_rows:
+            if row.product_id not in cost_map and row.purchase_cost is not None:
+                cost_map[row.product_id] = Decimal(str(row.purchase_cost))
+
+        # Single batch query for invoice items across all selected customers
+        inv_item_rows = db.query(
+            Invoice.customer_id,
+            InvoiceItem.product_id,
+            InvoiceItem.quantity,
+            InvoiceItem.line_total,
+            Product.base_price
+        ).join(InvoiceItem, Invoice.id == InvoiceItem.invoice_id)\
+         .outerjoin(Product, Product.id == InvoiceItem.product_id)\
+         .filter(
+            Invoice.customer_id.in_(cust_ids),
+            Invoice.status.in_(valid_statuses)
+        ).all()
+
+        profit_map = {cid: Decimal("0.00") for cid in cust_ids}
+        for row in inv_item_rows:
+            cid = row[0]
+            pid = row[1]
+            qty = Decimal(str(row[2] or "0"))
+            ltotal = Decimal(str(row[3] or "0"))
+            base_p = Decimal(str(row[4] or "0")) if row[4] is not None else Decimal("0")
+
+            pcost = cost_map.get(pid)
+            if pcost and pcost > Decimal("0"):
+                cogs = pcost * qty
+            elif base_p > Decimal("0"):
+                cogs = base_p * Decimal("0.80") * qty
+            else:
+                cogs = ltotal * Decimal("0.80")
+
+            profit = ltotal - cogs
+            profit_map[cid] = profit_map.get(cid, Decimal("0.00")) + profit
+
         result = []
         for c in customers:
             opening_balance = Decimal(str(c.opening_balance or "0.00"))
@@ -147,6 +248,7 @@ class CustomerService:
                 total_invoiced=total_invoiced,
                 total_paid=total_paid,
                 outstanding_balance=outstanding,
+                gross_profit=profit_map.get(c.id, Decimal("0.00")).quantize(Decimal("0.01")),
                 first_invoice_date=first_inv,
                 customer_since=cust_since,
                 created_at=c.created_at,
@@ -162,6 +264,7 @@ class CustomerService:
             raise EntityNotFoundException("Customer", customer_id)
         
         total_invoiced, total_paid, outstanding = CustomerService.get_customer_balances(db, c.id)
+        gross_profit = CustomerService.get_customer_profit(db, c.id)
 
         first_inv = db.query(func.min(Invoice.invoice_date)).filter(
             Invoice.customer_id == c.id,
@@ -190,6 +293,7 @@ class CustomerService:
             total_invoiced=total_invoiced,
             total_paid=total_paid,
             outstanding_balance=outstanding,
+            gross_profit=gross_profit,
             first_invoice_date=first_inv,
             customer_since=cust_since,
             created_at=c.created_at,

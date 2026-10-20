@@ -47,6 +47,7 @@ class CustomerResponse(CustomerBase):
     total_invoiced: Decimal = Decimal("0.00")
     total_paid: Decimal = Decimal("0.00")
     outstanding_balance: Decimal = Decimal("0.00")  # = opening_balance + total_invoiced - total_paid
+    gross_profit: Decimal = Decimal("0.00")
     first_invoice_date: Optional[date] = None
     customer_since: Optional[datetime] = None
     created_at: datetime
