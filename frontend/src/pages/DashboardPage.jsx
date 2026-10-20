@@ -19,9 +19,13 @@ import {
   RefreshCw,
   Calendar,
   Bell,
-  Filter as FilterIcon
+  Filter as FilterIcon,
+  Search,
+  Copy,
+  Check
 } from 'lucide-react';
 import { reportApi, customerApi, catalogueApi, billingApi, getLocalCachedSnapshot } from '../services/api';
+import { copyToClipboard } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
 import { DashboardTabStrip } from '../components/DashboardTabStrip';
 import { CompactForecastStrip } from '../components/CompactForecastStrip';
@@ -720,6 +724,96 @@ export const DashboardPage = ({
     return [Math.max(1, count - 3), Math.max(1, count - 3), Math.max(1, count - 2), Math.max(1, count - 2), Math.max(1, count - 1), count, count];
   }, [kpis?.active_customers_count]);
 
+  // ─── Executive Intelligence & Operational Pulse Metrics ───
+  const sortedDebtors = useMemo(() => {
+    return (customers || [])
+      .map(c => ({
+        id: c?.id,
+        name: c?.business_name || c?.contact_person,
+        phone: c?.phone,
+        balance: parseFloat(c?.outstanding_balance || 0)
+      }))
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance);
+  }, [customers]);
+
+  const totalOutstanding = sortedDebtors.reduce((sum, c) => sum + c.balance, 0);
+  const top3Sum = sortedDebtors.slice(0, 3).reduce((sum, c) => sum + c.balance, 0);
+  const concentrationPct = totalOutstanding > 0 ? Math.round((top3Sum / totalOutstanding) * 100) : 0;
+  const topDebtor = sortedDebtors[0];
+
+  const totalCollections = useMemo(() => {
+    if (kpis?.revenue_periods?.today?.collections !== undefined) {
+      return parseFloat(kpis.revenue_periods.today.collections || 0);
+    }
+    return (kpis?.recent_payments || []).reduce((sum, p) => sum + parseFloat(p?.amount || 0), 0);
+  }, [kpis?.revenue_periods, kpis?.recent_payments]);
+
+  const totalInvoiced = useMemo(() => {
+    if (kpis?.revenue_periods?.today?.revenue !== undefined) {
+      return parseFloat(kpis.revenue_periods.today.revenue || 0);
+    }
+    return (kpis?.recent_invoices || []).reduce((sum, inv) => sum + parseFloat(inv?.total_amount || 0), 0);
+  }, [kpis?.revenue_periods, kpis?.recent_invoices]);
+
+  const cashRealizationPct = totalInvoiced > 0
+    ? Math.min(100, Math.round((totalCollections / totalInvoiced) * 100))
+    : (totalCollections > 0 ? 100 : 0);
+
+  // ─── In-Stream Recent Invoices & Fast-Moving Items Filter State ───
+  const [dashboardInvoiceSearch, setDashboardInvoiceSearch] = useState('');
+  const [dashboardInvoiceFilter, setDashboardInvoiceFilter] = useState('ALL');
+  const [copiedInvId, setCopiedInvId] = useState(null);
+
+  const handleCopyInvoiceNumber = async (id, num) => {
+    await copyToClipboard(num);
+    setCopiedInvId(id);
+    setTimeout(() => setCopiedInvId(null), 2000);
+  };
+
+  const filteredRecentInvoices = useMemo(() => {
+    let list = kpis?.recent_invoices || [];
+    if (dashboardInvoiceFilter === 'DUE') {
+      list = list.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0.01);
+    } else if (dashboardInvoiceFilter === 'PAID') {
+      list = list.filter(inv => parseFloat(inv.outstanding_amount || 0) <= 0.01);
+    }
+    if (dashboardInvoiceSearch.trim()) {
+      const q = dashboardInvoiceSearch.toLowerCase().trim();
+      list = list.filter(inv => 
+        (inv.invoice_number || '').toLowerCase().includes(q) ||
+        (inv.customer_name || '').toLowerCase().includes(q) ||
+        (inv.customer_city || '').toLowerCase().includes(q) ||
+        (Array.isArray(inv.items_preview) && inv.items_preview.some(it => it.toLowerCase().includes(q)))
+      );
+    }
+    return list;
+  }, [kpis?.recent_invoices, dashboardInvoiceFilter, dashboardInvoiceSearch]);
+
+  const topProductsList = useMemo(() => {
+    const list = kpis?.top_selling_products || [];
+    return list.map(prod => {
+      const name = (prod.product_name || prod.name || prod.item_description || prod.sku || 'Wholesale SKU').trim();
+      const rev = parseFloat(prod.total_revenue || 0);
+      const qty = parseFloat(prod.quantity_sold || 0);
+      const stock = parseFloat(prod.current_stock ?? prod.stock ?? 0);
+      const minAlert = parseFloat(prod.min_stock_alert || 10);
+      return {
+        ...prod,
+        displayName: name,
+        revenueVal: isNaN(rev) ? 0 : rev,
+        qtyVal: isNaN(qty) ? 0 : qty,
+        stockVal: isNaN(stock) ? 0 : stock,
+        minAlertVal: isNaN(minAlert) ? 10 : minAlert
+      };
+    });
+  }, [kpis?.top_selling_products]);
+
+  const maxVolume = useMemo(() => {
+    if (topProductsList.length === 0) return 1;
+    return Math.max(...topProductsList.map(p => p.qtyVal), 1);
+  }, [topProductsList]);
+
   if (loading && !rawKpis) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 text-slate-400 text-xs animate-pulse space-y-3">
@@ -808,27 +902,45 @@ export const DashboardPage = ({
               </div>
             )}
 
-            {/* Row 1: Action Header (compact) */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 shadow-lg shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                  Wholesale Operations
+            {/* Row 1: Unified Executive Command & Operational Pulse Ribbon */}
+            <div className="flex items-center justify-between bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 shadow-md shrink-0 gap-2 text-xs">
+              <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 shrink-0">
+                  Wholesale Command
                 </span>
-                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                  Executive Command & Decision Overview
-                </h1>
+                {/* Embedded High-Density Pulse Pill */}
+                <div 
+                  onClick={() => onNavigate('receivables')}
+                  className="flex items-center gap-2 px-2.5 py-0.5 bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 rounded-lg cursor-pointer transition-colors overflow-hidden"
+                  title="Click to view full Receivables & Concentration Risk"
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${cashRealizationPct >= 70 ? 'bg-emerald-400 animate-pulse' : cashRealizationPct >= 40 ? 'bg-amber-400' : 'bg-rose-400'}`} />
+                  <span className="text-slate-200 text-xs font-semibold truncate">
+                    {concentrationPct > 0 ? (
+                      <>Risk: <strong className="text-amber-400">{concentrationPct}% Debt in Top 3</strong> {topDebtor ? `(${topDebtor.name} ₹${Math.round(topDebtor.balance).toLocaleString('en-IN')})` : ''}</>
+                    ) : (
+                      'Accounts operating within healthy credit terms'
+                    )}
+                  </span>
+                  <span className="text-slate-600 hidden xl:inline">•</span>
+                  <span className="text-emerald-400 text-xs font-bold hidden xl:inline">
+                    {cashRealizationPct}% Cash Intake
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 {onOpenInactiveReminder && (
                   <button
                     onClick={onOpenInactiveReminder}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-xl text-xs uppercase tracking-wider border border-amber-500/30 transition-all hover:scale-105 active:scale-95 shadow-sm"
+                    className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-lg text-xs uppercase tracking-wider border border-amber-500/30 transition-all hover:scale-105"
                     title="View Outlets Needing Re-Order Reminder"
                   >
-                    <Bell className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Re-Stock Alerts</span>
+                    <Bell className="w-3 h-3 text-amber-400" />
+                    <span>Alerts</span>
                     {localAlertsCount > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[10px]">
+                      <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[10px]">
                         {localAlertsCount}
                       </span>
                     )}
@@ -836,106 +948,96 @@ export const DashboardPage = ({
                 )}
                 <button
                   onClick={onOpenInvoiceBuilder}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+                  className="flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-sm transition-all hover:scale-105"
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span>New Invoice</span>
+                  <PlusCircle className="w-3 h-3" />
+                  <span>+ Invoice</span>
                 </button>
                 <button
                   onClick={onOpenPaymentModal}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95"
+                  className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider shadow-sm transition-all hover:scale-105"
                 >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Collect Payment</span>
+                  <CreditCard className="w-3 h-3" />
+                  <span>+ Collect</span>
                 </button>
               </div>
             </div>
 
-            {/* Row 1.5: Executive Pulse Banner (Anomaly Detection & Operational Storytelling) */}
-            <ExecutivePulseBanner
-              kpis={kpis}
-              customers={customers}
-              onNavigate={handleDashboardNavigate}
-              onOpenPaymentModal={onOpenPaymentModal}
-            />
-
-            {/* Row 2: 6 Executive KPI Cards (Desktop Power BI Fabric Standard) */}
+            {/* Row 2: 6 Sleek High-Density KPI Cards (Desktop Standard) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 shrink-0">
-              {/* Card 1: Revenue (Dynamic for active period: Today, Yesterday, This Week, Past Week, This Month) */}
+              {/* Card 1: Revenue */}
               <div 
                 onClick={() => openDrilldown('revenue', `${periodTitles[selectedPeriod] || 'Revenue'} Breakdown`)}
-                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 hover:border-amber-500/60 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider truncate">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">
                       {periodTitles[selectedPeriod] || 'Revenue'}
                     </span>
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setBillsDrawerOpen(true); }}
-                      className="px-1.5 py-0.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30 shrink-0 transition-colors"
+                      className="px-1.5 py-0.2 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-mono text-[9px] font-bold border border-amber-500/30 shrink-0 transition-colors"
                       title="Click to view bills for this period"
                     >
                       {activeBillsCount} Bills ↗
                     </button>
                   </div>
-                  <p className="text-base lg:text-lg font-bold text-white mt-1.5 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-white mt-1 font-mono truncate">
                     ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80">
-                  <MiniSparkline data={revenueTrend} color="blue" width={48} height={16} />
-                  <span className="text-blue-400 font-semibold text-[10px]">
-                    Invoiced
-                  </span>
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 pt-1 border-t border-slate-800/80">
+                  <MiniSparkline data={revenueTrend} color="blue" width={44} height={14} />
+                  <span className="text-blue-400 font-semibold text-[10px]">Invoiced</span>
                 </div>
               </div>
 
-              {/* Card 2: Cash & UPI Collections (BESIDE REVENUE!) */}
+              {/* Card 2: Collections */}
               <div 
                 onClick={() => onNavigate('payments')}
-                className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-slate-900 p-2.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500/60 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider truncate">
+                    <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider truncate">
                       {periodCollectionTitles[selectedPeriod] || 'Collections'}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30 shrink-0">
+                    <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[9px] font-bold border border-emerald-500/30 shrink-0">
                       {activePaymentsCount} Rec
                     </span>
                   </div>
-                  <p className="text-base lg:text-lg font-bold text-emerald-400 mt-1.5 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-emerald-400 mt-1 font-mono truncate">
                     ₹{activeCollections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-[10px] font-mono mt-2 pt-1.5 border-t border-slate-800/80 text-slate-400">
+                <div className="flex items-center justify-between text-[10px] font-mono mt-1.5 pt-1 border-t border-slate-800/80 text-slate-400">
                   <span className="text-emerald-300 font-semibold truncate">💵 ₹{activeCash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   <span className="text-blue-300 font-semibold truncate">📱 ₹{activeUpi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                 </div>
               </div>
 
-              {/* Card 3: Total Outstanding / Outlets Receivables */}
+              {/* Card 3: Receivables */}
               <div 
                 onClick={() => setActivePage('receivables')}
-                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-amber-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 hover:border-amber-500/60 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Receivables</span>
-                    <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                      <Clock className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Receivables</span>
+                    <div className="w-5 h-5 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                      <Clock className="w-3 h-3" />
                     </div>
                   </div>
-                  <p className="text-base lg:text-lg font-bold text-amber-400 mt-1.5 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-amber-400 mt-1 font-mono truncate">
                     ₹{outstandingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80">
-                  <MiniSparkline data={receivablesTrend} color="amber" width={48} height={16} />
-                  <span className="text-amber-400 font-semibold flex items-center gap-0.5 text-[11px]">
-                    Due <ArrowUpRight className="w-3 h-3" />
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 pt-1 border-t border-slate-800/80">
+                  <MiniSparkline data={receivablesTrend} color="amber" width={44} height={14} />
+                  <span className="text-amber-400 font-semibold flex items-center gap-0.5 text-[10px]">
+                    Due <ArrowUpRight className="w-2.5 h-2.5" />
                   </span>
                 </div>
               </div>
@@ -943,176 +1045,356 @@ export const DashboardPage = ({
               {/* Card 4: Overall Profit */}
               <div 
                 onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive')}
-                className="bg-slate-900 p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500/70 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-slate-900 p-2.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500/70 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Overall Profit</span>
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                      <TrendingUp className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Overall Profit</span>
+                    <div className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                      <TrendingUp className="w-3 h-3" />
                     </div>
                   </div>
-                  <p className="text-base lg:text-lg font-bold text-emerald-400 mt-1.5 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-emerald-400 mt-1 font-mono truncate">
                     ₹{profitVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-xs text-emerald-500/90 mt-2 pt-1.5 border-t border-slate-800/80 font-medium">
-                  <MiniSparkline data={profitTrend} color="emerald" width={48} height={16} />
-                  <span className="font-semibold text-emerald-400 text-[11px]">Net Pos</span>
+                <div className="flex items-center justify-between text-[10px] text-emerald-500/90 mt-1.5 pt-1 border-t border-slate-800/80 font-medium">
+                  <MiniSparkline data={profitTrend} color="emerald" width={44} height={14} />
+                  <span className="font-semibold text-emerald-400 text-[10px]">Net Pos</span>
                 </div>
               </div>
 
               {/* Card 5: Overdue */}
               <div 
                 onClick={() => setActivePage('receivables')}
-                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-rose-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 hover:border-rose-500/60 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Overdue</span>
-                    <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                      <AlertTriangle className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Overdue</span>
+                    <div className="w-5 h-5 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                      <AlertTriangle className="w-3 h-3" />
                     </div>
                   </div>
-                  <p className="text-base lg:text-lg font-bold text-rose-400 mt-1.5 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-rose-400 mt-1 font-mono truncate">
                     ₹{overdueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80">
-                  <MiniSparkline data={overdueTrend} color="rose" width={48} height={16} />
-                  <span className={`text-[11px] font-semibold flex items-center gap-0.5 ${overdueVal > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
-                    {overdueVal > 0 ? 'Risk' : 'Clear'} <ArrowUpRight className="w-3 h-3" />
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 pt-1 border-t border-slate-800/80">
+                  <MiniSparkline data={overdueTrend} color="rose" width={44} height={14} />
+                  <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${overdueVal > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
+                    {overdueVal > 0 ? 'Risk' : 'Clear'} <ArrowUpRight className="w-2.5 h-2.5" />
                   </span>
                 </div>
               </div>
 
-              {/* Active Outlets */}
+              {/* Card 6: Food Clients */}
               <div 
                 onClick={() => onNavigate('customers')}
-                className="bg-slate-900 p-3 rounded-2xl border border-slate-800 hover:border-emerald-500/60 shadow-md transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 hover:border-emerald-500/60 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Food Clients</span>
-                    <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                      <Users className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Food Clients</span>
+                    <div className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                      <Users className="w-3 h-3" />
                     </div>
                   </div>
-                  <p className="text-base lg:text-lg font-bold text-white mt-1.5 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-white mt-1 font-mono truncate">
                     {kpis?.active_customers_count || 0} <span className="text-xs font-normal text-slate-400">outlets</span>
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80">
-                  <MiniSparkline data={outletsTrend} color="emerald" width={48} height={16} />
-                  <span className="text-emerald-400 font-semibold flex items-center gap-0.5 text-[11px]">
-                    {kpis?.total_products_count || 0} SKU <ArrowUpRight className="w-3 h-3" />
+                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 pt-1 border-t border-slate-800/80">
+                  <MiniSparkline data={outletsTrend} color="emerald" width={44} height={14} />
+                  <span className="text-emerald-400 font-semibold flex items-center gap-0.5 text-[10px]">
+                    {kpis?.total_products_count || 0} SKU <ArrowUpRight className="w-2.5 h-2.5" />
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Row 3: Compact Forecast Strip */}
-            <CompactForecastStrip onNavigateToForecast={() => setActivePage('forecast')} />
-
-            {/* Row 4: Recent Invoices + Top Products (FLEX-1 = fills remaining space) */}
+            {/* Row 3: TWIN PRIMARY OPERATIONAL PANELS (FLEX-1 = Fills 65%+ of Viewport) */}
             <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
               
-              {/* Recent Invoices (7 cols, internal scroll) */}
-              <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-lg flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-2.5 shrink-0">
+              {/* ─── LEFT: RECENT INVOICES & DISPATCH STREAM (7 cols) ─── */}
+              <div className="lg:col-span-7 bg-slate-900 rounded-xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+                {/* Panel Header */}
+                <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-800/80 shrink-0 flex-wrap">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Recent Invoices</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Recent Invoices</h3>
+                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                      {filteredRecentInvoices.length}
+                    </span>
                   </div>
+
+                  {/* In-Stream Invoice Search Bar */}
+                  <div className="relative flex-1 min-w-[130px] max-w-[200px]">
+                    <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={dashboardInvoiceSearch}
+                      onChange={(e) => setDashboardInvoiceSearch(e.target.value)}
+                      placeholder="Search bill, outlet, item..."
+                      className="w-full pl-6 pr-5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
+                    />
+                    {dashboardInvoiceSearch && (
+                      <button
+                        onClick={() => setDashboardInvoiceSearch('')}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+                        title="Clear search"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Quick Settlement Filter Pills */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {[
+                      { id: 'ALL', label: 'All' },
+                      { id: 'DUE', label: '🚨 Due' },
+                      { id: 'PAID', label: '🟢 Paid' },
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setDashboardInvoiceFilter(f.id)}
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${
+                          dashboardInvoiceFilter === f.id
+                            ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                            : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
                   <button
                     onClick={() => setActivePage('activity')}
-                    className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-0.5 ml-auto shrink-0 transition-colors"
                   >
-                    View All <ArrowRight className="w-3.5 h-3.5" />
+                    View All <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
-                  {(kpis?.recent_invoices || []).slice(0, 5).map((inv) => (
-                    <div 
-                      key={inv.id}
-                      className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
-                    >
-                      <div className="overflow-hidden pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
-                          {inv.invoice_date && (
-                            <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                              {formatShortDate(inv.invoice_date)}
-                            </span>
-                          )}
-                          <StatusBadge status={inv.status} />
-                        </div>
-                        <p className="text-xs text-slate-300 truncate mt-0.5 font-medium">{inv.customer_name}</p>
-                      </div>
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="text-right">
-                          <div className="font-mono font-bold text-white text-xs">₹{parseFloat(inv.total_amount || 0).toFixed(2)}</div>
-                          <span className={`text-xs font-mono ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
-                            Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
-                          </span>
-                        </div>
+                {/* Invoice Stream List */}
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                  {filteredRecentInvoices.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500 text-xs space-y-1.5">
+                      <FileText className="w-8 h-8 mx-auto text-slate-600" />
+                      <p>{dashboardInvoiceSearch ? 'No invoices match your search query.' : 'No invoices recorded for this period.'}</p>
+                      {dashboardInvoiceSearch && (
                         <button
-                          onClick={() => openThermalReceipt(inv.id)}
-                          className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                          onClick={() => setDashboardInvoiceSearch('')}
+                          className="px-2.5 py-1 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold"
                         >
-                          <Printer className="w-3 h-3" />
-                          <span>Slip</span>
+                          Clear Filter
                         </button>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                  {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
-                    <div className="flex items-center justify-center h-20 text-slate-400 text-xs">
-                      No invoices match current slicer filters.
-                    </div>
+                  ) : (
+                    filteredRecentInvoices.map((inv) => {
+                      const total = parseFloat(inv.total_amount || 0);
+                      const due = parseFloat(inv.outstanding_amount || 0);
+                      const isPaid = due <= 0.01;
+                      const isCopied = copiedInvId === inv.id;
+
+                      return (
+                        <div
+                          key={inv.id}
+                          className="bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-950 rounded-xl p-2.5 text-xs transition-all flex flex-col gap-1.5"
+                        >
+                          {/* Row 1: Invoice #, Date, Status, Total & Due */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span 
+                                onClick={() => handleCopyInvoiceNumber(inv.id, inv.invoice_number)}
+                                className="font-mono font-bold text-white text-xs bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 flex items-center gap-1 cursor-pointer hover:border-amber-500/50"
+                                title="Click to copy invoice number"
+                              >
+                                {inv.invoice_number}
+                                {isCopied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-500" />}
+                              </span>
+                              {inv.invoice_date && (
+                                <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                                  {formatShortDate(inv.invoice_date)}
+                                </span>
+                              )}
+                              <StatusBadge status={inv.status} />
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                                isPaid
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-mono font-black'
+                              }`}>
+                                {isPaid ? '🟢 Settled' : `Due: ₹${due.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                              </span>
+                            </div>
+
+                            {/* Total Billed & Slip Button */}
+                            <div className="flex items-center gap-2 shrink-0 ml-auto">
+                              <span className="font-mono font-black text-white text-xs sm:text-sm">
+                                ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </span>
+                              <button
+                                onClick={() => openThermalReceipt(inv.id)}
+                                className="px-2 py-0.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                                title="Print Thermal Slip"
+                              >
+                                <Printer className="w-3 h-3" />
+                                <span>Slip</span>
+                              </button>
+                              {!isPaid && onOpenPaymentModal && (
+                                <button
+                                  onClick={() => onOpenPaymentModal(inv)}
+                                  className="px-2 py-0.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                                  title="Record Settlement for this invoice"
+                                >
+                                  <CreditCard className="w-3 h-3" />
+                                  <span>Pay</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Row 2: Customer Name, City & Items Preview */}
+                          <div className="flex items-center justify-between gap-2 text-slate-300 text-[11px] pt-1 border-t border-slate-900">
+                            <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                              <span 
+                                onClick={() => onNavigate('customers')}
+                                className="font-bold text-white hover:text-amber-400 cursor-pointer truncate"
+                                title="View Customer Dossier"
+                              >
+                                {inv.customer_name}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono truncate">
+                                📍 {inv.customer_city || 'Rayachoty'}
+                              </span>
+                            </div>
+
+                            {/* Line items preview pills */}
+                            {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
+                              <div className="flex items-center gap-1 overflow-hidden shrink-0 max-w-[280px]">
+                                {inv.items_preview.slice(0, 2).map((it, i) => (
+                                  <span key={i} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate" title={it}>
+                                    📦 {it}
+                                  </span>
+                                ))}
+                                {inv.items_preview.length > 2 && (
+                                  <span className="text-[9px] text-slate-500 font-mono font-bold">
+                                    +{inv.items_preview.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
 
-              {/* Top Moving Products (5 cols, internal scroll) */}
-              <div className="lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-lg flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-2.5 shrink-0">
+              {/* ─── RIGHT: FAST-MOVING PRODUCTS & VELOCITY (5 cols) ─── */}
+              <div className="lg:col-span-5 bg-slate-900 rounded-xl border border-slate-800 p-3 shadow-lg flex flex-col overflow-hidden">
+                {/* Panel Header */}
+                <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-800/80 shrink-0">
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-emerald-400" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">Fast-Moving Items</h3>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-white">Fast-Moving Items</h3>
+                      <span className="text-[10px] text-slate-500 block">Top Volume & Revenue Movers</span>
+                    </div>
                   </div>
                   <button
                     onClick={() => setActivePage('products')}
-                    className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-0.5 transition-colors"
                   >
-                    Matrix <ArrowRight className="w-3.5 h-3.5" />
+                    Matrix <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
-                  {(kpis?.top_selling_products || []).slice(0, 5).map((prod, idx) => (
-                    <div 
-                      key={idx}
-                      className="bg-slate-950/60 border border-slate-800 hover:border-slate-700 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5 overflow-hidden pr-2 min-w-0">
-                        <ProductVisualBadge product={{ name: prod.product_name, sku: prod.sku }} size="sm" />
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{prod.quantity_sold} packs sold</p>
+                {/* Product List */}
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                  {topProductsList.length === 0 ? (
+                    <div className="text-center py-12 text-slate-500 text-xs space-y-1.5">
+                      <Package className="w-8 h-8 mx-auto text-slate-600" />
+                      <p>No products sold in this period.</p>
+                    </div>
+                  ) : (
+                    topProductsList.map((prod, idx) => {
+                      const rank = idx + 1;
+                      const rankBadge = rank === 1
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-black'
+                        : rank === 2
+                        ? 'bg-slate-700/50 text-slate-200 border-slate-600 font-bold'
+                        : rank === 3
+                        ? 'bg-amber-800/20 text-amber-400 border-amber-800/30 font-bold'
+                        : 'bg-slate-900 text-slate-500 border-slate-800';
+
+                      const isStockout = prod.stockVal === 0;
+                      const isLowStock = !isStockout && prod.stockVal <= prod.minAlertVal;
+
+                      return (
+                        <div
+                          key={prod.product_id || idx}
+                          className="bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-950 rounded-xl p-2.5 flex items-center justify-between text-xs transition-colors"
+                        >
+                          {/* Rank, Icon & Product Metadata */}
+                          <div className="flex items-center gap-2.5 overflow-hidden pr-2 min-w-0 flex-1">
+                            <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono border shrink-0 ${rankBadge}`}>
+                              #{rank}
+                            </span>
+                            <ProductVisualBadge product={{ name: prod.displayName, sku: prod.sku }} size="sm" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-slate-100 truncate text-xs" title={prod.displayName}>
+                                {prod.displayName}
+                              </p>
+                              <div className="flex items-center gap-1.5 text-[10px] mt-0.5 flex-wrap">
+                                <span className="font-mono text-slate-500">
+                                  {prod.sku || 'SKU'}
+                                </span>
+                                <span className="text-slate-700">•</span>
+                                <span className="text-slate-300 font-medium">
+                                  {prod.qtyVal} pkts sold
+                                </span>
+                                <span className="text-slate-700">•</span>
+                                {/* Stock Health Indicator */}
+                                {isStockout ? (
+                                  <span className="text-[9px] font-black uppercase text-rose-400 bg-rose-500/20 px-1 py-0.2 rounded border border-rose-500/30">
+                                    Out of Stock
+                                  </span>
+                                ) : isLowStock ? (
+                                  <span className="text-[9px] font-bold text-amber-400 bg-amber-500/20 px-1 py-0.2 rounded border border-amber-500/30">
+                                    Low: {prod.stockVal} pkts
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-medium text-emerald-400">
+                                    🟢 {prod.stockVal} in stock
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Financial Revenue & Volume Share Progress Bar */}
+                          <div className="text-right shrink-0 pl-2">
+                            <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">
+                              ₹{prod.revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </div>
+                            <span className="text-[10px] text-slate-500 uppercase font-semibold block">
+                              Revenue
+                            </span>
+                            <div className="w-16 bg-slate-900 h-1 rounded-full overflow-hidden mt-1 ml-auto border border-slate-800">
+                              <div 
+                                className="bg-emerald-500 h-full rounded-full transition-all"
+                                style={{ width: `${Math.min(100, Math.round((prod.qtyVal / maxVolume) * 100))}%` }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-emerald-400 text-xs">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
-                        <span className="text-[11px] text-slate-400 font-semibold uppercase">Revenue</span>
-                      </div>
-                    </div>
-                  ))}
-                  {(!kpis?.top_selling_products || kpis.top_selling_products.length === 0) && (
-                    <div className="flex items-center justify-center h-20 text-slate-400 text-xs">
-                      No products match current slicer filters.
-                    </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -1380,6 +1662,9 @@ export const DashboardPage = ({
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-amber-400" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-white">Recent Invoices</h3>
+                    <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-950 px-1.5 py-0.2 rounded border border-slate-800">
+                      {filteredRecentInvoices.length}
+                    </span>
                   </div>
                   <button
                     onClick={() => setActivePage('activity')}
@@ -1390,14 +1675,20 @@ export const DashboardPage = ({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {(kpis?.recent_invoices || []).slice(0, 5).map((inv) => (
+                  {filteredRecentInvoices.slice(0, 6).map((inv) => (
                     <div 
                       key={inv.id}
-                      className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center justify-between text-xs transition-colors"
+                      className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col gap-1.5 text-xs transition-colors"
                     >
-                      <div className="min-w-0 pr-2">
+                      <div className="flex items-center justify-between gap-1.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono font-bold text-white text-xs">{inv.invoice_number}</span>
+                          <span 
+                            onClick={() => handleCopyInvoiceNumber(inv.id, inv.invoice_number)}
+                            className="font-mono font-bold text-white text-xs bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 flex items-center gap-1 cursor-pointer"
+                          >
+                            {inv.invoice_number}
+                            {copiedInvId === inv.id ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-500" />}
+                          </span>
                           {inv.invoice_date && (
                             <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
                               {formatShortDate(inv.invoice_date)}
@@ -1405,27 +1696,43 @@ export const DashboardPage = ({
                           )}
                           <StatusBadge status={inv.status} />
                         </div>
-                        <p className="text-xs text-slate-200 font-medium truncate mt-1">{inv.customer_name}</p>
-                        <span className={`text-xs font-mono block mt-0.5 ${parseFloat(inv.outstanding_amount) > 0 ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
-                          Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
+                        <div className="font-mono font-black text-white text-right text-xs sm:text-sm">
+                          ₹{parseFloat(inv.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 text-slate-200">
+                        <div className="min-w-0 flex-1 truncate font-medium">
+                          <span className="font-bold text-white">{inv.customer_name}</span>
+                          <span className="text-[10px] text-slate-500 font-mono ml-1.5">📍 {inv.customer_city || 'Rayachoty'}</span>
+                        </div>
+                        <span className={`text-[11px] font-mono font-bold shrink-0 ${parseFloat(inv.outstanding_amount || 0) > 0.01 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          {parseFloat(inv.outstanding_amount || 0) > 0.01 ? `Due: ₹${parseFloat(inv.outstanding_amount || 0).toFixed(2)}` : '🟢 Settled'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="font-mono font-bold text-white text-right text-xs sm:text-sm">
-                          ₹{parseFloat(inv.total_amount || 0).toFixed(2)}
+
+                      {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
+                        <div className="flex items-center gap-1 overflow-hidden pt-1 border-t border-slate-900 text-[10px]">
+                          {inv.items_preview.slice(0, 2).map((it, i) => (
+                            <span key={i} className="bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 truncate">
+                              📦 {it}
+                            </span>
+                          ))}
+                          {inv.items_preview.length > 2 && (
+                            <span className="text-slate-500 font-mono font-bold">+{inv.items_preview.length - 2}</span>
+                          )}
+                          <button
+                            onClick={() => openThermalReceipt(inv.id)}
+                            className="ml-auto px-2 py-0.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0"
+                          >
+                            <Printer className="w-2.5 h-2.5" />
+                            <span>Slip</span>
+                          </button>
                         </div>
-                        <button
-                          onClick={() => openThermalReceipt(inv.id)}
-                          className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
-                          title="Print Thermal Slip"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                          <span>Slip</span>
-                        </button>
-                      </div>
+                      )}
                     </div>
                   ))}
-                  {(!kpis?.recent_invoices || kpis.recent_invoices.length === 0) && (
+                  {filteredRecentInvoices.length === 0 && (
                     <div className="text-center py-4 text-slate-400 text-xs">
                       No recent invoices found.
                     </div>
@@ -1449,25 +1756,36 @@ export const DashboardPage = ({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {(kpis?.top_selling_products || []).slice(0, 4).map((prod, idx) => (
+                  {topProductsList.slice(0, 5).map((prod, idx) => (
                     <div 
-                      key={idx}
+                      key={prod.product_id || idx}
                       className="bg-slate-950/70 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex items-center justify-between text-xs transition-colors"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                        <ProductVisualBadge product={{ name: prod.product_name, sku: prod.sku }} size="sm" />
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-200 truncate text-xs">{prod.product_name}</p>
-                          <span className="text-xs text-slate-400">{prod.quantity_sold} packs sold</span>
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+                        <span className="w-4 h-4 rounded text-[9px] font-mono font-bold bg-amber-500/15 text-amber-300 flex items-center justify-center shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <ProductVisualBadge product={{ name: prod.displayName, sku: prod.sku }} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-slate-200 truncate text-xs" title={prod.displayName}>{prod.displayName}</p>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                            <span>{prod.qtyVal} sold</span>
+                            <span>•</span>
+                            <span className={prod.stockVal === 0 ? 'text-rose-400 font-bold' : prod.stockVal <= prod.minAlertVal ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+                              {prod.stockVal === 0 ? 'Out of Stock' : `${prod.stockVal} in stock`}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">₹{parseFloat(prod.total_revenue || 0).toFixed(2)}</div>
-                        <span className="text-[11px] text-slate-400 font-semibold uppercase">Revenue</span>
+                        <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">
+                          ₹{prod.revenueVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase">Revenue</span>
                       </div>
                     </div>
                   ))}
-                  {(!kpis?.top_selling_products || kpis.top_selling_products.length === 0) && (
+                  {topProductsList.length === 0 && (
                     <div className="text-center py-4 text-slate-400 text-xs">
                       No sales data available yet.
                     </div>

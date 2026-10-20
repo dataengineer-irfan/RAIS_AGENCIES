@@ -105,7 +105,8 @@ class ReportingService:
             func.coalesce(func.sum(InvoiceItem.line_total), 0).label("total_rev"),
             Product.current_stock,
             Product.min_stock_alert,
-            Product.category_id
+            Product.category_id,
+            func.max(InvoiceItem.item_description).label("desc_fallback")
         ).join(InvoiceItem, Product.id == InvoiceItem.product_id)\
          .join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
          .filter(
@@ -113,15 +114,15 @@ class ReportingService:
             Invoice.status.in_(valid_statuses)
          ).group_by(Product.id, Product.name, Product.sku, Product.current_stock, Product.min_stock_alert, Product.category_id)\
           .order_by(desc("total_rev"))\
-          .limit(5).all()
+          .limit(8).all()
 
         top_products = [
             {
                 "product_id": p[0],
-                "product_name": p[1],
-                "sku": p[2],
-                "quantity_sold": float(p[3]),
-                "total_revenue": float(p[4]),
+                "product_name": (p[1] or "").strip() or (p[8] or "").strip() or "Wholesale SKU",
+                "sku": p[2] or "PROD",
+                "quantity_sold": float(p[3] or 0),
+                "total_revenue": float(p[4] or 0),
                 "current_stock": float(p[5] if p[5] is not None else 0),
                 "min_stock_alert": float(p[6] if p[6] is not None else 10),
                 "category_id": p[7]
@@ -246,7 +247,8 @@ class ReportingService:
 
         # 10. Recent Invoices (expanded to 30 for high-density audit & period inspection)
         recent_invs = db.query(Invoice).options(
-            joinedload(Invoice.customer)
+            joinedload(Invoice.customer),
+            joinedload(Invoice.items)
         ).filter(
             Invoice.status != InvoiceStatus.CANCELLED.value
         ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(30).all()
@@ -257,10 +259,13 @@ class ReportingService:
                 "invoice_number": inv.invoice_number,
                 "customer_name": inv.customer.business_name if inv.customer else "Unknown",
                 "customer_id": inv.customer_id,
+                "customer_city": inv.customer.city if inv.customer else "Rayachoty",
+                "customer_phone": inv.customer.phone if inv.customer else "",
                 "invoice_date": str(inv.invoice_date),
                 "total_amount": float(inv.total_amount),
                 "outstanding_amount": float(inv.outstanding_amount),
-                "status": inv.status
+                "status": inv.status,
+                "items_preview": [f"{float(it.quantity):g}x {it.item_description}" for it in (inv.items or [])][:4]
             }
             for inv in recent_invs
         ]
