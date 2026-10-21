@@ -801,7 +801,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                       {selectedInvoice.due_date && (
                         <>
                           <span className="text-slate-600">•</span>
-                          <span className="text-amber-400/90 font-mono font-medium">Due: {selectedInvoice.due_date}</span>
+                          <span className="text-amber-400/90 font-mono font-medium">
+                            Due Date: {new Date(selectedInvoice.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
                         </>
                       )}
                       {selectedInvoice.customer_since && (
@@ -892,21 +894,42 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                           ))}
                         </div>
 
-                        {/* Invoice Pricing Summary Banner */}
-                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs">
+                        {/* Invoice Pricing Summary Banner (Explicit Total, Paid, and Balance Due) */}
+                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs shadow-inner">
                           <div>
-                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Billing Structure</span>
-                            <span className="text-slate-300 font-mono">
-                              Direct Wholesale • No Tax Added
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Invoiced Amount</span>
-                            <span className="text-base font-black text-amber-400 font-mono">
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Invoiced</span>
+                            <span className="text-sm sm:text-base font-black text-amber-400 font-mono">
                               ₹{parseFloat(selectedInvoice.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
+
+                          <div>
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Amount Paid</span>
+                            <span className="text-sm sm:text-base font-bold text-emerald-400 font-mono">
+                              ₹{parseFloat(selectedInvoice.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+
+                          <div className="sm:text-right">
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Balance Due</span>
+                            <span className={`text-sm sm:text-base font-black font-mono ${parseFloat(selectedInvoice.outstanding_amount || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                              ₹{parseFloat(selectedInvoice.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
                         </div>
+
+                        {/* 1-Click Payment Shortcut if Invoice has Due */}
+                        {parseFloat(selectedInvoice.outstanding_amount || 0) > 0 && onOpenPaymentForInvoice && (
+                          <div className="flex items-center justify-end pt-1">
+                            <button
+                              onClick={() => onOpenPaymentForInvoice(selectedInvoice)}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.01]"
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>Record Payment (₹{parseFloat(selectedInvoice.outstanding_amount).toFixed(2)})</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

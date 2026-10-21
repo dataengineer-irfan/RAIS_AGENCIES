@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, Plus, Check, Package, Sparkles } from 'lucide-react';
+import { Search, X, Plus, Minus, Check, Package, Sparkles } from 'lucide-react';
 import { cleanProductName, formatProductDisplay, smartProductMatch, sortProductsByCleanName } from '../utils/productHelpers';
 import { ProductVisualBadge } from '../utils/productIcons';
 
@@ -7,6 +7,7 @@ export const SmartProductSearchPicker = ({
   products = [],
   categories = [],
   onSelectProduct,
+  onDecrementProduct,
   quantitiesByProductId = {},
   compact = false
 }) => {
@@ -168,7 +169,7 @@ export const SmartProductSearchPicker = ({
                 </div>
               </div>
 
-                {/* Right: Rate & Touch Add Button */}
+                {/* Right: Rate & Touch Stepper Buttons */}
                 <div className="flex items-center gap-2.5 shrink-0">
                   <div className="text-right">
                     <div className="text-xs font-black font-mono text-white">
@@ -176,21 +177,49 @@ export const SmartProductSearchPicker = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectProduct(prod);
-                    }}
-                    className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold transition-all ${
-                      isAdded
-                        ? 'bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-sm shadow-amber-500/30'
-                        : 'bg-slate-800 text-slate-200 hover:bg-amber-500 hover:text-slate-950 border border-slate-700'
-                    }`}
-                    title="Add product to invoice"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                  {isAdded ? (
+                    <div className="flex items-center bg-slate-950 border border-amber-500/50 rounded-lg p-0.5 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onDecrementProduct) onDecrementProduct(prod);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-md bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors"
+                        title="Reduce quantity or remove"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+
+                      <span className="w-7 text-center text-xs font-black font-mono text-amber-400">
+                        {currentQty}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectProduct(prod);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-md bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors"
+                        title="Increase quantity"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectProduct(prod);
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-lg font-bold bg-slate-800 text-slate-200 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 transition-all hover:scale-105 active:scale-95"
+                      title="Add product to invoice"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

@@ -237,13 +237,14 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
       {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
       {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
       <div className="hidden md:flex flex-col gap-2 bg-slate-900/95 border border-slate-800 rounded-2xl p-2.5 shrink-0 shadow-md">
-        <div className="flex items-center justify-between gap-2.5">
+        {/* Tier 1: Title, Count Badge & Utility Action Launchers */}
+        <div className="flex items-center justify-between gap-3">
           {/* Left: Icon & Title */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Package className="w-4 h-4" />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <h1 className="text-sm font-black text-white whitespace-nowrap">
                 Product Catalogue
               </h1>
@@ -253,39 +254,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             </div>
           </div>
 
-          {/* 1-Click Category Filter Pills */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 max-w-[500px]">
-            <button
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                selectedCategory === 'ALL'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              All ({products.length})
-            </button>
-            {categories.map(c => {
-              const count = products.filter(p => p.category_id === c.id).length;
-              const isSelected = selectedCategory === c.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategory(isSelected ? 'ALL' : c.id)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-                    isSelected
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                  }`}
-                >
-                  <span>{c.name}</span>
-                  <span className="font-mono text-[10px] opacity-80">({count})</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right Action Launchers */}
+          {/* Right: Action Launchers (Clean, Spaced, No Overlap) */}
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             {/* View Toggle */}
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
@@ -374,17 +343,17 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           </div>
         </div>
 
-        {/* Tier 2: Omni-Search Input, Brand Filter, and Sort Dropdown */}
-        <div className="flex items-center gap-2">
+        {/* Tier 2: Search Input, Category Filter Pills, Brand & Sort */}
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
           {/* Search Input with Clear */}
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <div className="relative min-w-[180px] max-w-[240px] shrink-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Filter SKU, item name, brand..."
-              className="w-full pl-8 pr-7 py-1 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              placeholder="Filter SKU, name, brand..."
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-inner font-sans"
             />
             {searchTerm && (
               <button
@@ -396,10 +365,43 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             )}
           </div>
 
+          {/* 1-Click Category Filter Pills (Full Room, Horizontal Scroll) */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5">
+            <button
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+                selectedCategory === 'ALL'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              All ({products.length})
+            </button>
+            {categories.map(c => {
+              const count = products.filter(p => p.category_id === c.id).length;
+              const isSelected = selectedCategory === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCategory(isSelected ? 'ALL' : c.id)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                    isSelected
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  <span>{c.name}</span>
+                  <span className="font-mono text-[10px] opacity-80">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Brand Filter */}
           <select
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer max-w-[140px] truncate"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[130px] truncate shrink-0 shadow-inner"
             title="Filter by Brand"
           >
             <option value="ALL">All Brands ({uniqueBrands.length})</option>
@@ -408,10 +410,11 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             ))}
           </select>
 
+          {/* Sort Filter */}
           <select
             value={currentSortKey}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer shrink-0"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer shrink-0 shadow-inner"
             title="Sort Products"
           >
             <option value="name_asc">🔤 Name (A → Z)</option>

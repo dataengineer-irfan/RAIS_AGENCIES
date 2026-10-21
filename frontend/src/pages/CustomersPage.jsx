@@ -29,7 +29,8 @@ import {
   Building2,
   ArrowLeft,
   Trash2,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react';
 import { customerApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -295,16 +296,16 @@ export const CustomersPage = ({
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
       
-      {/* ─── ROW 1: DESKTOP SLEEK COMMAND RIBBON (Single Unified 46px Header) ─── */}
-      <div className="hidden md:flex bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shrink-0 shadow-md items-center justify-between gap-2 text-xs">
+      {/* ─── ROW 1: DESKTOP SLEEK COMMAND RIBBON (Single Unified 44px Header) ─── */}
+      <div className="hidden md:flex bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shrink-0 shadow-md items-center justify-between gap-2.5 text-xs">
         {/* Left: Omni-Search Input (with Instant Clear button) */}
-        <div className="relative flex-1 min-w-[220px] max-w-[320px] lg:max-w-[360px]">
+        <div className="relative flex-1 min-w-[200px] max-w-[280px] lg:max-w-[340px]">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search outlets, phone, or items (e.g. Fries, Cheese)..."
+            placeholder="Search outlets, phone, or items..."
             className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
           />
           {searchTerm && (
@@ -318,71 +319,65 @@ export const CustomersPage = ({
           )}
         </div>
 
-        {/* Center: 1-Click Interactive Pill Sorters */}
-        <div className="flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar">
-          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mr-1 hidden xl:inline">Sort:</span>
-          {[
-            { id: 'BALANCE_DESC', label: '🚨 Due ↓' },
-            { id: 'REVENUE_DESC', label: '💰 Revenue ↓' },
-            { id: 'PAID_DESC', label: '💳 Collections ↓' },
-            { id: 'PROFIT_DESC', label: '📈 Profit ↓' },
-            { id: 'NAME_ASC', label: '🔤 A → Z' },
-          ].map((pill) => {
-            const isActive = sortBy === pill.id;
-            return (
-              <button
-                key={pill.id}
-                onClick={() => setSortBy(pill.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20 font-black'
-                    : 'bg-slate-950/70 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                {pill.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* Center: Interactive Sorter & Territory Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Sleek Sort Dropdown */}
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-amber-400 text-xs font-bold rounded-lg pl-2.5 pr-7 py-1.5 focus:outline-none cursor-pointer appearance-none shadow-inner"
+              title="Sort Outlets"
+            >
+              <option value="BALANCE_DESC">🚨 Sort: Highest Due</option>
+              <option value="REVENUE_DESC">💰 Sort: Top Revenue</option>
+              <option value="PAID_DESC">💳 Sort: Top Collections</option>
+              <option value="PROFIT_DESC">📈 Sort: Highest Profit</option>
+              <option value="NAME_ASC">🔤 Sort: Name (A → Z)</option>
+            </select>
+            <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
 
-        {/* Territory / Route Slicer Dropdown */}
-        <div className="flex items-center gap-1 shrink-0">
-          <select
-            value={areaFilter}
-            onChange={(e) => setAreaFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer"
-            title="Filter by Territory / Delivery Route"
-          >
-            <option value="ALL">All Territories ({totalOutlets})</option>
-            <option value="RAYACHOTY_TOWN">Rayachoty Town</option>
-            <option value="MADANAPALLE_RD">Madanapalle Rd</option>
-            <option value="KADAPA_RD">Kadapa Bypass</option>
-            <option value="CHINNAMANDEM">Chinnamandem</option>
-          </select>
+          {/* Territory / Route Slicer Dropdown */}
+          <div className="relative">
+            <select
+              value={areaFilter}
+              onChange={(e) => setAreaFilter(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-lg pl-2.5 pr-7 py-1.5 focus:outline-none cursor-pointer appearance-none shadow-inner"
+              title="Filter by Territory / Delivery Route"
+            >
+              <option value="ALL">All Territories ({totalOutlets})</option>
+              <option value="RAYACHOTY_TOWN">Rayachoty Town</option>
+              <option value="MADANAPALLE_RD">Madanapalle Rd</option>
+              <option value="KADAPA_RD">Kadapa Bypass</option>
+              <option value="CHINNAMANDEM">Chinnamandem</option>
+            </select>
+            <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
 
         {/* Right: Live Financial Micro-Ticker + Action */}
         <div className="flex items-center gap-2 shrink-0 ml-auto">
-          {/* Micro-Ticker Badge */}
+          {/* Micro-Ticker Badge (Compact & Responsive) */}
           <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-slate-950/80 border border-slate-800 rounded-lg text-[11px] font-mono">
             <span className="text-slate-400 font-sans font-bold">
               <strong className="text-white font-mono">{filteredCount}</strong>/{totalOutlets}
             </span>
             <span className="text-slate-700">•</span>
-            <span className="text-amber-300">
+            <span className="text-amber-300" title={`Billed Revenue: ₹${totalRevenue.toLocaleString('en-IN')}`}>
               <span className="text-slate-500 text-[10px] font-sans font-semibold">Rev:</span> ₹{totalRevenue >= 100000 ? `${(totalRevenue / 100000).toFixed(1)}L` : Math.round(totalRevenue).toLocaleString('en-IN')}
             </span>
             <span className="text-slate-700">•</span>
-            <span className="text-emerald-400">
+            <span className="text-emerald-400" title={`Collections: ₹${totalPaid.toLocaleString('en-IN')}`}>
               <span className="text-slate-500 text-[10px] font-sans font-semibold">Paid:</span> ₹{totalPaid >= 100000 ? `${(totalPaid / 100000).toFixed(1)}L` : Math.round(totalPaid).toLocaleString('en-IN')}
             </span>
             <span className="text-slate-700">•</span>
-            <span className="text-purple-300 font-bold">
-              <span className="text-slate-500 text-[10px] font-sans font-semibold">Profit:</span> ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')} ({overallMargin}%)
+            <span className="text-purple-300 font-bold" title={`Gross Profit: ₹${totalProfit.toLocaleString('en-IN')} (${overallMargin}%)`}>
+              <span className="text-slate-500 text-[10px] font-sans font-semibold">Profit:</span> ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')}
             </span>
             <span className="text-slate-700">•</span>
-            <span className="text-rose-400 font-bold">
-              <span className="text-slate-500 text-[10px] font-sans font-semibold">Due:</span> ₹{Math.round(totalReceivables).toLocaleString('en-IN')}
+            <span className={`font-bold ${totalReceivables > 0 ? 'text-rose-400' : 'text-slate-400'}`} title={`Total Receivables / Due: ₹${totalReceivables.toLocaleString('en-IN')}`}>
+              <span className="text-slate-500 text-[10px] font-sans font-semibold">Due:</span> ₹{totalReceivables >= 100000 ? `${(totalReceivables / 100000).toFixed(1)}L` : Math.round(totalReceivables).toLocaleString('en-IN')}
             </span>
           </div>
 

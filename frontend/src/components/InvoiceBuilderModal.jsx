@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic } from 'lucide-react';
-import { customerApi, catalogueApi, billingApi } from '../services/api';
+import { customerApi, catalogueApi, billingApi, paymentApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
@@ -41,6 +41,7 @@ export const InvoiceBuilderModal = ({
   const [notes, setNotes] = useState('');
   const [showNotes, setShowNotes] = useState(false);
   const [autoIssue, setAutoIssue] = useState(true);
+  const [markAsPaid, setMarkAsPaid] = useState(false);
 
   // Line items
   const [items, setItems] = useState([]);
@@ -315,6 +316,34 @@ export const InvoiceBuilderModal = ({
     }
   };
 
+  const handleDecrementProduct = (prod) => {
+    if (!prod) return;
+    const existingIdx = items.findIndex(i => i.product_id === prod.id);
+    if (existingIdx >= 0) {
+      const currentQty = parseFloat(items[existingIdx].quantity) || 1;
+      if (currentQty > 1) {
+        const newItems = [...items];
+        newItems[existingIdx].quantity = currentQty - 1;
+        setItems(newItems);
+      } else {
+        if (items.length === 1) {
+          setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
+        } else {
+          setItems(items.filter((_, idx) => idx !== existingIdx));
+        }
+      }
+    }
+  };
+
+  const handleCustomerChange = (id) => {
+    setCustomerId(id);
+    const cust = customers.find(c => c.id === id);
+    if (cust && /cash/i.test(cust.business_name || '')) {
+      setMarkAsPaid(true);
+      setAutoIssue(true);
+    }
+  };
+
   const handleAdjustQuantity = (index, delta) => {
     const newItems = [...items];
     const currentQty = parseFloat(newItems[index].quantity) || 0;
@@ -458,6 +487,28 @@ export const InvoiceBuilderModal = ({
           items: itemsPayload
         };
         res = await billingApi.createInvoice(payload);
+
+        // Immediate cash settlement if marked as paid (e.g. Counter Cash Sales)
+        if (markAsPaid && res?.id) {
+          try {
+            const payRes = await paymentApi.record({
+              customer_id: customerId,
+              amount: parseFloat(res.total_amount),
+              payment_method: (paymentTerms || '').includes('UPI') ? 'UPI' : 'CASH',
+              payment_date: invoiceDate,
+              notes: `Counter Cash Settlement for Invoice #${res.invoice_number}`
+            });
+            if (payRes?.id) {
+              await paymentApi.allocate(payRes.id, res.id, parseFloat(res.total_amount));
+              res.status = 'PAID';
+              res.paid_amount = res.total_amount;
+              res.outstanding_amount = 0;
+            }
+          } catch (payErr) {
+            console.warn('Auto cash settlement error:', payErr);
+          }
+        }
+
         setSuccessInvoice(res);
         setShowPreview(false);
         if (onInvoiceCreated) onInvoiceCreated(res);
@@ -476,7 +527,7 @@ export const InvoiceBuilderModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl xl:max-w-7xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in duration-200">
         
         {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">
@@ -807,138 +858,145 @@ export const InvoiceBuilderModal = ({
                 </div>
               )}
 
-              {/* Row 1: Customer Selection */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Customer *
-                </label>
-                <select
-                  value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-medium"
-                >
-                  <option value="">-- Select Customer --</option>
-                  {(customers || []).map((c) => (
-                    <option key={c?.id} value={c?.id}>
-                      {c?.business_name || 'Customer'} ({c?.customer_code || ''})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Row 2: Date, Due Date & Terms in a SINGLE COMPACT LINE */}
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-                    Invoice Date
-                  </label>
-                  <input
-                    type="date"
-                    value={invoiceDate}
-                    onChange={(e) => handleInvoiceDateChange(e.target.value)}
-                    required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-                    Due Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-                    Terms
-                  </label>
-                  <select
-                    value={paymentTerms}
-                    onChange={(e) => setPaymentTerms(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
-                  >
-                    <option value="Cash on Delivery / Immediate Settlement">COD</option>
-                    <option value="Immediate UPI / Online Settlement">UPI</option>
-                    <option value="Net 7 Days">Net 7d</option>
-                    <option value="Net 15 Days">Net 15d</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Optional Notes Toggle / Row */}
-              {(showNotes || notes) ? (
-                <div className="relative animate-in fade-in duration-150">
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Delivery notes, reference number..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setShowNotes(false); setNotes(''); }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold"
-                    title="Remove note"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div className="flex justify-end -mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setShowNotes(true)}
-                    className="text-[11px] font-medium text-slate-500 hover:text-amber-400 transition-colors"
-                  >
-                    + Add delivery note
-                  </button>
-                </div>
-              )}
-
-              {/* Smart Touch Product Search & Instant Picker */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Add Products</span>
-                  </h3>
-                </div>
-                <SmartProductSearchPicker
-                  products={products}
-                  categories={categories}
-                  onSelectProduct={handleQuickAddProduct}
-                  quantitiesByProductId={quantitiesByProductId}
-                />
-              </div>
-
-              {/* Line Items Section */}
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                      Line Items
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                {/* ─── LEFT COLUMN: Touch Product Catalogue & Quick Stepper Picker (5 cols) ─── */}
+                <div className="lg:col-span-5 flex flex-col space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Catalogue Quick Picker</span>
                     </h3>
-                    <span className="text-[11px] font-mono text-slate-500">
-                      ({items.length} {items.length === 1 ? 'item' : 'items'})
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Tap + / - to build bill
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={addItemRow}
-                    className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-xl border border-amber-500/20 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Item</span>
-                  </button>
+                  <SmartProductSearchPicker
+                    products={products}
+                    categories={categories}
+                    onSelectProduct={handleQuickAddProduct}
+                    onDecrementProduct={handleDecrementProduct}
+                    quantitiesByProductId={quantitiesByProductId}
+                  />
                 </div>
+
+                {/* ─── RIGHT COLUMN: Active Bill Builder & Items (7 cols) ─── */}
+                <div className="lg:col-span-7 flex flex-col space-y-3.5 bg-slate-950/40 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-xl">
+                  {/* Row 1: Customer Selection */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Customer *
+                    </label>
+                    <select
+                      value={customerId}
+                      onChange={(e) => handleCustomerChange(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-medium shadow-inner"
+                    >
+                      <option value="">-- Select Customer --</option>
+                      {(customers || []).map((c) => (
+                        <option key={c?.id} value={c?.id}>
+                          {c?.business_name || 'Customer'} ({c?.customer_code || ''})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Row 2: Date, Due Date & Terms in a SINGLE COMPACT LINE */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                        Invoice Date
+                      </label>
+                      <input
+                        type="date"
+                        value={invoiceDate}
+                        onChange={(e) => handleInvoiceDateChange(e.target.value)}
+                        required
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono shadow-inner"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        required
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 transition-colors font-mono shadow-inner"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                        Terms
+                      </label>
+                      <select
+                        value={paymentTerms}
+                        onChange={(e) => setPaymentTerms(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium shadow-inner"
+                      >
+                        <option value="Cash on Delivery / Immediate Settlement">COD</option>
+                        <option value="Immediate UPI / Online Settlement">UPI</option>
+                        <option value="Net 7 Days">Net 7d</option>
+                        <option value="Net 15 Days">Net 15d</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Optional Notes Toggle / Row */}
+                  {(showNotes || notes) ? (
+                    <div className="relative animate-in fade-in duration-150">
+                      <input
+                        type="text"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Delivery notes, reference number..."
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-8 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setShowNotes(false); setNotes(''); }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold"
+                        title="Remove note"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end -mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowNotes(true)}
+                        className="text-[11px] font-medium text-slate-500 hover:text-amber-400 transition-colors"
+                      >
+                        + Add delivery note
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Line Items Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                          Line Items
+                        </h3>
+                        <span className="text-[11px] font-mono text-slate-500">
+                          ({items.filter(i => Boolean(i.product_id)).length} {items.filter(i => Boolean(i.product_id)).length === 1 ? 'item' : 'items'})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addItemRow}
+                        className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/20 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Row</span>
+                      </button>
+                    </div>
 
                 {/* Table Header (Desktop Only) */}
                 <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -1247,9 +1305,9 @@ export const InvoiceBuilderModal = ({
                 </div>
               </div>
 
-              {/* Bill-Level Cash Discount & Auto Issue */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
+              {/* Bill-Level Cash Discount & Settlement Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1 items-end">
+                <div className="sm:col-span-6">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                     Bill-Level Cash Discount (₹)
                   </label>
@@ -1262,21 +1320,36 @@ export const InvoiceBuilderModal = ({
                       value={invoiceDiscount}
                       onChange={(e) => setInvoiceDiscount(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 pt-6">
-                  <input
-                    type="checkbox"
-                    id="autoIssue"
-                    checked={autoIssue}
-                    onChange={(e) => setAutoIssue(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
-                  />
-                  <label htmlFor="autoIssue" className="text-xs font-semibold text-slate-300 cursor-pointer select-none">
-                    Issue Immediately
+                <div className="sm:col-span-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-end pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="autoIssue"
+                      checked={autoIssue}
+                      onChange={(e) => setAutoIssue(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-300">
+                      Issue Immediately
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none" title="Immediately records full cash settlement into ledger and zeroes invoice balance">
+                    <input
+                      type="checkbox"
+                      id="markAsPaid"
+                      checked={markAsPaid}
+                      onChange={(e) => setMarkAsPaid(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-emerald-400">
+                      Paid in Full (Cash)
+                    </span>
                   </label>
                 </div>
               </div>
@@ -1333,6 +1406,11 @@ export const InvoiceBuilderModal = ({
                 </div>
               </div>
             </div>
+            {/* Closes lg:col-span-7 */}
+          </div>
+          {/* Closes grid-cols-12 */}
+        </div>
+        {/* Closes scrollable container */}
 
             {/* Footer Actions */}
             <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
