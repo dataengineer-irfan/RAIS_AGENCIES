@@ -199,11 +199,11 @@ export const PaymentModal = ({
               value={customerId}
               onChange={(e) => handleCustomerChange(e.target.value)}
               required
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
             >
-              <option value="">-- Choose Customer --</option>
+              <option value="" className="bg-slate-900 text-slate-400">-- Choose Customer --</option>
               {(customers || []).map((c) => (
-                <option key={c?.id} value={c?.id}>
+                <option key={c?.id} value={c?.id} className="bg-slate-900 text-white py-1">
                   {c?.business_name || 'Customer'} (Balance: ₹{parseFloat(c?.outstanding_balance || 0).toFixed(2)})
                 </option>
               ))}
@@ -221,11 +221,11 @@ export const PaymentModal = ({
                 const inv = (openInvoices || []).find(i => i?.id === e.target.value);
                 if (inv) setAmount(String(inv?.outstanding_amount ?? '0'));
               }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
             >
-              <option value="">-- No Direct Allocation (Add to Unallocated Pool) --</option>
+              <option value="" className="bg-slate-900 text-slate-400">-- No Direct Allocation (Add to Unallocated Pool) --</option>
               {(openInvoices || []).map((inv) => (
-                <option key={inv?.id} value={inv?.id}>
+                <option key={inv?.id} value={inv?.id} className="bg-slate-900 text-white py-1">
                   {inv?.invoice_number || 'INV'} ({inv?.invoice_date || '-'}) — Due: ₹{parseFloat(inv?.outstanding_amount || 0).toFixed(2)}
                 </option>
               ))}
@@ -256,7 +256,7 @@ export const PaymentModal = ({
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 required
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -267,12 +267,12 @@ export const PaymentModal = ({
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
               >
-                <option value="UPI">UPI / PhonePe / GPay</option>
-                <option value="CASH">Cash</option>
-                <option value="NEFT_RTGS">Bank Transfer (NEFT/RTGS)</option>
-                <option value="CHEQUE">Cheque</option>
+                <option value="UPI" className="bg-slate-900 text-white">UPI / PhonePe / GPay</option>
+                <option value="CASH" className="bg-slate-900 text-white">Cash</option>
+                <option value="NEFT_RTGS" className="bg-slate-900 text-white">Bank Transfer (NEFT/RTGS)</option>
+                <option value="CHEQUE" className="bg-slate-900 text-white">Cheque</option>
                 <option value="CARD">Card</option>
               </select>
             </div>

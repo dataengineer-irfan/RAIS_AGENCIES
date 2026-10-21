@@ -316,6 +316,50 @@ html.theme-light table tr:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   UNIVERSAL SELECT & DROPDOWN MENU CONTRAST ENFORCEMENT
+   Prevents pale yellow / cream text washout on Windows Chromium & mobile
+   ═══════════════════════════════════════════════════════════════════════ */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #0f172a !important; /* solid deep slate-900 */
+  color: #f8fafc !important; /* crisp white text */
+  padding: 6px 12px;
+}
+
+select option:disabled {
+  color: #64748b !important;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #1e293b !important;
+  color: #fbbf24 !important;
+}
+
+html.theme-light select {
+  color-scheme: light;
+}
+
+html.theme-light select option {
+  background-color: #ffffff !important; /* solid clean white */
+  color: #0f172a !important; /* deep slate-900 text */
+  padding: 6px 12px;
+}
+
+html.theme-light select option:disabled {
+  color: #94a3b8 !important;
+}
+
+html.theme-light select option:checked,
+html.theme-light select option:hover {
+  background-color: #f1f5f9 !important;
+  color: #b45309 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    DARK THEME HIGH-CONTRAST ENHANCEMENTS FOR LAPTOP MONITORS
    Prevents washed-out text and muddy gold on low-nits laptop screens
    ═══════════════════════════════════════════════════════════════════════ */

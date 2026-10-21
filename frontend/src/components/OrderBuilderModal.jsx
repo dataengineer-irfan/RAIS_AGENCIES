@@ -320,11 +320,11 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                 <select
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
                 >
-                  <option value="">-- Select Customer --</option>
+                  <option value="" className="bg-slate-900 text-slate-400">-- Select Customer --</option>
                   {(customers || []).map((c) => (
-                    <option key={c?.id} value={c?.id}>
+                    <option key={c?.id} value={c?.id} className="bg-slate-900 text-white py-1">
                       {c?.business_name || 'Customer'} ({c?.customer_code || ''})
                     </option>
                   ))}
@@ -403,13 +403,13 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                           <select
                             value={item.product_id}
                             onChange={(e) => handleProductChange(idx, e.target.value)}
-                            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium truncate"
+                            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium truncate"
                           >
-                            <option value="">-- Choose Product SKU --</option>
+                            <option value="" className="bg-slate-900 text-slate-400">-- Choose Product SKU --</option>
                             {sortProductsByCleanName(products).map((p) => {
                               const { cleanName, brandName } = formatProductDisplay(p);
                               return (
-                                <option key={p.id} value={p.id}>
+                                <option key={p.id} value={p.id} className="bg-slate-900 text-white py-1">
                                   {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
                                 </option>
                               );
@@ -468,13 +468,13 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                           <select
                             value={item.product_id}
                             onChange={(e) => handleProductChange(idx, e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium truncate"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-medium truncate"
                           >
-                            <option value="">-- Choose Product SKU --</option>
+                            <option value="" className="bg-slate-900 text-slate-400">-- Choose Product SKU --</option>
                             {sortProductsByCleanName(products).map((p) => {
                               const { cleanName, brandName } = formatProductDisplay(p);
                               return (
-                                <option key={p.id} value={p.id}>
+                                <option key={p.id} value={p.id} className="bg-slate-900 text-white py-1">
                                   {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
                                 </option>
                               );

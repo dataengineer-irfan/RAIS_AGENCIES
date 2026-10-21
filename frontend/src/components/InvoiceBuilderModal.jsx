@@ -893,15 +893,15 @@ export const InvoiceBuilderModal = ({
                       value={customerId}
                       onChange={(e) => handleCustomerChange(e.target.value)}
                       required
-                      className={`w-full rounded-xl pl-3 pr-8 py-2 text-xs font-bold transition-all focus:outline-none shadow-inner ${
+                      className={`w-full rounded-xl pl-3 pr-8 py-2 text-xs font-bold transition-all focus:outline-none shadow-inner bg-slate-900 text-white ${
                         !customerId
-                          ? 'bg-amber-500/15 border-2 border-amber-500 text-amber-200 ring-2 ring-amber-500/20'
-                          : 'bg-slate-900 border border-slate-700/80 text-white focus:border-amber-500'
+                          ? 'border-2 border-amber-500 ring-2 ring-amber-500/20'
+                          : 'border border-slate-700/80 focus:border-amber-500'
                       }`}
                     >
-                      <option value="">-- Click to Select Customer / Restaurant Outlet * --</option>
+                      <option value="" className="bg-slate-900 text-slate-400">-- Click to Select Customer / Restaurant Outlet * --</option>
                       {(customers || []).map((c) => (
-                        <option key={c?.id} value={c?.id}>
+                        <option key={c?.id} value={c?.id} className="bg-slate-900 text-white py-1">
                           {c?.business_name || 'Customer'} {c?.customer_code ? `(${c.customer_code})` : ''} {parseFloat(c?.outstanding_balance || 0) > 0 ? `• Due: ₹${parseFloat(c?.outstanding_balance).toFixed(0)}` : '• Due: ₹0'}
                         </option>
                       ))}
@@ -944,12 +944,12 @@ export const InvoiceBuilderModal = ({
                     <select
                       value={paymentTerms}
                       onChange={(e) => setPaymentTerms(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-medium shadow-inner"
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-medium shadow-inner"
                     >
-                      <option value="Cash on Delivery / Immediate Settlement">COD</option>
-                      <option value="Immediate UPI / Online Settlement">UPI</option>
-                      <option value="Net 7 Days">Net 7d</option>
-                      <option value="Net 15 Days">Net 15d</option>
+                      <option value="Cash on Delivery / Immediate Settlement" className="bg-slate-900 text-white">COD</option>
+                      <option value="Immediate UPI / Online Settlement" className="bg-slate-900 text-white">UPI</option>
+                      <option value="Net 7 Days" className="bg-slate-900 text-white">Net 7d</option>
+                      <option value="Net 15 Days" className="bg-slate-900 text-white">Net 15d</option>
                     </select>
                   </div>
                 </div>
@@ -1124,13 +1124,13 @@ export const InvoiceBuilderModal = ({
                               value={item.product_id}
                               onChange={(e) => handleProductChange(index, e.target.value)}
                               required
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500 truncate"
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
                             >
-                              <option value="">-- Choose Catalogue SKU --</option>
+                              <option value="" className="bg-slate-900 text-slate-400">-- Choose Catalogue SKU --</option>
                               {sortProductsByCleanName(products).map((p) => {
                                 const { cleanName, brandName } = formatProductDisplay(p);
                                 return (
-                                  <option key={p.id} value={p.id}>
+                                  <option key={p.id} value={p.id} className="bg-slate-900 text-white py-1">
                                     {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
                                   </option>
                                 );
@@ -1251,13 +1251,13 @@ export const InvoiceBuilderModal = ({
                               value={item.product_id}
                               onChange={(e) => handleProductChange(index, e.target.value)}
                               required
-                              className="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-500 truncate"
+                              className="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
                             >
-                              <option value="">-- Choose Catalogue SKU --</option>
+                              <option value="" className="bg-slate-900 text-slate-400">-- Choose Catalogue SKU --</option>
                               {sortProductsByCleanName(products).map((p) => {
                                 const { cleanName, brandName } = formatProductDisplay(p);
                                 return (
-                                  <option key={p.id} value={p.id}>
+                                  <option key={p.id} value={p.id} className="bg-slate-900 text-white py-1">
                                     {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
                                   </option>
                                 );
