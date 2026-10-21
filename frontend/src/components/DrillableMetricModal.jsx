@@ -149,7 +149,7 @@ export const DrillableMetricModal = ({
       className={`fixed inset-0 z-[75] overflow-hidden backdrop-blur-md flex transition-all duration-200 animate-fadeIn ${
         isMaximized 
           ? 'p-0 items-stretch justify-stretch' 
-          : 'items-center justify-center p-2 sm:p-4 lg:p-6'
+          : 'items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6'
       }`}
       style={{ backgroundColor: 'rgba(15, 23, 42, 0.78)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -158,14 +158,16 @@ export const DrillableMetricModal = ({
         className={`w-full bg-slate-900 border border-slate-800 flex flex-col shadow-2xl transition-all duration-200 overflow-hidden ${
           isMaximized 
             ? 'h-full w-full rounded-none max-w-none' 
-            : 'max-w-5xl xl:max-w-6xl max-h-[92vh] h-full sm:h-[88vh] rounded-2xl shadow-emerald-950/20'
+            : 'max-w-5xl xl:max-w-6xl max-h-[92vh] sm:max-h-[88vh] h-[90vh] sm:h-[88vh] rounded-t-3xl sm:rounded-2xl shadow-emerald-950/20'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile Pull Handle Indicator */}
+        <div className="w-12 h-1 bg-slate-700/60 rounded-full mx-auto my-2 sm:hidden shrink-0" />
         
         {/* Top Header */}
-        <div className="p-3.5 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 gap-2 shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="p-3 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
             {currentLevel === 'ROOT' ? (
               <button
                 onClick={onClose}
@@ -191,12 +193,14 @@ export const DrillableMetricModal = ({
             }`}>
               {isProfit ? <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" /> : <Layers className="w-5 h-5 sm:w-6 sm:h-6" />}
             </div>
-            <div className="min-w-0">
-              <h3 className="text-sm sm:text-lg font-black text-white tracking-wide truncate">{title}</h3>
-              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-xs sm:text-lg font-black text-white tracking-tight leading-snug">
+                {title}
+              </h3>
+              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
                 {isProfit 
-                  ? 'Genuine gross profit, COGS cost and margin % computed from invoices & purchase batches.'
-                  : 'Power BI Progressive Disclosure: Drill into categories, SKUs, and invoices.'
+                  ? 'Genuine gross profit, COGS cost and margin % computed from invoices.'
+                  : 'Power BI Progressive Disclosure: Categories, SKUs, and invoices.'
                 }
               </p>
             </div>
@@ -336,37 +340,37 @@ export const DrillableMetricModal = ({
                       }`}>
                         <Package className="w-5 h-5" />
                       </div>
-                      <div className="min-w-0">
-                        <h4 className={`text-sm font-bold text-white transition-colors truncate ${
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`text-xs sm:text-sm font-bold text-white transition-colors truncate ${
                           isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
                         }`}>
                           {cat?.name}
                         </h4>
-                        <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">
-                          {cat?.products_count ?? 0} active SKU(s) • {cat?.units_sold ?? 0} units sold
+                        <p className="text-[10px] sm:text-xs text-slate-500 font-mono mt-0.5 truncate">
+                          {cat?.products_count ?? 0} active SKU(s) • {cat?.units_sold ?? 0} sold
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                       <div className="text-right">
                         {isProfit ? (
                           <>
-                            <div className="text-sm font-black text-emerald-400 font-mono">
+                            <div className="text-xs sm:text-sm font-black text-emerald-400 font-mono">
                               +₹{parseFloat(cat?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                              Rev: ₹{parseFloat(cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })} • <span className="text-emerald-400 font-bold">{cat?.margin_pct}% margin</span>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5 whitespace-nowrap">
+                              Rev: ₹{parseFloat(cat?.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} • <span className="text-emerald-400 font-bold">{cat?.margin_pct}%</span>
                             </div>
                           </>
                         ) : (
                           <>
-                            <div className="text-sm font-black text-white font-mono">
+                            <div className="text-xs sm:text-sm font-black text-white font-mono">
                               ₹{parseFloat(cat?.value || cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </div>
                             <div className="text-[10px] text-emerald-400 font-semibold flex items-center justify-end gap-1">
                               <TrendingUp className="w-3 h-3" />
-                              Click to Drill In
+                              Drill In
                             </div>
                           </>
                         )}
@@ -406,12 +410,12 @@ export const DrillableMetricModal = ({
                     key={prod?.id}
                     className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-sm"
                   >
-                    <div className="flex items-center gap-3 min-w-0 pr-2">
-                      <ProductVisualBadge product={prod} size="lg" />
-                      <div className="min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2 flex-1">
+                      <ProductVisualBadge product={prod} size="md" />
+                      <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-white truncate">{prod?.name}</h4>
                         <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
-                          {prod?.sku} • {prod?.brand || 'Wholesale'} • In Stock: {prod?.current_stock ?? 0}
+                          {prod?.sku} • {prod?.brand || 'Wholesale'} • Stock: {prod?.current_stock ?? 0}
                         </p>
                         {isProfit && (
                           <p className="text-[10px] text-slate-400 font-mono mt-0.5">
@@ -427,8 +431,8 @@ export const DrillableMetricModal = ({
                           <div className="text-xs font-black text-emerald-400 font-mono">
                             +₹{parseFloat(prod?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            {prod?.units_sold ?? 0} sold • Rev: ₹{parseFloat(prod?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5 whitespace-nowrap">
+                            {prod?.units_sold ?? 0} sold • Rev: ₹{parseFloat(prod?.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                           </div>
                           <div className="text-[10px] text-emerald-400 font-bold mt-0.5">
                             {prod?.margin_pct}% margin

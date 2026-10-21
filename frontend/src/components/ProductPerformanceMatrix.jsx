@@ -204,7 +204,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
         </div>
 
         {/* Center: 1-Click Classification Filter Pills */}
-        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 overflow-x-auto no-scrollbar shrink-0">
+        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 overflow-x-auto no-scrollbar scroll-smooth pr-4 shrink-0">
           {[
             { id: 'ALL', label: `All (${data.total_skus})`, activeClass: 'bg-amber-500 text-slate-950' },
             { id: 'WINNER', label: `⭐ Winners (${data?.winners_count ?? 0})`, activeClass: 'bg-emerald-500 text-white' },
@@ -236,9 +236,9 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
         </div>
 
         {/* Right: Sort Dropdown + Search + View Switcher */}
-        <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
           {/* Quick Sort Dropdown */}
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 shrink-0 text-slate-400">
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 shrink-0 text-slate-400 max-w-[130px] sm:max-w-none">
             <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
             <select
               value={`${sortColumn}-${sortDirection}`}
@@ -247,7 +247,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                 setSortColumn(col);
                 setSortDirection(dir);
               }}
-              className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5"
+              className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5 truncate w-full"
               title="Sort products"
             >
               <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
@@ -267,7 +267,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             </select>
           </div>
 
-          <div className="relative w-36 sm:w-44 min-w-0">
+          <div className="relative flex-1 min-w-0 sm:w-44">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -310,7 +310,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
       </div>
 
       {/* ─── DATA VIEW (flex-1 min-h-0 overflow-y-auto) ─── */}
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-28 md:pb-4">
         {filteredItems.length === 0 ? (
           <div className="py-12 text-center text-slate-500 text-xs space-y-1">
             <Package className="w-8 h-8 mx-auto text-slate-600" />

@@ -863,7 +863,7 @@ export const DashboardPage = ({
 
       {/* ─── MOBILE PAGE TAB STRIP & FILTER TRIGGER (< md) ─── */}
       <div className="md:hidden flex items-center justify-between gap-1.5 shrink-0 py-0.5">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth flex-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth flex-1 pr-4">
           {[
             { id: 'overview', label: '📊 Overview' },
             { id: 'forecast', label: '🎯 Targets' },
@@ -1413,7 +1413,7 @@ export const DashboardPage = ({
             </div>
 
             {/* ─── MOBILE NATIVE OVERVIEW CANVAS (< md) ─── */}
-            <div className="md:hidden flex flex-col space-y-3 pb-8 animate-fadeIn">
+            <div className="md:hidden flex flex-col space-y-3 pb-28 animate-fadeIn">
               
               {isColdBooting && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-xs text-amber-300 shrink-0">
@@ -1441,7 +1441,7 @@ export const DashboardPage = ({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider font-mono truncate">
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-tight font-mono whitespace-nowrap">
                           {periodTitles[selectedPeriod] || "Revenue"}
                         </span>
                         <span className="px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[8px] font-bold border border-emerald-500/30">
@@ -1474,7 +1474,7 @@ export const DashboardPage = ({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider font-mono truncate">
+                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-tight font-mono whitespace-nowrap">
                           {periodCollectionTitles[selectedPeriod] || "Collections"}
                         </span>
                         <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[8px] font-bold border border-emerald-500/30 font-mono">
@@ -1518,7 +1518,7 @@ export const DashboardPage = ({
                 )}
 
                 {/* Period Slicer Strip (Inside Hero Card) */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 mt-2 border-t border-slate-800/80 scroll-smooth">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2.5 mt-2 border-t border-slate-800/80 scroll-smooth pr-4">
                   {[
                     { id: 'today', label: 'Today' },
                     { id: 'yesterday', label: 'Yesterday' },

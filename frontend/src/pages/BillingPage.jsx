@@ -460,8 +460,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       </div>
 
       {/* ─── MOBILE COMPACT SEARCH & ACTION BAR (< md) ─── */}
-      <div className="md:hidden flex flex-col gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2 shrink-0 shadow-sm">
-        <div className="flex items-center gap-1.5">
+      <div className="md:hidden flex flex-col gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2.5 shrink-0 shadow-sm">
+        <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
@@ -481,22 +481,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
             )}
           </div>
 
-          <select
-            value={activeStatusFilter}
-            onChange={(e) => setActiveStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-bold rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer shrink-0 max-w-[95px]"
-          >
-            <option value="ALL">All ({statusCounts.total})</option>
-            <option value="DUE">🚨 Due ({statusCounts.due})</option>
-            <option value="PAID">Paid ({statusCounts.paid})</option>
-            <option value="PARTIALLY_PAID">Partial</option>
-            <option value="DRAFT">Draft</option>
-          </select>
-
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <button
               onClick={onOpenInvoiceBuilder}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
               title="Create Tax Invoice"
             >
               <PlusCircle className="w-3.5 h-3.5" />
@@ -506,10 +494,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
         </div>
 
         {/* Mobile 1-Click Status & Financial Strip */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5 pr-4 text-[11px] font-mono scroll-smooth">
           <button
             onClick={() => setActiveStatusFilter('ALL')}
-            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg whitespace-nowrap font-bold shrink-0 transition-all ${
               activeStatusFilter === 'ALL'
                 ? 'bg-amber-500 text-slate-950 shadow-sm'
                 : 'bg-slate-950 text-slate-400 border border-slate-800'
@@ -519,7 +507,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           </button>
           <button
             onClick={() => setActiveStatusFilter(activeStatusFilter === 'DUE' ? 'ALL' : 'DUE')}
-            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg whitespace-nowrap font-bold shrink-0 transition-all ${
               activeStatusFilter === 'DUE'
                 ? 'bg-rose-500 text-white shadow-sm'
                 : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
@@ -529,7 +517,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           </button>
           <button
             onClick={() => setActiveStatusFilter(activeStatusFilter === 'PAID' ? 'ALL' : 'PAID')}
-            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg whitespace-nowrap font-bold shrink-0 transition-all ${
               activeStatusFilter === 'PAID'
                 ? 'bg-emerald-500 text-slate-950 shadow-sm'
                 : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
@@ -537,8 +525,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           >
             🟢 Paid ({statusCounts.paid})
           </button>
-          <span className="text-slate-700 mx-0.5">|</span>
-          <span className="text-amber-400/90 whitespace-nowrap px-1 py-0.5">
+          <span className="text-slate-700 mx-0.5 shrink-0">|</span>
+          <span className="text-amber-400 font-bold whitespace-nowrap px-1.5 py-0.5 shrink-0 bg-slate-950 rounded-lg border border-slate-800">
             Due: ₹{statusCounts.totalDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </span>
         </div>
@@ -582,7 +570,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
           </div>
 
           {/* Master Scrollable List */}
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1 pb-28 md:pb-2">
             {loading ? (
               <div className="space-y-2 animate-pulse">
                 {[1, 2, 3, 4, 5].map(i => (
@@ -642,11 +630,11 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
 
                       {/* Items Preview Chip */}
                       {firstItemName ? (
-                        <p className="text-[11px] text-amber-700 dark:text-amber-200/80 truncate mt-0.5 flex items-center gap-1 font-mono">
-                          <span className="text-slate-500 font-sans">📦</span>
-                          <span>{firstItemName}</span>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-200/80 mt-0.5 flex items-center gap-1 font-mono min-w-0">
+                          <span className="text-slate-500 font-sans shrink-0">📦</span>
+                          <span className="truncate flex-1 min-w-0">{firstItemName}</span>
                           {remainingItemsCount > 0 && (
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">+{remainingItemsCount} more</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans shrink-0 whitespace-nowrap">+{remainingItemsCount} more</span>
                           )}
                         </p>
                       ) : (
@@ -844,7 +832,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
               </div>
 
               {/* Inspector Content Area (Internal Scroll) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pt-3 pr-1">
+              <div className="flex-1 min-h-0 overflow-y-auto pt-3 pr-1 pb-28 md:pb-4">
                 
                 {/* ─── TAB 1: ITEMIZED TAX INVOICE LINES ─── */}
                 {activeInspectorTab === 'items' && (
@@ -920,12 +908,12 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
 
                         {/* 1-Click Payment Shortcut if Invoice has Due */}
                         {parseFloat(selectedInvoice.outstanding_amount || 0) > 0 && onOpenPaymentForInvoice && (
-                          <div className="flex items-center justify-end pt-1">
+                          <div className="flex items-center justify-end pt-2 pb-2">
                             <button
                               onClick={() => onOpenPaymentForInvoice(selectedInvoice)}
-                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.01]"
+                              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all hover:scale-[1.01]"
                             >
-                              <CreditCard className="w-3.5 h-3.5" />
+                              <CreditCard className="w-4 h-4" />
                               <span>Record Payment (₹{parseFloat(selectedInvoice.outstanding_amount).toFixed(2)})</span>
                             </button>
                           </div>
