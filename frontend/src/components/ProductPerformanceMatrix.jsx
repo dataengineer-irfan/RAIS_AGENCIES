@@ -86,13 +86,13 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
       if (valA === undefined || valA === null) valA = 0;
       if (valB === undefined || valB === null) valB = 0;
 
-      if (typeof valA === 'string') {
+      if (typeof valA === 'string' && isNaN(Number(valA))) {
         const cmp = valA.localeCompare(valB);
         return sortDirection === 'asc' ? cmp : -cmp;
       }
 
-      const numA = Number(valA);
-      const numB = Number(valB);
+      const numA = Number(valA) || 0;
+      const numB = Number(valB) || 0;
       return sortDirection === 'asc' ? numA - numB : numB - numA;
     });
   }, [data, activeTab, searchTerm, sortColumn, sortDirection]);
@@ -238,7 +238,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
         {/* Right: Sort Dropdown + Search + View Switcher */}
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
           {/* Quick Sort Dropdown */}
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 shrink-0 text-slate-400 max-w-[130px] sm:max-w-none">
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 shrink-0 text-slate-400 max-w-[140px] sm:max-w-none">
             <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
             <select
               value={`${sortColumn}-${sortDirection}`}
@@ -250,18 +250,18 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
               className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5 truncate w-full"
               title="Sort products"
             >
-              <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
-              <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
-              <option value="profit_30d-desc" className="bg-slate-900 text-white">💎 Highest Margin (₹ Value)</option>
-              <option value="profit_30d-asc" className="bg-slate-900 text-white">💎 Lowest Margin (₹ Value)</option>
               <option value="margin_pct-desc" className="bg-slate-900 text-white">📊 Highest Margin %</option>
               <option value="margin_pct-asc" className="bg-slate-900 text-white">📊 Lowest Margin %</option>
+              <option value="profit_30d-desc" className="bg-slate-900 text-white">💎 Highest Profit (₹)</option>
+              <option value="profit_30d-asc" className="bg-slate-900 text-white">💎 Lowest Profit (₹)</option>
+              <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
+              <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
               <option value="units_sold_30d-desc" className="bg-slate-900 text-white">📦 Highest Units Sold</option>
               <option value="units_sold_30d-asc" className="bg-slate-900 text-white">📦 Lowest Units Sold</option>
-              <option value="stock_holding_value-desc" className="bg-slate-900 text-white">💰 Highest Holding Val</option>
-              <option value="stock_holding_units-desc" className="bg-slate-900 text-white">🏭 Highest Stock</option>
               <option value="trend_pct-desc" className="bg-slate-900 text-white">📈 Fastest Growing</option>
               <option value="trend_pct-asc" className="bg-slate-900 text-white">📉 Steepest Decline</option>
+              <option value="stock_holding_value-desc" className="bg-slate-900 text-white">💰 Highest Holding Val</option>
+              <option value="stock_holding_units-desc" className="bg-slate-900 text-white">🏭 Highest Stock</option>
               <option value="name-asc" className="bg-slate-900 text-white">🔤 Product Name (A-Z)</option>
               <option value="category_name-asc" className="bg-slate-900 text-white">🏷️ Category (A-Z)</option>
             </select>
@@ -330,25 +330,47 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
+                  <th className="py-2 px-2 text-center text-slate-500 w-9">#</th>
                   {renderSortHeader('SKU & Item', 'name')}
                   {renderSortHeader('Category', 'category_name')}
                   {renderSortHeader('Status', 'classification')}
                   {renderSortHeader('30d Sold', 'units_sold_30d', true)}
                   {renderSortHeader('30d Revenue', 'revenue_30d', true)}
-                  {renderSortHeader('30d Margin', 'profit_30d', true)}
+                  {renderSortHeader('30d Profit (₹)', 'profit_30d', true)}
+                  {renderSortHeader('Margin %', 'margin_pct', true)}
                   {renderSortHeader('MoM Trend', 'trend_pct', true)}
                   {renderSortHeader('Current Stock', 'stock_holding_units', true)}
                   {renderSortHeader('Holding Val', 'stock_holding_value', true)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {filteredItems.map(item => {
+                {filteredItems.map((item, idx) => {
                   return (
                     <tr 
                       key={item.product_id}
                       onClick={() => onSelectProduct && onSelectProduct(item)}
                       className="hover:bg-slate-950/60 cursor-pointer transition-colors"
                     >
+                      {/* Dynamic Rank Badge */}
+                      <td className="py-2 px-2 text-center font-mono font-bold text-xs whitespace-nowrap">
+                        {idx === 0 ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px]" title="Rank #1">
+                            1
+                          </span>
+                        ) : idx === 1 ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-400/20 text-slate-300 border border-slate-400/40 text-[10px]" title="Rank #2">
+                            2
+                          </span>
+                        ) : idx === 2 ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-700/20 text-amber-500 border border-amber-700/40 text-[10px]" title="Rank #3">
+                            3
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[11px] font-normal">
+                            {idx + 1}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-2 px-2.5">
                         <div className="flex items-center gap-2">
                           <ProductVisualBadge product={item} size="sm" />
@@ -374,34 +396,40 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-amber-400 whitespace-nowrap">
                         ₹{parseFloat(item.revenue_30d || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-2.5 text-right whitespace-nowrap">
-                        {item.units_sold_30d > 0 ? (
-                          <>
-                            <div className={`font-mono font-bold text-xs ${
-                              (item.profit_30d || 0) > 0 
-                                ? 'text-emerald-400' 
-                                : (item.profit_30d || 0) < 0 
-                                  ? 'text-rose-400' 
-                                  : 'text-slate-300'
-                            }`}>
-                              {(item.profit_30d || 0) > 0 ? '+' : ''}₹{parseFloat(item.profit_30d || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </div>
-                            <div className="text-[10px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5">
-                              <span className={`font-bold ${
-                                (item.margin_pct || 0) >= 20 ? 'text-emerald-400' : (item.margin_pct || 0) >= 10 ? 'text-amber-400' : 'text-slate-400'
-                              }`}>
-                                {parseFloat(item.margin_pct || 0).toFixed(1)}%
-                              </span>
-                              <span className="text-[9px] text-slate-500">margin</span>
-                            </div>
-                          </>
+                      {/* Dedicated 30d Profit (₹) column */}
+                      <td className="py-2 px-2.5 text-right font-mono font-bold whitespace-nowrap">
+                        {(item.units_sold_30d || 0) > 0 ? (
+                          <span className={
+                            (item.profit_30d || 0) > 0 
+                              ? 'text-emerald-400' 
+                              : (item.profit_30d || 0) < 0 
+                                ? 'text-rose-400' 
+                                : 'text-slate-300'
+                          }>
+                            {(item.profit_30d || 0) > 0 ? '+' : ''}₹{parseFloat(item.profit_30d || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
                         ) : (
-                          <div className="text-right">
-                            <span className="text-slate-600 font-mono text-xs">—</span>
-                            <div className="text-[9px] font-mono text-slate-500">
-                              {parseFloat(item.margin_pct || 0).toFixed(0)}% base
-                            </div>
+                          <span className="text-slate-600 font-mono text-xs">—</span>
+                        )}
+                      </td>
+                      {/* Dedicated Margin % column */}
+                      <td className="py-2 px-2.5 text-right font-mono whitespace-nowrap">
+                        {(item.units_sold_30d || 0) > 0 ? (
+                          <div className="flex items-center justify-end">
+                            <span className={`font-black text-xs px-2 py-0.5 rounded-md ${
+                              (item.margin_pct || 0) >= 20 
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                                : (item.margin_pct || 0) >= 10 
+                                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' 
+                                  : 'bg-slate-800 text-slate-300 border border-slate-700'
+                            }`}>
+                              {parseFloat(item.margin_pct || 0).toFixed(1)}%
+                            </span>
                           </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {parseFloat(item.margin_pct || 0).toFixed(0)}% base
+                          </span>
                         )}
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-bold whitespace-nowrap">
@@ -424,7 +452,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
         ) : (
           /* MATRIX / CARD VIEW (COMPACT MOBILE CARDS) */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {filteredItems.map(item => {
+            {filteredItems.map((item, idx) => {
               const isWinner = item.classification === 'WINNER';
               const isZeroMover = item.classification === 'ZERO_MOVER';
               const isDeclining = item.classification === 'DECLINING';
@@ -442,6 +470,9 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 shrink-0">
+                        #{idx + 1}
+                      </span>
                       <ProductVisualBadge product={item} size="md" />
                       <div className="min-w-0">
                         <h4 className="font-bold text-white text-xs truncate">{item.name}</h4>
