@@ -146,11 +146,12 @@ export const DrillableMetricModal = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-[75] overflow-hidden bg-slate-950/85 backdrop-blur-md flex transition-all duration-200 animate-fadeIn ${
+      className={`fixed inset-0 z-[75] overflow-hidden backdrop-blur-md flex transition-all duration-200 animate-fadeIn ${
         isMaximized 
           ? 'p-0 items-stretch justify-stretch' 
           : 'items-center justify-center p-2 sm:p-4 lg:p-6'
       }`}
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.78)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div 

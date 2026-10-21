@@ -642,15 +642,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
 
                       {/* Items Preview Chip */}
                       {firstItemName ? (
-                        <p className="text-[11px] text-amber-200/80 truncate mt-0.5 flex items-center gap-1 font-mono">
+                        <p className="text-[11px] text-amber-700 dark:text-amber-200/80 truncate mt-0.5 flex items-center gap-1 font-mono">
                           <span className="text-slate-500 font-sans">📦</span>
                           <span>{firstItemName}</span>
                           {remainingItemsCount > 0 && (
-                            <span className="text-[10px] text-slate-400 font-sans">+{remainingItemsCount} more</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">+{remainingItemsCount} more</span>
                           )}
                         </p>
                       ) : (
-                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-0.5">
                           {formatInvoiceDateTime(inv?.invoice_date, inv?.created_at).fullText} • {inv?.items_count || 0} line items
                         </p>
                       )}
@@ -801,7 +801,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                       {selectedInvoice.due_date && (
                         <>
                           <span className="text-slate-600">•</span>
-                          <span className="text-amber-400/90 font-mono font-medium">
+                          <span className="text-amber-700 dark:text-amber-400 font-mono font-bold">
                             Due Date: {new Date(selectedInvoice.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
                         </>

@@ -56,6 +56,15 @@ html.theme-light body {
   color: #0f172a;
 }
 
+/* Modal & Drawer Overlays MUST remain a dark translucent scrim in Light Mode */
+html.theme-light .fixed.inset-0[class*="z-"],
+html.theme-light [class*="fixed"][class*="inset-0"][class*="z-"],
+html.theme-light [class*="fixed"][class*="inset-0"][class*="backdrop-blur"],
+html.theme-light .modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
 /* Scrollbars in Light Mode */
 html.theme-light ::-webkit-scrollbar-track {
   background: #f1f5f9;
@@ -152,34 +161,47 @@ html.theme-light .text-slate-300 {
 }
 
 html.theme-light .text-slate-400 {
-  color: #475569 !important; /* Slate-600 */
+  color: #475569 !important; /* Slate-600: strong contrast on white */
 }
 
 html.theme-light .text-slate-500 {
-  color: #64748b !important; /* Slate-500 */
+  color: #475569 !important; /* Slate-600 */
 }
 
-/* Gold / Amber Brand Palette in Light Mode */
+html.theme-light .text-slate-600 {
+  color: #334155 !important; /* Slate-700 */
+}
+
+/* Gold / Amber Brand Palette in Light Mode (Crisp Amber-800 #92400e) */
+html.theme-light .text-amber-100,
+html.theme-light .text-amber-200,
+html.theme-light .text-amber-300,
 html.theme-light .text-amber-400,
-html.theme-light .text-amber-500 {
-  color: #b45309 !important; /* Amber-700 for high contrast on light */
-}
-
-html.theme-light .text-amber-300 {
-  color: #92400e !important; /* Amber-800 */
+html.theme-light .text-amber-500,
+html.theme-light [class*="text-amber-200"],
+html.theme-light [class*="text-amber-300"],
+html.theme-light [class*="text-amber-400"] {
+  color: #92400e !important;
 }
 
 html.theme-light .bg-amber-500\/10,
 html.theme-light .bg-amber-500\/15,
-html.theme-light .bg-amber-500\/20 {
+html.theme-light .bg-amber-500\/20,
+html.theme-light .bg-amber-500\/25 {
   background-color: #fef3c7 !important;
   border-color: #fde68a !important;
 }
 
-/* Status Colors in Light Mode */
-html.theme-light .text-emerald-400 {
-  color: #15803d !important; /* Emerald-700 */
+/* Emerald / Green Palette in Light Mode (Emerald-700 #15803d) */
+html.theme-light .text-emerald-200,
+html.theme-light .text-emerald-300,
+html.theme-light .text-emerald-400,
+html.theme-light .text-emerald-500,
+html.theme-light [class*="text-emerald-300"],
+html.theme-light [class*="text-emerald-400"] {
+  color: #15803d !important;
 }
+
 html.theme-light .bg-emerald-500\/10,
 html.theme-light .bg-emerald-500\/15,
 html.theme-light .bg-emerald-500\/20,
@@ -188,37 +210,75 @@ html.theme-light .bg-emerald-600\/20 {
   border-color: #bbf7d0 !important;
 }
 
+/* Rose / Red Palette in Light Mode (Rose-700 #be123c) */
+html.theme-light .text-rose-200,
+html.theme-light .text-rose-300,
 html.theme-light .text-rose-400,
-html.theme-light .text-rose-300 {
-  color: #be123c !important; /* Rose-700 */
+html.theme-light [class*="text-rose-300"],
+html.theme-light [class*="text-rose-400"] {
+  color: #be123c !important;
 }
+
 html.theme-light .bg-rose-500\/10,
 html.theme-light .bg-rose-500\/15,
-html.theme-light .bg-rose-500\/20,
-html.theme-light .bg-rose-950\/15,
-html.theme-light .bg-rose-950\/25 {
+html.theme-light .bg-rose-500\/20 {
   background-color: #fee2e2 !important;
   border-color: #fecaca !important;
 }
 
+/* Blue / Info Palette in Light Mode (Blue-700 #1d4ed8) */
+html.theme-light .text-blue-200,
+html.theme-light .text-blue-300,
 html.theme-light .text-blue-400,
-html.theme-light .text-blue-300 {
-  color: #1d4ed8 !important; /* Blue-700 */
+html.theme-light [class*="text-blue-300"],
+html.theme-light [class*="text-blue-400"] {
+  color: #1d4ed8 !important;
 }
+
 html.theme-light .bg-blue-500\/10,
 html.theme-light .bg-blue-600\/20 {
   background-color: #dbeafe !important;
   border-color: #bfdbfe !important;
 }
 
+/* Purple Palette in Light Mode (Purple-700 #6b21a8) */
 html.theme-light .text-purple-400,
 html.theme-light .text-purple-300 {
-  color: #6b21a8 !important; /* Purple-700 */
+  color: #6b21a8 !important;
 }
 html.theme-light .bg-purple-500\/10,
 html.theme-light .bg-purple-500\/20 {
   background-color: #f3e8ff !important;
   border-color: #e9d5ff !important;
+}
+
+/* Status Badges in Light Mode */
+html.theme-light [class*="bg-blue-950"],
+html.theme-light .bg-blue-950\/70 {
+  background-color: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+
+html.theme-light [class*="bg-emerald-950"],
+html.theme-light .bg-emerald-950\/70 {
+  background-color: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #15803d !important;
+}
+
+html.theme-light [class*="bg-amber-950"],
+html.theme-light .bg-amber-950\/70 {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+}
+
+html.theme-light [class*="bg-rose-950"],
+html.theme-light .bg-rose-950\/70 {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #be123c !important;
 }
 
 /* Form Controls in Light Mode */
@@ -233,22 +293,26 @@ html.theme-light textarea {
 html.theme-light input:focus,
 html.theme-light select:focus,
 html.theme-light textarea:focus {
-  border-color: #f59e0b !important;
-  box-shadow: 0 0 0 1px #f59e0b !important;
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 1px #d97706 !important;
 }
 
 html.theme-light input::placeholder,
 html.theme-light textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #64748b !important;
 }
 
 /* Tables in Light Mode */
-html.theme-light thead.bg-slate-950 {
-  background-color: #f1f5f9 !important;
+html.theme-light thead.bg-slate-950,
+html.theme-light thead {
+  background-color: #f8fafc !important;
   border-color: #cbd5e1 !important;
 }
 html.theme-light thead th {
-  color: #475569 !important;
+  color: #334155 !important;
+}
+html.theme-light table tr:hover {
+  background-color: #f1f5f9 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
