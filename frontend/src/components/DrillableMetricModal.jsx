@@ -321,63 +321,71 @@ export const DrillableMetricModal = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider px-2">
                 <span>Category Name</span>
-                <span>{isProfit ? 'Net Profit & Margins' : 'Invoiced Value & Breakdown'}</span>
+                <span>{isProfit ? 'Net Profit' : 'Invoiced Value'}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
                 {(items || []).map(cat => (
                   <div
                     key={cat?.id}
                     onClick={() => loadLevel('CATEGORY', cat?.id, cat?.name)}
-                    className={`bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between transition-all hover:scale-[1.01] cursor-pointer group shadow-sm ${
+                    className={`bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between transition-all hover:scale-[1.01] cursor-pointer group shadow-sm ${
                       isProfit ? 'hover:border-emerald-500/60' : 'hover:border-amber-500/60'
                     }`}
                   >
-                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
-                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-sm shrink-0 ${
-                        isProfit 
-                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                          : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                      }`}>
-                        <Package className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
+                    {/* Top Row: Category Icon & Name + Net Profit / Value & Chevron */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-sm shrink-0 ${
+                          isProfit 
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                            : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                        }`}>
+                          <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
                         <h4 className={`text-xs sm:text-sm font-bold text-white transition-colors truncate ${
                           isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
                         }`}>
                           {cat?.name}
                         </h4>
-                        <p className="text-[10px] sm:text-xs text-slate-500 font-mono mt-0.5 truncate">
-                          {cat?.products_count ?? 0} active SKU(s) • {cat?.units_sold ?? 0} sold
-                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isProfit ? (
+                          <div className="text-xs sm:text-sm font-black text-emerald-400 font-mono">
+                            +₹{parseFloat(cat?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </div>
+                        ) : (
+                          <div className="text-xs sm:text-sm font-black text-white font-mono">
+                            ₹{parseFloat(cat?.value || cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </div>
+                        )}
+                        <ChevronRight className={`w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-all ${
+                          isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
+                        }`} />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                      <div className="text-right">
-                        {isProfit ? (
-                          <>
-                            <div className="text-xs sm:text-sm font-black text-emerald-400 font-mono">
-                              +₹{parseFloat(cat?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5 whitespace-nowrap">
-                              Rev: ₹{parseFloat(cat?.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} • <span className="text-emerald-400 font-bold">{cat?.margin_pct}%</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="text-xs sm:text-sm font-black text-white font-mono">
-                              ₹{parseFloat(cat?.value || cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </div>
-                            <div className="text-[10px] text-emerald-400 font-semibold flex items-center justify-end gap-1">
-                              <TrendingUp className="w-3 h-3" />
-                              Drill In
-                            </div>
-                          </>
-                        )}
+                    {/* Bottom Metadata Ribbon */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono gap-2">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="text-slate-300 font-semibold">{cat?.products_count ?? 0} SKU{cat?.products_count === 1 ? '' : 's'}</span>
+                        <span className="text-slate-600">•</span>
+                        <span>{cat?.units_sold ?? 0} sold</span>
                       </div>
-                      <ChevronRight className={`w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-all ${
-                        isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
-                      }`} />
+
+                      {isProfit ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span>Rev: ₹{parseFloat(cat?.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            {cat?.margin_pct}%
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
+                          <TrendingUp className="w-3 h-3" />
+                          <span>Drill In</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -408,45 +416,54 @@ export const DrillableMetricModal = ({
                 {(items || []).map(prod => (
                   <div
                     key={prod?.id}
-                    className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+                    className="bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between shadow-sm"
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2 flex-1">
-                      <ProductVisualBadge product={prod} size="md" />
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-white truncate">{prod?.name}</h4>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
-                          {prod?.sku} • {prod?.brand || 'Wholesale'} • Stock: {prod?.current_stock ?? 0}
-                        </p>
-                        {isProfit && (
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            Sell: ₹{parseFloat(prod?.base_price || 0).toFixed(2)} | Cost: ₹{parseFloat(prod?.unit_cost || 0).toFixed(2)}
+                    {/* Top Row: Visual Badge + Name + Net Profit / Revenue */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <ProductVisualBadge product={prod} size="md" />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs sm:text-sm font-bold text-white truncate">{prod?.name}</h4>
+                          <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                            {prod?.sku} {prod?.brand ? `• ${prod?.brand}` : ''} • Stock: {prod?.current_stock ?? 0}
                           </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        {isProfit ? (
+                          <div className="text-xs sm:text-sm font-black text-emerald-400 font-mono">
+                            +₹{parseFloat(prod?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </div>
+                        ) : (
+                          <div className="text-xs sm:text-sm font-black text-amber-400 font-mono">
+                            ₹{parseFloat(prod?.revenue || prod?.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    {/* Bottom Metadata Ribbon */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono gap-2">
+                      <div className="text-slate-400 text-[10px] sm:text-[11px] truncate">
+                        {isProfit ? (
+                          <span>Sell: ₹{parseFloat(prod?.base_price || 0).toFixed(2)} | Cost: ₹{parseFloat(prod?.unit_cost || 0).toFixed(2)}</span>
+                        ) : (
+                          <span>Base: ₹{parseFloat(prod?.base_price || 0).toFixed(2)}</span>
+                        )}
+                      </div>
+
                       {isProfit ? (
-                        <>
-                          <div className="text-xs font-black text-emerald-400 font-mono">
-                            +₹{parseFloat(prod?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5 whitespace-nowrap">
-                            {prod?.units_sold ?? 0} sold • Rev: ₹{parseFloat(prod?.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                          </div>
-                          <div className="text-[10px] text-emerald-400 font-bold mt-0.5">
-                            {prod?.margin_pct}% margin
-                          </div>
-                        </>
+                        <div className="flex items-center gap-1.5 shrink-0 text-slate-400 text-[10px] sm:text-[11px]">
+                          <span>{prod?.units_sold ?? 0} sold (₹{parseFloat(prod?.revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })})</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            {prod?.margin_pct}%
+                          </span>
+                        </div>
                       ) : (
-                        <>
-                          <div className="text-xs font-black text-amber-400 font-mono">
-                            ₹{parseFloat(prod?.revenue || prod?.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            Base: ₹{parseFloat(prod?.base_price || 0).toFixed(2)} • {prod?.units_sold ?? 0} sold
-                          </div>
-                        </>
+                        <div className="text-[10px] text-slate-400 font-mono shrink-0">
+                          {prod?.units_sold ?? 0} sold
+                        </div>
                       )}
                     </div>
                   </div>
