@@ -252,6 +252,10 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             >
               <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
               <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
+              <option value="profit_30d-desc" className="bg-slate-900 text-white">💎 Highest Margin (₹ Value)</option>
+              <option value="profit_30d-asc" className="bg-slate-900 text-white">💎 Lowest Margin (₹ Value)</option>
+              <option value="margin_pct-desc" className="bg-slate-900 text-white">📊 Highest Margin %</option>
+              <option value="margin_pct-asc" className="bg-slate-900 text-white">📊 Lowest Margin %</option>
               <option value="units_sold_30d-desc" className="bg-slate-900 text-white">📦 Highest Units Sold</option>
               <option value="units_sold_30d-asc" className="bg-slate-900 text-white">📦 Lowest Units Sold</option>
               <option value="stock_holding_value-desc" className="bg-slate-900 text-white">💰 Highest Holding Val</option>
@@ -331,6 +335,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                   {renderSortHeader('Status', 'classification')}
                   {renderSortHeader('30d Sold', 'units_sold_30d', true)}
                   {renderSortHeader('30d Revenue', 'revenue_30d', true)}
+                  {renderSortHeader('30d Margin', 'profit_30d', true)}
                   {renderSortHeader('MoM Trend', 'trend_pct', true)}
                   {renderSortHeader('Current Stock', 'stock_holding_units', true)}
                   {renderSortHeader('Holding Val', 'stock_holding_value', true)}
@@ -368,6 +373,36 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-amber-400 whitespace-nowrap">
                         ₹{parseFloat(item.revenue_30d || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-2 px-2.5 text-right whitespace-nowrap">
+                        {item.units_sold_30d > 0 ? (
+                          <>
+                            <div className={`font-mono font-bold text-xs ${
+                              (item.profit_30d || 0) > 0 
+                                ? 'text-emerald-400' 
+                                : (item.profit_30d || 0) < 0 
+                                  ? 'text-rose-400' 
+                                  : 'text-slate-300'
+                            }`}>
+                              {(item.profit_30d || 0) > 0 ? '+' : ''}₹{parseFloat(item.profit_30d || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-400 flex items-center justify-end gap-1 mt-0.5">
+                              <span className={`font-bold ${
+                                (item.margin_pct || 0) >= 20 ? 'text-emerald-400' : (item.margin_pct || 0) >= 10 ? 'text-amber-400' : 'text-slate-400'
+                              }`}>
+                                {parseFloat(item.margin_pct || 0).toFixed(1)}%
+                              </span>
+                              <span className="text-[9px] text-slate-500">margin</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-right">
+                            <span className="text-slate-600 font-mono text-xs">—</span>
+                            <div className="text-[9px] font-mono text-slate-500">
+                              {parseFloat(item.margin_pct || 0).toFixed(0)}% base
+                            </div>
+                          </div>
+                        )}
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-bold whitespace-nowrap">
                         <span className={item.trend_pct > 0 ? 'text-emerald-400' : item.trend_pct < 0 ? 'text-rose-400' : 'text-slate-400'}>
@@ -418,18 +453,32 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                     {renderStatusBadge(item.classification)}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-1 mt-2 pt-2 border-t border-slate-900 text-[10px]">
+                  <div className="grid grid-cols-4 gap-1 mt-2 pt-2 border-t border-slate-900 text-[10px]">
                     <div>
-                      <span className="text-slate-500">30d Sold:</span>
-                      <div className="font-mono font-bold text-white">{item.units_sold_30d}</div>
+                      <span className="text-slate-500 block truncate">30d Sold:</span>
+                      <div className="font-mono font-bold text-white truncate">{item.units_sold_30d}</div>
                     </div>
                     <div>
-                      <span className="text-slate-500">Revenue:</span>
-                      <div className="font-mono font-bold text-amber-400">₹{(item.revenue_30d/1000).toFixed(1)}k</div>
+                      <span className="text-slate-500 block truncate">Revenue:</span>
+                      <div className="font-mono font-bold text-amber-400 truncate">₹{(item.revenue_30d/1000).toFixed(1)}k</div>
                     </div>
                     <div>
-                      <span className="text-slate-500">Stock:</span>
-                      <div className="font-mono font-bold text-slate-300">{item.stock_holding_units}</div>
+                      <span className="text-slate-500 block truncate">Margin:</span>
+                      <div className={`font-mono font-bold truncate ${
+                        (item.profit_30d || 0) > 0 ? 'text-emerald-400' : (item.profit_30d || 0) < 0 ? 'text-rose-400' : 'text-slate-400'
+                      }`}>
+                        {item.units_sold_30d > 0 ? (
+                          <>
+                            ₹{(item.profit_30d/1000).toFixed(1)}k <span className="text-[9px] font-normal opacity-80">({item.margin_pct}%)</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-600">—</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block truncate">Stock:</span>
+                      <div className="font-mono font-bold text-slate-300 truncate">{item.stock_holding_units}</div>
                     </div>
                   </div>
                 </div>

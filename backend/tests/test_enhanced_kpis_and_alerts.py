@@ -35,3 +35,22 @@ def test_enhanced_inactive_alerts_with_last_order_and_priority(db):
         assert "priority_tier" in first
         assert "priority_label" in first
         assert first["priority_tier"] in (1, 2, 3)
+
+def test_product_performance_matrix_margins_and_sorting(db):
+    from app.services.product_performance_service import ProductPerformanceService
+    matrix = ProductPerformanceService.get_product_matrix(db, force_refresh=True)
+    assert matrix is not None
+    assert "total_skus" in matrix
+    assert "total_profit_30d" in matrix
+    assert "overall_margin_pct" in matrix
+    assert isinstance(matrix["items"], list)
+    if matrix["items"]:
+        item = matrix["items"][0]
+        assert "profit_30d" in item
+        assert "margin_pct" in item
+        assert "cost_30d" in item
+        assert "unit_cost" in item
+        assert "revenue_30d" in item
+        assert isinstance(item["profit_30d"], (int, float))
+        assert isinstance(item["margin_pct"], (int, float))
+
