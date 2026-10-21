@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2 } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
+import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 
 export const PaymentModal = ({ 
   isOpen, 
@@ -195,19 +196,13 @@ export const PaymentModal = ({
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
               Customer *
             </label>
-            <select
-              value={customerId}
-              onChange={(e) => handleCustomerChange(e.target.value)}
+            <SearchableCustomerSelect
+              customers={customers}
+              selectedCustomerId={customerId}
+              onSelectCustomer={(id) => handleCustomerChange(id)}
               required
-              className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
-            >
-              <option value="" className="bg-slate-900 text-slate-400">-- Choose Customer --</option>
-              {(customers || []).map((c) => (
-                <option key={c?.id} value={c?.id} className="bg-slate-900 text-white py-1">
-                  {c?.business_name || 'Customer'} (Balance: ₹{parseFloat(c?.outstanding_balance || 0).toFixed(2)})
-                </option>
-              ))}
-            </select>
+              placeholder="-- Click to Search & Select Customer --"
+            />
           </div>
 
           <div>

@@ -6,6 +6,7 @@ import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { VoiceDictationModal } from './VoiceDictationModal';
+import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 
 export const InvoiceBuilderModal = ({ 
@@ -889,23 +890,13 @@ export const InvoiceBuilderModal = ({
                   </div>
 
                   <div className="relative">
-                    <select
-                      value={customerId}
-                      onChange={(e) => handleCustomerChange(e.target.value)}
+                    <SearchableCustomerSelect
+                      customers={customers}
+                      selectedCustomerId={customerId}
+                      onSelectCustomer={(id) => handleCustomerChange(id)}
                       required
-                      className={`w-full rounded-xl pl-3 pr-8 py-2 text-xs font-bold transition-all focus:outline-none shadow-inner bg-slate-900 text-white ${
-                        !customerId
-                          ? 'border-2 border-amber-500 ring-2 ring-amber-500/20'
-                          : 'border border-slate-700/80 focus:border-amber-500'
-                      }`}
-                    >
-                      <option value="" className="bg-slate-900 text-slate-400">-- Click to Select Customer / Restaurant Outlet * --</option>
-                      {(customers || []).map((c) => (
-                        <option key={c?.id} value={c?.id} className="bg-slate-900 text-white py-1">
-                          {c?.business_name || 'Customer'} {c?.customer_code ? `(${c.customer_code})` : ''} {parseFloat(c?.outstanding_balance || 0) > 0 ? `• Due: ₹${parseFloat(c?.outstanding_balance).toFixed(0)}` : '• Due: ₹0'}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="-- Click to Search & Select Customer / Outlet * --"
+                    />
                   </div>
                 </div>
 

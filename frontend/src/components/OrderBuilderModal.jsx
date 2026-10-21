@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ShoppingBag, Plus, Trash2, X, AlertTriangle, CheckCircle, CheckCircle2, Calculator, MessageSquare, Minus, Sparkles, RefreshCw } from 'lucide-react';
 import { customerApi, catalogueApi, orderApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
+import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 
@@ -317,18 +318,13 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
                 <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1 text-xs">
                   Customer *
                 </label>
-                <select
-                  value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
-                >
-                  <option value="" className="bg-slate-900 text-slate-400">-- Select Customer --</option>
-                  {(customers || []).map((c) => (
-                    <option key={c?.id} value={c?.id} className="bg-slate-900 text-white py-1">
-                      {c?.business_name || 'Customer'} ({c?.customer_code || ''})
-                    </option>
-                  ))}
-                </select>
+                <SearchableCustomerSelect
+                  customers={customers}
+                  selectedCustomerId={customerId}
+                  onSelectCustomer={(id) => setCustomerId(id)}
+                  required
+                  placeholder="-- Click to Search & Select Customer --"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
