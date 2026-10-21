@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import or_, func
 from app.models.invoice import Invoice, InvoiceItem
@@ -272,6 +272,72 @@ class BillingService:
                     invoice_number=invoice.invoice_number,
                     user_id=user_id
                 )
+
+        # ─── AUTOMATIC IMMEDIATE CASH SETTLEMENT ───
+        # Enforce that counter cash sales or invoices with mark_as_paid=True are immediately
+        # settled into the cash/UPI register in the exact same atomic transaction.
+        # This completely eliminates spurious unallocated dues for "Cash account".
+        is_cash_customer = (
+            customer.customer_code == "CUST-0044" or
+            "cash" in (customer.business_name or "").lower().strip()
+        )
+        should_settle_immediately = (
+            invoice.status == InvoiceStatus.ISSUED.value and
+            (bool(getattr(data, "mark_as_paid", False)) or is_cash_customer)
+        )
+
+        if should_settle_immediately and invoice.total_amount > Decimal("0.00"):
+            from app.models.payment import Payment, PaymentAllocation
+            from app.domain.enums import PaymentMethod
+            
+            terms_upper = (invoice.payment_terms or "").upper()
+            pay_method = PaymentMethod.UPI.value if "UPI" in terms_upper else PaymentMethod.CASH.value
+            pay_number = SequenceService.get_next_sequence(db, "PAY")
+            now_dt = datetime.now(timezone.utc)
+
+            payment = Payment(
+                payment_number=pay_number,
+                customer_id=customer.id,
+                payment_date=invoice.invoice_date,
+                amount=invoice.total_amount,
+                allocated_amount=invoice.total_amount,
+                unallocated_amount=Decimal("0.00"),
+                payment_method=pay_method,
+                reference_number=f"Counter Settlement #{invoice.invoice_number}",
+                notes=f"Immediate cash counter settlement for Invoice #{invoice.invoice_number}",
+                created_by_id=user_id
+            )
+            db.add(payment)
+            db.flush()
+
+            allocation = PaymentAllocation(
+                payment_id=payment.id,
+                invoice_id=invoice.id,
+                allocated_amount=invoice.total_amount,
+                allocated_at=now_dt
+            )
+            db.add(allocation)
+
+            invoice.paid_amount = invoice.total_amount
+            invoice.outstanding_amount = Decimal("0.00")
+            invoice.status = InvoiceStatus.PAID.value
+
+            AuditService.log(
+                db=db,
+                action=AuditAction.CREATE,
+                entity_name="Payment",
+                entity_id=payment.id,
+                user_id=user_id,
+                username=username,
+                user_role=user_role,
+                after_state={
+                    "payment_number": pay_number,
+                    "amount": str(invoice.total_amount),
+                    "invoice_number": invoice.invoice_number,
+                    "method": pay_method,
+                    "auto_settled": True
+                }
+            )
 
         AuditService.log(
             db=db,

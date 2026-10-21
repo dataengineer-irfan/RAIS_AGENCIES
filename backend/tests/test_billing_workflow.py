@@ -170,3 +170,78 @@ def test_order_creation_and_stock_deduction(test_db):
     assert movement is not None
     assert movement.quantity_change == Decimal("-20.00")
     assert movement.new_stock == initial_stock - Decimal("20.00")
+
+
+def test_cash_account_invoice_auto_settlement(test_db):
+    """
+    Validates that counter cash sales under 'Cash account' (or CUST-0044) are automatically
+    and atomically settled as PAID with 0 outstanding balance upon creation.
+    """
+    prod = test_db.query(Product).first()
+
+    cash_cust = Customer(
+        customer_code="CUST-0044",
+        business_name="Cash account",
+        contact_person="Counter Walk-in",
+        phone="9999999990",
+        address_line1="Rayachoty Counter"
+    )
+    test_db.add(cash_cust)
+    test_db.commit()
+
+    inv_data = InvoiceCreate(
+        customer_id=cash_cust.id,
+        auto_issue=True,
+        payment_terms="Cash on Delivery / Immediate Settlement",
+        items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("3.00"))]
+    )
+
+    inv = BillingService.create_invoice(test_db, inv_data)
+
+    assert inv.status == InvoiceStatus.PAID.value
+    assert inv.total_amount == Decimal("900.00")
+    assert inv.paid_amount == Decimal("900.00")
+    assert inv.outstanding_amount == Decimal("0.00")
+
+    # Verify payment record was automatically created and linked
+    from app.models.payment import Payment, PaymentAllocation
+    pmt = test_db.query(Payment).filter(Payment.customer_id == cash_cust.id).first()
+    assert pmt is not None
+    assert pmt.amount == Decimal("900.00")
+    assert pmt.allocated_amount == Decimal("900.00")
+    assert pmt.unallocated_amount == Decimal("0.00")
+    assert pmt.payment_method == "CASH"
+
+    alloc = test_db.query(PaymentAllocation).filter(PaymentAllocation.invoice_id == inv.id).first()
+    assert alloc is not None
+    assert alloc.allocated_amount == Decimal("900.00")
+
+
+def test_mark_as_paid_invoice_auto_settlement(test_db):
+    """
+    Validates that any customer bill created with mark_as_paid=True is atomically settled as PAID.
+    """
+    cust = test_db.query(Customer).filter(Customer.customer_code == "CUST-0001").first()
+    prod = test_db.query(Product).first()
+
+    inv_data = InvoiceCreate(
+        customer_id=cust.id,
+        auto_issue=True,
+        mark_as_paid=True,
+        payment_terms="Immediate UPI / Online Settlement",
+        items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("1.00"))]
+    )
+
+    inv = BillingService.create_invoice(test_db, inv_data)
+
+    assert inv.status == InvoiceStatus.PAID.value
+    assert inv.total_amount == Decimal("300.00")
+    assert inv.paid_amount == Decimal("300.00")
+    assert inv.outstanding_amount == Decimal("0.00")
+
+    from app.models.payment import Payment
+    pmt = test_db.query(Payment).filter(Payment.customer_id == cust.id).order_by(Payment.created_at.desc()).first()
+    assert pmt is not None
+    assert pmt.amount == Decimal("300.00")
+    assert pmt.payment_method == "UPI"
+

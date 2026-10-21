@@ -38,6 +38,7 @@ class InvoiceCreate(BaseModel):
     payment_terms: Optional[str] = "Cash on Delivery / Immediate Settlement"
     notes: Optional[str] = None
     auto_issue: bool = False # If True, mark as ISSUED immediately
+    mark_as_paid: Optional[bool] = False # If True, atomically record cash settlement into cash/UPI register
     idempotency_key: Optional[str] = Field(None, max_length=64, description="Client idempotency key for safe retries")
     items: List[InvoiceItemCreate] = Field(..., min_length=1, description="Invoice must contain at least one item")
 

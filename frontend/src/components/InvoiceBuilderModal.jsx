@@ -483,13 +483,14 @@ export const InvoiceBuilderModal = ({
           payment_terms: paymentTerms,
           notes: notes.trim() || null,
           auto_issue: autoIssue,
+          mark_as_paid: markAsPaid,
           idempotency_key: idempotencyKey,
           items: itemsPayload
         };
         res = await billingApi.createInvoice(payload);
 
-        // Immediate cash settlement if marked as paid (e.g. Counter Cash Sales)
-        if (markAsPaid && res?.id) {
+        // Fallback immediate cash settlement if marked as paid and backend hasn't already auto-settled
+        if (markAsPaid && res?.id && res?.status !== 'PAID') {
           try {
             const payRes = await paymentApi.record({
               customer_id: customerId,
