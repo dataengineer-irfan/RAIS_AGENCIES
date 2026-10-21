@@ -37,6 +37,31 @@ const formatVoucherDate = (dateStr) => {
   return dateStr;
 };
 
+const getLocalDateStr = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getYesterdayDateStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getLocalDateStr(d);
+};
+
+const getCurrentMonthStr = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+};
+
+const extractDateOnly = (dateVal) => {
+  if (!dateVal) return '';
+  return String(dateVal).split('T')[0];
+};
+
 export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   const { hasRole } = useAuth();
   const [payments, setPayments] = useState([]);
@@ -44,6 +69,10 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMethodFilter, setActiveMethodFilter] = useState('ALL'); // ALL, CASH, UPI, BANK
   
+  // Date Restriction & Stepper State
+  const [dateFilterMode, setDateFilterMode] = useState('ALL'); // 'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_MONTH' | 'SPECIFIC_DAY'
+  const [selectedDate, setSelectedDate] = useState(getLocalDateStr());
+
   // Master-Detail State
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [activeInspectorTab, setActiveInspectorTab] = useState('metadata'); // metadata, allocations, actions
@@ -66,7 +95,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
     setLoading(true);
     try {
       const [data, summary] = await Promise.all([
-        paymentApi.list(),
+        paymentApi.list({ limit: 500 }),
         paymentApi.getSummary().catch(() => null)
       ]);
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
@@ -120,27 +149,108 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
     }
   };
 
-  // Micro-Metrics & Payment Method Counts for 1-Click Ribbon
+  // Day Stepping Handlers
+  const handleStepDay = (delta) => {
+    let baseDateStr = selectedDate;
+    if (dateFilterMode === 'TODAY') {
+      baseDateStr = getLocalDateStr();
+    } else if (dateFilterMode === 'YESTERDAY') {
+      baseDateStr = getYesterdayDateStr();
+    } else if (!baseDateStr || dateFilterMode === 'ALL' || dateFilterMode === 'THIS_MONTH') {
+      baseDateStr = getLocalDateStr();
+    }
+
+    const parts = baseDateStr.split('-').map(Number);
+    if (parts.length === 3) {
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setDate(d.getDate() + delta);
+      const newDateStr = getLocalDateStr(d);
+      setSelectedDate(newDateStr);
+      if (newDateStr === getLocalDateStr()) {
+        setDateFilterMode('TODAY');
+      } else if (newDateStr === getYesterdayDateStr()) {
+        setDateFilterMode('YESTERDAY');
+      } else {
+        setDateFilterMode('SPECIFIC_DAY');
+      }
+    }
+  };
+
+  const handleDateChange = (dateStr) => {
+    if (!dateStr) return;
+    setSelectedDate(dateStr);
+    if (dateStr === getLocalDateStr()) {
+      setDateFilterMode('TODAY');
+    } else if (dateStr === getYesterdayDateStr()) {
+      setDateFilterMode('YESTERDAY');
+    } else {
+      setDateFilterMode('SPECIFIC_DAY');
+    }
+  };
+
+  // 1. Date-Filtered Payments Subset
+  const dateFilteredPayments = useMemo(() => {
+    const todayStr = getLocalDateStr();
+    const yesterdayStr = getYesterdayDateStr();
+    const currentMonthStr = getCurrentMonthStr();
+
+    return payments.filter(p => {
+      const pDate = extractDateOnly(p.payment_date);
+      if (dateFilterMode === 'TODAY') {
+        return pDate === todayStr;
+      }
+      if (dateFilterMode === 'YESTERDAY') {
+        return pDate === yesterdayStr;
+      }
+      if (dateFilterMode === 'THIS_MONTH') {
+        return pDate.startsWith(currentMonthStr);
+      }
+      if (dateFilterMode === 'SPECIFIC_DAY') {
+        return pDate === selectedDate;
+      }
+      return true; // 'ALL'
+    });
+  }, [payments, dateFilterMode, selectedDate]);
+
+  // 2. Micro-Metrics & Method Counts for the active date slice
   const methodCounts = useMemo(() => {
     let cash = 0;
     let upi = 0;
     let bank = 0;
-    for (const p of payments) {
+    for (const p of dateFilteredPayments) {
       const m = (p.payment_method || '').toUpperCase();
       if (m.includes('CASH')) cash++;
       else if (m.includes('UPI')) upi++;
       else if (m.includes('BANK') || m.includes('NEFT') || m.includes('RTGS') || m.includes('CHEQUE')) bank++;
     }
     return {
-      total: payments.length,
+      total: dateFilteredPayments.length,
       cash,
       upi,
       bank
     };
-  }, [payments]);
+  }, [dateFilteredPayments]);
 
+  // 3. Dynamic Reconciliation Summary for the active date slice
+  const dateSummary = useMemo(() => {
+    let total = 0;
+    let cash = 0;
+    let upi = 0;
+    let bank = 0;
+    for (const p of dateFilteredPayments) {
+      const amt = parseFloat(p.amount || 0);
+      total += amt;
+      const m = (p.payment_method || '').toUpperCase();
+      if (m.includes('CASH')) cash += amt;
+      else if (m.includes('UPI')) upi += amt;
+      else bank += amt;
+    }
+    return { total, cash, upi, bank };
+  }, [dateFilteredPayments]);
+
+  // 4. Final Filtered Payments (applying method filter and omni-search)
   const filteredPayments = useMemo(() => {
-    return payments.filter(p => {
+    return dateFilteredPayments.filter(p => {
       if (activeMethodFilter !== 'ALL') {
         const m = (p.payment_method || '').toUpperCase();
         if (activeMethodFilter === 'CASH' && !m.includes('CASH')) return false;
@@ -157,133 +267,283 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
         (p.notes && p.notes.toLowerCase().includes(term))
       );
     });
-  }, [payments, activeMethodFilter, searchTerm]);
+  }, [dateFilteredPayments, activeMethodFilter, searchTerm]);
 
-  const selectedPayment = payments.find(p => p.id === selectedPaymentId) || payments[0];
+  // Auto-sync selected payment when filtered list changes
+  useEffect(() => {
+    if (filteredPayments.length > 0) {
+      const exists = filteredPayments.some(p => p.id === selectedPaymentId);
+      if (!exists) {
+        setSelectedPaymentId(filteredPayments[0].id);
+      }
+    } else {
+      setSelectedPaymentId(null);
+    }
+  }, [filteredPayments, selectedPaymentId]);
+
+  const selectedPayment = payments.find(p => p.id === selectedPaymentId) || filteredPayments[0] || null;
   const totalCollected = payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
       {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
-      <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
-        {/* Left: Back Button + Icon & Title */}
-        <div className="flex items-center gap-2 shrink-0">
-          {onNavigate && (
+      <div className="hidden md:flex flex-col gap-2 bg-slate-900/95 border border-slate-800 rounded-2xl p-2.5 shrink-0 shadow-md">
+        {/* Tier 1: Identity, Search, Dynamic Ticker & CTA */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: Back Button + Icon & Title */}
+          <div className="flex items-center gap-2 shrink-0">
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('dashboard')}
+                className="p-1.5 -ml-1 text-slate-400 hover:text-white rounded-xl bg-slate-950 hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-800"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4 text-emerald-400" />
+                <span>Back</span>
+              </button>
+            )}
+            <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <CreditCard className="w-4 h-4" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-black text-white whitespace-nowrap">
+                Payments Ledger
+              </h1>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-full border border-slate-700 font-mono">
+                {loading && payments.length === 0 ? 'Syncing...' : `${filteredPayments.length} of ${payments.length}`}
+              </span>
+            </div>
+          </div>
+
+          {/* Center: Omni-Search Input with Clear */}
+          <div className="relative flex-1 max-w-sm min-w-[180px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search receipt #, outlet, UTR, note..."
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Right: + Record Payment CTA */}
+          {hasRole(['ADMIN', 'OPERATOR']) && (
             <button
-              onClick={() => onNavigate('dashboard')}
-              className="p-1.5 -ml-1 text-slate-400 hover:text-white rounded-xl bg-slate-950 hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-800"
-              title="Back to Dashboard"
+              onClick={() => onOpenPaymentModal && onOpenPaymentModal(null, null)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 shrink-0"
+              title="Record Payment Voucher"
             >
-              <ArrowLeft className="w-4 h-4 text-emerald-400" />
-              <span>Back</span>
+              <PlusCircle className="w-4 h-4" />
+              <span>+ Record Payment</span>
             </button>
           )}
-          <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <CreditCard className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-sm font-black text-white whitespace-nowrap">
-              Payments Ledger
-            </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-full border border-slate-700 font-mono">
-              {loading && payments.length === 0 ? 'Syncing...' : `${filteredPayments.length}/${payments.length}`}
+        </div>
+
+        {/* Tier 2: Date Restriction & Stepper + Method Filters + Reconciliation Micro-Ticker */}
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/80 flex-wrap lg:flex-nowrap">
+          {/* Left: Date Restriction Pills & Single-Day Stepper */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Date:</span>
             </span>
+
+            <button
+              onClick={() => setDateFilterMode('ALL')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                dateFilterMode === 'ALL'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              All Time
+            </button>
+
+            <button
+              onClick={() => {
+                setDateFilterMode('TODAY');
+                setSelectedDate(getLocalDateStr());
+              }}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                dateFilterMode === 'TODAY'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                  : 'bg-slate-950 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <span>⚡ Today</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setDateFilterMode('YESTERDAY');
+                setSelectedDate(getYesterdayDateStr());
+              }}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                dateFilterMode === 'YESTERDAY'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              Yesterday
+            </button>
+
+            <button
+              onClick={() => setDateFilterMode('THIS_MONTH')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                dateFilterMode === 'THIS_MONTH'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              This Month
+            </button>
+
+            {/* Historical Single-Day Stepper */}
+            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-0.5 ml-1">
+              <button
+                type="button"
+                onClick={() => handleStepDay(-1)}
+                className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-850 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                title="Previous Day"
+              >
+                ◀ <span className="hidden xl:inline text-[10px]">Prev</span>
+              </button>
+
+              <input
+                type="date"
+                value={selectedDate}
+                max={getLocalDateStr()}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className={`bg-slate-900 border px-2 py-0.5 rounded-lg text-xs font-mono text-center focus:outline-none cursor-pointer ${
+                  dateFilterMode === 'SPECIFIC_DAY' || dateFilterMode === 'TODAY' || dateFilterMode === 'YESTERDAY'
+                    ? 'border-emerald-500 text-emerald-400 font-bold'
+                    : 'border-slate-700 text-slate-300'
+                }`}
+                title="Jump to specific date"
+              />
+
+              <button
+                type="button"
+                onClick={() => handleStepDay(1)}
+                disabled={selectedDate >= getLocalDateStr()}
+                className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-850 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                title="Next Day"
+              >
+                <span className="hidden xl:inline text-[10px]">Next</span> ▶
+              </button>
+            </div>
+          </div>
+
+          {/* Right: Method Filters & Dynamic Reconciliation Ticker */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+            {/* Method Filter Pills */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveMethodFilter('ALL')}
+                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  activeMethodFilter === 'ALL'
+                    ? 'bg-slate-200 text-slate-950 font-black'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                All ({methodCounts.total})
+              </button>
+              <button
+                onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
+                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                  activeMethodFilter === 'CASH'
+                    ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400 font-black'
+                    : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
+                }`}
+              >
+                <span>💵 Cash</span>
+                <span className="font-mono text-[11px]">({methodCounts.cash})</span>
+              </button>
+              <button
+                onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
+                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                  activeMethodFilter === 'UPI'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm ring-1 ring-cyan-400 font-black'
+                    : 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30'
+                }`}
+              >
+                <span>📱 UPI</span>
+                <span className="font-mono text-[11px]">({methodCounts.upi})</span>
+              </button>
+              <button
+                onClick={() => setActiveMethodFilter(activeMethodFilter === 'BANK' ? 'ALL' : 'BANK')}
+                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                  activeMethodFilter === 'BANK'
+                    ? 'bg-purple-500 text-white shadow-sm ring-1 ring-purple-400 font-black'
+                    : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'
+                }`}
+              >
+                <span>🏦 Bank</span>
+                <span className="font-mono text-[11px]">({methodCounts.bank})</span>
+              </button>
+            </div>
+
+            {/* Live Collection & Daily Reconciliation Ticker */}
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-950 border border-slate-800 rounded-xl font-mono text-[11px] whitespace-nowrap">
+              {dateFilterMode === 'ALL' ? (
+                <>
+                  <span className="text-emerald-400">Total: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+                  {summaryData?.total_collected_this_month !== undefined && (
+                    <>
+                      <span className="text-slate-700">|</span>
+                      <span className="text-amber-400">{summaryData.current_month_str}: <strong className="font-bold">₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+                    </>
+                  )}
+                </>
+              ) : dateFilterMode === 'TODAY' ? (
+                <span className="text-emerald-400">
+                  Today Total: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                  <span className="text-slate-600 mx-1">|</span>
+                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className="text-slate-600 mx-1">•</span>
+                  <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </span>
+              ) : dateFilterMode === 'YESTERDAY' ? (
+                <span className="text-emerald-400">
+                  Yesterday: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                  <span className="text-slate-600 mx-1">|</span>
+                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className="text-slate-600 mx-1">•</span>
+                  <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </span>
+              ) : dateFilterMode === 'THIS_MONTH' ? (
+                <span className="text-emerald-400">
+                  This Month: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                  <span className="text-slate-600 mx-1">|</span>
+                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </span>
+              ) : (
+                <span className="text-emerald-400">
+                  {formatVoucherDate(selectedDate)}: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                  <span className="text-slate-600 mx-1">|</span>
+                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className="text-slate-600 mx-1">•</span>
+                  <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Center: 1-Click Method Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
-          <button
-            onClick={() => setActiveMethodFilter('ALL')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-              activeMethodFilter === 'ALL'
-                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
-                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-            }`}
-          >
-            All ({methodCounts.total})
-          </button>
-          <button
-            onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeMethodFilter === 'CASH'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
-            }`}
-          >
-            <span>💵 Cash</span>
-            <span className="font-mono text-[11px]">({methodCounts.cash})</span>
-          </button>
-          <button
-            onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeMethodFilter === 'UPI'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400'
-                : 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30'
-            }`}
-          >
-            <span>📱 UPI</span>
-            <span className="font-mono text-[11px]">({methodCounts.upi})</span>
-          </button>
-          <button
-            onClick={() => setActiveMethodFilter(activeMethodFilter === 'BANK' ? 'ALL' : 'BANK')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeMethodFilter === 'BANK'
-                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20 ring-1 ring-purple-400'
-                : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'
-            }`}
-          >
-            <span>🏦 Bank</span>
-            <span className="font-mono text-[11px]">({methodCounts.bank})</span>
-          </button>
-        </div>
-
-        {/* Center-Right: Omni-Search Input with Clear */}
-        <div className="relative flex-1 max-w-[240px] min-w-[140px]">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search receipt #, outlet, UTR..."
-            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Live Collection Micro-Ticker */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
-          <span className="text-emerald-400">All-Time: <strong className="font-bold">₹{(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
-          {summaryData?.total_collected_this_month !== undefined && (
-            <>
-              <span className="text-slate-700">|</span>
-              <span className="text-amber-400">{summaryData.current_month_str}: <strong className="font-bold">₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
-            </>
-          )}
-        </div>
-
-        {/* Right: + Settlement CTA */}
-        {hasRole(['ADMIN', 'OPERATOR']) && (
-          <button
-            onClick={() => onOpenPaymentModal && onOpenPaymentModal(null, null)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-emerald-600/20 transition-all hover:scale-105 shrink-0"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Settlement</span>
-          </button>
-        )}
       </div>
 
       {/* ─── MOBILE SLEEK ACTION BAR (< md) ─── */}
-      <div className="md:hidden flex flex-col gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2 shrink-0 shadow-sm">
+      <div className="md:hidden flex flex-col gap-2 bg-slate-900 border border-slate-800 rounded-xl p-2 shrink-0 shadow-sm">
+        {/* Row 1: Back, Search, CTA */}
         <div className="flex items-center gap-1.5">
           {onNavigate && (
             <button
@@ -318,49 +578,121 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
             <button
               onClick={() => onOpenPaymentModal && onOpenPaymentModal(null, null)}
               className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg text-xs shrink-0 shadow-sm active:scale-95 transition"
-              title="Record Settlement"
+              title="Record Payment"
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              <span>+ Pay</span>
+              <span>+ Payment</span>
             </button>
           )}
         </div>
 
-        {/* Mobile 1-Click Method Filter & Ticker Strip */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-[11px] font-mono">
-          <button
-            onClick={() => setActiveMethodFilter('ALL')}
-            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
-              activeMethodFilter === 'ALL'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'bg-slate-950 text-slate-400 border border-slate-800'
-            }`}
-          >
-            All ({methodCounts.total})
-          </button>
-          <button
-            onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
-            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
-              activeMethodFilter === 'CASH'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-            }`}
-          >
-            💵 Cash ({methodCounts.cash})
-          </button>
-          <button
-            onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
-            className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
-              activeMethodFilter === 'UPI'
-                ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
-            }`}
-          >
-            📱 UPI ({methodCounts.upi})
-          </button>
-          <span className="text-slate-700 mx-0.5">|</span>
-          <span className="text-emerald-400/90 whitespace-nowrap px-1 py-0.5 font-bold">
-            ₹{parseFloat(summaryData?.total_collected_all_time || totalCollected).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+        {/* Row 2: Date Restriction & Stepper Bar */}
+        <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar pt-1 border-t border-slate-800/80 text-[11px]">
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setDateFilterMode('ALL')}
+              className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+                dateFilterMode === 'ALL'
+                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  : 'bg-slate-950 text-slate-400 border border-slate-800'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => {
+                setDateFilterMode('TODAY');
+                setSelectedDate(getLocalDateStr());
+              }}
+              className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+                dateFilterMode === 'TODAY'
+                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  : 'bg-slate-950 text-slate-300 border border-slate-800'
+              }`}
+            >
+              ⚡ Today
+            </button>
+            <button
+              onClick={() => {
+                setDateFilterMode('YESTERDAY');
+                setSelectedDate(getYesterdayDateStr());
+              }}
+              className={`px-2 py-0.5 rounded-lg whitespace-nowrap font-bold transition-all ${
+                dateFilterMode === 'YESTERDAY'
+                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  : 'bg-slate-950 text-slate-400 border border-slate-800'
+              }`}
+            >
+              Yest
+            </button>
+          </div>
+
+          {/* Mobile Day Stepper */}
+          <div className="flex items-center gap-0.5 bg-slate-950 border border-slate-800 rounded-lg p-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleStepDay(-1)}
+              className="px-1.5 py-0.5 text-slate-400 hover:text-white rounded text-[11px] font-bold"
+              title="Previous Day"
+            >
+              ◀
+            </button>
+            <input
+              type="date"
+              value={selectedDate}
+              max={getLocalDateStr()}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="bg-slate-900 border border-slate-700 px-1 py-0.5 rounded text-[10px] font-mono text-center text-slate-200 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => handleStepDay(1)}
+              disabled={selectedDate >= getLocalDateStr()}
+              className="px-1.5 py-0.5 text-slate-400 hover:text-white disabled:opacity-30 rounded text-[11px] font-bold"
+              title="Next Day"
+            >
+              ▶
+            </button>
+          </div>
+        </div>
+
+        {/* Row 3: Method Filters & Total Ticker */}
+        <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar text-[11px] font-mono pt-0.5">
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setActiveMethodFilter('ALL')}
+              className={`px-1.5 py-0.5 rounded-md whitespace-nowrap font-bold transition-all ${
+                activeMethodFilter === 'ALL'
+                  ? 'bg-slate-200 text-slate-950'
+                  : 'bg-slate-950 text-slate-400 border border-slate-800'
+              }`}
+            >
+              All ({methodCounts.total})
+            </button>
+            <button
+              onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
+              className={`px-1.5 py-0.5 rounded-md whitespace-nowrap font-bold transition-all ${
+                activeMethodFilter === 'CASH'
+                  ? 'bg-amber-500 text-slate-950'
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+              }`}
+            >
+              💵 {methodCounts.cash}
+            </button>
+            <button
+              onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
+              className={`px-1.5 py-0.5 rounded-md whitespace-nowrap font-bold transition-all ${
+                activeMethodFilter === 'UPI'
+                  ? 'bg-cyan-500 text-slate-950'
+                  : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+              }`}
+            >
+              📱 {methodCounts.upi}
+            </button>
+          </div>
+
+          <span className="text-emerald-400 font-bold font-mono px-1 py-0.5 whitespace-nowrap shrink-0">
+            ₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </span>
         </div>
       </div>
@@ -547,6 +879,17 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
 
                 {/* Direct Action Chips */}
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {hasRole(['ADMIN', 'OPERATOR']) && (
+                    <button
+                      onClick={() => onOpenPaymentModal && onOpenPaymentModal({ id: selectedPayment.customer_id, business_name: selectedPayment.customer_name }, null)}
+                      className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+                      title={`Collect New Payment for ${selectedPayment.customer_name}`}
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">+ Collect</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setEditingPayment(selectedPayment)}
                     className="p-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
@@ -688,7 +1031,20 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       Operations available for payment voucher <strong className="text-white">{selectedPayment.payment_number}</strong>:
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                      {hasRole(['ADMIN', 'OPERATOR']) && (
+                        <button
+                          onClick={() => onOpenPaymentModal && onOpenPaymentModal({ id: selectedPayment.customer_id, business_name: selectedPayment.customer_name }, null)}
+                          className="p-3 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 rounded-xl flex items-center gap-2.5 text-left text-emerald-400 transition-all hover:scale-[1.02]"
+                        >
+                          <PlusCircle className="w-5 h-5 shrink-0" />
+                          <div>
+                            <div className="font-bold text-xs text-white">Record New Payment</div>
+                            <span className="text-[10px] text-slate-400">Open payment entry for {selectedPayment.customer_name}</span>
+                          </div>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => setEditingPayment(selectedPayment)}
                         className="p-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center gap-2.5 text-left text-amber-400 transition-all hover:scale-[1.02]"

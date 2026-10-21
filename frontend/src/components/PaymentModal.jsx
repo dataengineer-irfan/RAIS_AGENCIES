@@ -9,7 +9,8 @@ export const PaymentModal = ({
   preselectedInvoice,
   initialCustomer,
   initialInvoice,
-  onPaymentRecorded 
+  onPaymentRecorded,
+  onPaymentSuccess
 }) => {
   const activeCustomer = preselectedCustomer || initialCustomer;
   const activeInvoice = preselectedInvoice || initialInvoice;
@@ -129,6 +130,9 @@ export const PaymentModal = ({
       setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${parseFloat(amtNum || 0).toFixed(2)} recorded successfully!`);
       if (onPaymentRecorded) {
         onPaymentRecorded(result);
+      }
+      if (onPaymentSuccess) {
+        onPaymentSuccess(result);
       }
       setTimeout(() => {
         onClose();
