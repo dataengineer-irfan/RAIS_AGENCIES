@@ -273,20 +273,25 @@ class BillingService:
                     user_id=user_id
                 )
 
-        # ─── AUTOMATIC IMMEDIATE CASH SETTLEMENT ───
-        # Enforce that counter cash sales or invoices with mark_as_paid=True are immediately
-        # settled into the cash/UPI register in the exact same atomic transaction.
-        # This completely eliminates spurious unallocated dues for "Cash account".
+        # ─── AUTOMATIC IMMEDIATE COUNTER PAYMENT & CASH SETTLEMENT ───
+        # Supports:
+        # 1. Exact bill settlement (mark_as_paid=True or Cash customer)
+        # 2. Custom counter collection (data.amount_paid > 0), e.g., ₹1,000 on a ₹550 bill
+        #    where ₹550 pays off this invoice and the ₹450 surplus automatically settles
+        #    the customer's previous open invoices / ledger dues via FIFO reconciliation!
+        custom_amount_paid = getattr(data, "amount_paid", None)
+        has_custom_payment = custom_amount_paid is not None and Decimal(str(custom_amount_paid)) > Decimal("0.00")
+
         is_cash_customer = (
             customer.customer_code == "CUST-0044" or
             "cash" in (customer.business_name or "").lower().strip()
         )
-        should_settle_immediately = (
+        should_settle = (
             invoice.status == InvoiceStatus.ISSUED.value and
-            (bool(getattr(data, "mark_as_paid", False)) or is_cash_customer)
+            (has_custom_payment or bool(getattr(data, "mark_as_paid", False)) or is_cash_customer)
         )
 
-        if should_settle_immediately and invoice.total_amount > Decimal("0.00"):
+        if should_settle and invoice.total_amount > Decimal("0.00"):
             from app.models.payment import Payment, PaymentAllocation
             from app.domain.enums import PaymentMethod
             
@@ -295,16 +300,20 @@ class BillingService:
             pay_number = SequenceService.get_next_sequence(db, "PAY")
             now_dt = datetime.now(timezone.utc)
 
+            total_received = Decimal(str(custom_amount_paid)) if has_custom_payment else invoice.total_amount
+            alloc_to_this_invoice = min(invoice.total_amount, total_received)
+            unalloc_surplus = max(Decimal("0.00"), total_received - alloc_to_this_invoice)
+
             payment = Payment(
                 payment_number=pay_number,
                 customer_id=customer.id,
                 payment_date=invoice.invoice_date,
-                amount=invoice.total_amount,
-                allocated_amount=invoice.total_amount,
-                unallocated_amount=Decimal("0.00"),
+                amount=total_received,
+                allocated_amount=alloc_to_this_invoice,
+                unallocated_amount=unalloc_surplus,
                 payment_method=pay_method,
                 reference_number=f"Counter Settlement #{invoice.invoice_number}",
-                notes=f"Immediate cash counter settlement for Invoice #{invoice.invoice_number}",
+                notes=f"Counter collection for Invoice #{invoice.invoice_number} (Received: ₹{total_received})",
                 created_by_id=user_id
             )
             db.add(payment)
@@ -313,14 +322,23 @@ class BillingService:
             allocation = PaymentAllocation(
                 payment_id=payment.id,
                 invoice_id=invoice.id,
-                allocated_amount=invoice.total_amount,
+                allocated_amount=alloc_to_this_invoice,
                 allocated_at=now_dt
             )
             db.add(allocation)
 
-            invoice.paid_amount = invoice.total_amount
-            invoice.outstanding_amount = Decimal("0.00")
-            invoice.status = InvoiceStatus.PAID.value
+            invoice.paid_amount = alloc_to_this_invoice
+            invoice.outstanding_amount = quantize_amount(invoice.total_amount - alloc_to_this_invoice)
+            if invoice.outstanding_amount <= Decimal("0.00"):
+                invoice.status = InvoiceStatus.PAID.value
+            else:
+                invoice.status = InvoiceStatus.PARTIALLY_PAID.value
+
+            # If customer paid surplus over the current bill (e.g. ₹1000 on ₹550 bill -> ₹450 surplus):
+            # Automatically apply the surplus to previous unpaid invoices chronologically (FIFO)!
+            if unalloc_surplus > Decimal("0.00"):
+                from app.services.reconciliation_service import ReconciliationService
+                ReconciliationService.reconcile_customer_fifo(db, customer.id, auto_commit=False)
 
             AuditService.log(
                 db=db,
@@ -332,10 +350,11 @@ class BillingService:
                 user_role=user_role,
                 after_state={
                     "payment_number": pay_number,
-                    "amount": str(invoice.total_amount),
+                    "amount": str(total_received),
                     "invoice_number": invoice.invoice_number,
                     "method": pay_method,
-                    "auto_settled": True
+                    "allocated_to_invoice": str(alloc_to_this_invoice),
+                    "surplus_applied_to_past_dues": str(unalloc_surplus)
                 }
             )
 

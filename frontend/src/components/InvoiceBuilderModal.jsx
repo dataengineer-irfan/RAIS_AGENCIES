@@ -38,6 +38,7 @@ export const InvoiceBuilderModal = ({
   const [invoiceDate, setInvoiceDate] = useState(todayStr);
   const [dueDate, setDueDate] = useState(todayStr);
   const [invoiceDiscount, setInvoiceDiscount] = useState('0');
+  const [collectedAmount, setCollectedAmount] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('Cash on Delivery / Immediate Settlement');
   const [notes, setNotes] = useState('');
   const [showNotes, setShowNotes] = useState(false);
@@ -79,6 +80,7 @@ export const InvoiceBuilderModal = ({
         setInvoiceDate(invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
         setDueDate(invoiceToEdit.due_date || invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
         setInvoiceDiscount(String(parseFloat(invoiceToEdit.discount_amount || 0)));
+        setCollectedAmount('');
         setPaymentTerms(invoiceToEdit.payment_terms || 'Cash on Delivery / Immediate Settlement');
         setNotes(invoiceToEdit.notes || '');
         if (invoiceToEdit.notes) setShowNotes(true);
@@ -239,6 +241,8 @@ export const InvoiceBuilderModal = ({
     setSuccessInvoice(null);
     setShowPreview(false);
     setInvoiceDiscount('0');
+    setCollectedAmount('');
+    setMarkAsPaid(false);
     setNotes('');
     setShowNotes(false);
     setPaymentTerms('Cash on Delivery / Immediate Settlement');
@@ -414,6 +418,17 @@ export const InvoiceBuilderModal = ({
   const totals = calculateTotals();
   const selectedCustomerObj = customers.find(c => c.id === customerId);
 
+  // ─── COUNTER COLLECTION & SETTLEMENT DERIVED VALUES ───
+  const billTotal = parseFloat(totals.total) || 0;
+  const numCollected = parseFloat(collectedAmount) || 0;
+  const custLedgerDue = Math.max(0, parseFloat(selectedCustomerObj?.outstanding_balance || 0));
+  const effectivePaid = numCollected > 0 ? numCollected : (markAsPaid ? billTotal : 0);
+  const billSettledAmount = Math.min(billTotal, effectivePaid);
+  const surplusAmount = Math.max(0, effectivePaid - billTotal);
+  const appliedToPastDues = Math.min(surplusAmount, custLedgerDue);
+  const remainingBillDue = Math.max(0, billTotal - billSettledAmount);
+  const projectedLedgerDue = Math.max(0, custLedgerDue + remainingBillDue - surplusAmount);
+
   const validateForm = () => {
     if (!customerId) {
       setError('Please select a customer / restaurant.');
@@ -476,6 +491,10 @@ export const InvoiceBuilderModal = ({
           ? crypto.randomUUID()
           : `inv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
+        const numCollected = parseFloat(collectedAmount) || 0;
+        const willMarkAsPaid = markAsPaid || (numCollected >= parseFloat(totals.total));
+        const effectiveAmountPaid = numCollected > 0 ? numCollected : (willMarkAsPaid ? parseFloat(totals.total) : 0);
+
         const payload = {
           customer_id: customerId,
           invoice_date: invoiceDate,
@@ -484,27 +503,35 @@ export const InvoiceBuilderModal = ({
           payment_terms: paymentTerms,
           notes: notes.trim() || null,
           auto_issue: autoIssue,
-          mark_as_paid: markAsPaid,
+          mark_as_paid: willMarkAsPaid,
+          amount_paid: effectiveAmountPaid > 0 ? effectiveAmountPaid : undefined,
           idempotency_key: idempotencyKey,
           items: itemsPayload
         };
         res = await billingApi.createInvoice(payload);
 
-        // Fallback immediate cash settlement if marked as paid and backend hasn't already auto-settled
-        if (markAsPaid && res?.id && res?.status !== 'PAID') {
+        // Fallback immediate cash settlement if marked as paid/collected and backend hasn't already auto-settled
+        if (effectiveAmountPaid > 0 && res?.id && res?.status !== 'PAID' && res?.status !== 'PARTIALLY_PAID') {
           try {
             const payRes = await paymentApi.record({
               customer_id: customerId,
-              amount: parseFloat(res.total_amount),
+              amount: effectiveAmountPaid,
               payment_method: (paymentTerms || '').includes('UPI') ? 'UPI' : 'CASH',
               payment_date: invoiceDate,
-              notes: `Counter Cash Settlement for Invoice #${res.invoice_number}`
+              notes: `Counter Settlement for Invoice #${res.invoice_number}`
             });
             if (payRes?.id) {
-              await paymentApi.allocate(payRes.id, res.id, parseFloat(res.total_amount));
-              res.status = 'PAID';
-              res.paid_amount = res.total_amount;
-              res.outstanding_amount = 0;
+              const allocToInvoice = Math.min(effectiveAmountPaid, parseFloat(res.total_amount));
+              await paymentApi.allocate(payRes.id, res.id, allocToInvoice);
+              if (allocToInvoice >= parseFloat(res.total_amount)) {
+                res.status = 'PAID';
+                res.paid_amount = res.total_amount;
+                res.outstanding_amount = 0;
+              } else {
+                res.status = 'PARTIALLY_PAID';
+                res.paid_amount = allocToInvoice;
+                res.outstanding_amount = parseFloat(res.total_amount) - allocToInvoice;
+              }
             }
           } catch (payErr) {
             console.warn('Auto cash settlement error:', payErr);
@@ -529,10 +556,10 @@ export const InvoiceBuilderModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl xl:max-w-7xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl xl:max-w-7xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh] animate-in fade-in zoom-in duration-200">
         
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">
+        <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <FileText className="w-5 h-5" />
@@ -864,7 +891,7 @@ export const InvoiceBuilderModal = ({
           <form onSubmit={handleSubmit} noValidate className="flex-1 flex flex-col overflow-hidden">
             
             {/* ─── PINNED PERSISTENT CUSTOMER & BILL HEADER RIBBON (100% Sticky / Never Scrolls Away) ─── */}
-            <div className="bg-slate-950/95 border-b border-slate-800/90 px-3 sm:px-6 py-2.5 shrink-0 shadow-md">
+            <div className="bg-slate-950/95 border-b border-slate-800/90 px-3 sm:px-4 py-2 shrink-0 shadow-md">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 
                 {/* Customer Selector with High-Visibility Context */}
@@ -947,10 +974,10 @@ export const InvoiceBuilderModal = ({
               </div>
             </div>
 
-            {/* Scrollable Form Body with ample bottom clearance */}
-            <div className="p-3 sm:p-6 pb-28 sm:pb-24 space-y-4 sm:space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+            {/* Scrollable Form Body */}
+            <div className="p-2 sm:p-3 pb-8 sm:pb-1.5 space-y-1.5 sm:space-y-2 overflow-y-auto flex-1 custom-scrollbar">
               {voiceNotification && (
-                <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-bold flex items-center justify-between animate-in fade-in duration-200">
+                <div className="p-2.5 bg-amber-500/15 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-bold flex items-center justify-between animate-in fade-in duration-200">
                   <div className="flex items-center gap-2">
                     <Mic className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
                     <span>{voiceNotification}</span>
@@ -966,15 +993,15 @@ export const InvoiceBuilderModal = ({
               )}
 
               {error && (
-                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold flex items-center gap-2">
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-semibold flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-start">
                 {/* ─── LEFT COLUMN: Touch Product Catalogue & Quick Stepper Picker (5 cols) ─── */}
-                <div className="lg:col-span-5 flex flex-col space-y-2.5">
+                <div className="lg:col-span-5 flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
@@ -994,29 +1021,22 @@ export const InvoiceBuilderModal = ({
                 </div>
 
                 {/* ─── RIGHT COLUMN: Active Bill Builder & Items (7 cols) ─── */}
-                <div className="lg:col-span-7 flex flex-col space-y-3.5 bg-slate-950/40 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-xl">
-                  {/* Customer Status Banner inside Line Items */}
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-800/60 flex-wrap gap-2">
+                <div className="lg:col-span-7 flex flex-col space-y-2 sm:space-y-2.5 bg-slate-950/40 border border-slate-800/80 rounded-2xl p-2.5 sm:p-3.5 shadow-xl">
+                  {/* Clean Line Items Header Bar */}
+                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
                     <div className="flex items-center gap-2">
-                      <div className="p-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <Building2 className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                          Current Bill For
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                        Line Items
+                      </h3>
+                      <span className="text-[11px] font-mono text-slate-500">
+                        ({items.filter(i => Boolean(i.product_id)).length})
+                      </span>
+                      {selectedCustomerObj && (
+                        <span className="hidden sm:inline text-xs font-bold text-amber-400 truncate max-w-[240px]">
+                          • {selectedCustomerObj.business_name}
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white">
-                          {selectedCustomerObj ? selectedCustomerObj.business_name : 'No Customer Selected (Pick from top bar)'}
-                        </span>
-                        {selectedCustomerObj?.customer_code && (
-                          <span className="text-[10px] font-mono text-slate-400 ml-1.5 font-bold">
-                            ({selectedCustomerObj.customer_code})
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
-
-                    {/* Delivery Note Toggle */}
                     <div className="flex items-center gap-2">
                       {!showNotes && !notes && (
                         <button
@@ -1024,14 +1044,22 @@ export const InvoiceBuilderModal = ({
                           onClick={() => setShowNotes(true)}
                           className="text-[11px] font-medium text-slate-400 hover:text-amber-400 transition-colors"
                         >
-                          + Add delivery note
+                          + Delivery Note
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={addItemRow}
+                        className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/20 transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Row</span>
+                      </button>
                     </div>
                   </div>
 
                   {/* Optional Notes Toggle / Row */}
-                  {(showNotes || notes) ? (
+                  {(showNotes || notes) && (
                     <div className="relative animate-in fade-in duration-150">
                       <input
                         type="text"
@@ -1049,46 +1077,12 @@ export const InvoiceBuilderModal = ({
                         ✕
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex justify-end -mt-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowNotes(true)}
-                        className="text-[11px] font-medium text-slate-500 hover:text-amber-400 transition-colors"
-                      >
-                        + Add delivery note
-                      </button>
-                    </div>
                   )}
 
                   {/* Line Items Section */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                          Line Items
-                        </h3>
-                        <span className="text-[11px] font-mono text-slate-500">
-                          ({items.filter(i => Boolean(i.product_id)).length} {items.filter(i => Boolean(i.product_id)).length === 1 ? 'item' : 'items'})
-                        </span>
-                        {selectedCustomerObj && (
-                          <span className="hidden sm:inline text-[11px] font-bold text-amber-400/90 truncate max-w-[240px]">
-                            • {selectedCustomerObj.business_name}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addItemRow}
-                        className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/20 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add Row</span>
-                      </button>
-                    </div>
-
-                {/* Table Header (Desktop Only) */}
-                <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    {/* Table Header (Desktop Only) */}
+                    <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <div className="col-span-5">Catalogue Product SKU</div>
                   <div className="col-span-2 text-center">Quantity</div>
                   <div className="col-span-2 text-right">Unit Price (₹)</div>
@@ -1109,13 +1103,13 @@ export const InvoiceBuilderModal = ({
                     return (
                       <React.Fragment key={index}>
                         {/* ─── DESKTOP TABLE ROW (sm and up) ─── */}
-                        <div className="hidden sm:grid grid-cols-12 gap-2 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">
+                        <div className="hidden sm:grid grid-cols-12 gap-2 bg-slate-950/70 p-1.5 sm:p-2 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">
                           <div className="col-span-5">
                             <select
                               value={item.product_id}
                               onChange={(e) => handleProductChange(index, e.target.value)}
                               required
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-2 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
                             >
                               <option value="" className="bg-slate-900 text-slate-400">-- Choose Catalogue SKU --</option>
                               {sortProductsByCleanName(products).map((p) => {
@@ -1128,7 +1122,7 @@ export const InvoiceBuilderModal = ({
                               })}
                             </select>
                             {selProd && (
-                              <div className="flex items-center gap-1.5 mt-1 px-1 text-[10px] flex-wrap">
+                              <div className="flex items-center gap-1.5 mt-0.5 px-1 text-[10px] flex-wrap">
                                 <span className="font-mono text-slate-500">SKU: {selProd.sku}</span>
                                 <span className="text-slate-600">•</span>
                                 {isZeroStock ? (
@@ -1153,7 +1147,7 @@ export const InvoiceBuilderModal = ({
                               <button
                                 type="button"
                                 onClick={() => handleAdjustQuantity(index, -1)}
-                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                                className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
                                 title="Decrease quantity"
                               >
                                 <Minus className="w-3 h-3" />
@@ -1175,14 +1169,14 @@ export const InvoiceBuilderModal = ({
                               <button
                                 type="button"
                                 onClick={() => handleAdjustQuantity(index, 1)}
-                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                                className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
                                 title="Increase quantity"
                               >
                                 <Plus className="w-3 h-3" />
                               </button>
                             </div>
                             {isExceedingStock && (
-                              <div className="mt-1 px-1 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[9px] font-black text-center flex items-center justify-center gap-1">
+                              <div className="mt-0.5 px-1 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[9px] font-black text-center flex items-center justify-center gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
                                 <span>Exceeds Stock ({curStock} avail)</span>
                               </div>
@@ -1191,7 +1185,7 @@ export const InvoiceBuilderModal = ({
 
                           <div className="col-span-2">
                             <div className="relative">
-                              <span className="absolute left-2.5 top-2 text-xs text-slate-500 font-mono">₹</span>
+                              <span className="absolute left-2 top-1.5 text-xs text-slate-500 font-mono">₹</span>
                               <input
                                 type="number"
                                 step="1"
@@ -1200,7 +1194,7 @@ export const InvoiceBuilderModal = ({
                                 onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
                                 placeholder="0"
                                 required
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-6 pr-2 py-2 text-xs text-right font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-5 pr-2 py-1.5 text-xs text-right font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500"
                               />
                             </div>
                           </div>
@@ -1215,9 +1209,9 @@ export const InvoiceBuilderModal = ({
                                 value={item.discount_rate}
                                 onChange={(e) => handleItemFieldChange(index, 'discount_rate', e.target.value)}
                                 placeholder="0"
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-xs text-center font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-center font-mono text-slate-200 focus:outline-none focus:border-amber-500"
                               />
-                              <span className="absolute right-2.5 top-2 text-[10px] text-slate-500 pointer-events-none">%</span>
+                              <span className="absolute right-2 top-1.5 text-[10px] text-slate-500 pointer-events-none">%</span>
                             </div>
                           </div>
 
@@ -1226,10 +1220,10 @@ export const InvoiceBuilderModal = ({
                               type="button"
                               onClick={() => removeItemRow(index)}
                               disabled={items.length === 1}
-                              className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                              className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg disabled:opacity-20 disabled:pointer-events-none transition-colors"
                               title="Delete Line Item"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1396,53 +1390,186 @@ export const InvoiceBuilderModal = ({
                 </div>
               </div>
 
-              {/* Bill-Level Cash Discount & Settlement Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1 items-end">
-                <div className="sm:col-span-6">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Bill-Level Cash Discount (₹)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-xs text-slate-500 font-mono">₹</span>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={invoiceDiscount}
-                      onChange={(e) => setInvoiceDiscount(e.target.value)}
-                      placeholder="0"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
-                    />
+              {/* ─── COUNTER COLLECTION & SETTLEMENT CONTROLS ─── */}
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 sm:p-3 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                  {/* Bill-Level Cash Discount (₹) */}
+                  <div className="sm:col-span-5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Cash Discount (₹)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-2 text-xs text-slate-500 font-mono">₹</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={invoiceDiscount}
+                        onChange={(e) => setInvoiceDiscount(e.target.value)}
+                        placeholder="0"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Counter Amount Received Now (₹) */}
+                  <div className="sm:col-span-7">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        Received Now (₹)
+                      </label>
+                      {/* Quick Chips */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => { setCollectedAmount(''); setMarkAsPaid(false); }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            (!collectedAmount || parseFloat(collectedAmount) === 0) && !markAsPaid
+                              ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                              : 'text-slate-500 hover:text-slate-300'
+                          }`}
+                        >
+                          Credit (₹0)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCollectedAmount(String(parseFloat(totals.total)));
+                            setMarkAsPaid(true);
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            parseFloat(collectedAmount) === parseFloat(totals.total)
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                              : 'text-emerald-500/80 hover:text-emerald-400'
+                          }`}
+                        >
+                          Exact (₹{parseFloat(totals.total).toFixed(0)})
+                        </button>
+                        {custLedgerDue > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const fullClear = (parseFloat(totals.total) + custLedgerDue).toFixed(2);
+                              setCollectedAmount(String(fullClear));
+                              setMarkAsPaid(true);
+                            }}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                              parseFloat(collectedAmount) === (parseFloat(totals.total) + custLedgerDue)
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : 'text-amber-400/80 hover:text-amber-300'
+                            }`}
+                            title={`Pay current bill (₹${totals.total}) + past balance (₹${custLedgerDue.toFixed(2)})`}
+                          >
+                            Bill + Past Due (₹{(parseFloat(totals.total) + custLedgerDue).toFixed(0)})
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-2 text-xs text-emerald-500 font-mono font-bold">₹</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={collectedAmount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCollectedAmount(val);
+                          const num = parseFloat(val) || 0;
+                          if (num >= parseFloat(totals.total) && parseFloat(totals.total) > 0) {
+                            setMarkAsPaid(true);
+                          } else if (num < parseFloat(totals.total)) {
+                            setMarkAsPaid(false);
+                          }
+                        }}
+                        placeholder={`Enter cash/UPI received (e.g. ${totals.total})`}
+                        className="w-full bg-slate-900 border border-emerald-500/40 rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono font-black text-emerald-300 focus:outline-none focus:border-emerald-400 transition-colors shadow-inner placeholder:text-slate-600"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="sm:col-span-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-end pb-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                {/* Checkbox Options */}
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       id="autoIssue"
                       checked={autoIssue}
                       onChange={(e) => setAutoIssue(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0 cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0 cursor-pointer"
                     />
-                    <span className="text-xs font-semibold text-slate-300">
+                    <span className="text-[11px] font-semibold text-slate-300">
                       Issue Immediately
                     </span>
                   </label>
 
-                  <label className="flex items-center gap-2 cursor-pointer select-none" title="Immediately records full cash settlement into ledger and zeroes invoice balance">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Immediately records cash settlement into ledger and zeroes invoice balance">
                     <input
                       type="checkbox"
                       id="markAsPaid"
                       checked={markAsPaid}
-                      onChange={(e) => setMarkAsPaid(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0 cursor-pointer"
+                      onChange={(e) => {
+                        const chk = e.target.checked;
+                        setMarkAsPaid(chk);
+                        if (chk && (!collectedAmount || parseFloat(collectedAmount) < parseFloat(totals.total))) {
+                          setCollectedAmount(String(parseFloat(totals.total)));
+                        } else if (!chk && parseFloat(collectedAmount) === parseFloat(totals.total)) {
+                          setCollectedAmount('');
+                        }
+                      }}
+                      className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer"
                     />
-                    <span className="text-xs font-bold text-emerald-400">
+                    <span className="text-[11px] font-bold text-emerald-400">
                       Paid in Full (Cash)
                     </span>
                   </label>
                 </div>
+
+                {/* Live Counter Collection Breakdown Ribbon */}
+                {numCollected > 0 && (
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium space-y-0.5 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-300">
+                        Received: <strong className="text-white font-mono">₹{numCollected.toFixed(2)}</strong>
+                      </span>
+                      <span className={`font-bold font-mono px-1.5 py-0.2 rounded text-[10px] ${
+                        numCollected >= billTotal
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : 'bg-amber-500/20 text-amber-300'
+                      }`}>
+                        {numCollected >= billTotal ? '✓ INVOICE SETTLED IN FULL' : `PARTIAL (₹${remainingBillDue.toFixed(2)} REMAINING)`}
+                      </span>
+                    </div>
+
+                    {surplusAmount > 0 && (
+                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20 text-emerald-300">
+                        <span>
+                          Surplus Applied to Past Dues (FIFO):
+                        </span>
+                        <span className="font-mono font-bold">
+                          +₹{appliedToPastDues.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedCustomerObj && (
+                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20">
+                        <span className="text-slate-400">
+                          Updated Customer Ledger Due:
+                        </span>
+                        <span className={`font-mono font-bold ${projectedLedgerDue > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          ₹{projectedLedgerDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          {custLedgerDue > 0 && (
+                            <span className="text-[10px] text-slate-500 ml-1 font-normal">
+                              (was ₹{custLedgerDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Over-Stock Warning Alert */}
@@ -1467,32 +1594,32 @@ export const InvoiceBuilderModal = ({
               )}
 
               {/* Totals Summary Card */}
-              <div className="p-4 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-                <div className="flex items-center gap-2.5 text-xs text-slate-400">
-                  <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                    <Calculator className="w-3.5 h-3.5" />
+              <div className="p-2 sm:p-2.5 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-2.5 shadow-lg">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Calculator className="w-3 h-3" />
                   </div>
                   <div>
-                    <span className="text-slate-200 font-semibold">Invoice Summary</span>
+                    <span className="text-slate-200 font-semibold text-xs">Invoice Summary</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6 font-mono text-xs">
+                <div className="flex items-center gap-4 sm:gap-6 font-mono text-xs">
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-sans">Subtotal</span>
-                    <span className="text-slate-300 font-bold text-sm">₹{totals.subtotal}</span>
+                    <span className="text-slate-500 block text-[9px] uppercase font-sans">Subtotal</span>
+                    <span className="text-slate-300 font-bold text-xs sm:text-sm">₹{totals.subtotal}</span>
                   </div>
                   {parseFloat(totals.discount) > 0 && (
                     <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-sans">Total Discount</span>
-                      <span className={`font-bold text-sm ${parseFloat(totals.discount) > parseFloat(totals.subtotal) ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      <span className="text-slate-500 block text-[9px] uppercase font-sans">Total Discount</span>
+                      <span className={`font-bold text-xs sm:text-sm ${parseFloat(totals.discount) > parseFloat(totals.subtotal) ? 'text-rose-400' : 'text-emerald-400'}`}>
                         -₹{totals.discount}
                       </span>
                     </div>
                   )}
                   <div className="text-right pl-3 border-l border-slate-800">
-                    <span className="text-amber-400 block text-[10px] uppercase font-bold font-sans">Grand Total Due</span>
-                    <span className="text-amber-400 font-black text-lg">₹{totals.total}</span>
+                    <span className="text-amber-400 block text-[9px] uppercase font-bold font-sans">Grand Total Due</span>
+                    <span className="text-amber-400 font-black text-base sm:text-lg">₹{totals.total}</span>
                   </div>
                 </div>
               </div>
@@ -1504,7 +1631,7 @@ export const InvoiceBuilderModal = ({
         {/* Closes scrollable container */}
 
             {/* Footer Actions */}
-            <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
+            <div className="p-2.5 sm:p-3.5 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
               <span className="hidden sm:inline-block text-[11px] text-slate-500 font-mono">
                 Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px]">Esc</kbd> to exit
               </span>
@@ -1537,7 +1664,9 @@ export const InvoiceBuilderModal = ({
                     ? (isEditMode ? 'Updating...' : 'Generating...') 
                     : isEditMode 
                       ? `Update Invoice` 
-                      : autoIssue ? 'Issue Invoice' : 'Save Draft'}
+                      : numCollected > 0
+                        ? `Issue & Collect ₹${numCollected.toFixed(0)}`
+                        : autoIssue ? 'Issue Invoice' : 'Save Draft'}
                 </button>
               </div>
             </div>

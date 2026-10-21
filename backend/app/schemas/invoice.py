@@ -39,6 +39,7 @@ class InvoiceCreate(BaseModel):
     notes: Optional[str] = None
     auto_issue: bool = False # If True, mark as ISSUED immediately
     mark_as_paid: Optional[bool] = False # If True, atomically record cash settlement into cash/UPI register
+    amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0.00"), description="Optional counter amount paid now during billing")
     idempotency_key: Optional[str] = Field(None, max_length=64, description="Client idempotency key for safe retries")
     items: List[InvoiceItemCreate] = Field(..., min_length=1, description="Invoice must contain at least one item")
 
