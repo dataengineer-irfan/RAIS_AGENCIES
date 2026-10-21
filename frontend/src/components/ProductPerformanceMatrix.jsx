@@ -11,6 +11,9 @@ import {
   Search, 
   Package, 
   ArrowUpRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   X
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
@@ -19,11 +22,15 @@ import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons'
 export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('ALL'); // ALL, WINNER, STEADY, DECLINING, ZERO_MOVER
+  const [activeTab, setActiveTab] = useState('ALL'); // ALL, WINNER, STEADY, DECLINING, ZERO_MOVER, OUT_OF_STOCK
   const [viewMode, setViewMode] = useState(() => 
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'MATRIX' : 'TABLE'
   ); // Responsive default: MATRIX for mobile/tablet, TABLE for desktop
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Interactive Column Sorting State
+  const [sortColumn, setSortColumn] = useState('revenue_30d'); // Default: Highest 30d Revenue
+  const [sortDirection, setSortDirection] = useState('desc'); // 'desc' | 'asc'
 
   useEffect(() => {
     fetchMatrix();
@@ -41,9 +48,24 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
     }
   };
 
+  const handleSort = (columnKey) => {
+    if (sortColumn === columnKey) {
+      setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortColumn(columnKey);
+      if (['name', 'category_name', 'classification'].includes(columnKey)) {
+        setSortDirection('asc');
+      } else {
+        setSortDirection('desc');
+      }
+    }
+  };
+
   const filteredItems = useMemo(() => {
     if (!data?.items) return [];
-    return data.items.filter(item => {
+
+    // 1. Filter by Active Tab & Search Term
+    const filtered = data.items.filter(item => {
       const matchesTab = activeTab === 'ALL' || item.classification === activeTab;
       const term = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || 
@@ -53,7 +75,96 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                             (item.category_name && item.category_name.toLowerCase().includes(term));
       return matchesTab && matchesSearch;
     });
-  }, [data, activeTab, searchTerm]);
+
+    // 2. Multi-Column Sort
+    if (!sortColumn) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let valA = a[sortColumn];
+      let valB = b[sortColumn];
+
+      if (valA === undefined || valA === null) valA = 0;
+      if (valB === undefined || valB === null) valB = 0;
+
+      if (typeof valA === 'string') {
+        const cmp = valA.localeCompare(valB);
+        return sortDirection === 'asc' ? cmp : -cmp;
+      }
+
+      const numA = Number(valA);
+      const numB = Number(valB);
+      return sortDirection === 'asc' ? numA - numB : numB - numA;
+    });
+  }, [data, activeTab, searchTerm, sortColumn, sortDirection]);
+
+  const renderSortHeader = (label, columnKey, alignRight = false) => {
+    const isCurrent = sortColumn === columnKey;
+    return (
+      <th 
+        onClick={() => handleSort(columnKey)}
+        className={`py-2 px-2.5 cursor-pointer select-none transition-colors group ${
+          alignRight ? 'text-right' : 'text-left'
+        } ${isCurrent ? 'text-amber-400 font-black' : 'text-slate-400 hover:text-white'}`}
+        title={`Sort by ${label} (${isCurrent && sortDirection === 'desc' ? 'Ascending' : 'Descending'})`}
+      >
+        <div className={`flex items-center gap-1 ${alignRight ? 'justify-end' : 'justify-start'}`}>
+          <span>{label}</span>
+          <span className="shrink-0">
+            {isCurrent ? (
+              sortDirection === 'desc' ? (
+                <ArrowDown className="w-3 h-3 text-amber-400 inline" />
+              ) : (
+                <ArrowUp className="w-3 h-3 text-amber-400 inline" />
+              )
+            ) : (
+              <ArrowUpDown className="w-2.5 h-2.5 opacity-0 group-hover:opacity-40 transition-opacity inline" />
+            )}
+          </span>
+        </div>
+      </th>
+    );
+  };
+
+  const renderStatusBadge = (classification) => {
+    switch (classification) {
+      case 'WINNER':
+        return (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+            ⭐ WINNER
+          </span>
+        );
+      case 'STEADY':
+        return (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-amber-500/20 text-amber-300 border-amber-500/40">
+            📦 STEADY
+          </span>
+        );
+      case 'DECLINING':
+        return (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-orange-500/20 text-orange-300 border-orange-500/40">
+            📉 DECLINING
+          </span>
+        );
+      case 'ZERO_MOVER':
+        return (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-rose-500/20 text-rose-300 border-rose-500/40">
+            ❄️ DEAD STOCK
+          </span>
+        );
+      case 'OUT_OF_STOCK':
+        return (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-slate-700/40 text-slate-400 border-slate-700">
+            ⚪ UNSTOCKED
+          </span>
+        );
+      default:
+        return (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-slate-800 text-slate-400 border-slate-700">
+            {classification?.replace('_', ' ') || 'ACTIVE'}
+          </span>
+        );
+    }
+  };
 
   if (loading) {
     return (
@@ -74,7 +185,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-xl flex flex-col h-full overflow-hidden gap-2 animate-fadeIn">
       
-      {/* ─── 46px COMMAND RIBBON (SEARCH + FILTER PILLS + VIEW TOGGLE) ─── */}
+      {/* ─── COMMAND RIBBON (SEARCH + FILTER PILLS + SORT SELECT + VIEW TOGGLE) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
         
         {/* Left: Title & SKU Count */}
@@ -105,7 +216,10 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                 ? `❄️ Dead Stock (${data?.zero_movers_count ?? 0}) • ₹${Math.round(data.total_dead_stock_value/1000)}k` 
                 : `❄️ Dead Stock (${data?.zero_movers_count ?? 0})`, 
               activeClass: 'bg-rose-500 text-white' 
-            }
+            },
+            ...(data?.out_of_stock_count > 0 ? [
+              { id: 'OUT_OF_STOCK', label: `⚪ Unstocked (${data.out_of_stock_count})`, activeClass: 'bg-slate-700 text-slate-200' }
+            ] : [])
           ].map(tab => (
             <button
               key={tab.id}
@@ -121,15 +235,41 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
           ))}
         </div>
 
-        {/* Right: Search & View Switcher */}
+        {/* Right: Sort Dropdown + Search + View Switcher */}
         <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
-          <div className="relative w-40 sm:w-48 min-w-0">
+          {/* Quick Sort Dropdown */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 shrink-0 text-slate-400">
+            <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
+            <select
+              value={`${sortColumn}-${sortDirection}`}
+              onChange={(e) => {
+                const [col, dir] = e.target.value.split('-');
+                setSortColumn(col);
+                setSortDirection(dir);
+              }}
+              className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5"
+              title="Sort products"
+            >
+              <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
+              <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
+              <option value="units_sold_30d-desc" className="bg-slate-900 text-white">📦 Highest Units Sold</option>
+              <option value="units_sold_30d-asc" className="bg-slate-900 text-white">📦 Lowest Units Sold</option>
+              <option value="stock_holding_value-desc" className="bg-slate-900 text-white">💰 Highest Holding Val</option>
+              <option value="stock_holding_units-desc" className="bg-slate-900 text-white">🏭 Highest Stock</option>
+              <option value="trend_pct-desc" className="bg-slate-900 text-white">📈 Fastest Growing</option>
+              <option value="trend_pct-asc" className="bg-slate-900 text-white">📉 Steepest Decline</option>
+              <option value="name-asc" className="bg-slate-900 text-white">🔤 Product Name (A-Z)</option>
+              <option value="category_name-asc" className="bg-slate-900 text-white">🏷️ Category (A-Z)</option>
+            </select>
+          </div>
+
+          <div className="relative w-36 sm:w-44 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search SKU, brand..."
+              placeholder="Search SKU..."
               className="w-full pl-8 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
             {searchTerm && (
@@ -186,22 +326,18 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
-                  <th className="py-2 px-2.5">SKU & Item</th>
-                  <th className="py-2 px-2.5">Category</th>
-                  <th className="py-2 px-2.5">Status</th>
-                  <th className="py-2 px-2.5 text-right">30d Sold</th>
-                  <th className="py-2 px-2.5 text-right">30d Revenue</th>
-                  <th className="py-2 px-2.5 text-right">MoM Trend</th>
-                  <th className="py-2 px-2.5 text-right">Current Stock</th>
-                  <th className="py-2 px-2.5 text-right">Holding Val</th>
+                  {renderSortHeader('SKU & Item', 'name')}
+                  {renderSortHeader('Category', 'category_name')}
+                  {renderSortHeader('Status', 'classification')}
+                  {renderSortHeader('30d Sold', 'units_sold_30d', true)}
+                  {renderSortHeader('30d Revenue', 'revenue_30d', true)}
+                  {renderSortHeader('MoM Trend', 'trend_pct', true)}
+                  {renderSortHeader('Current Stock', 'stock_holding_units', true)}
+                  {renderSortHeader('Holding Val', 'stock_holding_value', true)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {filteredItems.map(item => {
-                  const isWinner = item.classification === 'WINNER';
-                  const isZeroMover = item.classification === 'ZERO_MOVER';
-                  const isDeclining = item.classification === 'DECLINING';
-
                   return (
                     <tr 
                       key={item.product_id}
@@ -225,14 +361,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                         {item.category_name}
                       </td>
                       <td className="py-2 px-2.5 whitespace-nowrap">
-                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${
-                          isWinner ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                          isZeroMover ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
-                          isDeclining ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' :
-                          'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        }`}>
-                          {item.classification.replace('_', ' ')}
-                        </span>
+                        {renderStatusBadge(item.classification)}
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-white whitespace-nowrap">
                         {item.units_sold_30d} {item.packaging_unit || 'packs'}
@@ -286,14 +415,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                         </p>
                       </div>
                     </div>
-                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${
-                      isWinner ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                      isZeroMover ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
-                      isDeclining ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' :
-                      'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    }`}>
-                      {item.classification.replace('_', ' ')}
-                    </span>
+                    {renderStatusBadge(item.classification)}
                   </div>
 
                   <div className="grid grid-cols-3 gap-1 mt-2 pt-2 border-t border-slate-900 text-[10px]">
