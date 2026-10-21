@@ -180,10 +180,20 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
     ? filteredCustomers.reduce((acc, c) => acc + parseFloat(c.outstanding_balance || 0), 0)
     : parseFloat(rawKpis?.total_outstanding || 0);
 
-  const totalOverdue = periodInvoices
-    .filter(inv => inv.status === 'OVERDUE' || parseFloat(inv.outstanding_amount || 0) > 0)
-    .reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0);
-  const openInvoices = periodInvoices.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0);
+  // Global Ledger Overdue and Open Invoices Count (Debtor book is cumulative balance sheet, not single-day period slice)
+  const totalOverdue = isCustomerFiltered
+    ? periodInvoices
+        .filter(inv => inv.status === 'OVERDUE' || (inv.due_date && inv.due_date < todayStr && parseFloat(inv.outstanding_amount || 0) > 0))
+        .reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0)
+    : (rawKpis?.total_overdue !== undefined
+        ? parseFloat(rawKpis.total_overdue || 0)
+        : (invoices || []).filter(inv => inv.status === 'OVERDUE' || (inv.due_date && inv.due_date < todayStr && parseFloat(inv.outstanding_amount || 0) > 0)).reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0));
+
+  const openInvoicesCount = isCustomerFiltered
+    ? periodInvoices.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0).length
+    : (rawKpis?.open_invoices_count !== undefined
+        ? rawKpis.open_invoices_count
+        : (invoices || []).filter(inv => inv.status !== 'CANCELLED' && inv.status !== 'PAID' && parseFloat(inv.outstanding_amount || 0) > 0).length);
 
   const overallProfit = parseFloat(rawKpis?.overall_profit || 0);
   const overallLoss = parseFloat(rawKpis?.overall_loss || 0);
@@ -195,7 +205,7 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
     total_outstanding: totalOutstanding,
     total_overdue: totalOverdue,
     total_invoices_count: invoicesCount,
-    open_invoices_count: openInvoices.length,
+    open_invoices_count: openInvoicesCount,
     overall_profit: overallProfit,
     overall_loss: overallLoss,
     recent_invoices: periodInvoices,
@@ -516,12 +526,12 @@ export const DashboardPage = ({
     }
   }, [initialPage]);
 
-  const handleDashboardNavigate = (target) => {
+  const handleDashboardNavigate = (target, payload = null) => {
     const dashboardSubPages = ['overview', 'forecast', 'targets', 'receivables', 'products', 'activity'];
     if (dashboardSubPages.includes(target)) {
       setActivePage(target === 'targets' ? 'forecast' : target);
     } else if (onNavigate) {
-      onNavigate(target);
+      onNavigate(target, payload);
     }
   };
 
@@ -1825,7 +1835,10 @@ export const DashboardPage = ({
             </div>
             {/* Customer Health (fills remaining, internal scroll) */}
             <div className="flex-1 min-h-0 overflow-hidden">
-              <CustomerHealthCard onSelectCustomer={(c) => handleDashboardNavigate('customers')} />
+              <CustomerHealthCard 
+                onSelectCustomer={(c) => handleDashboardNavigate('customers', c)} 
+                onOpenPaymentModal={onOpenPaymentModal}
+              />
             </div>
           </div>
         )}

@@ -8,15 +8,18 @@ import {
   Users,
   Clock,
   ArrowUpRight,
+  ArrowUpDown,
+  CreditCard,
   X
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
 
-export const CustomerHealthCard = ({ onSelectCustomer }) => {
+export const CustomerHealthCard = ({ onSelectCustomer, onOpenPaymentModal }) => {
   const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL'); // ALL, AT_RISK, WATCH, HEALTHY
+  const [sortBy, setSortBy] = useState('OVERDUE_DESC'); // OVERDUE_DESC, DUE_DESC, DAYS_LATE_DESC, NAME_ASC
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
 
   const filteredCustomers = useMemo(() => {
     if (!healthData?.customers) return [];
-    let list = healthData.customers;
+    let list = [...healthData.customers];
 
     if (filter !== 'ALL') {
       list = list.filter(c => c?.health_status === filter);
@@ -61,8 +64,26 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
       });
     }
 
+    list.sort((a, b) => {
+      if (sortBy === 'OVERDUE_DESC') {
+        const diff = parseFloat(b?.overdue_balance || 0) - parseFloat(a?.overdue_balance || 0);
+        if (diff !== 0) return diff;
+        return parseFloat(b?.outstanding_balance || 0) - parseFloat(a?.outstanding_balance || 0);
+      }
+      if (sortBy === 'DUE_DESC') {
+        return parseFloat(b?.outstanding_balance || 0) - parseFloat(a?.outstanding_balance || 0);
+      }
+      if (sortBy === 'DAYS_LATE_DESC') {
+        return (b?.avg_days_late || 0) - (a?.avg_days_late || 0);
+      }
+      if (sortBy === 'NAME_ASC') {
+        return (a?.name || '').localeCompare(b?.name || '');
+      }
+      return 0;
+    });
+
     return list;
-  }, [healthData, filter, searchTerm]);
+  }, [healthData, filter, searchTerm, sortBy]);
 
   if (loading) {
     return (
@@ -84,7 +105,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-xl flex flex-col h-full overflow-hidden gap-2">
       
-      {/* ─── 46px COMMAND RIBBON (SEARCH + RISK PILLS + OVERDUE ALERT) ─── */}
+      {/* ─── 46px COMMAND RIBBON (SEARCH + SORT + RISK PILLS + OVERDUE ALERT) ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
         
         {/* Left: Omni-Search Input */}
@@ -105,6 +126,22 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
               <X className="w-3 h-3" />
             </button>
           )}
+        </div>
+
+        {/* Center: Sort Selector Dropdown */}
+        <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 shrink-0 text-xs">
+          <ArrowUpDown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sort:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-transparent text-slate-200 font-bold text-[11px] focus:outline-none cursor-pointer"
+          >
+            <option value="OVERDUE_DESC" className="bg-slate-900 text-white">Highest Overdue</option>
+            <option value="DUE_DESC" className="bg-slate-900 text-white">Total Due</option>
+            <option value="DAYS_LATE_DESC" className="bg-slate-900 text-white">Days Late</option>
+            <option value="NAME_ASC" className="bg-slate-900 text-white">Outlet Name (A-Z)</option>
+          </select>
         </div>
 
         {/* Center / Right: 1-Click Risk Filter Pills */}
@@ -229,6 +266,22 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
+                    {onOpenPaymentModal && (
+                      <button
+                        onClick={() => onOpenPaymentModal({
+                          id: c.customer_id,
+                          business_name: c.name,
+                          phone: c.phone,
+                          outstanding_balance: c.outstanding_balance
+                        }, null)}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition shrink-0"
+                        title={`Record Payment for ${c.name}`}
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>+ Collect</span>
+                      </button>
+                    )}
+
                     {overdue > 0 && (
                       <button
                         onClick={() => handleSendWhatsAppReminder(c)}
@@ -253,7 +306,7 @@ export const CustomerHealthCard = ({ onSelectCustomer }) => {
                     {onSelectCustomer && (
                       <button
                         onClick={() => onSelectCustomer(c)}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition"
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 hover:border-amber-500/40 rounded-lg transition"
                         title="View Customer Dossier"
                       >
                         <ArrowUpRight className="w-3.5 h-3.5" />

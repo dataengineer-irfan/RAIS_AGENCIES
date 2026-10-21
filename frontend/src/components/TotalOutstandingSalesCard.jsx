@@ -38,6 +38,7 @@ export const TotalOutstandingSalesCard = ({
           </span>
         </div>
 
+        {/* Desktop Breakdown */}
         <div className="hidden md:flex items-center gap-2 text-xs font-mono">
           <span className="text-slate-400 text-[11px]">Current:</span>
           <span className="text-emerald-400 font-bold">
@@ -49,6 +50,22 @@ export const TotalOutstandingSalesCard = ({
             ₹{overdueVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </span>
           <span className={`text-[10px] px-1 py-0.2 rounded ${overdueVal > 0 ? 'bg-rose-500/10 text-rose-300' : 'text-slate-500'}`}>
+            ({overduePct}%)
+          </span>
+        </div>
+
+        {/* Mobile Compact Breakdown (< md) */}
+        <div className="flex md:hidden items-center gap-1.5 text-[10px] font-mono">
+          <span className="text-slate-400">Cur:</span>
+          <span className="text-emerald-400 font-bold">
+            ₹{currentVal >= 1000 ? `${(currentVal/1000).toFixed(1)}k` : currentVal.toFixed(0)}
+          </span>
+          <span className="text-slate-600">|</span>
+          <span className="text-slate-400">Over:</span>
+          <span className={`font-bold ${overdueVal > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
+            ₹{overdueVal >= 1000 ? `${(overdueVal/1000).toFixed(1)}k` : overdueVal.toFixed(0)}
+          </span>
+          <span className={`text-[9px] px-1 rounded ${overdueVal > 0 ? 'bg-rose-500/10 text-rose-300' : 'text-slate-500'}`}>
             ({overduePct}%)
           </span>
         </div>

@@ -29,13 +29,19 @@ export const App = () => {
   const [dashboardSubPage, setDashboardSubPage] = useState('overview');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
 
-  const handleNavigate = (target) => {
+  const [selectedCustomerIdForDossier, setSelectedCustomerIdForDossier] = useState(null);
+
+  const handleNavigate = (target, payload = null) => {
     const dashboardSubPages = ['overview', 'forecast', 'targets', 'receivables', 'products', 'activity'];
     if (dashboardSubPages.includes(target)) {
       const sub = target === 'targets' ? 'forecast' : target;
       setDashboardSubPage(sub);
       setActiveTab('dashboard');
     } else {
+      if (target === 'customers' && payload) {
+        const custId = typeof payload === 'object' ? (payload.customer_id || payload.id) : payload;
+        setSelectedCustomerIdForDossier(custId);
+      }
       setActiveTab(target);
     }
   };
@@ -245,6 +251,7 @@ export const App = () => {
 
           {activeTab === 'customers' && (
             <CustomersPage
+              initialCustomerId={selectedCustomerIdForDossier}
               onOpenCustomerModal={handleOpenCustomerModal}
               onOpenPaymentForCustomer={(cust) => handleOpenPayment(cust, null)}
               onOpenInvoiceForCustomer={(cust) => handleOpenInvoice(cust)}

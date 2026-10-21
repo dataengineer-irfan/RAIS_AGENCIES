@@ -17,7 +17,8 @@ import {
   Pencil,
   Trash2,
   AlertTriangle,
-  ArrowLeft
+  ArrowLeft,
+  Zap
 } from 'lucide-react';
 import { paymentApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -119,10 +120,38 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const [isReconciling, setIsReconciling] = useState(false);
+
   const handleSendWhatsAppReceipt = (p) => {
     const amount = parseFloat(p.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Payment Settlement Receipt*\n\nReceipt #: *${p.payment_number}*\nCustomer: *${p.customer_name}*\nAmount Received: *₹${amount}*\nMethod: *${p.payment_method}*\nRef / UTR: *${p.reference_number || 'Cash Deposit'}*\nDate: *${p.payment_date}*\n\nThank you for your timely settlement!\n*RAIS Agencies*, Rayachoty.`;
-    openWhatsApp('9347453135', text);
+    const method = (p.payment_method || '').toUpperCase();
+    const fallbackRef = method === 'CASH' ? 'Direct Cash Settlement' : method === 'UPI' ? 'UPI Counter Transfer' : 'Direct Bank Settlement';
+    const refStr = p.reference_number || fallbackRef;
+    const text = `*RAIS AGENCIES — Payment Settlement Receipt*\n\nReceipt #: *${p.payment_number}*\nCustomer: *${p.customer_name}*\nAmount Received: *₹${amount}*\nMethod: *${p.payment_method}*\nRef / UTR: *${refStr}*\nDate: *${formatVoucherDate(p.payment_date)}*\n\nThank you for your timely settlement!\n*RAIS Agencies*, Rayachoty.\nHotline: 9347453135`;
+    openWhatsApp(p?.customer_phone || p?.phone || '9347453135', text);
+  };
+
+  const handleReconcileCustomer = async (customerId) => {
+    if (!customerId) return;
+    setIsReconciling(true);
+    try {
+      await paymentApi.reconcileFifo(customerId);
+      setNotification({
+        type: 'success',
+        message: 'Auto-reconciliation successful! Payment allocated against open customer invoices.'
+      });
+      setTimeout(() => setNotification(null), 4000);
+      await loadPayments(selectedPaymentId);
+    } catch (err) {
+      console.error('Failed to reconcile FIFO', err);
+      setNotification({
+        type: 'error',
+        message: err?.response?.data?.detail || err?.message || 'Failed to auto-reconcile voucher.'
+      });
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setIsReconciling(false);
+    }
   };
 
   const executeDeletePayment = async (payment) => {
@@ -317,7 +346,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
           </div>
 
           {/* Center: Omni-Search Input with Clear */}
-          <div className="relative flex-1 max-w-sm min-w-[180px]">
+          <div className="relative flex-1 max-w-sm min-w-[160px]">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -336,6 +365,51 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
             )}
           </div>
 
+          {/* Live Collection & Daily Reconciliation Ticker (Placed in Tier 1 with ample width) */}
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs whitespace-nowrap shrink-0">
+            {dateFilterMode === 'ALL' ? (
+              <>
+                <span className="text-emerald-400">Total: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+                {summaryData?.total_collected_this_month !== undefined && (
+                  <>
+                    <span className="text-slate-700">|</span>
+                    <span className="text-amber-400">{summaryData.current_month_str}: <strong className="font-bold">₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+                  </>
+                )}
+              </>
+            ) : dateFilterMode === 'TODAY' ? (
+              <span className="text-emerald-400">
+                Today Total: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                <span className="text-slate-600 mx-1">|</span>
+                <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span className="text-slate-600 mx-1">•</span>
+                <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              </span>
+            ) : dateFilterMode === 'YESTERDAY' ? (
+              <span className="text-emerald-400">
+                Yesterday: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                <span className="text-slate-600 mx-1">|</span>
+                <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span className="text-slate-600 mx-1">•</span>
+                <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              </span>
+            ) : dateFilterMode === 'THIS_MONTH' ? (
+              <span className="text-emerald-400">
+                This Month: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                <span className="text-slate-600 mx-1">|</span>
+                <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              </span>
+            ) : (
+              <span className="text-emerald-400">
+                {formatVoucherDate(selectedDate)}: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
+                <span className="text-slate-600 mx-1">|</span>
+                <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span className="text-slate-600 mx-1">•</span>
+                <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              </span>
+            )}
+          </div>
+
           {/* Right: + Record Payment CTA */}
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <button
@@ -349,7 +423,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
           )}
         </div>
 
-        {/* Tier 2: Date Restriction & Stepper + Method Filters + Reconciliation Micro-Ticker */}
+        {/* Tier 2: Date Restriction & Stepper + Method Filters */}
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-800/80 flex-wrap lg:flex-nowrap">
           {/* Left: Date Restriction Pills & Single-Day Stepper */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
@@ -424,8 +498,10 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                 value={selectedDate}
                 max={getLocalDateStr()}
                 onChange={(e) => handleDateChange(e.target.value)}
-                className={`bg-slate-900 border px-2 py-0.5 rounded-lg text-xs font-mono text-center focus:outline-none cursor-pointer ${
-                  dateFilterMode === 'SPECIFIC_DAY' || dateFilterMode === 'TODAY' || dateFilterMode === 'YESTERDAY'
+                className={`bg-slate-900 border px-2 py-0.5 rounded-lg text-xs font-mono text-center focus:outline-none cursor-pointer transition-opacity ${
+                  dateFilterMode === 'ALL'
+                    ? 'border-slate-800 text-slate-500 opacity-60 hover:opacity-100'
+                    : dateFilterMode === 'SPECIFIC_DAY' || dateFilterMode === 'TODAY' || dateFilterMode === 'YESTERDAY'
                     ? 'border-emerald-500 text-emerald-400 font-bold'
                     : 'border-slate-700 text-slate-300'
                 }`}
@@ -444,99 +520,51 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
             </div>
           </div>
 
-          {/* Right: Method Filters & Dynamic Reconciliation Ticker */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-            {/* Method Filter Pills */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setActiveMethodFilter('ALL')}
-                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                  activeMethodFilter === 'ALL'
-                    ? 'bg-slate-200 text-slate-950 font-black'
-                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                All ({methodCounts.total})
-              </button>
-              <button
-                onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
-                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-                  activeMethodFilter === 'CASH'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400 font-black'
-                    : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
-                }`}
-              >
-                <span>💵 Cash</span>
-                <span className="font-mono text-[11px]">({methodCounts.cash})</span>
-              </button>
-              <button
-                onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
-                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-                  activeMethodFilter === 'UPI'
-                    ? 'bg-cyan-500 text-slate-950 shadow-sm ring-1 ring-cyan-400 font-black'
-                    : 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30'
-                }`}
-              >
-                <span>📱 UPI</span>
-                <span className="font-mono text-[11px]">({methodCounts.upi})</span>
-              </button>
-              <button
-                onClick={() => setActiveMethodFilter(activeMethodFilter === 'BANK' ? 'ALL' : 'BANK')}
-                className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-                  activeMethodFilter === 'BANK'
-                    ? 'bg-purple-500 text-white shadow-sm ring-1 ring-purple-400 font-black'
-                    : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'
-                }`}
-              >
-                <span>🏦 Bank</span>
-                <span className="font-mono text-[11px]">({methodCounts.bank})</span>
-              </button>
-            </div>
-
-            {/* Live Collection & Daily Reconciliation Ticker */}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-950 border border-slate-800 rounded-xl font-mono text-[11px] whitespace-nowrap">
-              {dateFilterMode === 'ALL' ? (
-                <>
-                  <span className="text-emerald-400">Total: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
-                  {summaryData?.total_collected_this_month !== undefined && (
-                    <>
-                      <span className="text-slate-700">|</span>
-                      <span className="text-amber-400">{summaryData.current_month_str}: <strong className="font-bold">₹{parseFloat(summaryData.total_collected_this_month).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
-                    </>
-                  )}
-                </>
-              ) : dateFilterMode === 'TODAY' ? (
-                <span className="text-emerald-400">
-                  Today Total: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
-                  <span className="text-slate-600 mx-1">|</span>
-                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                  <span className="text-slate-600 mx-1">•</span>
-                  <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                </span>
-              ) : dateFilterMode === 'YESTERDAY' ? (
-                <span className="text-emerald-400">
-                  Yesterday: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
-                  <span className="text-slate-600 mx-1">|</span>
-                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                  <span className="text-slate-600 mx-1">•</span>
-                  <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                </span>
-              ) : dateFilterMode === 'THIS_MONTH' ? (
-                <span className="text-emerald-400">
-                  This Month: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
-                  <span className="text-slate-600 mx-1">|</span>
-                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                </span>
-              ) : (
-                <span className="text-emerald-400">
-                  {formatVoucherDate(selectedDate)}: <strong className="font-bold">₹{dateSummary.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>
-                  <span className="text-slate-600 mx-1">|</span>
-                  <span className="text-amber-400">💵 ₹{dateSummary.cash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                  <span className="text-slate-600 mx-1">•</span>
-                  <span className="text-cyan-400">📱 ₹{dateSummary.upi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                </span>
-              )}
-            </div>
+          {/* Right: Method Filter Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+            <button
+              onClick={() => setActiveMethodFilter('ALL')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                activeMethodFilter === 'ALL'
+                  ? 'bg-slate-200 text-slate-950 font-black'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              All ({methodCounts.total})
+            </button>
+            <button
+              onClick={() => setActiveMethodFilter(activeMethodFilter === 'CASH' ? 'ALL' : 'CASH')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                activeMethodFilter === 'CASH'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400 font-black'
+                  : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
+              }`}
+            >
+              <span>💵 Cash</span>
+              <span className="font-mono text-[11px]">({methodCounts.cash})</span>
+            </button>
+            <button
+              onClick={() => setActiveMethodFilter(activeMethodFilter === 'UPI' ? 'ALL' : 'UPI')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                activeMethodFilter === 'UPI'
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm ring-1 ring-cyan-400 font-black'
+                  : 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/30'
+              }`}
+            >
+              <span>📱 UPI</span>
+              <span className="font-mono text-[11px]">({methodCounts.upi})</span>
+            </button>
+            <button
+              onClick={() => setActiveMethodFilter(activeMethodFilter === 'BANK' ? 'ALL' : 'BANK')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                activeMethodFilter === 'BANK'
+                  ? 'bg-purple-500 text-white shadow-sm ring-1 ring-purple-400 font-black'
+                  : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'
+              }`}
+            >
+              <span>🏦 Bank</span>
+              <span className="font-mono text-[11px]">({methodCounts.bank})</span>
+            </button>
           </div>
         </div>
       </div>
@@ -642,7 +670,11 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
               value={selectedDate}
               max={getLocalDateStr()}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="bg-slate-900 border border-slate-700 px-1 py-0.5 rounded text-[10px] font-mono text-center text-slate-200 focus:outline-none"
+              className={`bg-slate-900 border px-1 py-0.5 rounded text-[10px] font-mono text-center focus:outline-none transition-opacity ${
+                dateFilterMode === 'ALL'
+                  ? 'border-slate-800 text-slate-500 opacity-60'
+                  : 'border-slate-700 text-slate-200'
+              }`}
             />
             <button
               type="button"
@@ -982,8 +1014,22 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                           <span className="font-bold text-white uppercase">{selectedPayment.payment_method}</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 text-[10px] block">Bank UTR / Transaction Ref:</span>
-                          <span className="font-mono font-bold text-amber-400">{selectedPayment.reference_number || 'Direct Cash Settlement'}</span>
+                          <span className="text-slate-500 text-[10px] block">
+                            {selectedPayment.payment_method === 'UPI' 
+                              ? 'UPI UTR / Reference ID:' 
+                              : selectedPayment.payment_method === 'CASH' 
+                              ? 'Settlement Mode:' 
+                              : 'Bank UTR / Transaction Ref:'}
+                          </span>
+                          <span className="font-mono font-bold text-amber-400">
+                            {selectedPayment.reference_number || (
+                              selectedPayment.payment_method === 'UPI'
+                                ? 'UPI Counter Transfer (No UTR)'
+                                : selectedPayment.payment_method === 'CASH'
+                                ? 'Direct Cash Settlement'
+                                : 'Direct Bank Settlement (No Ref)'
+                            )}
+                          </span>
                         </div>
                         <div className="col-span-2">
                           <span className="text-slate-500 text-[10px] block">Settlement Notes / Narration:</span>
@@ -997,20 +1043,50 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                 {/* ─── TAB 2: INVOICE ALLOCATIONS ─── */}
                 {activeInspectorTab === 'allocations' && (
                   <div className="space-y-3">
+                    {/* Unallocated Funds Alert & Auto-Reconcile Action */}
+                    {(parseFloat(selectedPayment.unallocated_amount || 0) > 0.01 || (parseFloat(selectedPayment.amount || 0) - parseFloat(selectedPayment.allocated_amount || 0) > 0.01)) && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span>₹{(parseFloat(selectedPayment.unallocated_amount || 0) || (parseFloat(selectedPayment.amount || 0) - parseFloat(selectedPayment.allocated_amount || 0))).toFixed(2)} Unallocated Funds</span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5">
+                            This voucher has unallocated funds remaining. Run FIFO auto-reconciliation to match against open customer bills.
+                          </p>
+                        </div>
+                        {hasRole(['ADMIN', 'OPERATOR']) && (
+                          <button
+                            onClick={() => handleReconcileCustomer(selectedPayment.customer_id)}
+                            disabled={isReconciling}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95 transition disabled:opacity-50"
+                          >
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>{isReconciling ? 'Reconciling...' : 'Auto-Allocate FIFO'}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Allocated Invoices
-                      </h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Allocated Invoices
+                        </h4>
+                        <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                          Allocated: ₹{parseFloat(selectedPayment.allocated_amount || 0).toFixed(2)}
+                        </span>
+                      </div>
                       {selectedPayment.allocations && selectedPayment.allocations.length > 0 ? (
                         <div className="space-y-1.5">
                           {selectedPayment.allocations.map((alloc, idx) => (
                             <div key={idx} className="bg-slate-900 border border-slate-800 rounded-lg p-2 flex items-center justify-between text-xs">
                               <div>
                                 <span className="font-mono font-bold text-white">{alloc.invoice_number || 'INV'}</span>
-                                <p className="text-[10px] text-slate-400">{alloc.allocated_at || 'Settled'}</p>
+                                <p className="text-[10px] text-slate-400">{alloc.allocated_at ? formatVoucherDate(alloc.allocated_at) : 'Settled'}</p>
                               </div>
                               <div className="font-mono font-bold text-emerald-400">
-                                ₹{parseFloat(alloc.amount || 0).toFixed(2)}
+                                ₹{parseFloat(alloc.allocated_amount || alloc.amount || 0).toFixed(2)}
                               </div>
                             </div>
                           ))}

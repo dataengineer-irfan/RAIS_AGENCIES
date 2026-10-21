@@ -41,6 +41,7 @@ import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { Printer } from 'lucide-react';
 
 export const CustomersPage = ({ 
+  initialCustomerId = null,
   onOpenCustomerModal,
   onOpenPaymentForCustomer, 
   onOpenInvoiceForCustomer,
@@ -65,7 +66,7 @@ export const CustomersPage = ({
   const [sortBy, setSortBy] = useState('BALANCE_DESC'); // BALANCE_DESC, NAME_ASC, LIMIT_DESC, CODE_ASC
   
   // Selected Customer for Right Detail Inspector
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(initialCustomerId || null);
   const [ledgerData, setLedgerData] = useState(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [customerInvoices, setCustomerInvoices] = useState([]);
@@ -73,7 +74,7 @@ export const CustomersPage = ({
   const [thermalModal, setThermalModal] = useState({ isOpen: false, invoiceId: null });
   const [activeInspectorTab, setActiveInspectorTab] = useState('overview'); // overview, invoices, ledger, actions
   const [copiedCode, setCopiedCode] = useState(false);
-  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
+  const [mobileView, setMobileView] = useState(initialCustomerId ? 'detail' : 'list'); // 'list' | 'detail'
   const [invoiceSearch, setInvoiceSearch] = useState('');
 
   // Modal
@@ -90,6 +91,15 @@ export const CustomersPage = ({
     loadCustomers();
   }, []);
 
+  useEffect(() => {
+    if (initialCustomerId) {
+      setSelectedCustomerId(initialCustomerId);
+      loadCustomerLedger(initialCustomerId);
+      loadCustomerInvoices(initialCustomerId);
+      setMobileView('detail');
+    }
+  }, [initialCustomerId]);
+
   const loadCustomers = async (selectId = null) => {
     if (customers.length === 0) setLoading(true);
     try {
@@ -97,10 +107,14 @@ export const CustomersPage = ({
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       if (items.length > 0) {
         setCustomers(items);
-        const initialId = selectId || (selectedCustomerId && items.some(i => i.id === selectedCustomerId) ? selectedCustomerId : items[0].id);
+        const targetId = selectId || initialCustomerId;
+        const initialId = targetId && items.some(i => i.id === targetId)
+          ? targetId
+          : (selectedCustomerId && items.some(i => i.id === selectedCustomerId) ? selectedCustomerId : items[0].id);
         setSelectedCustomerId(initialId);
         loadCustomerLedger(initialId);
         loadCustomerInvoices(initialId);
+        if (targetId) setMobileView('detail');
       }
     } catch (err) {
       console.warn('Failed to refresh customers from network (preserved cached state):', err?.message || err);
