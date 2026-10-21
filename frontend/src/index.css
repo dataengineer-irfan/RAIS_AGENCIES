@@ -79,10 +79,16 @@ html.theme-light ::-webkit-scrollbar-thumb:hover {
 
 /* Surfaces & Containers */
 html.theme-light .bg-slate-950,
+html.theme-light .bg-slate-950\/95,
 html.theme-light .bg-slate-950\/90,
+html.theme-light .bg-slate-950\/85,
 html.theme-light .bg-slate-950\/80,
+html.theme-light .bg-slate-950\/75,
 html.theme-light .bg-slate-950\/70,
-html.theme-light .bg-slate-950\/60 {
+html.theme-light .bg-slate-950\/60,
+html.theme-light .bg-slate-950\/50,
+html.theme-light .bg-slate-950\/40,
+html.theme-light .bg-slate-950\/30 {
   background-color: #f1f5f9 !important;
   border-color: #e2e8f0 !important;
 }
@@ -94,7 +100,8 @@ html.theme-light .bg-slate-900\/80,
 html.theme-light .bg-slate-900\/70,
 html.theme-light .bg-slate-900\/60,
 html.theme-light .bg-slate-900\/50,
-html.theme-light .bg-slate-900\/40 {
+html.theme-light .bg-slate-900\/40,
+html.theme-light .bg-slate-900\/30 {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
@@ -103,9 +110,11 @@ html.theme-light .bg-slate-900\/40 {
 html.theme-light .bg-slate-800,
 html.theme-light .bg-slate-800\/90,
 html.theme-light .bg-slate-800\/80,
+html.theme-light .bg-slate-800\/70,
 html.theme-light .bg-slate-800\/60,
 html.theme-light .bg-slate-800\/50,
-html.theme-light .bg-slate-800\/40 {
+html.theme-light .bg-slate-800\/40,
+html.theme-light .bg-slate-800\/30 {
   background-color: #e2e8f0 !important;
   border-color: #cbd5e1 !important;
   color: #1e293b !important;
@@ -115,13 +124,27 @@ html.theme-light .bg-slate-850 {
   background-color: #f8fafc !important;
 }
 
-html.theme-light .hover\:bg-slate-950\/40:hover,
-html.theme-light .hover\:bg-slate-950\/50:hover,
+/* Gradients in Light Mode */
+html.theme-light [class*="from-slate-950"],
+html.theme-light [class*="from-slate-900"],
+html.theme-light [class*="to-slate-950"],
+html.theme-light [class*="to-slate-900"] {
+  background-image: none !important;
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light .hover\:bg-slate-950\/90:hover,
+html.theme-light .hover\:bg-slate-950\/80:hover,
+html.theme-light .hover\:bg-slate-950\/70:hover,
 html.theme-light .hover\:bg-slate-950\/60:hover,
+html.theme-light .hover\:bg-slate-950\/50:hover,
+html.theme-light .hover\:bg-slate-950\/40:hover,
 html.theme-light .hover\:bg-slate-950:hover {
   background-color: #f1f5f9 !important;
 }
 
+html.theme-light .hover\:bg-slate-800\/70:hover,
 html.theme-light .hover\:bg-slate-800\/60:hover,
 html.theme-light .hover\:bg-slate-800\/40:hover,
 html.theme-light .hover\:bg-slate-800:hover {

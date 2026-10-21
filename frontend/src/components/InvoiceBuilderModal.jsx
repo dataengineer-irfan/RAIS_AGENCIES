@@ -1414,12 +1414,12 @@ export const InvoiceBuilderModal = ({
 
                   {/* Counter Amount Received Now (₹) */}
                   <div className="sm:col-span-7">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">
                         Received Now (₹)
                       </label>
                       {/* Quick Chips */}
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <button
                           type="button"
                           onClick={() => { setCollectedAmount(''); setMarkAsPaid(false); }}
@@ -1529,7 +1529,7 @@ export const InvoiceBuilderModal = ({
                 {/* Live Counter Collection Breakdown Ribbon */}
                 {numCollected > 0 && (
                   <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium space-y-0.5 animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
                       <span className="text-slate-300">
                         Received: <strong className="text-white font-mono">₹{numCollected.toFixed(2)}</strong>
                       </span>
@@ -1543,7 +1543,7 @@ export const InvoiceBuilderModal = ({
                     </div>
 
                     {surplusAmount > 0 && (
-                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20 text-emerald-300">
+                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20 text-emerald-300 flex-wrap gap-1">
                         <span>
                           Surplus Applied to Past Dues (FIFO):
                         </span>
@@ -1554,7 +1554,7 @@ export const InvoiceBuilderModal = ({
                     )}
 
                     {selectedCustomerObj && (
-                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20">
+                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20 flex-wrap gap-1">
                         <span className="text-slate-400">
                           Updated Customer Ledger Due:
                         </span>
@@ -1594,7 +1594,7 @@ export const InvoiceBuilderModal = ({
               )}
 
               {/* Totals Summary Card */}
-              <div className="p-2 sm:p-2.5 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-2.5 shadow-lg">
+              <div className="p-2 sm:p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-2.5 shadow-lg">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <div className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                     <Calculator className="w-3 h-3" />
