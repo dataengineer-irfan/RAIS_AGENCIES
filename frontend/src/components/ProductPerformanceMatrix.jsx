@@ -102,7 +102,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
     return (
       <th 
         onClick={() => handleSort(columnKey)}
-        className={`py-2 px-2.5 cursor-pointer select-none transition-colors group ${
+        className={`py-2 px-2.5 cursor-pointer select-none transition-colors group whitespace-nowrap ${
           alignRight ? 'text-right' : 'text-left'
         } ${isCurrent ? 'text-amber-400 font-black' : 'text-slate-400 hover:text-white'}`}
         title={`Sort by ${label} (${isCurrent && sortDirection === 'desc' ? 'Ascending' : 'Descending'})`}
@@ -238,7 +238,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
         {/* Right: Sort Dropdown + Search + View Switcher */}
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
           {/* Quick Sort Dropdown */}
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 shrink-0 text-slate-400 max-w-[140px] sm:max-w-none">
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 shrink-0 text-slate-400 max-w-[165px] sm:max-w-none">
             <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
             <select
               value={`${sortColumn}-${sortDirection}`}
@@ -326,11 +326,11 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
           </div>
         ) : viewMode === 'TABLE' ? (
           /* TABLE VIEW (HIGH DENSITY) */
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto custom-scrollbar touch-pan-x border border-slate-800/60 rounded-lg">
+            <table className="min-w-[850px] w-full text-left text-xs border-collapse">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 <tr>
-                  <th className="py-2 px-2 text-center text-slate-500 w-9">#</th>
+                  <th className="py-2 px-2 text-center text-slate-500 w-9 whitespace-nowrap">#</th>
                   {renderSortHeader('SKU & Item', 'name')}
                   {renderSortHeader('Category', 'category_name')}
                   {renderSortHeader('Status', 'classification')}
@@ -481,35 +481,56 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                         </p>
                       </div>
                     </div>
-                    {renderStatusBadge(item.classification)}
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {renderStatusBadge(item.classification)}
+                      <span className="text-[10px] font-mono text-slate-400">
+                        Stock: <span className="font-bold text-slate-200">{item.stock_holding_units}</span>
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-1 mt-2 pt-2 border-t border-slate-900 text-[10px]">
+                  <div className="grid grid-cols-4 gap-1.5 mt-2 pt-2 border-t border-slate-900 text-[10px]">
                     <div>
                       <span className="text-slate-500 block truncate">30d Sold:</span>
                       <div className="font-mono font-bold text-white truncate">{item.units_sold_30d}</div>
                     </div>
                     <div>
                       <span className="text-slate-500 block truncate">Revenue:</span>
-                      <div className="font-mono font-bold text-amber-400 truncate">₹{(item.revenue_30d/1000).toFixed(1)}k</div>
+                      <div className="font-mono font-bold text-amber-400 truncate">
+                        ₹{item.revenue_30d >= 1000 ? `${(item.revenue_30d/1000).toFixed(1)}k` : Math.round(item.revenue_30d)}
+                      </div>
                     </div>
                     <div>
-                      <span className="text-slate-500 block truncate">Margin:</span>
+                      <span className="text-slate-500 block truncate">30d Profit:</span>
                       <div className={`font-mono font-bold truncate ${
                         (item.profit_30d || 0) > 0 ? 'text-emerald-400' : (item.profit_30d || 0) < 0 ? 'text-rose-400' : 'text-slate-400'
                       }`}>
-                        {item.units_sold_30d > 0 ? (
-                          <>
-                            ₹{(item.profit_30d/1000).toFixed(1)}k <span className="text-[9px] font-normal opacity-80">({item.margin_pct}%)</span>
-                          </>
+                        {(item.units_sold_30d || 0) > 0 ? (
+                          Math.abs(item.profit_30d || 0) >= 10000 
+                            ? `${(item.profit_30d || 0) > 0 ? '+' : ''}₹${((item.profit_30d || 0)/1000).toFixed(1)}k` 
+                            : `${(item.profit_30d || 0) > 0 ? '+' : ''}₹${Math.round(item.profit_30d || 0).toLocaleString('en-IN')}`
                         ) : (
-                          <span className="text-slate-600">—</span>
+                          <span className="text-slate-600 font-normal">—</span>
                         )}
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-500 block truncate">Stock:</span>
-                      <div className="font-mono font-bold text-slate-300 truncate">{item.stock_holding_units}</div>
+                      <span className="text-slate-500 block truncate">Margin %:</span>
+                      <div className="font-mono font-bold truncate">
+                        {(item.units_sold_30d || 0) > 0 ? (
+                          <span className={`text-[11px] font-black ${
+                            (item.margin_pct || 0) >= 20 
+                              ? 'text-emerald-400' 
+                              : (item.margin_pct || 0) >= 10 
+                                ? 'text-amber-400' 
+                                : 'text-slate-300'
+                          }`}>
+                            {parseFloat(item.margin_pct || 0).toFixed(1)}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-600 font-normal">—</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
