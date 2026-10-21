@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronRight, Layers, ArrowLeft, ArrowUpRight, TrendingUp, DollarSign, Package, Percent, AlertTriangle, RefreshCw } from 'lucide-react';
+import { 
+  X, 
+  ChevronRight, 
+  Layers, 
+  ArrowLeft, 
+  ArrowUpRight, 
+  TrendingUp, 
+  DollarSign, 
+  Package, 
+  Percent, 
+  AlertTriangle, 
+  RefreshCw,
+  Maximize2,
+  Minimize2
+} from 'lucide-react';
 import { analyticsApi, catalogueApi } from '../services/api';
 import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -20,6 +34,7 @@ export const DrillableMetricModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const isProfit = metricType === 'profit';
 
@@ -131,16 +146,24 @@ export const DrillableMetricModal = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[75] overflow-hidden bg-slate-950/80 backdrop-blur-sm flex justify-end animate-fadeIn"
+      className={`fixed inset-0 z-[75] overflow-hidden bg-slate-950/85 backdrop-blur-md flex transition-all duration-200 animate-fadeIn ${
+        isMaximized 
+          ? 'p-0 items-stretch justify-stretch' 
+          : 'items-center justify-center p-2 sm:p-4 lg:p-6'
+      }`}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div 
-        className="w-full max-w-2xl bg-slate-900 border-l border-slate-800 h-full flex flex-col shadow-2xl animate-slideLeft"
+        className={`w-full bg-slate-900 border border-slate-800 flex flex-col shadow-2xl transition-all duration-200 overflow-hidden ${
+          isMaximized 
+            ? 'h-full w-full rounded-none max-w-none' 
+            : 'max-w-5xl xl:max-w-6xl max-h-[92vh] h-full sm:h-[88vh] rounded-2xl shadow-emerald-950/20'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Top Header */}
-        <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 gap-2">
+        <div className="p-3.5 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 gap-2 shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             {currentLevel === 'ROOT' ? (
               <button
@@ -177,13 +200,26 @@ export const DrillableMetricModal = ({
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors shrink-0"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsMaximized(prev => !prev)}
+              className="hidden sm:flex p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+              title={isMaximized ? "Restore Centered Dialog" : "Maximize to Full Screen"}
+              aria-label={isMaximized ? "Restore view" : "Maximize"}
+            >
+              {isMaximized ? <Minimize2 className="w-5 h-5 text-emerald-400" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
+            <button 
+              type="button"
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Executive Summary Card (Sticky at top of drawer) */}
@@ -282,63 +318,65 @@ export const DrillableMetricModal = ({
                 <span>Category Name</span>
                 <span>{isProfit ? 'Net Profit & Margins' : 'Invoiced Value & Breakdown'}</span>
               </div>
-              {(items || []).map(cat => (
-                <div
-                  key={cat?.id}
-                  onClick={() => loadLevel('CATEGORY', cat?.id, cat?.name)}
-                  className={`bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between transition-all hover:scale-[1.01] cursor-pointer group shadow-sm ${
-                    isProfit ? 'hover:border-emerald-500/60' : 'hover:border-amber-500/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0 pr-2">
-                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-sm shrink-0 ${
-                      isProfit 
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                    }`}>
-                      <Package className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className={`text-sm font-bold text-white transition-colors truncate ${
-                        isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
+                {(items || []).map(cat => (
+                  <div
+                    key={cat?.id}
+                    onClick={() => loadLevel('CATEGORY', cat?.id, cat?.name)}
+                    className={`bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between transition-all hover:scale-[1.01] cursor-pointer group shadow-sm ${
+                      isProfit ? 'hover:border-emerald-500/60' : 'hover:border-amber-500/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
+                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-sm shrink-0 ${
+                        isProfit 
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                          : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                       }`}>
-                        {cat?.name}
-                      </h4>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">
-                        {cat?.products_count ?? 0} active SKU(s) • {cat?.units_sold ?? 0} units sold
-                      </p>
+                        <Package className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className={`text-sm font-bold text-white transition-colors truncate ${
+                          isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
+                        }`}>
+                          {cat?.name}
+                        </h4>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">
+                          {cat?.products_count ?? 0} active SKU(s) • {cat?.units_sold ?? 0} units sold
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right">
-                      {isProfit ? (
-                        <>
-                          <div className="text-sm font-black text-emerald-400 font-mono">
-                            +₹{parseFloat(cat?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            Rev: ₹{parseFloat(cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })} • <span className="text-emerald-400 font-bold">{cat?.margin_pct}% margin</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-sm font-black text-white font-mono">
-                            ₹{parseFloat(cat?.value || cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-[10px] text-emerald-400 font-semibold flex items-center justify-end gap-1">
-                            <TrendingUp className="w-3 h-3" />
-                            Click to Drill In
-                          </div>
-                        </>
-                      )}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        {isProfit ? (
+                          <>
+                            <div className="text-sm font-black text-emerald-400 font-mono">
+                              +₹{parseFloat(cat?.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              Rev: ₹{parseFloat(cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })} • <span className="text-emerald-400 font-bold">{cat?.margin_pct}% margin</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-sm font-black text-white font-mono">
+                              ₹{parseFloat(cat?.value || cat?.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </div>
+                            <div className="text-[10px] text-emerald-400 font-semibold flex items-center justify-end gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              Click to Drill In
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <ChevronRight className={`w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-all ${
+                        isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
+                      }`} />
                     </div>
-                    <ChevronRight className={`w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-all ${
-                      isProfit ? 'group-hover:text-emerald-400' : 'group-hover:text-amber-400'
-                    }`} />
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
               {(!items || items.length === 0) && (
                 <div className="text-center py-10 text-slate-400 text-xs font-medium">
                   No active categories recorded.
@@ -361,11 +399,12 @@ export const DrillableMetricModal = ({
                 </span>
               </div>
 
-              {(items || []).map(prod => (
-                <div
-                  key={prod?.id}
-                  className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
-                >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
+                {(items || []).map(prod => (
+                  <div
+                    key={prod?.id}
+                    className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-sm"
+                  >
                     <div className="flex items-center gap-3 min-w-0 pr-2">
                       <ProductVisualBadge product={prod} size="lg" />
                       <div className="min-w-0">
@@ -407,6 +446,7 @@ export const DrillableMetricModal = ({
                     </div>
                   </div>
                 ))}
+              </div>
               {(!items || items.length === 0) && (
                 <div className="text-center py-10 text-slate-400 text-xs font-medium">
                   No products found in this category.
@@ -417,21 +457,31 @@ export const DrillableMetricModal = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-500 gap-2">
-          {currentLevel !== 'ROOT' ? (
+        <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between text-xs text-slate-500 gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            {currentLevel !== 'ROOT' ? (
+              <button
+                onClick={() => loadLevel('ROOT')}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition-all border border-slate-700 active:scale-95 text-xs"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+                <span>Back to Categories</span>
+              </button>
+            ) : (
+              <span className="truncate max-w-[200px] hidden sm:inline">RAIS Progressive Disclosure Engine</span>
+            )}
             <button
-              onClick={() => loadLevel('ROOT')}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition-all border border-slate-700 active:scale-95 text-xs"
+              type="button"
+              onClick={() => setIsMaximized(prev => !prev)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 font-bold rounded-xl border border-slate-800 transition-colors text-xs"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
-              <span>Back to Categories</span>
+              {isMaximized ? <Minimize2 className="w-3.5 h-3.5 text-emerald-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              <span>{isMaximized ? 'Restore Dialog' : 'Full Screen'}</span>
             </button>
-          ) : (
-            <span className="truncate max-w-[200px]">RAIS Progressive Disclosure Engine</span>
-          )}
+          </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors shrink-0"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-white font-bold rounded-xl transition-colors shrink-0 border border-slate-700"
           >
             Close Deep-Dive
           </button>
