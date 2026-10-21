@@ -534,7 +534,7 @@ export const DashboardPage = ({
   });
 
   // Modal States
-  const [drilldownModal, setDrilldownModal] = useState({ isOpen: false, metric: 'revenue', title: '' });
+  const [drilldownModal, setDrilldownModal] = useState({ isOpen: false, metric: 'revenue', title: '', period: null });
   const [thermalReceiptModal, setThermalReceiptModal] = useState({ isOpen: false, invoiceId: null });
 
   // ─── Load raw data once on mount & revalidate on tab focus ───
@@ -601,8 +601,8 @@ export const DashboardPage = ({
     });
   }, []);
 
-  const openDrilldown = (metric, title) => {
-    setDrilldownModal({ isOpen: true, metric, title });
+  const openDrilldown = (metric, title, period = null) => {
+    setDrilldownModal({ isOpen: true, metric, title, period: period || (filters.dateRange || 'today').toLowerCase() });
   };
 
   const openThermalReceipt = (invoiceId) => {
@@ -1802,7 +1802,10 @@ export const DashboardPage = ({
            ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'forecast' && (
           <div className="h-full overflow-y-auto animate-fadeIn">
-            <ForecastStoryWidget onOpenDrilldown={() => openDrilldown('revenue', 'Sales Velocity & Forecast Breakdown')} />
+            <ForecastStoryWidget 
+              onOpenDrilldown={() => openDrilldown('revenue', 'Sales Velocity & Forecast Breakdown')}
+              onBackToOverview={() => setActivePage('overview')}
+            />
           </div>
         )}
 
@@ -2060,9 +2063,10 @@ export const DashboardPage = ({
       {/* ─── MODALS & PROGRESSIVE DISCLOSURE ─── */}
       <DrillableMetricModal
         isOpen={drilldownModal.isOpen}
-        onClose={() => setDrilldownModal({ isOpen: false, metric: 'revenue', title: '' })}
+        onClose={() => setDrilldownModal({ isOpen: false, metric: 'revenue', title: '', period: null })}
         metricType={drilldownModal.metric}
         title={drilldownModal.title}
+        period={drilldownModal.period}
       />
 
       <ThermalReceiptModal

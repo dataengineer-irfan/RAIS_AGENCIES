@@ -516,9 +516,9 @@ export const analyticsApi = {
   getThermalReceipt: async (invoiceId, paperWidth = 58) => {
     return cachedGet(`/analytics/receipt/${invoiceId}`, { params: { paper_width: paperWidth } });
   },
-  getDrilldown: async (metric = 'revenue', level = 'category', categoryId = null) => {
+  getDrilldown: async (metric = 'revenue', level = 'category', categoryId = null, period = null) => {
     return cachedGet('/analytics/drilldown', {
-      params: { metric, level, category_id: categoryId }
+      params: { metric, level, category_id: categoryId, period }
     });
   }
 };

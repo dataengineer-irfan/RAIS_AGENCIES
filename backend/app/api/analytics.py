@@ -79,6 +79,7 @@ def get_thermal_receipt(
     return ThermalPrintService.build_thermal_receipt_payload(invoice, paper_width=paper_width)
 
 import time
+from datetime import date, timedelta
 from collections import defaultdict
 from decimal import Decimal
 from app.models.inventory import StockMovement
@@ -93,6 +94,7 @@ def get_metric_drilldown(
     level: str = Query("category", description="category, product, customer"),
     category_id: Optional[str] = None,
     customer_id: Optional[str] = None,
+    period: Optional[str] = Query(None, description="today, yesterday, this_week, last_week, this_month, last_month, all_time"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):
@@ -101,7 +103,7 @@ def get_metric_drilldown(
     Category -> Product -> Breakdown.
     Single-query SQL aggregation + Python memory mapping for instant <50ms response over WAN.
     """
-    cache_key = f"{metric}_{level}_{category_id}_{customer_id}"
+    cache_key = f"{metric}_{level}_{category_id}_{customer_id}_{period}"
     now = time.time()
     if cache_key in _DRILLDOWN_CACHE:
         ts, cached_data = _DRILLDOWN_CACHE[cache_key]
@@ -120,6 +122,29 @@ def get_metric_drilldown(
 
     if customer_id:
         sales_query = sales_query.filter(Invoice.customer_id == customer_id)
+
+    if period:
+        today_d = date.today()
+        p = period.lower().strip()
+        if p == "today":
+            sales_query = sales_query.filter(Invoice.invoice_date == today_d)
+        elif p == "yesterday":
+            sales_query = sales_query.filter(Invoice.invoice_date == today_d - timedelta(days=1))
+        elif p == "this_week":
+            start_week = today_d - timedelta(days=today_d.weekday())
+            sales_query = sales_query.filter(Invoice.invoice_date >= start_week)
+        elif p == "last_week":
+            start_last_week = today_d - timedelta(days=today_d.weekday() + 7)
+            end_last_week = start_last_week + timedelta(days=6)
+            sales_query = sales_query.filter(Invoice.invoice_date >= start_last_week, Invoice.invoice_date <= end_last_week)
+        elif p == "this_month":
+            start_month = today_d.replace(day=1)
+            sales_query = sales_query.filter(Invoice.invoice_date >= start_month)
+        elif p == "last_month":
+            first_this_month = today_d.replace(day=1)
+            last_day_prev_month = first_this_month - timedelta(days=1)
+            start_prev_month = last_day_prev_month.replace(day=1)
+            sales_query = sales_query.filter(Invoice.invoice_date >= start_prev_month, Invoice.invoice_date <= last_day_prev_month)
 
     sales_rows = sales_query.group_by(InvoiceItem.product_id).all()
     sales_map = {

@@ -22,7 +22,7 @@ export const MobileBottomNav = ({ activeTab, setActiveTab }) => {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/98 backdrop-blur-xl border-t border-slate-800/90 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-pb">
       {items.map((item) => {
         const Icon = item.icon;
-        const isActive = activeTab === item.id;
+        const isActive = activeTab === item.id || (item.id === 'billing' && activeTab === 'payments');
         return (
           <button
             key={item.id}

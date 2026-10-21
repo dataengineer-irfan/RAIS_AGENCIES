@@ -4,6 +4,7 @@ import {
   Edit3, 
   Check, 
   X, 
+  ArrowLeft,
   ArrowUpRight, 
   ArrowDownRight, 
   TrendingUp, 
@@ -16,7 +17,7 @@ import {
 import { analyticsApi } from '../services/api';
 import { MiniSparkline } from './MiniSparkline';
 
-export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
+export const ForecastStoryWidget = ({ onOpenDrilldown, onBackToOverview }) => {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingTarget, setEditingTarget] = useState(false);
@@ -90,8 +91,18 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
       
       {/* ─── ROW 1: 46px UNIFIED COMMAND RIBBON ─── */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 shadow-md flex items-center justify-between gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-        {/* Left: Title + Date Context Badge */}
+        {/* Left: Back Button (if provided) + Title + Date Context Badge */}
         <div className="flex items-center gap-2 min-w-0">
+          {onBackToOverview && (
+            <button
+              onClick={onBackToOverview}
+              className="p-1.5 -ml-1 text-slate-300 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors flex items-center gap-1 text-xs font-bold border border-slate-700 shrink-0"
+              title="Back to Dashboard Overview"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Overview</span>
+            </button>
+          )}
           <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
             <Target className="w-4 h-4" />
           </div>
@@ -265,20 +276,20 @@ export const ForecastStoryWidget = ({ onOpenDrilldown }) => {
 
       {/* ─── ROW 3: DAILY RUN-RATE LOG TABLE (FLEX-1, HIGH-DENSITY, INTERNAL SCROLL) ─── */}
       <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-lg flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-800 text-xs font-bold text-white shrink-0">
-          <div className="flex items-center gap-1.5">
-            <BarChart2 className="w-3.5 h-3.5 text-amber-400" />
-            <span>Daily Intake & Run-Rate Ledger</span>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 mb-1.5 border-b border-slate-800 text-xs font-bold text-white shrink-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <BarChart2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="truncate">Daily Intake & Run-Rate Ledger</span>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
               {forecast.sparkline?.length || 0} Days
             </span>
           </div>
-          <span className="text-[10px] font-mono text-slate-400">
+          <span className="text-[10px] font-mono text-slate-400 shrink-0 self-start sm:self-auto">
             Target Benchmark: ₹{targetDailyRate.toFixed(0)}/day
           </span>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto custom-scrollbar [scrollbar-width:thin] scrollbar-thin">
           <table className="w-full min-w-[420px] text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
               <tr>

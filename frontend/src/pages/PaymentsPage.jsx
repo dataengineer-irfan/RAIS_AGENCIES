@@ -24,7 +24,20 @@ import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { useAuth } from '../context/AuthContext';
 import { EditPaymentModal } from '../components/EditPaymentModal';
 
-export const PaymentsPage = ({ onOpenPaymentModal }) => {
+const formatVoucherDate = (dateStr) => {
+  if (!dateStr) return '-';
+  try {
+    const parts = String(dateStr).split('T')[0].split('-');
+    if (parts.length === 3) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${parts[2]} ${months[mIdx] || parts[1]} ${parts[0]}`;
+    }
+  } catch (e) {}
+  return dateStr;
+};
+
+export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   const { hasRole } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,8 +167,18 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
       
       {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
       <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
-        {/* Left: Icon & Title */}
+        {/* Left: Back Button + Icon & Title */}
         <div className="flex items-center gap-2 shrink-0">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className="p-1.5 -ml-1 text-slate-400 hover:text-white rounded-xl bg-slate-950 hover:bg-slate-800 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-800"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="w-4 h-4 text-emerald-400" />
+              <span>Back</span>
+            </button>
+          )}
           <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <CreditCard className="w-4 h-4" />
           </div>
@@ -262,6 +285,16 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
       {/* ─── MOBILE SLEEK ACTION BAR (< md) ─── */}
       <div className="md:hidden flex flex-col gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2 shrink-0 shadow-sm">
         <div className="flex items-center gap-1.5">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className="p-1.5 text-slate-300 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors flex items-center gap-1 text-xs font-bold border border-slate-700 shrink-0"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="w-4 h-4 text-emerald-400" />
+              <span className="text-[11px]">Back</span>
+            </button>
+          )}
           <div className="relative flex-1 min-w-0">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
@@ -343,7 +376,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
           </div>
 
           {/* Master Scrollable List */}
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1 pb-20 lg:pb-0">
             {loading ? (
               <div className="space-y-2 animate-pulse">
                 {[1, 2, 3, 4, 5].map(i => (
@@ -358,6 +391,8 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
               (filteredPayments || []).map(p => {
                 const isSelected = p?.id === selectedPaymentId;
                 const amount = parseFloat(p?.amount || 0);
+                const allocated = parseFloat(p?.allocated_amount || 0);
+                const unallocated = Math.max(0, amount - allocated);
                 const isCopied = copiedCardPaymentId === p?.id;
 
                 return (
@@ -399,22 +434,28 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                         {p?.customer_name || 'Customer'}
                       </h4>
                       <p className="text-[10px] text-slate-400 truncate">
-                        {p?.payment_date || '-'} {p?.reference_number ? `• Ref: ${p.reference_number}` : ''}
+                        {formatVoucherDate(p?.payment_date)} {p?.reference_number ? `• Ref: ${p.reference_number}` : ''}
                       </p>
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
                         <div className="font-mono font-black text-xs text-emerald-400">
-                          +₹{parseFloat(amount || 0).toFixed(2)}
+                          +₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
-                        <span className="text-[9px] text-slate-500 block font-mono">
-                          Alloc: ₹{parseFloat(p?.allocated_amount || 0).toFixed(2)}
-                        </span>
+                        {unallocated > 0.01 ? (
+                          <span className="text-[9px] text-amber-400 font-bold block font-mono">
+                            ⚠️ ₹{unallocated.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Unallocated
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-slate-500 block font-mono">
+                            Alloc: ₹{allocated.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Quick WhatsApp Receipt & Edit/Delete buttons */}
-                      <div className="flex items-center gap-1 pl-1 border-l border-slate-800">
+                      {/* Desktop only Quick WhatsApp & Edit/Delete buttons (hidden on mobile to protect tap targets and prevent accidental deletion) */}
+                      <div className="hidden sm:flex items-center gap-1 pl-1 border-l border-slate-800">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -500,7 +541,7 @@ export const PaymentsPage = ({ onOpenPaymentModal }) => {
                     {selectedPayment.customer_name}
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Settled on {selectedPayment.payment_date} {selectedPayment.reference_number ? `• Ref: ${selectedPayment.reference_number}` : ''}
+                    Settled on {formatVoucherDate(selectedPayment.payment_date)} {selectedPayment.reference_number ? `• Ref: ${selectedPayment.reference_number}` : ''}
                   </p>
                 </div>
 

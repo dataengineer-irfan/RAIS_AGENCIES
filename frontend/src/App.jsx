@@ -278,6 +278,7 @@ export const App = () => {
             <PaymentsPage
               key={dataRefreshKey}
               onOpenPaymentModal={handleOpenPayment}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -340,7 +341,7 @@ export const App = () => {
         onOpenOrder={() => handleOpenOrder()}
         onOpenCustomer={() => handleOpenCustomerModal()}
         onOpenAI={() => setAiDrawerOpen(true)}
-        isOpenModal={invoiceBuilderOpen || orderBuilderOpen || paymentModalOpen || customerModalOpen || inactiveReminderModalOpen || aiDrawerOpen || childModalOpen}
+        isOpenModal={invoiceBuilderOpen || orderBuilderOpen || paymentModalOpen || customerModalOpen || inactiveReminderModalOpen || aiDrawerOpen || childModalOpen || activeTab === 'payments'}
       />
 
       {/* Mobile Bottom Navigation (Visible on mobile screens) */}

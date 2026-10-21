@@ -8,7 +8,8 @@ export const DrillableMetricModal = ({
   isOpen, 
   onClose, 
   metricType = 'revenue', 
-  title = 'Revenue Deep-Dive & Multi-Level Drilldown'
+  title = 'Revenue Deep-Dive & Multi-Level Drilldown',
+  period = null
 }) => {
   useBodyScrollLock(isOpen);
 
@@ -26,7 +27,7 @@ export const DrillableMetricModal = ({
     if (isOpen) {
       loadLevel('ROOT');
     }
-  }, [isOpen, metricType]);
+  }, [isOpen, metricType, period]);
 
   const loadLevel = async (level, catId = null, catName = '') => {
     setLoading(true);
@@ -35,7 +36,7 @@ export const DrillableMetricModal = ({
       if (level === 'ROOT') {
         let res = null;
         try {
-          res = await analyticsApi.getDrilldown(metricType, 'category');
+          res = await analyticsApi.getDrilldown(metricType, 'category', null, period);
         } catch (fetchErr) {
           console.warn('Analytics drilldown API unreachable, attempting catalogue fallback:', fetchErr);
         }
@@ -77,7 +78,7 @@ export const DrillableMetricModal = ({
       } else if (level === 'CATEGORY') {
         let res = null;
         try {
-          res = await analyticsApi.getDrilldown(metricType, 'product', catId);
+          res = await analyticsApi.getDrilldown(metricType, 'product', catId, period);
         } catch (fetchErr) {
           console.warn('Analytics product drilldown unreachable, attempting product list fallback:', fetchErr);
         }
@@ -139,21 +140,39 @@ export const DrillableMetricModal = ({
       >
         
         {/* Top Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-2xl border ${
+        <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {currentLevel === 'ROOT' ? (
+              <button
+                onClick={onClose}
+                className="sm:hidden p-2 -ml-1 text-slate-300 hover:text-white rounded-xl bg-slate-800/80 hover:bg-slate-800 transition-colors shrink-0"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => loadLevel('ROOT')}
+                className="p-2 -ml-1 text-slate-200 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-700 shadow-sm shrink-0"
+                aria-label="Back to Categories"
+              >
+                <ArrowLeft className="w-4 h-4 text-amber-400" />
+                <span className="text-xs">Categories</span>
+              </button>
+            )}
+            <div className={`p-2 sm:p-2.5 rounded-2xl border shrink-0 ${
               isProfit 
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                 : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
             }`}>
-              {isProfit ? <TrendingUp className="w-6 h-6" /> : <Layers className="w-6 h-6" />}
+              {isProfit ? <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" /> : <Layers className="w-5 h-5 sm:w-6 sm:h-6" />}
             </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-black text-white tracking-wide">{title}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-lg font-black text-white tracking-wide truncate">{title}</h3>
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">
                 {isProfit 
                   ? 'Genuine gross profit, COGS cost and margin % computed from invoices & purchase batches.'
-                  : 'Power BI Progressive Disclosure: Drill into categories, SKUs, and invoices without scrolling.'
+                  : 'Power BI Progressive Disclosure: Drill into categories, SKUs, and invoices.'
                 }
               </p>
             </div>
@@ -398,11 +417,21 @@ export const DrillableMetricModal = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-500">
-          <span>RAIS Progressive Disclosure Engine</span>
+        <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-500 gap-2">
+          {currentLevel !== 'ROOT' ? (
+            <button
+              onClick={() => loadLevel('ROOT')}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition-all border border-slate-700 active:scale-95 text-xs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span>Back to Categories</span>
+            </button>
+          ) : (
+            <span className="truncate max-w-[200px]">RAIS Progressive Disclosure Engine</span>
+          )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors shrink-0"
           >
             Close Deep-Dive
           </button>
