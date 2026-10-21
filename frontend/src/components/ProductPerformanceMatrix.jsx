@@ -14,7 +14,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  X
+  X,
+  Filter
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons';
@@ -23,6 +24,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL'); // ALL, WINNER, STEADY, DECLINING, ZERO_MOVER, OUT_OF_STOCK
+  const [selectedCategory, setSelectedCategory] = useState('ALL'); // ALL, or specific category name
   const [viewMode, setViewMode] = useState(() => 
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'MATRIX' : 'TABLE'
   ); // Responsive default: MATRIX for mobile/tablet, TABLE for desktop
@@ -61,19 +63,35 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
     }
   };
 
+  const categoryOptions = useMemo(() => {
+    if (!data?.items) return [];
+    const counts = {};
+    data.items.forEach(item => {
+      const cat = item.category_name || 'General';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return Object.keys(counts)
+      .sort((a, b) => a.localeCompare(b))
+      .map(name => ({
+        name,
+        count: counts[name]
+      }));
+  }, [data]);
+
   const filteredItems = useMemo(() => {
     if (!data?.items) return [];
 
-    // 1. Filter by Active Tab & Search Term
+    // 1. Filter by Active Tab, Category & Search Term
     const filtered = data.items.filter(item => {
       const matchesTab = activeTab === 'ALL' || item.classification === activeTab;
+      const matchesCategory = selectedCategory === 'ALL' || item.category_name === selectedCategory;
       const term = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || 
                             item.name.toLowerCase().includes(term) || 
                             item.sku.toLowerCase().includes(term) || 
                             (item.brand && item.brand.toLowerCase().includes(term)) || 
                             (item.category_name && item.category_name.toLowerCase().includes(term));
-      return matchesTab && matchesSearch;
+      return matchesTab && matchesCategory && matchesSearch;
     });
 
     // 2. Multi-Column Sort
@@ -95,7 +113,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
       const numB = Number(valB) || 0;
       return sortDirection === 'asc' ? numA - numB : numB - numA;
     });
-  }, [data, activeTab, searchTerm, sortColumn, sortDirection]);
+  }, [data, activeTab, selectedCategory, searchTerm, sortColumn, sortDirection]);
 
   const renderSortHeader = (label, columnKey, alignRight = false) => {
     const isCurrent = sortColumn === columnKey;
@@ -185,126 +203,173 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-xl flex flex-col h-full overflow-hidden gap-2 animate-fadeIn">
       
-      {/* ─── COMMAND RIBBON (SEARCH + FILTER PILLS + SORT SELECT + VIEW TOGGLE) ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+      {/* ─── COMMAND RIBBON (TIER 1: TITLE & CLASSIFICATION TABS | TIER 2: CATEGORY & SORT SLICERS + SEARCH + VIEW TOGGLE) ─── */}
+      <div className="flex flex-col gap-2 shrink-0">
         
-        {/* Left: Title & SKU Count */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-            <Award className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-1.5 truncate">
-            <h2 className="text-xs sm:text-sm font-black text-white truncate">
-              Product Intelligence
-            </h2>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-md bg-slate-950 text-slate-300 border border-slate-800 shrink-0">
-              {data.total_skus} SKUs
-            </span>
-          </div>
-        </div>
-
-        {/* Center: 1-Click Classification Filter Pills */}
-        <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 overflow-x-auto no-scrollbar scroll-smooth pr-4 shrink-0">
-          {[
-            { id: 'ALL', label: `All (${data.total_skus})`, activeClass: 'bg-amber-500 text-slate-950' },
-            { id: 'WINNER', label: `⭐ Winners (${data?.winners_count ?? 0})`, activeClass: 'bg-emerald-500 text-white' },
-            { id: 'STEADY', label: `📦 Steady (${data?.steady_count ?? 0})`, activeClass: 'bg-amber-500 text-slate-950' },
-            { id: 'DECLINING', label: `📉 Declining (${data?.declining_count ?? 0})`, activeClass: 'bg-orange-500 text-white' },
-            { 
-              id: 'ZERO_MOVER', 
-              label: data.total_dead_stock_value > 0 
-                ? `❄️ Dead Stock (${data?.zero_movers_count ?? 0}) • ₹${Math.round(data.total_dead_stock_value/1000)}k` 
-                : `❄️ Dead Stock (${data?.zero_movers_count ?? 0})`, 
-              activeClass: 'bg-rose-500 text-white' 
-            },
-            ...(data?.out_of_stock_count > 0 ? [
-              { id: 'OUT_OF_STOCK', label: `⚪ Unstocked (${data.out_of_stock_count})`, activeClass: 'bg-slate-700 text-slate-200' }
-            ] : [])
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all shrink-0 ${
-                activeTab === tab.id
-                  ? `${tab.activeClass} shadow-sm font-black`
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right: Sort Dropdown + Search + View Switcher */}
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
-          {/* Quick Sort Dropdown */}
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 shrink-0 text-slate-400 max-w-[165px] sm:max-w-none">
-            <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
-            <select
-              value={`${sortColumn}-${sortDirection}`}
-              onChange={(e) => {
-                const [col, dir] = e.target.value.split('-');
-                setSortColumn(col);
-                setSortDirection(dir);
-              }}
-              className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5 truncate w-full"
-              title="Sort products"
-            >
-              <option value="margin_pct-desc" className="bg-slate-900 text-white">📊 Highest Margin %</option>
-              <option value="margin_pct-asc" className="bg-slate-900 text-white">📊 Lowest Margin %</option>
-              <option value="profit_30d-desc" className="bg-slate-900 text-white">💎 Highest Profit (₹)</option>
-              <option value="profit_30d-asc" className="bg-slate-900 text-white">💎 Lowest Profit (₹)</option>
-              <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
-              <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
-              <option value="units_sold_30d-desc" className="bg-slate-900 text-white">📦 Highest Units Sold</option>
-              <option value="units_sold_30d-asc" className="bg-slate-900 text-white">📦 Lowest Units Sold</option>
-              <option value="trend_pct-desc" className="bg-slate-900 text-white">📈 Fastest Growing</option>
-              <option value="trend_pct-asc" className="bg-slate-900 text-white">📉 Steepest Decline</option>
-              <option value="stock_holding_value-desc" className="bg-slate-900 text-white">💰 Highest Holding Val</option>
-              <option value="stock_holding_units-desc" className="bg-slate-900 text-white">🏭 Highest Stock</option>
-              <option value="name-asc" className="bg-slate-900 text-white">🔤 Product Name (A-Z)</option>
-              <option value="category_name-asc" className="bg-slate-900 text-white">🏷️ Category (A-Z)</option>
-            </select>
+        {/* Tier 1: Title & Classification Pills */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          {/* Left: Title & SKU Count */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+              <Award className="w-4 h-4" />
+            </div>
+            <div className="flex items-center gap-1.5 truncate">
+              <h2 className="text-xs sm:text-sm font-black text-white whitespace-nowrap">
+                Product Intelligence
+              </h2>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-300 border border-slate-800 shrink-0">
+                {filteredItems.length === data.total_skus 
+                  ? `${data.total_skus} SKUs` 
+                  : `${filteredItems.length} of ${data.total_skus} SKUs`}
+              </span>
+            </div>
           </div>
 
-          <div className="relative flex-1 min-w-0 sm:w-44">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search SKU..."
-              className="w-full pl-8 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-            />
-            {searchTerm && (
+          {/* Right: 1-Click Classification Filter Pills */}
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 overflow-x-auto no-scrollbar scroll-smooth pr-4 shrink-0">
+            {[
+              { id: 'ALL', label: `All (${data.total_skus})`, activeClass: 'bg-amber-500 text-slate-950' },
+              { id: 'WINNER', label: `⭐ Winners (${data?.winners_count ?? 0})`, activeClass: 'bg-emerald-500 text-white' },
+              { id: 'STEADY', label: `📦 Steady (${data?.steady_count ?? 0})`, activeClass: 'bg-amber-500 text-slate-950' },
+              { id: 'DECLINING', label: `📉 Declining (${data?.declining_count ?? 0})`, activeClass: 'bg-orange-500 text-white' },
+              { 
+                id: 'ZERO_MOVER', 
+                label: data.total_dead_stock_value > 0 
+                  ? `❄️ Dead Stock (${data?.zero_movers_count ?? 0}) • ₹${Math.round(data.total_dead_stock_value/1000)}k` 
+                  : `❄️ Dead Stock (${data?.zero_movers_count ?? 0})`, 
+                activeClass: 'bg-rose-500 text-white' 
+              },
+              ...(data?.out_of_stock_count > 0 ? [
+                { id: 'OUT_OF_STOCK', label: `⚪ Unstocked (${data.out_of_stock_count})`, activeClass: 'bg-slate-700 text-slate-200' }
+              ] : [])
+            ].map(tab => (
               <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-0.5"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all shrink-0 ${
+                  activeTab === tab.id
+                    ? `${tab.activeClass} shadow-sm font-black`
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                }`}
               >
-                <X className="w-3 h-3" />
+                {tab.label}
               </button>
-            )}
+            ))}
+          </div>
+        </div>
+
+        {/* Tier 2: Category Filter + Quick Sort + Search + View Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-slate-800/60">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 flex-1 min-w-0">
+            {/* Category Filter Dropdown */}
+            <div className={`flex items-center gap-1 border rounded-lg px-2 py-1 transition-colors min-w-0 sm:max-w-[210px] ${
+              selectedCategory !== 'ALL' 
+                ? 'bg-amber-500/15 border-amber-500/50 text-amber-300' 
+                : 'bg-slate-950 border-slate-800 text-slate-400'
+            }`}>
+              <Filter className={`w-3 h-3 shrink-0 ${selectedCategory !== 'ALL' ? 'text-amber-400' : 'text-slate-400'}`} />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5 truncate w-full"
+                title="Filter by Category"
+              >
+                <option value="ALL" className="bg-slate-900 text-white">
+                  🏷️ All Categories ({data.total_skus || data.items.length})
+                </option>
+                {categoryOptions.map(cat => (
+                  <option key={cat.name} value={cat.name} className="bg-slate-900 text-white">
+                    {cat.name} ({cat.count})
+                  </option>
+                ))}
+              </select>
+              {selectedCategory !== 'ALL' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCategory('ALL');
+                  }}
+                  className="text-amber-400 hover:text-white p-0.5 shrink-0"
+                  title="Clear Category Filter"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Sort Dropdown */}
+            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-400 min-w-0 sm:max-w-[190px]">
+              <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
+              <select
+                value={`${sortColumn}-${sortDirection}`}
+                onChange={(e) => {
+                  const [col, dir] = e.target.value.split('-');
+                  setSortColumn(col);
+                  setSortDirection(dir);
+                }}
+                className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5 truncate w-full"
+                title="Sort products"
+              >
+                <option value="margin_pct-desc" className="bg-slate-900 text-white">📊 Highest Margin %</option>
+                <option value="margin_pct-asc" className="bg-slate-900 text-white">📊 Lowest Margin %</option>
+                <option value="profit_30d-desc" className="bg-slate-900 text-white">💎 Highest Profit (₹)</option>
+                <option value="profit_30d-asc" className="bg-slate-900 text-white">💎 Lowest Profit (₹)</option>
+                <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
+                <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
+                <option value="units_sold_30d-desc" className="bg-slate-900 text-white">📦 Highest Units Sold</option>
+                <option value="units_sold_30d-asc" className="bg-slate-900 text-white">📦 Lowest Units Sold</option>
+                <option value="trend_pct-desc" className="bg-slate-900 text-white">📈 Fastest Growing</option>
+                <option value="trend_pct-asc" className="bg-slate-900 text-white">📉 Steepest Decline</option>
+                <option value="stock_holding_value-desc" className="bg-slate-900 text-white">💰 Highest Holding Val</option>
+                <option value="stock_holding_units-desc" className="bg-slate-900 text-white">🏭 Highest Stock</option>
+                <option value="name-asc" className="bg-slate-900 text-white">🔤 Product Name (A-Z)</option>
+                <option value="category_name-asc" className="bg-slate-900 text-white">🏷️ Category (A-Z)</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5 shrink-0">
-            <button
-              onClick={() => setViewMode('TABLE')}
-              className={`p-1 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'TABLE' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-              title="High-Density Table View"
-            >
-              <TableIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('MATRIX')}
-              className={`p-1 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'MATRIX' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Card Matrix View"
-            >
-              <Grid className="w-3.5 h-3.5" />
-            </button>
+          <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
+            {/* Search SKU */}
+            <div className="relative flex-1 sm:w-48">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search SKU..."
+                className="w-full pl-8 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* View Switcher */}
+            <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-0.5 shrink-0">
+              <button
+                onClick={() => setViewMode('TABLE')}
+                className={`p-1 rounded-md text-xs font-semibold transition-all ${
+                  viewMode === 'TABLE' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+                title="High-Density Table View"
+              >
+                <TableIcon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('MATRIX')}
+                className={`p-1 rounded-md text-xs font-semibold transition-all ${
+                  viewMode === 'MATRIX' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Card Matrix View"
+              >
+                <Grid className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -315,14 +380,32 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
           <div className="py-12 text-center text-slate-500 text-xs space-y-1">
             <Package className="w-8 h-8 mx-auto text-slate-600" />
             <p>No products match this filter or search query.</p>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="px-2.5 py-0.5 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold mt-1"
-              >
-                Clear Search
-              </button>
-            )}
+            <div className="flex items-center justify-center gap-2 mt-2">
+              {selectedCategory !== 'ALL' && (
+                <button
+                  onClick={() => setSelectedCategory('ALL')}
+                  className="px-2.5 py-0.5 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold"
+                >
+                  Clear Category ({selectedCategory})
+                </button>
+              )}
+              {activeTab !== 'ALL' && (
+                <button
+                  onClick={() => setActiveTab('ALL')}
+                  className="px-2.5 py-0.5 bg-slate-800 text-slate-300 rounded-lg text-xs font-bold"
+                >
+                  Clear Classification
+                </button>
+              )}
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="px-2.5 py-0.5 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold"
+                >
+                  Clear Search
+                </button>
+              )}
+            </div>
           </div>
         ) : viewMode === 'TABLE' ? (
           /* TABLE VIEW (HIGH DENSITY) */
