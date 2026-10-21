@@ -213,6 +213,13 @@ html.theme-light .bg-amber-500\/20,
 html.theme-light .bg-amber-500\/25 {
   background-color: #fef3c7 !important;
   border-color: #fde68a !important;
+  color: #92400e !important;
+}
+
+html.theme-light .bg-amber-950\/40 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
 }
 
 /* Emerald / Green Palette in Light Mode (Emerald-700 #15803d) */
@@ -228,9 +235,17 @@ html.theme-light [class*="text-emerald-400"] {
 html.theme-light .bg-emerald-500\/10,
 html.theme-light .bg-emerald-500\/15,
 html.theme-light .bg-emerald-500\/20,
+html.theme-light .bg-emerald-500\/25,
 html.theme-light .bg-emerald-600\/20 {
   background-color: #dcfce7 !important;
   border-color: #bbf7d0 !important;
+  color: #15803d !important;
+}
+
+html.theme-light .bg-emerald-950\/40 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
 }
 
 /* Rose / Red Palette in Light Mode (Rose-700 #be123c) */

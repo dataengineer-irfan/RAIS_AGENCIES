@@ -167,6 +167,7 @@ def verify_mobile():
         print("Entering 1000 in Received Now...", flush=True)
         received_input = page.locator("input[placeholder*='Enter cash/UPI received']").first
         received_input.fill("1000")
+        page.keyboard.press("Tab") # Blur input
         time.sleep(0.5)
 
         # Check scroll information

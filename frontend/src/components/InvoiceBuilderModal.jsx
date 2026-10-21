@@ -891,18 +891,19 @@ export const InvoiceBuilderModal = ({
           <form onSubmit={handleSubmit} noValidate className="flex-1 flex flex-col overflow-hidden">
             
             {/* ─── PINNED PERSISTENT CUSTOMER & BILL HEADER RIBBON (100% Sticky / Never Scrolls Away) ─── */}
-            <div className="bg-slate-950/95 border-b border-slate-800/90 px-3 sm:px-4 py-2 shrink-0 shadow-md">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="bg-slate-950/95 border-b border-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 shrink-0 shadow-lg shadow-black/30 z-10 relative">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 sm:gap-3">
                 
                 {/* Customer Selector with High-Visibility Context */}
-                <div className="flex-1 min-w-[280px]">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5" />
+                <div className="flex-1 min-w-[260px]">
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                    <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                      <Building2 className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                       <span>Billed To Customer / Outlet *</span>
                     </label>
                     {selectedCustomerObj ? (
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                      /* Redundant on mobile because SearchableCustomerSelect already shows live Due badge inside the pill */
+                      <span className={`hidden sm:inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                         parseFloat(selectedCustomerObj.outstanding_balance || 0) > 0
                           ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                           : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
@@ -910,7 +911,7 @@ export const InvoiceBuilderModal = ({
                         Current Ledger Due: ₹{parseFloat(selectedCustomerObj.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </span>
                     ) : (
-                      <span className="text-[10px] font-black uppercase text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30 animate-pulse">
+                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30 animate-pulse">
                         ⚠️ Customer Required
                       </span>
                     )}
@@ -927,23 +928,23 @@ export const InvoiceBuilderModal = ({
                   </div>
                 </div>
 
-                {/* Date, Due Date & Terms Row */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-                  <div className="w-28 sm:w-32 shrink-0">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
-                      Invoice Date
+                {/* Date, Due Date & Terms Row - Compact 3-col grid on mobile, flex row on tablet/desktop */}
+                <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center sm:gap-2 shrink-0">
+                  <div className="min-w-0 sm:w-32 shrink-0">
+                    <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
+                      Date
                     </label>
                     <input
                       type="date"
                       value={invoiceDate}
                       onChange={(e) => handleInvoiceDateChange(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono shadow-inner"
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-1.5 sm:px-2 py-1 sm:py-1.5 text-[11px] sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono shadow-inner"
                     />
                   </div>
 
-                  <div className="w-28 sm:w-32 shrink-0">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                  <div className="min-w-0 sm:w-32 shrink-0">
+                    <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
                       Due Date
                     </label>
                     <input
@@ -951,18 +952,18 @@ export const InvoiceBuilderModal = ({
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono shadow-inner"
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-1.5 sm:px-2 py-1 sm:py-1.5 text-[11px] sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono shadow-inner"
                     />
                   </div>
 
-                  <div className="w-28 sm:w-32 shrink-0">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 truncate">
+                  <div className="min-w-0 sm:w-28 shrink-0">
+                    <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
                       Terms
                     </label>
                     <select
                       value={paymentTerms}
                       onChange={(e) => setPaymentTerms(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-medium shadow-inner"
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-1.5 sm:px-2 py-1 sm:py-1.5 text-[11px] sm:text-xs text-white focus:outline-none focus:border-amber-500 font-medium shadow-inner"
                     >
                       <option value="Cash on Delivery / Immediate Settlement" className="bg-slate-900 text-white">COD</option>
                       <option value="Immediate UPI / Online Settlement" className="bg-slate-900 text-white">UPI</option>
@@ -1419,14 +1420,14 @@ export const InvoiceBuilderModal = ({
                         Received Now (₹)
                       </label>
                       {/* Quick Chips */}
-                      <div className="flex items-center gap-1 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
                           onClick={() => { setCollectedAmount(''); setMarkAsPaid(false); }}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
                             (!collectedAmount || parseFloat(collectedAmount) === 0) && !markAsPaid
-                              ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                              : 'text-slate-500 hover:text-slate-300'
+                              ? 'bg-slate-700 text-white border-slate-500 ring-1 ring-slate-400/50'
+                              : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700/80'
                           }`}
                         >
                           Credit (₹0)
@@ -1437,10 +1438,10 @@ export const InvoiceBuilderModal = ({
                             setCollectedAmount(String(parseFloat(totals.total)));
                             setMarkAsPaid(true);
                           }}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
                             parseFloat(collectedAmount) === parseFloat(totals.total)
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                              : 'text-emerald-500/80 hover:text-emerald-400'
+                              ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/70 ring-1 ring-emerald-500/50 font-black'
+                              : 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 border-emerald-800/60'
                           }`}
                         >
                           Exact (₹{parseFloat(totals.total).toFixed(0)})
@@ -1453,10 +1454,10 @@ export const InvoiceBuilderModal = ({
                               setCollectedAmount(String(fullClear));
                               setMarkAsPaid(true);
                             }}
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
                               parseFloat(collectedAmount) === (parseFloat(totals.total) + custLedgerDue)
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                : 'text-amber-400/80 hover:text-amber-300'
+                                ? 'bg-amber-500/25 text-amber-200 border-amber-500/70 ring-1 ring-amber-500/50 font-black'
+                                : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-400 border-amber-800/60'
                             }`}
                             title={`Pay current bill (₹${totals.total}) + past balance (₹${custLedgerDue.toFixed(2)})`}
                           >
@@ -1528,7 +1529,7 @@ export const InvoiceBuilderModal = ({
 
                 {/* Live Counter Collection Breakdown Ribbon */}
                 {numCollected > 0 && (
-                  <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium space-y-0.5 animate-in fade-in duration-150">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium space-y-1 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
                       <span className="text-slate-300">
                         Received: <strong className="text-white font-mono">₹{numCollected.toFixed(2)}</strong>
@@ -1543,29 +1544,31 @@ export const InvoiceBuilderModal = ({
                     </div>
 
                     {surplusAmount > 0 && (
-                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20 text-emerald-300 flex-wrap gap-1">
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-emerald-500/20 text-emerald-300">
                         <span>
                           Surplus Applied to Past Dues (FIFO):
                         </span>
-                        <span className="font-mono font-bold">
+                        <strong className="font-mono">
                           +₹{appliedToPastDues.toFixed(2)}
-                        </span>
+                        </strong>
                       </div>
                     )}
 
                     {selectedCustomerObj && (
-                      <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-emerald-500/20 flex-wrap gap-1">
-                        <span className="text-slate-400">
-                          Updated Customer Ledger Due:
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-emerald-500/20">
+                        <span className="text-slate-400 font-medium">
+                          Updated Ledger Due:
                         </span>
-                        <span className={`font-mono font-bold ${projectedLedgerDue > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                          ₹{projectedLedgerDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        <div className="text-right font-mono font-bold">
+                          <span className={projectedLedgerDue > 0 ? 'text-rose-400' : 'text-emerald-400'}>
+                            ₹{projectedLedgerDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
                           {custLedgerDue > 0 && (
                             <span className="text-[10px] text-slate-500 ml-1 font-normal">
                               (was ₹{custLedgerDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
                             </span>
                           )}
-                        </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1618,8 +1621,37 @@ export const InvoiceBuilderModal = ({
                     </div>
                   )}
                   <div className="text-right pl-3 border-l border-slate-800">
-                    <span className="text-amber-400 block text-[9px] uppercase font-bold font-sans">Grand Total Due</span>
-                    <span className="text-amber-400 font-black text-base sm:text-lg">₹{totals.total}</span>
+                    {effectivePaid >= billTotal && billTotal > 0 ? (
+                      <div>
+                        <span className="text-emerald-400 block text-[9px] uppercase font-bold font-sans">
+                          Paid in Full (₹0 Due)
+                        </span>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="text-emerald-400 font-black text-base sm:text-lg">₹{totals.total}</span>
+                          <span className="text-[9px] font-sans font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                            ✓ SETTLED
+                          </span>
+                        </div>
+                      </div>
+                    ) : effectivePaid > 0 && effectivePaid < billTotal ? (
+                      <div>
+                        <span className="text-amber-400 block text-[9px] uppercase font-bold font-sans">
+                          Remaining Bill Due
+                        </span>
+                        <span className="text-amber-400 font-black text-base sm:text-lg">
+                          ₹{remainingBillDue.toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-amber-400 block text-[9px] uppercase font-bold font-sans">
+                          Grand Total Due
+                        </span>
+                        <span className="text-amber-400 font-black text-base sm:text-lg">
+                          ₹{totals.total}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1649,9 +1681,9 @@ export const InvoiceBuilderModal = ({
                   type="button"
                   onClick={handleOpenPreview}
                   disabled={parseFloat(totals.discount) > parseFloat(totals.subtotal)}
-                  className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-750 text-amber-400 hover:text-amber-300 border border-amber-500/30 font-bold text-xs rounded-xl uppercase tracking-wider flex items-center gap-1.5 transition-all hover:scale-105 shrink-0 disabled:opacity-30 disabled:pointer-events-none"
+                  className="px-3 sm:px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 font-bold text-xs rounded-xl uppercase tracking-wider flex items-center gap-1.5 transition-all hover:scale-105 shrink-0 shadow-sm disabled:opacity-30 disabled:pointer-events-none"
                 >
-                  <Eye className="w-3.5 h-3.5" />
+                  <Eye className="w-3.5 h-3.5 text-amber-400" />
                   <span className="text-[11px] sm:text-xs">Preview</span>
                 </button>
 
