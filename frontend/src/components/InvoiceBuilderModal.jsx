@@ -8,6 +8,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { VoiceDictationModal } from './VoiceDictationModal';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { IS_VOICE_ENABLED } from '../utils/featureFlags';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -33,7 +34,7 @@ export const InvoiceBuilderModal = ({
   const [voiceConflictPrompt, setVoiceConflictPrompt] = useState(null);
 
   // Form State - Cash business default: invoiceDate and dueDate are identical today
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const [customerId, setCustomerId] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(todayStr);
   const [dueDate, setDueDate] = useState(todayStr);
@@ -77,8 +78,8 @@ export const InvoiceBuilderModal = ({
       // ─── EDIT BILL MODE: Pre-populate from invoiceToEdit ───
       if (isEditMode && invoiceToEdit) {
         setCustomerId(invoiceToEdit.customer_id || '');
-        setInvoiceDate(invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
-        setDueDate(invoiceToEdit.due_date || invoiceToEdit.invoice_date || new Date().toISOString().split('T')[0]);
+        setInvoiceDate(invoiceToEdit.invoice_date || getLocalDateString());
+        setDueDate(invoiceToEdit.due_date || invoiceToEdit.invoice_date || getLocalDateString());
         setInvoiceDiscount(String(parseFloat(invoiceToEdit.discount_amount || 0)));
         setCollectedAmount('');
         setPaymentTerms(invoiceToEdit.payment_terms || 'Cash on Delivery / Immediate Settlement');
@@ -246,7 +247,7 @@ export const InvoiceBuilderModal = ({
     setNotes('');
     setShowNotes(false);
     setPaymentTerms('Cash on Delivery / Immediate Settlement');
-    const curToday = new Date().toISOString().split('T')[0];
+    const curToday = getLocalDateString();
     setInvoiceDate(curToday);
     setDueDate(curToday);
     // Do not pre-select any product by default - user chooses SKU

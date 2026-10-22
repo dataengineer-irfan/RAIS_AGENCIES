@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Numeric, DateTime, Date, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.domain.enums import OrderStatus
+from app.core.datetime_utils import get_ist_today
 
 def get_utc_now():
     return datetime.now(timezone.utc)
@@ -16,7 +17,7 @@ class Order(Base):
     customer_id = Column(String(36), ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False, index=True)
     quotation_id = Column(String(36), ForeignKey("quotations.id", ondelete="SET NULL"), nullable=True)
     status = Column(String(20), default=OrderStatus.PENDING.value, nullable=False)
-    order_date = Column(Date, default=date.today, nullable=False)
+    order_date = Column(Date, default=get_ist_today, nullable=False)
     expected_delivery_date = Column(Date, nullable=True)
     
     subtotal = Column(Numeric(12, 2), default=0.00, nullable=False)

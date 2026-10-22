@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { customerApi } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustomerForOrder }) => {
   const [daysThreshold, setDaysThreshold] = useState(5);
@@ -80,7 +81,7 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
   };
 
   const handleDismissToday = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     localStorage.setItem('rais_last_reorder_alert_date', today);
     onClose();
   };

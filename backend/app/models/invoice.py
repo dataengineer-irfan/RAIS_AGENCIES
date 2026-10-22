@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Numeric, DateTime, Date, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.domain.enums import InvoiceStatus
+from app.core.datetime_utils import get_ist_today
 
 def get_utc_now():
     return datetime.now(timezone.utc)
@@ -18,7 +19,7 @@ class Invoice(Base):
     quotation_id = Column(String(36), ForeignKey("quotations.id", ondelete="SET NULL"), nullable=True)
     
     status = Column(String(20), default=InvoiceStatus.DRAFT.value, nullable=False, index=True)
-    invoice_date = Column(Date, default=date.today, nullable=False, index=True)
+    invoice_date = Column(Date, default=get_ist_today, nullable=False, index=True)
     due_date = Column(Date, nullable=False, index=True)
     idempotency_key = Column(String(64), unique=True, nullable=True, index=True)
     

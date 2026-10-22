@@ -14,6 +14,8 @@ from app.schemas.reports import (
 )
 from app.domain.enums import InvoiceStatus, CustomerStatus, PaymentMethod
 
+from app.core.datetime_utils import get_ist_today, get_ist_now
+
 # 60-Second In-Memory Response Caches
 _DASHBOARD_CACHE = {"timestamp": 0, "data": None}
 _AGING_SUMMARY_CACHE = {"timestamp": 0, "data": None}
@@ -38,7 +40,7 @@ class ReportingService:
         if not force_refresh and _DASHBOARD_CACHE["data"] and (now_ts - _DASHBOARD_CACHE["timestamp"] < CACHE_TTL_SECONDS):
             return _DASHBOARD_CACHE["data"]
 
-        today = date.today()
+        today = get_ist_today()
         first_day_month = date(today.year, today.month, 1)
 
         valid_statuses = [
@@ -381,7 +383,7 @@ class ReportingService:
         if not force_refresh and _CUSTOMER_AGING_CACHE["data"] and (now_ts - _CUSTOMER_AGING_CACHE["timestamp"] < CACHE_TTL_SECONDS):
             return _CUSTOMER_AGING_CACHE["data"]
 
-        today = date.today()
+        today = get_ist_today()
         d15 = today - timedelta(days=15)
         d30 = today - timedelta(days=30)
         d60 = today - timedelta(days=60)

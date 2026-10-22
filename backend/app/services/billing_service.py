@@ -18,6 +18,7 @@ from app.core.exceptions import EntityNotFoundException, RaisAppException, Inval
 from app.services.sequence_service import SequenceService
 from app.services.audit_service import AuditService
 from app.domain.enums import InvoiceStatus, QuotationStatus, OrderStatus, AuditAction
+from app.core.datetime_utils import get_ist_today
 from app.core.config import settings
 
 def quantize_amount(val: Decimal) -> Decimal:
@@ -213,7 +214,7 @@ class BillingService:
         calc = BillingService.calculate_invoice_totals(prepared_items, data.discount_amount)
         
         inv_number = SequenceService.get_next_sequence(db, "INV")
-        inv_date = data.invoice_date or date.today()
+        inv_date = data.invoice_date or get_ist_today()
         due_date = data.due_date or inv_date # Cash business: invoice date and due date are the same
         init_status = InvoiceStatus.ISSUED.value if data.auto_issue else InvoiceStatus.DRAFT.value
         qr_code = BillingService.generate_upi_qr_payload(inv_number, calc["total_amount"])
@@ -721,7 +722,7 @@ class BillingService:
         
         # Check if overdue
         if inv.status in [InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value]:
-            if inv.due_date < date.today() and inv.outstanding_amount > Decimal("0.00"):
+            if inv.due_date < get_ist_today() and inv.outstanding_amount > Decimal("0.00"):
                 inv.status = InvoiceStatus.OVERDUE.value
                 db.commit()
                 db.refresh(inv)
@@ -911,7 +912,7 @@ class BillingService:
             quotation_number=quo_num,
             customer_id=customer.id,
             status=QuotationStatus.ISSUED.value,
-            quotation_date=date.today(),
+            quotation_date=get_ist_today(),
             valid_until=data.valid_until,
             subtotal=calc["subtotal"],
             discount_amount=calc["discount_amount"],
@@ -963,8 +964,8 @@ class BillingService:
         inv_create = InvoiceCreate(
             customer_id=quo.customer_id,
             quotation_id=quo.id,
-            invoice_date=date.today(),
-            due_date=date.today() + timedelta(days=15),
+            invoice_date=get_ist_today(),
+            due_date=get_ist_today() + timedelta(days=15),
             discount_amount=quo.discount_amount,
             notes=f"Generated from Quotation #{quo.quotation_number}",
             auto_issue=True,

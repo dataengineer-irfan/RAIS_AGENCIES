@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Numeric, DateTime, Date, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.domain.enums import QuotationStatus
+from app.core.datetime_utils import get_ist_today
 
 def get_utc_now():
     return datetime.now(timezone.utc)
@@ -15,7 +16,7 @@ class Quotation(Base):
     quotation_number = Column(String(30), unique=True, nullable=False, index=True)
     customer_id = Column(String(36), ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False, index=True)
     status = Column(String(20), default=QuotationStatus.DRAFT.value, nullable=False)
-    quotation_date = Column(Date, default=date.today, nullable=False)
+    quotation_date = Column(Date, default=get_ist_today, nullable=False)
     valid_until = Column(Date, nullable=False)
     
     subtotal = Column(Numeric(12, 2), default=0.00, nullable=False)

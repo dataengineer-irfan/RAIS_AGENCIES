@@ -12,6 +12,7 @@ from app.core.exceptions import EntityNotFoundException, InvalidFinancialOperati
 from app.services.sequence_service import SequenceService
 from app.services.audit_service import AuditService
 from app.domain.enums import PaymentMethod, InvoiceStatus, AuditAction
+from app.core.datetime_utils import get_ist_today
 
 def get_utc_now():
     return datetime.now(timezone.utc)
@@ -38,7 +39,7 @@ class PaymentService:
             raise InvalidFinancialOperationException(f"Invalid payment method '{data.payment_method}'. Must be one of {valid_methods}.")
 
         pay_number = SequenceService.get_next_sequence(db, "PAY")
-        pay_date = data.payment_date or date.today()
+        pay_date = data.payment_date or get_ist_today()
 
         payment = Payment(
             payment_number=pay_number,
@@ -394,7 +395,7 @@ class PaymentService:
     @staticmethod
     def get_payments_summary(db: Session) -> dict:
         from sqlalchemy import func
-        today = date.today()
+        today = get_ist_today()
         month_start = date(today.year, today.month, 1)
 
         total_all_time = db.query(func.coalesce(func.sum(Payment.amount), 0)).scalar() or Decimal("0.00")

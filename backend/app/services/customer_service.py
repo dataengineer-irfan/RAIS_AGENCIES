@@ -16,6 +16,7 @@ from app.core.exceptions import EntityNotFoundException, RaisAppException
 from app.services.sequence_service import SequenceService
 from app.services.audit_service import AuditService
 from app.domain.enums import AuditAction, InvoiceStatus, CustomerStatus
+from app.core.datetime_utils import get_ist_today
 
 class CustomerService:
     @staticmethod
@@ -334,7 +335,7 @@ class CustomerService:
         High-performance in-memory caching ensures sub-millisecond tab switching.
         """
         now_ts = time.time()
-        today = date.today()
+        today = get_ist_today()
 
         if cls._ALERTS_CACHE is not None and (now_ts - cls._ALERTS_CACHE_TIME) < cls._ALERTS_CACHE_TTL:
             all_alerts = cls._ALERTS_CACHE

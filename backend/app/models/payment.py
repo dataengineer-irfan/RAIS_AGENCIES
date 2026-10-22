@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Numeric, DateTime, Date, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.domain.enums import PaymentMethod
+from app.core.datetime_utils import get_ist_today
 
 def get_utc_now():
     return datetime.now(timezone.utc)
@@ -14,7 +15,7 @@ class Payment(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     payment_number = Column(String(30), unique=True, nullable=False, index=True)
     customer_id = Column(String(36), ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False, index=True)
-    payment_date = Column(Date, default=date.today, nullable=False, index=True)
+    payment_date = Column(Date, default=get_ist_today, nullable=False, index=True)
     amount = Column(Numeric(12, 2), nullable=False)
     allocated_amount = Column(Numeric(12, 2), default=0.00, nullable=False)
     unallocated_amount = Column(Numeric(12, 2), nullable=False)

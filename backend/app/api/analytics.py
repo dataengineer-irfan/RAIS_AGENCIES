@@ -12,6 +12,7 @@ from app.services.product_performance_service import ProductPerformanceService
 from app.services.customer_health_service import CustomerHealthService
 from app.services.forecasting_service import ForecastingService
 from app.services.thermal_print_service import ThermalPrintService
+from app.core.datetime_utils import get_ist_today
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & Intelligence"])
 
@@ -124,7 +125,7 @@ def get_metric_drilldown(
         sales_query = sales_query.filter(Invoice.customer_id == customer_id)
 
     if period:
-        today_d = date.today()
+        today_d = get_ist_today()
         p = period.lower().strip()
         if p == "today":
             sales_query = sales_query.filter(Invoice.invoice_date == today_d)

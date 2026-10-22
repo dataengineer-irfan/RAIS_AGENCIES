@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.invoice import Invoice
 from app.models.analytics import MonthlyTarget
+from app.core.datetime_utils import get_ist_today
 
 _FORECAST_CACHE = {"timestamp": 0, "data": None}
 CACHE_TTL_SECONDS = 60
@@ -22,7 +23,7 @@ class ForecastingService:
         if not force_refresh and _FORECAST_CACHE["data"] and (now_ts - _FORECAST_CACHE["timestamp"] < CACHE_TTL_SECONDS):
             return _FORECAST_CACHE["data"]
 
-        today = date.today()
+        today = get_ist_today()
         year = today.year
         month = today.month
         year_month_str = today.strftime("%Y-%m")

@@ -12,6 +12,7 @@ from app.services.audit_service import AuditService
 from app.services.billing_service import BillingService
 from app.services.inventory_service import InventoryService
 from app.core.exceptions import EntityNotFoundException, InvalidFinancialOperationException
+from app.core.datetime_utils import get_ist_today
 
 class OrderService:
 
@@ -73,7 +74,7 @@ class OrderService:
             customer_id=customer.id,
             quotation_id=data.quotation_id,
             status=data.status or "CONFIRMED",
-            order_date=data.order_date or date.today(),
+            order_date=data.order_date or get_ist_today(),
             expected_delivery_date=data.expected_delivery_date,
             subtotal=subtotal,
             tax_amount=Decimal("0.00"),
@@ -149,8 +150,8 @@ class OrderService:
         inv_create = InvoiceCreate(
             customer_id=order.customer_id,
             order_id=order.id,
-            invoice_date=date.today(),
-            due_date=date.today(),
+            invoice_date=get_ist_today(),
+            due_date=get_ist_today(),
             payment_terms="Cash on Delivery / Immediate Settlement",
             notes=f"Generated from Customer Order {order.order_number}. {order.notes or ''}",
             items=[InvoiceItemCreate(**itm) for itm in invoice_items_payload],

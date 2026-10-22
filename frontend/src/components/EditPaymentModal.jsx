@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { paymentApi } from '../services/api';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
   const [amount, setAmount] = useState('');
@@ -15,7 +16,7 @@ export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
   useEffect(() => {
     if (isOpen && payment) {
       setAmount(payment.amount ? String(payment.amount) : '');
-      setPaymentDate(payment.payment_date || new Date().toISOString().split('T')[0]);
+      setPaymentDate(payment.payment_date || getLocalDateString());
       setPaymentMethod(payment.payment_method || 'UPI');
       setReferenceNumber(payment.reference_number || '');
       setNotes(payment.notes || '');

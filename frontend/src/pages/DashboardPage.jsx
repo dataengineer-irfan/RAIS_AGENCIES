@@ -38,6 +38,7 @@ import { DrillableMetricModal } from '../components/DrillableMetricModal';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { MiniSparkline } from '../components/MiniSparkline';
 import { ProductVisualBadge } from '../utils/productIcons';
+import { getLocalDateString, getYesterdayString, getStartOfWeekString } from '../utils/dateUtils';
 
 // Compact date formatter for mobile cards and tables (e.g. "Today", "Y'day", "08 Oct")
 const formatShortDate = (dateStr) => {
@@ -96,35 +97,25 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
   else if (rawRange.includes('today')) periodKey = 'today';
 
   // Format Date in local system timezone (Indian Standard Time) to prevent UTC date shift
-  const formatLocalDate = (d) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const now = new Date();
-  const todayStr = formatLocalDate(now);
-  
-  const yestDate = new Date(now);
-  yestDate.setDate(now.getDate() - 1);
-  const yestStr = formatLocalDate(yestDate);
+  const todayStr = getLocalDateString(now);
+  const yestStr = getYesterdayString(now);
+  const startOfWeekStr = getStartOfWeekString(now);
 
-  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
   const startOfWeek = new Date(now);
+  const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
   startOfWeek.setDate(now.getDate() - dayOfWeek);
-  const startOfWeekStr = formatLocalDate(startOfWeek);
 
   const startOfLastWeek = new Date(startOfWeek);
   startOfLastWeek.setDate(startOfWeek.getDate() - 7);
-  const startOfLastWeekStr = formatLocalDate(startOfLastWeek);
+  const startOfLastWeekStr = getLocalDateString(startOfLastWeek);
   const endOfLastWeek = new Date(startOfWeek);
   endOfLastWeek.setDate(startOfWeek.getDate() - 1);
-  const endOfLastWeekStr = formatLocalDate(endOfLastWeek);
+  const endOfLastWeekStr = getLocalDateString(endOfLastWeek);
 
   const currentMonthPrefix = todayStr.slice(0, 7);
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthPrefix = formatLocalDate(prevMonthDate).slice(0, 7);
+  const prevMonthPrefix = getLocalDateString(prevMonthDate).slice(0, 7);
 
   // Filter invoice rows by date
   let periodInvoices = invoices;
@@ -150,30 +141,111 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
     periodInvoices = invoices;
   }
 
-  // Precomputed backend revenue stats for period
-  const backendPeriodStat = rawKpis?.revenue_periods?.[periodKey];
+  // Filter payments by date and customer
+  let payments = rawKpis?.recent_payments || [];
+  if (isCustomerFiltered) {
+    payments = payments.filter(p => p.customer_id === filters.customerId);
+  }
+  let periodPayments = payments;
+  if (periodKey === 'today') {
+    periodPayments = payments.filter(p => (p.payment_date || '').slice(0, 10) === todayStr);
+  } else if (periodKey === 'yesterday') {
+    periodPayments = payments.filter(p => (p.payment_date || '').slice(0, 10) === yestStr);
+  } else if (periodKey === 'this_week') {
+    periodPayments = payments.filter(p => {
+      const d = (p.payment_date || '').slice(0, 10);
+      return d >= startOfWeekStr && d <= todayStr;
+    });
+  } else if (periodKey === 'last_week') {
+    periodPayments = payments.filter(p => {
+      const d = (p.payment_date || '').slice(0, 10);
+      return d >= startOfLastWeekStr && d <= endOfLastWeekStr;
+    });
+  } else if (periodKey === 'this_month') {
+    periodPayments = payments.filter(p => (p.payment_date || '').startsWith(currentMonthPrefix));
+  } else if (periodKey === 'last_month') {
+    periodPayments = payments.filter(p => (p.payment_date || '').startsWith(prevMonthPrefix));
+  } else if (periodKey === 'all_time') {
+    periodPayments = payments;
+  }
+
   const periodCalculatedRevenue = periodInvoices.reduce((s, inv) => s + parseFloat(inv.total_amount || 0), 0);
+  const periodInvoicesCount = periodInvoices.length;
+
+  const periodCalculatedCollections = periodPayments.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+  const periodPaymentsCount = periodPayments.length;
+
+  const backendPeriodStat = rawKpis?.revenue_periods?.[periodKey];
+
+  // Harmonization Guard:
+  // When a discrete period like 'today' has 0 invoices in periodInvoices,
+  // the card MUST display 0 bills and ₹0.00 (never stale yesterday aggregates).
+  const hasZeroInvoicesForPeriod = periodInvoicesCount === 0 && (invoices.length > 0 || periodKey === 'today');
   
-  // Total Revenue:
-  const totalRevenue = isCustomerFiltered
+  const totalRevenue = isCustomerFiltered || hasZeroInvoicesForPeriod
     ? periodCalculatedRevenue
     : (typeof backendPeriodStat?.revenue === 'number'
         ? backendPeriodStat.revenue
-        : (allInvoices && allInvoices.length > 0
-            ? periodCalculatedRevenue
-            : (periodKey === 'this_month'
-                ? parseFloat(rawKpis?.total_revenue_month || 0)
-                : periodCalculatedRevenue)));
+        : periodCalculatedRevenue);
 
-  const invoicesCount = isCustomerFiltered
-    ? periodInvoices.length
+  const invoicesCount = isCustomerFiltered || hasZeroInvoicesForPeriod
+    ? periodInvoicesCount
     : (typeof backendPeriodStat?.invoices_count === 'number'
         ? backendPeriodStat.invoices_count
-        : (allInvoices && allInvoices.length > 0
-            ? periodInvoices.length
-            : (periodKey === 'this_month'
-                ? (rawKpis?.total_invoices_count ?? periodInvoices.length)
-                : periodInvoices.length)));
+        : periodInvoicesCount);
+
+  const hasZeroPaymentsForPeriod = periodPaymentsCount === 0 && (payments.length > 0 || periodKey === 'today');
+  const collectionsAmount = isCustomerFiltered || hasZeroPaymentsForPeriod
+    ? periodCalculatedCollections
+    : (typeof backendPeriodStat?.collections === 'number'
+        ? backendPeriodStat.collections
+        : periodCalculatedCollections);
+
+  const paymentsCount = isCustomerFiltered || hasZeroPaymentsForPeriod
+    ? periodPaymentsCount
+    : (typeof backendPeriodStat?.payments_count === 'number'
+        ? backendPeriodStat.payments_count
+        : periodCalculatedPaymentsCount);
+
+  const cashAmount = isCustomerFiltered || hasZeroPaymentsForPeriod
+    ? periodPayments.filter(p => p.payment_method === 'CASH').reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+    : (typeof backendPeriodStat?.cash_collected === 'number'
+        ? backendPeriodStat.cash_collected
+        : 0);
+
+  const upiAmount = isCustomerFiltered || hasZeroPaymentsForPeriod
+    ? periodPayments.filter(p => p.payment_method !== 'CASH').reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+    : (typeof backendPeriodStat?.upi_collected === 'number'
+        ? backendPeriodStat.upi_collected
+        : 0);
+
+  // Synchronize revenue_periods map so Hero cards and drilldowns read 100% harmonized stats
+  const updatedRevenuePeriods = {
+    ...(rawKpis?.revenue_periods || {}),
+    [periodKey]: {
+      ...(rawKpis?.revenue_periods?.[periodKey] || {}),
+      revenue: totalRevenue,
+      invoices_count: invoicesCount,
+      collections: collectionsAmount,
+      payments_count: paymentsCount,
+      cash_collected: cashAmount,
+      upi_collected: upiAmount,
+      label: rawKpis?.revenue_periods?.[periodKey]?.label || periodKey
+    }
+  };
+
+  if (periodKey === 'today') {
+    updatedRevenuePeriods.today = {
+      ...(rawKpis?.revenue_periods?.today || {}),
+      revenue: totalRevenue,
+      invoices_count: invoicesCount,
+      collections: collectionsAmount,
+      payments_count: paymentsCount,
+      cash_collected: cashAmount,
+      upi_collected: upiAmount,
+      label: 'Today'
+    };
+  }
 
   // Total receivables: matches Outlets Page formula exactly (sum of customer outstanding_balance)
   const totalOutstanding = filteredCustomers && filteredCustomers.length > 0
@@ -200,8 +272,12 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
 
   return {
     ...rawKpis,
+    revenue_periods: updatedRevenuePeriods,
     total_revenue_month: (periodKey === 'this_month') ? totalRevenue : parseFloat(rawKpis?.total_revenue_month || 0),
     active_period_revenue: totalRevenue,
+    active_period_collections: collectionsAmount,
+    active_period_bills_count: invoicesCount,
+    active_period_payments_count: paymentsCount,
     total_outstanding: totalOutstanding,
     total_overdue: totalOverdue,
     total_invoices_count: invoicesCount,
@@ -209,6 +285,7 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
     overall_profit: overallProfit,
     overall_loss: overallLoss,
     recent_invoices: periodInvoices,
+    recent_payments: periodPayments,
     top_selling_products: products,
     active_period_key: periodKey
   };
@@ -629,11 +706,11 @@ export const DashboardPage = ({
 
   const activePeriodStats = kpis?.revenue_periods?.[selectedPeriod] || {};
   const activeRevenue = parseFloat(activePeriodStats.revenue ?? kpis?.active_period_revenue ?? kpis?.total_revenue_month ?? 0);
-  const activeCollections = parseFloat(activePeriodStats.collections ?? 0);
+  const activeCollections = parseFloat(activePeriodStats.collections ?? kpis?.active_period_collections ?? 0);
   const activeCash = parseFloat(activePeriodStats.cash_collected ?? 0);
   const activeUpi = parseFloat(activePeriodStats.upi_collected ?? 0);
-  const activeBillsCount = activePeriodStats.invoices_count ?? (kpis?.total_invoices_count ?? (kpis?.recent_invoices || []).length);
-  const activePaymentsCount = activePeriodStats.payments_count ?? 0;
+  const activeBillsCount = activePeriodStats.invoices_count ?? kpis?.active_period_bills_count ?? (kpis?.total_invoices_count ?? (kpis?.recent_invoices || []).length);
+  const activePaymentsCount = activePeriodStats.payments_count ?? kpis?.active_period_payments_count ?? 0;
 
   const revenueVal = activeRevenue;
   const outstandingVal = parseFloat(kpis?.total_outstanding || 0);

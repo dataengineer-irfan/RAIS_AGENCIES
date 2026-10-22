@@ -5,6 +5,7 @@ import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselectedCustomerId, initialCustomerId }) => {
   const effectiveCustomerId = preselectedCustomerId || initialCustomerId;
@@ -12,7 +13,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [customerId, setCustomerId] = useState('');
-  const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
+  const [orderDate, setOrderDate] = useState(getLocalDateString());
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState([

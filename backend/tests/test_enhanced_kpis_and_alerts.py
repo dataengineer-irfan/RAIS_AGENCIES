@@ -54,3 +54,32 @@ def test_product_performance_matrix_margins_and_sorting(db):
         assert isinstance(item["profit_30d"], (int, float))
         assert isinstance(item["margin_pct"], (int, float))
 
+def test_today_zero_business_accuracy(db):
+    """
+    Verifies that when no invoices or payments have been recorded for today (IST),
+    the dashboard KPI endpoint returns strictly 0 revenue, 0 bills, 0 collections, and 0 receipts for 'today'.
+    """
+    from datetime import timedelta
+    from app.core.datetime_utils import get_ist_today
+    from app.models.invoice import Invoice
+    from app.models.payment import Payment
+
+    today_ist = get_ist_today()
+    yest_ist = today_ist - timedelta(days=1)
+
+    # Ensure any existing invoices/payments in the test db are pushed to yesterday
+    db.query(Invoice).filter(Invoice.invoice_date == today_ist).update({"invoice_date": yest_ist})
+    db.query(Payment).filter(Payment.payment_date == today_ist).update({"payment_date": yest_ist})
+    db.commit()
+
+    kpis = ReportingService.get_dashboard_kpis(db, force_refresh=True)
+    today_p = kpis.revenue_periods["today"]
+
+    assert today_p["revenue"] == 0.0, f"Expected ₹0.00 revenue for today, got {today_p['revenue']}"
+    assert today_p["invoices_count"] == 0, f"Expected 0 invoices for today, got {today_p['invoices_count']}"
+    assert today_p["collections"] == 0.0, f"Expected ₹0.00 collections for today, got {today_p['collections']}"
+    assert today_p["payments_count"] == 0, f"Expected 0 payments for today, got {today_p['payments_count']}"
+    assert today_p["cash_collected"] == 0.0
+    assert today_p["upi_collected"] == 0.0
+
+

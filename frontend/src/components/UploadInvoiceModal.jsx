@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { inventoryApi, catalogueApi } from '../services/api';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // Pre-configured Jubilee Enterprises sample invoice for optional demo testing
 const JUBILEE_SAMPLE_ITEMS = [
@@ -123,7 +124,7 @@ export const UploadInvoiceModal = ({
 }) => {
   const [supplierName, setSupplierName] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [invoiceDate, setInvoiceDate] = useState(getLocalDateString());
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -161,7 +162,7 @@ export const UploadInvoiceModal = ({
       if (items.length === 0 && !uploadedFileName) {
         setSupplierName('');
         setInvoiceNumber('');
-        setInvoiceDate(new Date().toISOString().slice(0, 10));
+        setInvoiceDate(getLocalDateString());
         setError('');
         setSuccessMsg('');
       }
@@ -221,7 +222,7 @@ export const UploadInvoiceModal = ({
       const parsed = await inventoryApi.parseSupplierInvoice(file);
       setSupplierName(parsed.supplier_name || 'SUPPLIER');
       setInvoiceNumber(parsed.invoice_number || `INW-${Date.now().toString().slice(-6)}`);
-      setInvoiceDate(parsed.invoice_date || new Date().toISOString().slice(0, 10));
+      setInvoiceDate(parsed.invoice_date || getLocalDateString());
       
       const parsedItems = (parsed.items || []).map(it => ({
         ...it,
@@ -440,7 +441,7 @@ export const UploadInvoiceModal = ({
   const handleClearAll = () => {
     setSupplierName('');
     setInvoiceNumber('');
-    setInvoiceDate(new Date().toISOString().slice(0, 10));
+    setInvoiceDate(getLocalDateString());
     setUploadedFileName('');
     setItems([]);
     setError('');

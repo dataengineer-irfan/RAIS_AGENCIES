@@ -7,6 +7,7 @@ from app.models.customer import Customer
 from app.models.invoice import Invoice
 from app.models.order import Order
 from app.models.payment import Payment
+from app.core.datetime_utils import get_ist_today
 
 # Simple 60-second in-memory response cache
 _HEALTH_CACHE = {"timestamp": 0, "data": None}
@@ -23,7 +24,7 @@ class CustomerHealthService:
         if not force_refresh and _HEALTH_CACHE["data"] and (now_ts - _HEALTH_CACHE["timestamp"] < CACHE_TTL_SECONDS):
             return _HEALTH_CACHE["data"]
 
-        today = date.today()
+        today = get_ist_today()
 
         # Batch Query 1: All active customers (1 round-trip)
         customers = db.query(Customer).filter(Customer.status != "INACTIVE").all()
