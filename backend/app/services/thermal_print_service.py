@@ -49,9 +49,9 @@ class ThermalPrintService:
                 "line_total": float(item.line_total)
             })
 
-        tax_total = float(invoice.tax_amount or 0.0)
-        cgst = round(tax_total / 2.0, 2)
-        sgst = round(tax_total - cgst, 2)
+        tax_total = 0.0
+        cgst = 0.0
+        sgst = 0.0
 
         grand_total = float(invoice.total_amount)
         paid_amount = float(invoice.paid_amount or 0.0)
@@ -90,9 +90,9 @@ class ThermalPrintService:
             "line_items": line_items,
             "financials": {
                 "subtotal": float(invoice.subtotal),
-                "cgst": cgst,
-                "sgst": sgst,
-                "tax_total": round(tax_total, 2),
+                "cgst": 0.0,
+                "sgst": 0.0,
+                "tax_total": 0.0,
                 "grand_total": round(grand_total, 2),
                 "paid_amount": round(paid_amount, 2),
                 "outstanding_balance": round(outstanding, 2)

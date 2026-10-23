@@ -162,8 +162,8 @@ def test_converted_invoice_cancellation_restores_order_stock(test_db):
     # Stock must be safely restored to original
     assert prod.current_stock == initial_stock
 
-def test_thermal_receipt_tax_calculation(test_db):
-    """Verifies that thermal print payload correctly splits GST into CGST and SGST."""
+def test_thermal_receipt_zero_tax_policy(test_db):
+    """Verifies that thermal print payload strictly keeps GST/tax at 0.0 for RAIS wholesale customers."""
     cust = test_db.query(Customer).first()
     prod = test_db.query(Product).first()
 
@@ -173,12 +173,8 @@ def test_thermal_receipt_tax_calculation(test_db):
         auto_issue=True
     ))
 
-    # Set tax_amount for testing tax split parity
-    inv.tax_amount = Decimal("36.00")
-    test_db.flush()
-
     receipt = ThermalPrintService.build_thermal_receipt_payload(inv, paper_width=58)
     financials = receipt["financials"]
-    assert financials["tax_total"] == 36.00
-    assert financials["cgst"] == 18.00
-    assert financials["sgst"] == 18.00
+    assert financials["tax_total"] == 0.0
+    assert financials["cgst"] == 0.0
+    assert financials["sgst"] == 0.0
