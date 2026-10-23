@@ -82,6 +82,11 @@ class PaymentService:
                     amount=alloc_item.amount,
                     user_id=user_id
                 )
+        else:
+            # Automatic FIFO settlement: customer recorded a general payment or collection voucher.
+            # Settle opening balance and open invoices chronologically (FIFO).
+            from app.services.reconciliation_service import ReconciliationService
+            ReconciliationService.reconcile_customer_fifo(db, customer.id, auto_commit=False)
 
         db.commit()
         from app.services.billing_service import BillingService
@@ -329,6 +334,10 @@ class PaymentService:
             }
         )
 
+        if data.amount is not None:
+            from app.services.reconciliation_service import ReconciliationService
+            ReconciliationService.reconcile_customer_fifo(db, payment.customer_id, auto_commit=False)
+
         db.commit()
         from app.services.billing_service import BillingService
         BillingService.invalidate_cache()
@@ -348,6 +357,8 @@ class PaymentService:
         ).filter(Payment.id == payment_id).with_for_update().first()
         if not payment:
             raise EntityNotFoundException("Payment", payment_id)
+
+        cust_id = payment.customer_id
 
         # 1. Reverse all allocations on invoices
         for alloc in list(payment.allocations):
@@ -380,9 +391,11 @@ class PaymentService:
             }
         )
 
-        # 3. Delete payment record
+        # 3. Delete payment record and re-reconcile customer FIFO
         pay_number = payment.payment_number
         db.delete(payment)
+        from app.services.reconciliation_service import ReconciliationService
+        ReconciliationService.reconcile_customer_fifo(db, cust_id, auto_commit=False)
         db.commit()
         from app.services.billing_service import BillingService
         BillingService.invalidate_cache()

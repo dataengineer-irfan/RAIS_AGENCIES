@@ -359,6 +359,41 @@ class BillingService:
                 }
             )
 
+        # Automatic Advance Settlement:
+        # If customer already has unallocated advance payments in their account,
+        # apply the advance chronologically to settle or reduce this new invoice.
+        if not should_settle and invoice.status == InvoiceStatus.ISSUED.value and invoice.outstanding_amount > Decimal("0.00"):
+            from app.models.payment import Payment, PaymentAllocation
+            unalloc_payments = db.query(Payment).filter(
+                Payment.customer_id == customer.id,
+                Payment.unallocated_amount > Decimal("0.00")
+            ).order_by(Payment.payment_date.asc(), Payment.created_at.asc()).all()
+
+            if unalloc_payments:
+                now_dt = datetime.now(timezone.utc)
+                for p in unalloc_payments:
+                    if invoice.outstanding_amount <= Decimal("0.00"):
+                        break
+                    alloc_amt = min(p.unallocated_amount, invoice.outstanding_amount)
+                    if alloc_amt > Decimal("0.00"):
+                        alloc = PaymentAllocation(
+                            payment_id=p.id,
+                            invoice_id=invoice.id,
+                            allocated_amount=alloc_amt,
+                            allocated_at=now_dt
+                        )
+                        db.add(alloc)
+                        p.allocated_amount += alloc_amt
+                        p.unallocated_amount -= alloc_amt
+                        invoice.paid_amount += alloc_amt
+                        invoice.outstanding_amount -= alloc_amt
+
+                if invoice.outstanding_amount <= Decimal("0.00"):
+                    invoice.status = InvoiceStatus.PAID.value
+                elif invoice.paid_amount > Decimal("0.00"):
+                    invoice.status = InvoiceStatus.PARTIALLY_PAID.value
+                db.flush()
+
         AuditService.log(
             db=db,
             action=AuditAction.CREATE,

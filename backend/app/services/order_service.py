@@ -175,3 +175,40 @@ class OrderService:
         )
 
         return invoice
+
+    @staticmethod
+    def cancel_order(db: Session, order_id: str, reason: Optional[str] = None, user_id: Optional[str] = None) -> Order:
+        order = OrderService.get_order_by_id(db, order_id)
+        if order.status in ["CANCELLED", "COMPLETED"]:
+            raise InvalidFinancialOperationException(f"Order '{order.order_number}' is already {order.status} and cannot be cancelled.")
+
+        order.status = "CANCELLED"
+        if reason:
+            order.notes = (order.notes or "") + f" [CANCELLED: {reason}]"
+
+        # Restore inventory for all items in the cancelled order
+        for itm in order.items:
+            InventoryService.restore_stock_for_order(
+                db=db,
+                product_id=itm.product_id,
+                quantity=itm.quantity,
+                order_number=order.order_number,
+                reason=reason or f"Order Cancelled ({order.order_number})",
+                user_id=user_id
+            )
+
+        db.commit()
+        db.refresh(order)
+
+        AuditService.log_action(
+            db=db,
+            user_id=user_id,
+            entity_name="Order",
+            entity_id=order.id,
+            action="CANCEL_ORDER",
+            after_state={"order_number": order.order_number, "status": "CANCELLED", "reason": reason}
+        )
+
+        from app.services.billing_service import BillingService
+        BillingService.invalidate_cache()
+        return order

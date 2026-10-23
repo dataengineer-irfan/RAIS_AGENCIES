@@ -373,8 +373,23 @@ class InventoryService:
             StockMovement.reference_type == "INVOICE",
             StockMovement.reference_number == invoice_number
         ).first()
+
         if not original_deduction:
-            # No deduction recorded for this product on this invoice; do not fabricate stock
+            # Check if invoice was converted from an order where deduction was logged under ORDER
+            from app.models.invoice import Invoice
+            from app.models.order import Order
+            inv = db.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
+            if inv and inv.order_id:
+                ord_obj = db.query(Order).filter(Order.id == inv.order_id).first()
+                if ord_obj:
+                    original_deduction = db.query(StockMovement).filter(
+                        StockMovement.product_id == product_id,
+                        StockMovement.reference_type == "ORDER",
+                        StockMovement.reference_number == ord_obj.order_number
+                    ).first()
+
+        if not original_deduction:
+            # No deduction recorded for this product on this invoice or its origin order; do not fabricate stock
             return
 
         actual_deducted = abs(Decimal(str(original_deduction.quantity_change)))
@@ -394,6 +409,54 @@ class InventoryService:
             reference_type="INVOICE_RESTORE",
             reference_number=invoice_number,
             reason=reason or f"Stock Restored on Invoice Cancellation ({invoice_number})",
+            created_by_id=user_id
+        )
+        db.add(movement)
+
+    @staticmethod
+    def restore_stock_for_order(db: Session, product_id: str, quantity: Decimal, order_number: str, reason: Optional[str] = None, user_id: Optional[str] = None):
+        qty = Decimal(str(quantity))
+        if qty <= Decimal("0.00"):
+            return
+
+        product = db.query(Product).filter(Product.id == product_id).populate_existing().with_for_update().first()
+        if not product:
+            return
+
+        # Check if already restored
+        existing_restore = db.query(StockMovement).filter(
+            StockMovement.product_id == product_id,
+            StockMovement.reference_type == "ORDER_RESTORE",
+            StockMovement.reference_number == order_number
+        ).first()
+        if existing_restore:
+            return
+
+        original_deduction = db.query(StockMovement).filter(
+            StockMovement.product_id == product_id,
+            StockMovement.reference_type == "ORDER",
+            StockMovement.reference_number == order_number
+        ).first()
+        if not original_deduction:
+            return
+
+        actual_deducted = abs(Decimal(str(original_deduction.quantity_change)))
+        qty_to_restore = min(qty, actual_deducted)
+
+        prev_stock = Decimal(str(product.current_stock or 0))
+        new_stock = prev_stock + qty_to_restore
+        product.current_stock = new_stock
+
+        movement = StockMovement(
+            product_id=product.id,
+            movement_type="ORDER_RESTORE",
+            quantity_change=qty_to_restore,
+            previous_stock=prev_stock,
+            new_stock=new_stock,
+            unit=product.packaging_unit,
+            reference_type="ORDER_RESTORE",
+            reference_number=order_number,
+            reason=reason or f"Stock Restored on Order Cancellation ({order_number})",
             created_by_id=user_id
         )
         db.add(movement)

@@ -255,6 +255,7 @@ def get_printable_invoice(
                         <span>₹{inv.subtotal:.2f}</span>
                     </div>
                     {f'<div class="flex justify-between text-emerald-600"><span>Discount:</span><span>-₹{inv.discount_amount:.2f}</span></div>' if inv.discount_amount > 0 else ''}
+                    {f'<div class="flex justify-between text-gray-600"><span>GST Tax (CGST+SGST):</span><span>+₹{inv.tax_amount:.2f}</span></div>' if inv.tax_amount > 0 else ''}
                     <div class="flex justify-between text-base font-bold text-gray-900 border-t border-b border-gray-400 py-1 font-sans">
                         <span>Grand Total:</span>
                         <span class="font-mono">₹{inv.total_amount:.2f}</span>

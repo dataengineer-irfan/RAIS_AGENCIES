@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from difflib import SequenceMatcher
 from sqlalchemy.orm import Session
 from app.models.catalogue import Product, Category
+from app.core.datetime_utils import get_ist_now, get_ist_today
 
 # Well-known cold-chain and FMCG suppliers for RAIS AGENCIES
 KNOWN_SUPPLIERS = [
@@ -71,7 +72,7 @@ class InvoiceParserService:
                 "packets": it["packets"],
                 "purchase_cost": it["purchase_cost"],
                 "line_total": it["line_total"],
-                "batch_number": it.get("batch_number") or f"LOT-{datetime.now().strftime('%m%d')}-{idx+1:02d}",
+                "batch_number": it.get("batch_number") or f"LOT-{get_ist_now().strftime('%m%d')}-{idx+1:02d}",
                 "is_matched": match_res["is_matched"],
                 "confidence": match_res["confidence"],
                 "product_id": match_res["product_id"],
@@ -86,8 +87,8 @@ class InvoiceParserService:
 
         return {
             "supplier_name": parsed_data.get("supplier_name", "SUPPLIER"),
-            "invoice_number": parsed_data.get("invoice_number", f"INV-{datetime.now().strftime('%Y%m%d%H%M')}"),
-            "invoice_date": parsed_data.get("invoice_date", datetime.now().strftime("%Y-%m-%d")),
+            "invoice_number": parsed_data.get("invoice_number", f"INV-{get_ist_now().strftime('%Y%m%d%H%M')}"),
+            "invoice_date": parsed_data.get("invoice_date", str(get_ist_today())),
             "uploaded_filename": filename,
             "raw_text_snippet": extracted_text[:500] if extracted_text else "",
             "items": matched_items,
@@ -123,13 +124,13 @@ class InvoiceParserService:
     def _parse_text_content(cls, text: str, filename: str) -> Dict[str, Any]:
         supplier_name = ""
         invoice_number = ""
-        invoice_date = datetime.now().strftime("%Y-%m-%d")
+        invoice_date = str(get_ist_today())
         items = []
 
         if not text:
             return {
                 "supplier_name": "SUPPLIER INVOICE",
-                "invoice_number": f"INW-{datetime.now().strftime('%m%d%H%M')}",
+                "invoice_number": f"INW-{get_ist_now().strftime('%m%d%H%M')}",
                 "invoice_date": invoice_date,
                 "items": []
             }
@@ -163,7 +164,7 @@ class InvoiceParserService:
             if custom_match:
                 invoice_number = custom_match.group(1)
             else:
-                invoice_number = f"INW-{datetime.now().strftime('%Y%m%d-%H%M')}"
+                invoice_number = f"INW-{get_ist_now().strftime('%Y%m%d-%H%M')}"
 
         # 3. Detect Invoice Date
         date_match = re.search(r'(?:Dated?|Date|Invoice\s*Date|Bill\s*Date)\s*[:.\-]?\s*(\d{1,2}[\/\-.][A-Za-z0-9]{2,4}[\/\-.]\d{2,4})', text, re.IGNORECASE)
@@ -200,7 +201,7 @@ class InvoiceParserService:
                 return dt.strftime("%Y-%m-%d")
             except Exception:
                 continue
-        return datetime.now().strftime("%Y-%m-%d")
+        return str(get_ist_today())
 
     @classmethod
     def _parse_table_line(cls, line: str) -> Optional[Dict[str, Any]]:
@@ -229,7 +230,7 @@ class InvoiceParserService:
                 "packets": packets,
                 "purchase_cost": cost_per_packet,
                 "line_total": total,
-                "batch_number": f"INW-{datetime.now().strftime('%m%d')}"
+                "batch_number": f"INW-{get_ist_now().strftime('%m%d')}"
             }
 
         simple_pattern = re.compile(r'^(?:\d+[\s.-]+)?(.+?)\s+(\d+(?:\.\d{1,2})?)\s+(?:₹\s*)?(\d+(?:\.\d{1,2})?)$')
@@ -248,7 +249,7 @@ class InvoiceParserService:
                 "packets": packets,
                 "purchase_cost": cost_per_packet,
                 "line_total": total,
-                "batch_number": f"INW-{datetime.now().strftime('%m%d')}"
+                "batch_number": f"INW-{get_ist_now().strftime('%m%d')}"
             }
 
         return None
@@ -275,7 +276,7 @@ class InvoiceParserService:
                         "packets": packets,
                         "purchase_cost": cost_per_packet,
                         "line_total": total,
-                        "batch_number": f"INW-{datetime.now().strftime('%m%d')}"
+                        "batch_number": f"INW-{get_ist_now().strftime('%m%d')}"
                     })
                 except Exception:
                     continue

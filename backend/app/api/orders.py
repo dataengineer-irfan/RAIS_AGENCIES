@@ -134,3 +134,42 @@ def convert_order_to_invoice(
 ):
     """Converts a confirmed customer order directly into a Tax Invoice and allocates inventory."""
     return OrderService.convert_order_to_invoice(db, order_id=order_id, user_id=current_user.id)
+
+@router.post("/{order_id}/cancel", response_model=OrderResponse)
+def cancel_order(
+    order_id: str,
+    reason: Optional[str] = Query(None, description="Reason for cancelling order"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_operator_or_admin)
+):
+    """Cancels a customer order and safely restores allocated warehouse inventory."""
+    order = OrderService.cancel_order(db, order_id=order_id, reason=reason, user_id=current_user.id)
+    items = [
+        OrderItemResponse(
+            id=i.id,
+            product_id=i.product_id,
+            item_name=i.item_name,
+            packaging_unit=i.packaging_unit,
+            quantity=i.quantity,
+            unit_price=i.unit_price,
+            line_total=i.line_total
+        ) for i in order.items
+    ]
+    return OrderResponse(
+        id=order.id,
+        order_number=order.order_number,
+        customer_id=order.customer_id,
+        customer_name=order.customer.business_name if order.customer else None,
+        customer_phone=order.customer.phone if order.customer else None,
+        quotation_id=order.quotation_id,
+        status=order.status,
+        order_date=order.order_date,
+        expected_delivery_date=order.expected_delivery_date,
+        subtotal=order.subtotal,
+        tax_amount=order.tax_amount,
+        total_amount=order.total_amount,
+        delivery_address=order.delivery_address,
+        notes=order.notes,
+        created_at=order.created_at,
+        items=items
+    )

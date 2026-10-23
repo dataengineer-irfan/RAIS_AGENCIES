@@ -111,7 +111,16 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
 
       const numA = Number(valA) || 0;
       const numB = Number(valB) || 0;
-      return sortDirection === 'asc' ? numA - numB : numB - numA;
+      if (numA !== numB) {
+        return sortDirection === 'asc' ? numA - numB : numB - numA;
+      }
+      // Deterministic tie-breaker: rank higher absolute profit, then higher revenue
+      const profitA = Number(a.profit_30d) || 0;
+      const profitB = Number(b.profit_30d) || 0;
+      if (profitA !== profitB) return profitB - profitA;
+      const revA = Number(a.revenue_30d) || 0;
+      const revB = Number(b.revenue_30d) || 0;
+      return revB - revA;
     });
   }, [data, activeTab, selectedCategory, searchTerm, sortColumn, sortDirection]);
 

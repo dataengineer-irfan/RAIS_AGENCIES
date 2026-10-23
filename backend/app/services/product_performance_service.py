@@ -23,9 +23,11 @@ class ProductPerformanceService:
         if not force_refresh and _MATRIX_CACHE["data"] and (now_ts - _MATRIX_CACHE["timestamp"] < CACHE_TTL_SECONDS):
             return _MATRIX_CACHE["data"]
 
-        current_period = now.strftime("%Y-%m")
-        thirty_days_ago = now - timedelta(days=30)
-        sixty_days_ago = now - timedelta(days=60)
+        from app.core.datetime_utils import get_ist_today
+        today = get_ist_today()
+        current_period = today.strftime("%Y-%m")
+        thirty_days_ago = today - timedelta(days=30)
+        sixty_days_ago = today - timedelta(days=60)
 
         # 1. Fetch all active products with category eagerly loaded in 1 query
         products = db.query(Product).options(joinedload(Product.category)).filter(Product.is_active == True).all()
@@ -39,7 +41,7 @@ class ProductPerformanceService:
         ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
          .filter(
              Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
-             Invoice.invoice_date >= thirty_days_ago.date()
+             Invoice.invoice_date >= thirty_days_ago
          ).group_by(InvoiceItem.product_id).all()
 
         recent_sales_map = {
@@ -57,8 +59,8 @@ class ProductPerformanceService:
         ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
          .filter(
              Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
-             Invoice.invoice_date >= sixty_days_ago.date(),
-             Invoice.invoice_date < thirty_days_ago.date()
+             Invoice.invoice_date >= sixty_days_ago,
+             Invoice.invoice_date < thirty_days_ago
          ).group_by(InvoiceItem.product_id).all()
 
         prior_sales_map = {r.product_id: float(r.revenue_prior or 0) for r in prior_sales}
