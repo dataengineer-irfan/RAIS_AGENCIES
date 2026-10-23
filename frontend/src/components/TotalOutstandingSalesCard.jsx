@@ -8,9 +8,9 @@ export const TotalOutstandingSalesCard = ({
   onViewOutlets 
 }) => {
   const outstandingVal = parseFloat(totalOutstanding || 0);
-  const overdueVal = parseFloat(totalOverdue || 0);
+  const overdueVal = Math.max(0, Math.min(outstandingVal, parseFloat(totalOverdue || 0)));
   const currentVal = Math.max(0, outstandingVal - overdueVal);
-  const overduePct = outstandingVal > 0 ? Math.round((overdueVal / outstandingVal) * 100) : 0;
+  const overduePct = outstandingVal > 0 ? Math.min(100, Math.round((overdueVal / outstandingVal) * 100)) : 0;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 shadow-md shrink-0 flex items-center justify-between gap-2.5 flex-wrap sm:flex-nowrap">

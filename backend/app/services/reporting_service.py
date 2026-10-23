@@ -68,12 +68,14 @@ class ReportingService:
         total_outstanding = Decimal(str(total_opening)) + Decimal(str(total_invoiced_all)) - Decimal(str(total_paid_all))
 
         # 3. Total Overdue Balance
+        # Bounded by total_outstanding: Overdue cannot exceed net customer ledger balance
         overdue_query = db.query(func.sum(Invoice.outstanding_amount)).filter(
             Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
             Invoice.due_date < today,
             Invoice.outstanding_amount > 0
         ).scalar()
-        total_overdue = Decimal(str(overdue_query or "0.00"))
+        raw_overdue = Decimal(str(overdue_query or "0.00"))
+        total_overdue = min(raw_overdue, total_outstanding) if total_outstanding > Decimal("0.00") else Decimal("0.00")
 
         # 4. Total Invoices Count This Month
         invoices_count = db.query(func.count(Invoice.id)).filter(
@@ -247,13 +249,13 @@ class ReportingService:
                 "collections": float(pay_by_date.get(d, 0))
             })
 
-        # 10. Recent Invoices (expanded to 30 for high-density audit & period inspection)
+        # 10. Recent Invoices (expanded to 100 for high-density audit & period inspection)
         recent_invs = db.query(Invoice).options(
             joinedload(Invoice.customer),
             joinedload(Invoice.items)
         ).filter(
             Invoice.status != InvoiceStatus.CANCELLED.value
-        ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(30).all()
+        ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(100).all()
 
         recent_invoices = [
             {
@@ -272,10 +274,10 @@ class ReportingService:
             for inv in recent_invs
         ]
 
-        # 10. Recent Payments
+        # 10. Recent Payments (expanded to 50 for full multi-day settlement coverage)
         recent_payments_query = db.query(Payment).options(
             joinedload(Payment.customer)
-        ).order_by(Payment.payment_date.desc(), Payment.created_at.desc()).limit(5).all()
+        ).order_by(Payment.payment_date.desc(), Payment.created_at.desc()).limit(50).all()
 
         recent_payments = [
             {

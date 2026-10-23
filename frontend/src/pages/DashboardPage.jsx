@@ -177,43 +177,44 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
 
   const backendPeriodStat = rawKpis?.revenue_periods?.[periodKey];
 
-  // Harmonization Guard:
-  // When a discrete period like 'today' has 0 invoices in periodInvoices,
-  // the card MUST display 0 bills and ₹0.00 (never stale yesterday aggregates).
-  const hasZeroInvoicesForPeriod = periodInvoicesCount === 0 && (invoices.length > 0 || periodKey === 'today');
-  
-  const totalRevenue = isCustomerFiltered || hasZeroInvoicesForPeriod
+  // For global company view (isCustomerFiltered === false):
+  // The backend revenue_periods aggregations (calculated directly via SQL SUM/COUNT across all database records)
+  // are the authoritative source of truth for all multi-day and historical periods.
+  // For 'today', if periodInvoices has 0 bills AND backendPeriodStat has 0 bills (or is undefined),
+  // ensure it stays strictly at 0.
+  // Under NO circumstance should incomplete client arrays (recent_invoices or recent_payments)
+  // overwrite the backend's database-wide aggregates for yesterday, last_week, this_week, this_month, etc.
+  const totalRevenue = isCustomerFiltered
     ? periodCalculatedRevenue
     : (typeof backendPeriodStat?.revenue === 'number'
         ? backendPeriodStat.revenue
-        : periodCalculatedRevenue);
+        : (periodKey === 'today' && periodInvoicesCount === 0 ? 0 : periodCalculatedRevenue));
 
-  const invoicesCount = isCustomerFiltered || hasZeroInvoicesForPeriod
+  const invoicesCount = isCustomerFiltered
     ? periodInvoicesCount
     : (typeof backendPeriodStat?.invoices_count === 'number'
         ? backendPeriodStat.invoices_count
-        : periodInvoicesCount);
+        : (periodKey === 'today' && periodInvoicesCount === 0 ? 0 : periodInvoicesCount));
 
-  const hasZeroPaymentsForPeriod = periodPaymentsCount === 0 && (payments.length > 0 || periodKey === 'today');
-  const collectionsAmount = isCustomerFiltered || hasZeroPaymentsForPeriod
+  const collectionsAmount = isCustomerFiltered
     ? periodCalculatedCollections
     : (typeof backendPeriodStat?.collections === 'number'
         ? backendPeriodStat.collections
-        : periodCalculatedCollections);
+        : (periodKey === 'today' && periodPaymentsCount === 0 ? 0 : periodCalculatedCollections));
 
-  const paymentsCount = isCustomerFiltered || hasZeroPaymentsForPeriod
+  const paymentsCount = isCustomerFiltered
     ? periodPaymentsCount
     : (typeof backendPeriodStat?.payments_count === 'number'
         ? backendPeriodStat.payments_count
-        : periodCalculatedPaymentsCount);
+        : (periodKey === 'today' && periodPaymentsCount === 0 ? 0 : periodPaymentsCount));
 
-  const cashAmount = isCustomerFiltered || hasZeroPaymentsForPeriod
+  const cashAmount = isCustomerFiltered
     ? periodPayments.filter(p => p.payment_method === 'CASH').reduce((s, p) => s + parseFloat(p.amount || 0), 0)
     : (typeof backendPeriodStat?.cash_collected === 'number'
         ? backendPeriodStat.cash_collected
         : 0);
 
-  const upiAmount = isCustomerFiltered || hasZeroPaymentsForPeriod
+  const upiAmount = isCustomerFiltered
     ? periodPayments.filter(p => p.payment_method !== 'CASH').reduce((s, p) => s + parseFloat(p.amount || 0), 0)
     : (typeof backendPeriodStat?.upi_collected === 'number'
         ? backendPeriodStat.upi_collected
@@ -253,13 +254,16 @@ function applyClientFilters(rawKpis, filters, customers = [], allInvoices = []) 
     : parseFloat(rawKpis?.total_outstanding || 0);
 
   // Global Ledger Overdue and Open Invoices Count (Debtor book is cumulative balance sheet, not single-day period slice)
-  const totalOverdue = isCustomerFiltered
+  const rawOverdue = isCustomerFiltered
     ? periodInvoices
         .filter(inv => inv.status === 'OVERDUE' || (inv.due_date && inv.due_date < todayStr && parseFloat(inv.outstanding_amount || 0) > 0))
         .reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0)
     : (rawKpis?.total_overdue !== undefined
         ? parseFloat(rawKpis.total_overdue || 0)
         : (invoices || []).filter(inv => inv.status === 'OVERDUE' || (inv.due_date && inv.due_date < todayStr && parseFloat(inv.outstanding_amount || 0) > 0)).reduce((s, inv) => s + parseFloat(inv.outstanding_amount || 0), 0));
+
+  // Overdue can never mathematically exceed total outstanding receivables
+  const totalOverdue = Math.max(0, Math.min(totalOutstanding, rawOverdue));
 
   const openInvoicesCount = isCustomerFiltered
     ? periodInvoices.filter(inv => parseFloat(inv.outstanding_amount || 0) > 0).length
@@ -642,16 +646,23 @@ export const DashboardPage = ({
       setLoading(true);
     }
     try {
-      const [kpiRes, catRes, custRes] = await Promise.allSettled([
+      const [kpiRes, catRes, custRes, invRes] = await Promise.allSettled([
         reportApi.getDashboard(),
         catalogueApi.listCategories(true),
-        customerApi.list({ limit: 100 })
+        customerApi.list({ limit: 100 }),
+        billingApi.listInvoices({ limit: 100 })
       ]);
 
       if (kpiRes.status === 'fulfilled' && kpiRes.value) {
         setRawKpis(kpiRes.value);
         if (kpiRes.value.recent_invoices) {
           setAllInvoices(kpiRes.value.recent_invoices);
+        }
+      }
+      if (invRes && invRes.status === 'fulfilled' && invRes.value) {
+        const fullInvs = Array.isArray(invRes.value) ? invRes.value : (invRes.value?.items || invRes.value?.data || []);
+        if (fullInvs.length > 0) {
+          setAllInvoices(fullInvs);
         }
       }
       if (catRes.status === 'fulfilled' && catRes.value) {
@@ -1131,7 +1142,7 @@ export const DashboardPage = ({
 
               {/* Card 4: Overall Profit */}
               <div 
-                onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive')}
+                onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive', filters.dateRange === 'today' ? 'this_month' : (filters.dateRange || 'this_month'))}
                 className="bg-slate-900 p-2.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500/70 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
@@ -1642,7 +1653,7 @@ export const DashboardPage = ({
                   </div>
                   
                   <div 
-                    onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive')}
+                    onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive', filters.dateRange === 'today' ? 'this_month' : (filters.dateRange || 'this_month'))}
                     className="bg-slate-950/60 rounded-xl p-2.5 border border-emerald-500/20 active:scale-95 transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div>

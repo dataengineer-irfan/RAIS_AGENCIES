@@ -35,23 +35,31 @@ export const DrillableMetricModal = ({
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [activePeriod, setActivePeriod] = useState(period || (metricType === 'profit' ? 'this_month' : 'today'));
 
   const isProfit = metricType === 'profit';
 
   useEffect(() => {
-    if (isOpen) {
-      loadLevel('ROOT');
+    if (period) {
+      setActivePeriod(period);
     }
-  }, [isOpen, metricType, period]);
+  }, [period]);
 
-  const loadLevel = async (level, catId = null, catName = '') => {
+  useEffect(() => {
+    if (isOpen) {
+      loadLevel('ROOT', null, '', activePeriod);
+    }
+  }, [isOpen, metricType, activePeriod]);
+
+  const loadLevel = async (level, catId = null, catName = '', periodToUse = null) => {
+    const currentPeriod = periodToUse || activePeriod;
     setLoading(true);
     setError('');
     try {
       if (level === 'ROOT') {
         let res = null;
         try {
-          res = await analyticsApi.getDrilldown(metricType, 'category', null, period);
+          res = await analyticsApi.getDrilldown(metricType, 'category', null, currentPeriod);
         } catch (fetchErr) {
           console.warn('Analytics drilldown API unreachable, attempting catalogue fallback:', fetchErr);
         }
@@ -93,7 +101,7 @@ export const DrillableMetricModal = ({
       } else if (level === 'CATEGORY') {
         let res = null;
         try {
-          res = await analyticsApi.getDrilldown(metricType, 'product', catId, period);
+          res = await analyticsApi.getDrilldown(metricType, 'product', catId, currentPeriod);
         } catch (fetchErr) {
           console.warn('Analytics product drilldown unreachable, attempting product list fallback:', fetchErr);
         }
@@ -225,6 +233,34 @@ export const DrillableMetricModal = ({
               <X className="w-5 h-5" />
             </button>
           </div>
+        </div>
+
+        {/* ─── INTERACTIVE PERIOD SELECTOR ─── */}
+        <div className="flex items-center gap-1.5 px-3 sm:px-5 py-2 bg-slate-950/90 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0">
+          {[
+            { key: 'today', label: 'Today' },
+            { key: 'yesterday', label: 'Yesterday' },
+            { key: 'this_week', label: 'This Week' },
+            { key: 'last_week', label: 'Past Week' },
+            { key: 'this_month', label: 'This Month' },
+            { key: 'all_time', label: 'All Time' }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                setActivePeriod(tab.key);
+                loadLevel(currentLevel, selectedCategory?.id, selectedCategory?.name, tab.key);
+              }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                activePeriod === tab.key
+                  ? (isProfit ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'bg-amber-500 text-slate-950 shadow-sm')
+                  : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Executive Summary Card (Sticky at top of drawer) */}
