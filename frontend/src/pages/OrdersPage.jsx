@@ -125,7 +125,9 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
 
   const handleSendWhatsAppConfirmation = (ord) => {
     const total = parseFloat(ord.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Order Booking Confirmation*\n\nOrder Ref: *${ord.order_number}*\nCustomer: *${ord.customer_name}*\nTotal Amount: *₹${total}*\nStatus: *${ord.status}*\n\nThank you for ordering with RAIS Agencies, Rayachoty.`;
+    const cPerson = ord.customer_contact;
+    const cName = cPerson && cPerson.toLowerCase() !== (ord.customer_name || '').toLowerCase() ? `${ord.customer_name} (${cPerson})` : ord.customer_name;
+    const text = `*RAIS AGENCIES — Order Booking Confirmation*\n\nOrder Ref: *${ord.order_number}*\nCustomer: *${cName}*\nTotal Amount: *₹${total}*\nStatus: *${ord.status}*\n\nThank you for ordering with RAIS Agencies, Rayachoty.`;
     openWhatsApp(ord.customer_phone || '9347453135', text);
   };
 
@@ -159,6 +161,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
       const matchHeader = (
         (o.order_number || '').toLowerCase().includes(term) ||
         (o.customer_name && o.customer_name.toLowerCase().includes(term)) ||
+        (o.customer_contact && o.customer_contact.toLowerCase().includes(term)) ||
         (o.customer_phone && o.customer_phone.includes(term))
       );
       if (matchHeader) return true;
@@ -442,6 +445,9 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
 
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
                         {ord.customer_name}
+                        {ord.customer_contact && ord.customer_contact.toLowerCase() !== (ord.customer_name || '').toLowerCase() && (
+                          <span className="text-amber-300 font-semibold ml-1">({ord.customer_contact})</span>
+                        )}
                       </h4>
 
                       {/* Items Preview Chip */}
@@ -529,6 +535,9 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                   </div>
                   <h2 className="text-base sm:text-lg font-black text-white mt-1">
                     {selectedOrder.customer_name}
+                    {selectedOrder.customer_contact && selectedOrder.customer_contact.toLowerCase() !== (selectedOrder.customer_name || '').toLowerCase() && (
+                      <span className="text-amber-300 font-bold ml-1.5">({selectedOrder.customer_contact})</span>
+                    )}
                   </h2>
                   <p className="text-xs text-slate-400">
                     Booked on {selectedOrder.order_date} {selectedOrder.customer_phone ? `• Ph: ${selectedOrder.customer_phone}` : ''}

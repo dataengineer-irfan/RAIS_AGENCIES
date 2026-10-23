@@ -291,6 +291,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
       return (
         (p.payment_number || '').toLowerCase().includes(term) ||
         (p.customer_name && p.customer_name.toLowerCase().includes(term)) ||
+        (p.customer_contact && p.customer_contact.toLowerCase().includes(term)) ||
         (p.reference_number && p.reference_number.toLowerCase().includes(term)) ||
         (p.payment_method && p.payment_method.toLowerCase().includes(term)) ||
         (p.notes && p.notes.toLowerCase().includes(term))
@@ -796,6 +797,9 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       </div>
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
                         {p?.customer_name || 'Customer'}
+                        {p?.customer_contact && p.customer_contact.toLowerCase() !== (p.customer_name || '').toLowerCase() && (
+                          <span className="text-amber-300 font-semibold ml-1">({p.customer_contact})</span>
+                        )}
                       </h4>
                       <p className="text-[10px] text-slate-400 truncate">
                         {formatVoucherDate(p?.payment_date)} {p?.reference_number ? `• Ref: ${p.reference_number}` : ''}
@@ -903,6 +907,9 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                   </div>
                   <h2 className="text-base sm:text-lg font-black text-white mt-1">
                     {selectedPayment.customer_name}
+                    {selectedPayment.customer_contact && selectedPayment.customer_contact.toLowerCase() !== (selectedPayment.customer_name || '').toLowerCase() && (
+                      <span className="text-amber-300 font-bold ml-1.5">({selectedPayment.customer_contact})</span>
+                    )}
                   </h2>
                   <p className="text-xs text-slate-400">
                     Settled on {formatVoucherDate(selectedPayment.payment_date)} {selectedPayment.reference_number ? `• Ref: ${selectedPayment.reference_number}` : ''}

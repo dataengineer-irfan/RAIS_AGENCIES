@@ -38,6 +38,7 @@ class OrderResponse(BaseModel):
     order_number: str
     customer_id: str
     customer_name: Optional[str] = None
+    customer_contact: Optional[str] = None
     customer_phone: Optional[str] = None
     quotation_id: Optional[str] = None
     status: str

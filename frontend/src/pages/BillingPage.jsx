@@ -284,6 +284,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
         const matchesHeader = (
           (inv.invoice_number || '').toLowerCase().includes(term) ||
           (inv.customer_name || '').toLowerCase().includes(term) ||
+          (inv.customer_contact || '').toLowerCase().includes(term) ||
           (inv.customer_code || '').toLowerCase().includes(term) ||
           (inv.notes || '').toLowerCase().includes(term)
         );
@@ -626,6 +627,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
 
                       <h4 className="font-bold text-white text-xs truncate mt-0.5">
                         {inv?.customer_name || 'Customer'}
+                        {inv?.customer_contact && inv.customer_contact.toLowerCase() !== (inv.customer_name || '').toLowerCase() && (
+                          <span className="text-amber-300 font-semibold ml-1">({inv.customer_contact})</span>
+                        )}
                       </h4>
 
                       {/* Items Preview Chip */}
@@ -783,6 +787,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-white leading-tight">
                       {selectedInvoice.customer_name}
+                      {selectedInvoice.customer_contact && selectedInvoice.customer_contact.toLowerCase() !== (selectedInvoice.customer_name || '').toLowerCase() && (
+                        <span className="text-amber-300 font-bold ml-1.5">({selectedInvoice.customer_contact})</span>
+                      )}
                     </h2>
                     <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
                       <span>Billed: {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText}</span>

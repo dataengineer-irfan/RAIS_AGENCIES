@@ -49,7 +49,9 @@ export const generateInvoiceCanvas = ({
   products = []
 }) => {
   const invNumber = invoice?.invoice_number || 'INV-DRAFT';
-  const custName = customer?.business_name || invoice?.customer_name || 'Valued Customer';
+  const bName = customer?.business_name || invoice?.customer_name || 'Valued Customer';
+  const cPerson = customer?.contact_person || invoice?.customer_contact;
+  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
   const custPhone = customer?.phone || invoice?.customer_phone || '';
   const custAddress = customer?.address || invoice?.customer_address || '';
   const custCode = customer?.customer_code || invoice?.customer_code || '';

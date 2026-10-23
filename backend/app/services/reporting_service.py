@@ -262,6 +262,7 @@ class ReportingService:
                 "id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "customer_name": inv.customer.business_name if inv.customer else "Unknown",
+                "customer_contact": inv.customer.contact_person if inv.customer else "",
                 "customer_id": inv.customer_id,
                 "customer_city": inv.customer.city if inv.customer else "Rayachoty",
                 "customer_phone": inv.customer.phone if inv.customer else "",
@@ -284,6 +285,7 @@ class ReportingService:
                 "id": p.id,
                 "payment_number": p.payment_number,
                 "customer_name": p.customer.business_name if p.customer else "Unknown",
+                "customer_contact": p.customer.contact_person if p.customer else "",
                 "payment_date": str(p.payment_date),
                 "amount": float(p.amount),
                 "payment_method": p.payment_method

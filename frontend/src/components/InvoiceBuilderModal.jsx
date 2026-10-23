@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic } from 'lucide-react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi, paymentApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
@@ -595,10 +595,16 @@ export const InvoiceBuilderModal = ({
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300">
               <Building2 className="w-4 h-4 text-amber-400 shrink-0" />
               <div className="flex flex-col text-left">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-black text-white truncate max-w-[200px] xl:max-w-[280px]">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-black text-white truncate max-w-[150px] xl:max-w-[200px]">
                     {selectedCustomerObj.business_name}
                   </span>
+                  {selectedCustomerObj.contact_person && (
+                    <span className="text-[11px] font-bold text-amber-300 truncate max-w-[140px] flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                      <User className="w-2.5 h-2.5 text-amber-400" />
+                      <span>{selectedCustomerObj.contact_person}</span>
+                    </span>
+                  )}
                   <span className="text-[10px] font-mono text-slate-400 font-bold">
                     ({selectedCustomerObj.customer_code || 'OUTLET'})
                   </span>
@@ -650,7 +656,7 @@ export const InvoiceBuilderModal = ({
               </h3>
             </div>
             <p className="text-sm text-slate-300">
-              Grand Total: <strong className="text-amber-400 font-mono font-bold">₹{parseFloat(successInvoice.total_amount).toFixed(2)}</strong> | Billed to <strong className="text-white">{successInvoice.customer_name}</strong>
+              Grand Total: <strong className="text-amber-400 font-mono font-bold">₹{parseFloat(successInvoice.total_amount).toFixed(2)}</strong> | Billed to <strong className="text-white">{successInvoice.customer_name}{successInvoice.customer_contact ? ` (${successInvoice.customer_contact})` : (selectedCustomerObj?.contact_person ? ` (${selectedCustomerObj.contact_person})` : '')}</strong>
             </p>
             <p className="text-xs text-slate-400 font-mono">
               Date: {successInvoice.invoice_date} • Terms: {successInvoice.payment_terms || 'Cash on Delivery'}
@@ -756,6 +762,11 @@ export const InvoiceBuilderModal = ({
                   <div>
                     <h3 className="font-bold text-gray-500 uppercase text-[10px] tracking-wider mb-1">Billed To (Customer):</h3>
                     <p className="text-sm font-bold text-gray-900">{selectedCustomerObj?.business_name || 'Customer'}</p>
+                    {selectedCustomerObj?.contact_person && (
+                      <p className="text-xs font-bold text-amber-700 flex items-center gap-1 mt-0.5">
+                        Attn: {selectedCustomerObj.contact_person}
+                      </p>
+                    )}
                     <p className="text-gray-600 mt-0.5">{selectedCustomerObj?.address_line1 || 'Rayachoty'}</p>
                     <p className="text-gray-600 mt-0.5 font-semibold">Phone: {selectedCustomerObj?.phone || '-'}</p>
                   </div>
@@ -1034,8 +1045,9 @@ export const InvoiceBuilderModal = ({
                         ({items.filter(i => Boolean(i.product_id)).length})
                       </span>
                       {selectedCustomerObj && (
-                        <span className="hidden sm:inline text-xs font-bold text-amber-400 truncate max-w-[240px]">
+                        <span className="hidden sm:inline text-xs font-bold text-amber-400 truncate max-w-[280px]">
                           • {selectedCustomerObj.business_name}
+                          {selectedCustomerObj.contact_person ? ` (${selectedCustomerObj.contact_person})` : ''}
                         </span>
                       )}
                     </div>

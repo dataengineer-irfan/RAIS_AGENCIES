@@ -881,6 +881,7 @@ export const DashboardPage = ({
       list = list.filter(inv => 
         (inv.invoice_number || '').toLowerCase().includes(q) ||
         (inv.customer_name || '').toLowerCase().includes(q) ||
+        (inv.customer_contact || '').toLowerCase().includes(q) ||
         (inv.customer_city || '').toLowerCase().includes(q) ||
         (Array.isArray(inv.items_preview) && inv.items_preview.some(it => it.toLowerCase().includes(q)))
       );
@@ -1364,6 +1365,9 @@ export const DashboardPage = ({
                                 title="View Customer Dossier"
                               >
                                 {inv.customer_name}
+                                {inv.customer_contact && inv.customer_contact.toLowerCase() !== (inv.customer_name || '').toLowerCase() && (
+                                  <span className="text-amber-300 font-medium ml-1">({inv.customer_contact})</span>
+                                )}
                               </span>
                               <span className="text-[10px] text-slate-500 font-mono truncate">
                                 📍 {inv.customer_city || 'Rayachoty'}
@@ -1801,7 +1805,12 @@ export const DashboardPage = ({
 
                       <div className="flex items-center justify-between gap-2 text-slate-200">
                         <div className="min-w-0 flex-1 truncate font-medium">
-                          <span className="font-bold text-white">{inv.customer_name}</span>
+                          <span className="font-bold text-white">
+                            {inv.customer_name}
+                            {inv.customer_contact && inv.customer_contact.toLowerCase() !== (inv.customer_name || '').toLowerCase() && (
+                              <span className="text-amber-300 font-medium ml-1">({inv.customer_contact})</span>
+                            )}
+                          </span>
                           <span className="text-[10px] text-slate-500 font-mono ml-1.5">📍 {inv.customer_city || 'Rayachoty'}</span>
                         </div>
                         <span className={`text-[11px] font-mono font-bold shrink-0 ${parseFloat(inv.outstanding_amount || 0) > 0.01 ? 'text-rose-400' : 'text-emerald-400'}`}>

@@ -22,7 +22,9 @@ export const shareInvoiceOnWhatsApp = async ({
   products = []
 }) => {
   const invNumber = invoice?.invoice_number || 'DRAFT';
-  const custName = customer?.business_name || invoice?.customer_name || 'Customer';
+  const bName = customer?.business_name || invoice?.customer_name || 'Customer';
+  const cPerson = customer?.contact_person || invoice?.customer_contact;
+  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
   const custPhone = customer?.phone || invoice?.customer_phone || '';
   const terms = invoice?.payment_terms || 'Cash on Delivery';
   const billAmt = parseFloat(invoice?.total_amount || 0);
@@ -164,7 +166,9 @@ export const shareOrderOnWhatsApp = ({
 }) => {
   const ordNumber = order?.order_number || 'ORD-NEW';
   const ordDate = order?.order_date || new Date().toISOString().split('T')[0];
-  const custName = customer?.business_name || order?.customer_name || 'Customer';
+  const bName = customer?.business_name || order?.customer_name || 'Customer';
+  const cPerson = customer?.contact_person || order?.customer_contact;
+  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
   const custPhone = customer?.phone || order?.customer_phone || '';
   const deliveryDate = order?.expected_delivery_date || 'Same-Day / Next Morning';
   const totalAmt = parseFloat(order?.total_amount || 0).toFixed(2);

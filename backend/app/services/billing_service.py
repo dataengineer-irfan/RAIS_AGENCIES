@@ -841,6 +841,7 @@ class BillingService:
             invoice_number=inv.invoice_number,
             customer_id=inv.customer_id,
             customer_name=inv.customer.business_name if inv.customer else "Unknown",
+            customer_contact=inv.customer.contact_person if inv.customer else "",
             customer_code=inv.customer.customer_code if inv.customer else "",
             customer_phone=inv.customer.phone if inv.customer else "",
             customer_address=f"{inv.customer.address_line1}, {inv.customer.city} - {inv.customer.pincode}" if inv.customer else "",

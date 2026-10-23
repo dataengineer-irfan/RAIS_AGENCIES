@@ -189,6 +189,7 @@ class PaymentService:
             payment_number=p.payment_number,
             customer_id=p.customer_id,
             customer_name=p.customer.business_name if p.customer else None,
+            customer_contact=p.customer.contact_person if p.customer else None,
             customer_code=p.customer.customer_code if p.customer else None,
             payment_date=p.payment_date,
             amount=p.amount,

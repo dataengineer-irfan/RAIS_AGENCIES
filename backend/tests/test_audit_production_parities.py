@@ -178,3 +178,28 @@ def test_thermal_receipt_zero_tax_policy(test_db):
     assert financials["tax_total"] == 0.0
     assert financials["cgst"] == 0.0
     assert financials["sgst"] == 0.0
+
+def test_customer_contact_person_in_invoice_and_thermal_receipt(test_db):
+    """Verifies that customer person/contact name is accurately populated and displayed on invoices and receipts."""
+    cust = test_db.query(Customer).first()
+    cust.business_name = "AFC Sundupalli Outlet"
+    cust.contact_person = "Mohammad Shafi"
+    test_db.commit()
+
+    prod = test_db.query(Product).first()
+
+    inv = BillingService.create_invoice(test_db, InvoiceCreate(
+        customer_id=cust.id,
+        items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("1.00"), unit_price=Decimal("250.00"))],
+        auto_issue=True
+    ))
+
+    inv_resp = BillingService.get_invoice_by_id(test_db, inv.id)
+    assert inv_resp.customer_name == "AFC Sundupalli Outlet"
+    assert inv_resp.customer_contact == "Mohammad Shafi"
+
+    receipt = ThermalPrintService.build_thermal_receipt_payload(inv, paper_width=58)
+    assert receipt["invoice_meta"]["customer_contact"] == "Mohammad Shafi"
+    assert "Mohammad Shafi" in receipt["invoice_meta"]["customer_name"]
+    assert "AFC Sundupalli Outlet" in receipt["invoice_meta"]["customer_name"]
+

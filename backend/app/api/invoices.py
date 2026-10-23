@@ -211,6 +211,7 @@ def get_printable_invoice(
                 <div>
                     <h3 class="font-bold text-gray-500 uppercase tracking-wider mb-1">Billed To (Customer):</h3>
                     <p class="text-base font-bold text-gray-900">{inv.customer_name}</p>
+                    {f'<p class="text-xs font-semibold text-gray-700 mt-0.5">Contact Person: <strong class="text-gray-900">{inv.customer_contact}</strong></p>' if getattr(inv, 'customer_contact', None) and inv.customer_contact.strip() and inv.customer_contact.strip().lower() != inv.customer_name.strip().lower() else ''}
                     <p class="text-gray-600 mt-0.5">{inv.customer_address}</p>
                     <p class="text-gray-600 mt-0.5">Phone: <span class="font-medium text-gray-800">{inv.customer_phone}</span></p>
                 </div>

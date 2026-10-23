@@ -39,6 +39,7 @@ class PaymentResponse(BaseModel):
     payment_number: str
     customer_id: str
     customer_name: Optional[str] = None
+    customer_contact: Optional[str] = None
     customer_code: Optional[str] = None
     payment_date: date
     amount: Decimal

@@ -68,6 +68,10 @@ class ThermalPrintService:
         except Exception:
             upi_qr_base64 = None
 
+        cust_name = invoice.customer.business_name if invoice.customer else "Counter Sale"
+        if invoice.customer and invoice.customer.contact_person and invoice.customer.contact_person.strip() and invoice.customer.contact_person.strip().lower() != cust_name.strip().lower():
+            cust_name = f"{cust_name} ({invoice.customer.contact_person.strip()})"
+
         return {
             "header": {
                 "business_name": ThermalPrintService.BUSINESS_NAME,
@@ -79,7 +83,8 @@ class ThermalPrintService:
             "invoice_meta": {
                 "invoice_number": invoice.invoice_number,
                 "date": invoice.invoice_date.strftime("%d-%m-%Y") if invoice.invoice_date else "",
-                "customer_name": invoice.customer.business_name if invoice.customer else "Counter Sale",
+                "customer_name": cust_name,
+                "customer_contact": invoice.customer.contact_person if invoice.customer else "",
                 "customer_phone": invoice.customer.phone if invoice.customer else "",
                 "status": invoice.status
             },

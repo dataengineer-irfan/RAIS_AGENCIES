@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, ChevronDown, Check, X, Building2, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { Search, ChevronDown, Check, X, Building2, User, Phone, MapPin, AlertCircle } from 'lucide-react';
 
 export const SearchableCustomerSelect = ({
   customers = [],
@@ -34,10 +34,11 @@ export const SearchableCustomerSelect = ({
 
     return list.filter(c => {
       const name = (c?.business_name || '').toLowerCase();
+      const contact = (c?.contact_person || '').toLowerCase();
       const code = (c?.customer_code || '').toLowerCase();
       const phone = (c?.phone || '').toLowerCase();
       const city = (c?.city || '').toLowerCase();
-      return name.includes(term) || code.includes(term) || phone.includes(term) || city.includes(term);
+      return name.includes(term) || contact.includes(term) || code.includes(term) || phone.includes(term) || city.includes(term);
     });
   }, [customers, searchTerm]);
 
@@ -149,10 +150,16 @@ export const SearchableCustomerSelect = ({
 
           {selectedCustomer ? (
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                 <span className="text-xs font-black text-white truncate">
                   {selectedCustomer.business_name}
                 </span>
+                {selectedCustomer.contact_person && (
+                  <span className="text-[11px] font-bold text-amber-300 truncate shrink-0 flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                    <User className="w-2.5 h-2.5 text-amber-400" />
+                    <span>{selectedCustomer.contact_person}</span>
+                  </span>
+                )}
                 {selectedCustomer.customer_code && (
                   <span className="text-[10px] font-mono font-bold text-slate-400 shrink-0">
                     ({selectedCustomer.customer_code})
@@ -221,7 +228,7 @@ export const SearchableCustomerSelect = ({
                   setSearchTerm(e.target.value);
                   setHighlightedIndex(0);
                 }}
-                placeholder="Search by customer name, code (e.g. 0023), city, or phone..."
+                placeholder="Search by customer name, contact person, code (e.g. 0023), city, or phone..."
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-9 py-2 text-xs font-medium text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 font-sans"
               />
               {searchTerm && (
@@ -250,7 +257,7 @@ export const SearchableCustomerSelect = ({
               <div className="py-8 text-center space-y-1.5 text-slate-400">
                 <AlertCircle className="w-6 h-6 mx-auto text-slate-600" />
                 <p className="text-xs font-bold">No matching customer found</p>
-                <p className="text-[10px] text-slate-500">Try searching with partial outlet name or code</p>
+                <p className="text-[10px] text-slate-500">Try searching with partial outlet name, contact person, or code</p>
               </div>
             ) : (
               filteredCustomers.map((c, index) => {
@@ -282,10 +289,16 @@ export const SearchableCustomerSelect = ({
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`text-xs truncate ${isSelected ? 'font-black text-amber-300' : 'font-bold text-white'}`}>
                             {c?.business_name || 'Customer'}
                           </span>
+                          {c?.contact_person && (
+                            <span className="text-[11px] font-semibold text-amber-300/90 truncate flex items-center gap-1 shrink-0 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                              <User className="w-2.5 h-2.5 text-amber-400" />
+                              <span>{c.contact_person}</span>
+                            </span>
+                          )}
                           {c?.customer_code && (
                             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-semibold shrink-0">
                               {c.customer_code}
@@ -294,9 +307,18 @@ export const SearchableCustomerSelect = ({
                         </div>
 
                         <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5 truncate">
-                          {c?.city && <span>{c.city}</span>}
-                          {c?.city && c?.phone && <span className="text-slate-600">•</span>}
-                          {c?.phone && <span>{c.phone}</span>}
+                          {c?.city && (
+                            <span className="flex items-center gap-0.5">
+                              <MapPin className="w-2.5 h-2.5 text-slate-500" />
+                              {c.city}
+                            </span>
+                          )}
+                          {c?.phone && (
+                            <span className="flex items-center gap-0.5">
+                              <Phone className="w-2.5 h-2.5 text-slate-500" />
+                              {c.phone}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

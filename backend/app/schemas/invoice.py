@@ -69,6 +69,7 @@ class InvoiceResponse(BaseModel):
     invoice_number: str
     customer_id: str
     customer_name: Optional[str] = None
+    customer_contact: Optional[str] = None
     customer_code: Optional[str] = None
     customer_phone: Optional[str] = None
     customer_address: Optional[str] = None
@@ -104,6 +105,7 @@ class InvoiceSummary(BaseModel):
     invoice_number: str
     customer_id: str
     customer_name: str
+    customer_contact: Optional[str] = None
     status: str
     invoice_date: date
     due_date: date
