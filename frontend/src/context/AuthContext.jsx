@@ -31,6 +31,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('rais_user', JSON.stringify(userInfo));
       setToken(data.access_token);
       setUser(userInfo);
+      if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+        window.history.replaceState(null, '', '/');
+      }
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.detail || err.response?.data?.message || 'Login failed. Please check credentials.';
@@ -45,6 +48,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('rais_user');
     setUser(null);
     setToken(null);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.history.replaceState(null, '', '/login');
+    }
   };
 
   const hasRole = (roles) => {

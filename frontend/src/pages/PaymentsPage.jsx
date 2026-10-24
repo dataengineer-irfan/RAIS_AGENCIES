@@ -86,9 +86,15 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   // Edit and Delete State
   const [editingPayment, setEditingPayment] = useState(null);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
+  const [deleteModalError, setDeleteModalError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
+
+  const openDeleteModal = (payment) => {
+    setDeleteModalError('');
+    setDeleteConfirmModal(payment);
+  };
 
   useEffect(() => {
     loadPayments();
@@ -160,9 +166,11 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   const executeDeletePayment = async (payment) => {
     if (!payment) return;
     setIsDeleting(true);
+    setDeleteModalError('');
     try {
       await paymentApi.delete(payment.id);
       setDeleteConfirmModal(null);
+      setDeleteModalError('');
       setNotification({
         type: 'success',
         message: `Payment voucher ${payment.payment_number} deleted. Allocations reversed and balances updated.`
@@ -171,9 +179,11 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
       await loadPayments();
     } catch (err) {
       console.error('Failed to delete payment', err);
+      const errMsg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to delete payment voucher.';
+      setDeleteModalError(errMsg);
       setNotification({
         type: 'error',
-        message: err?.response?.data?.detail || err?.message || 'Failed to delete payment voucher.'
+        message: errMsg
       });
       setTimeout(() => setNotification(null), 5000);
     } finally {
@@ -864,7 +874,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setDeleteConfirmModal(p);
+                            openDeleteModal(p);
                           }}
                           className="p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg transition-colors"
                           title="Delete Payment"
@@ -953,7 +963,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                   </button>
 
                   <button
-                    onClick={() => setDeleteConfirmModal(selectedPayment)}
+                    onClick={() => openDeleteModal(selectedPayment)}
                     className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
                     title="Delete / Reverse Payment"
                   >
@@ -1163,7 +1173,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       </button>
 
                       <button
-                        onClick={() => setDeleteConfirmModal(selectedPayment)}
+                        onClick={() => openDeleteModal(selectedPayment)}
                         className="p-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-left text-rose-400 transition-all hover:scale-[1.02]"
                       >
                         <Trash2 className="w-5 h-5 shrink-0" />
@@ -1211,7 +1221,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
 
       {/* Floating Notification */}
       {notification && (
-        <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-semibold animate-fadeIn ${
+        <div className={`fixed bottom-5 right-5 z-[70] p-4 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-semibold animate-fadeIn ${
           notification.type === 'success' 
             ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' 
             : 'bg-rose-950/90 border-rose-500/50 text-rose-300'
@@ -1223,7 +1233,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-5 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-rose-400">
               <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
@@ -1256,10 +1266,20 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
               Deleting this payment voucher will <strong>reverse all bill allocations</strong>, restore the outstanding balance on affected invoices, and update the customer's ledger.
             </div>
 
+            {deleteModalError && (
+              <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-xs text-rose-300 font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{deleteModalError}</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
               <button
                 type="button"
-                onClick={() => setDeleteConfirmModal(null)}
+                onClick={() => {
+                  setDeleteModalError('');
+                  setDeleteConfirmModal(null);
+                }}
                 disabled={isDeleting}
                 className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
               >

@@ -425,12 +425,15 @@ class PaymentService:
             }
         )
 
-        # 3. Delete payment record and re-reconcile customer FIFO
+        # 3. Delete payment record and commit first so session is clean
         pay_number = payment.payment_number
         db.delete(payment)
-        from app.services.reconciliation_service import ReconciliationService
-        ReconciliationService.reconcile_customer_fifo(db, cust_id, auto_commit=False)
         db.commit()
+
+        # 4. Re-reconcile customer FIFO in a clean transaction
+        from app.services.reconciliation_service import ReconciliationService
+        ReconciliationService.reconcile_customer_fifo(db, cust_id, auto_commit=True)
+
         from app.services.billing_service import BillingService
         BillingService.invalidate_cache()
 

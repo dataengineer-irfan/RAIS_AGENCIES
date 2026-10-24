@@ -176,8 +176,12 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('rais_token');
       localStorage.removeItem('rais_user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        } else {
+          window.location.reload();
+        }
       }
       return Promise.reject(error);
     }
