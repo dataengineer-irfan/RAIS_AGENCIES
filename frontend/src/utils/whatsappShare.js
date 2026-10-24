@@ -20,6 +20,16 @@ export const getPublicPaymentPdfUrl = (paymentId) => {
   return `${API_BASE_URL}/payments/${paymentId}/print-html`;
 };
 
+export const getPublicOrderPdfUrl = (orderId) => {
+  if (!orderId) return '';
+  return `${API_BASE_URL}/orders/${orderId}/print-html`;
+};
+
+export const getPublicCustomerStatementPdfUrl = (customerId) => {
+  if (!customerId) return '';
+  return `${API_BASE_URL}/customers/${customerId}/statement/print-html`;
+};
+
 export const shareInvoiceOnWhatsApp = async ({
   invoice,
   customer,
@@ -190,6 +200,12 @@ export const shareOrderOnWhatsApp = ({
     lines = '• Wholesale products ordered';
   }
 
+  let pdfSection = '';
+  if (order?.id) {
+    const pdfUrl = getPublicOrderPdfUrl(order.id);
+    pdfSection = `📄 *Official Order Slip (Print/PDF):*\n👉 ${pdfUrl}\n\n`;
+  }
+
   const message = 
 `✅ *ORDER CONFIRMED — RAIS AGENCIES*
 ━━━━━━━━━━━━━━━━━━━━
@@ -202,8 +218,7 @@ ${lines}
 
 ━━━━━━━━━━━━━━━━━━━━
 🚚 *Delivery:* ${deliveryDate}
-${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n` : ''}
-📍 _RAIS AGENCIES — Rayachoty Depot_
+${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n\n` : '\n'}${pdfSection}📍 _RAIS AGENCIES — Rayachoty Depot_
 📞 _Hotline: 9347453135 | 9573261696_
 ❄️ _Cold-chain dispatch scheduled!_`;
 
@@ -287,6 +302,67 @@ ${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
 📞 _Accounts Desk: 9347453135 | 9573261696_
 ❄️ _Quality Frozen Foods & Reliable Service_
 🙏 _Thank you for your timely settlement!_`;
+
+  openWhatsApp(custPhone, message);
+};
+
+export const shareCustomerStatementOnWhatsApp = ({
+  customer,
+  ledger = []
+}) => {
+  const bName = customer?.business_name || customer?.name || 'Valued Customer';
+  const cPerson = customer?.contact_person;
+  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custPhone = customer?.phone || '';
+  const bal = parseFloat(customer?.outstanding_balance || 0);
+  const balFormatted = bal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  const billed = parseFloat(customer?.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  const paid = parseFloat(customer?.total_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+  // Recent transactions summary (last 3 entries)
+  let recentTxns = '';
+  if (ledger && ledger.length > 0) {
+    const last3 = ledger.slice(-3).reverse();
+    const rows = last3.map(e => {
+      const dStr = e.date ? String(e.date).split('T')[0] : '';
+      const amt = e.debit > 0 ? `+₹${parseFloat(e.debit).toLocaleString('en-IN')}` : `-₹${parseFloat(e.credit).toLocaleString('en-IN')}`;
+      return `▫️ ${dStr} • ${e.type} #${e.reference || '-'} (${amt})`;
+    }).join('\n');
+    recentTxns = `\n📋 *RECENT LEDGER ACTIVITY:*\n${rows}\n`;
+  }
+
+  // Digital statement link
+  let pdfSection = '';
+  if (customer?.id) {
+    const pdfUrl = getPublicCustomerStatementPdfUrl(customer.id);
+    pdfSection = `📄 *Official Account Statement (Print/PDF):*\n👉 ${pdfUrl}\n\n`;
+  }
+
+  let statusLine = '';
+  if (bal > 0) {
+    statusLine = `⚠️ *Current Ledger Balance Due:* *₹${balFormatted}*`;
+  } else {
+    statusLine = `✅ *Current Ledger Status:* *All Dues Fully Settled (₹0.00)*`;
+  }
+
+  const message =
+`📊 *CUSTOMER ACCOUNT STATEMENT — RAIS AGENCIES*
+━━━━━━━━━━━━━━━━━━━━
+🏪 *Account:* *${custName}*
+${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━━━━━━━━━━━
+${statusLine}
+
+💰 *All-Time Billed:* ₹${billed}
+💳 *All-Time Paid:* ₹${paid}
+${recentTxns}
+━━━━━━━━━━━━━━━━━━━━
+${pdfSection}📲 *DIRECT UPI SETTLEMENT:*
+• UPI ID: \`9347453135@ybl\`
+• Payee: *RAIS AGENCIES*
+
+📍 _RAIS AGENCIES — Rayachoty Depot_
+📞 _Accounts Desk: 9347453135 | 9573261696_
+❄️ _Thank you for your business partnership!_`;
 
   openWhatsApp(custPhone, message);
 };

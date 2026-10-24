@@ -103,9 +103,11 @@ export const ReportsPage = () => {
   const handleSendWhatsAppReminder = (cust) => {
     const total = parseFloat(cust.total_outstanding ?? cust.total_due ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const over60 = parseFloat(cust.aging_60_plus_days ?? cust.days_60_plus ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const name = cust.business_name || cust.customer_name || 'Customer';
-    const text = `*RAIS AGENCIES — Payment Aging Statement*\n\nCustomer: *${name}*\nTotal Outstanding: *₹${total}*\nOverdue (>60 Days): *₹${over60}*\n\nPlease arrange settlement via UPI (*9347453135@ybl*).\n*RAIS Agencies*, Rayachoty.`;
-    openWhatsApp(cust.phone || '9347453135', text);
+    const bName = cust.business_name || cust.customer_name || 'Customer';
+    const cPerson = cust.contact_person;
+    const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+    const text = `*RAIS AGENCIES — Payment Aging Statement*\n\nDear *${custName}*,\nThis is a friendly statement from RAIS Agencies regarding your account:\n\n• *Total Outstanding Ledger:* ₹${total}\n• *Overdue (>60 Days):* ₹${over60}\n\nPlease arrange UPI settlement for the overdue balance:\n📲 *UPI ID:* 9347453135@ybl (RAIS Agencies)\n• Hotline: 9347453135 / 9573261696\n\n*RAIS Agencies*, Reddies Colony, Rayachoty.`;
+    openWhatsApp(cust.phone || '', text);
   };
 
   const handleReconcileFIFO = async () => {

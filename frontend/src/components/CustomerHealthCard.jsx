@@ -41,8 +41,11 @@ export const CustomerHealthCard = ({ onSelectCustomer, onOpenPaymentModal }) => 
   const handleSendWhatsAppReminder = (customer) => {
     const bal = parseFloat(customer?.outstanding_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const overdue = parseFloat(customer?.overdue_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const text = `*RAIS AGENCIES — Payment Statement Reminder*\n\nDear *${customer?.name || 'Customer'}*,\nYour total outstanding ledger balance is *₹${bal}* (Overdue: *₹${overdue}*).\n\nPlease arrange UPI settlement (*9347453135@ybl*) to avoid delivery holds.\n\n*RAIS Agencies*, Rayachoty\nHotline: 9347453135`;
-    openWhatsApp(customer?.phone || '9347453135', text);
+    const custName = customer?.contact_person && customer?.contact_person !== customer?.name
+      ? `${customer.name} (${customer.contact_person})`
+      : (customer?.name || 'Valued Customer');
+    const text = `*RAIS AGENCIES — Payment Overdue Reminder*\n\nDear *${custName}*,\nThis is a friendly reminder from RAIS Agencies regarding your account.\n\n• *Total Outstanding Ledger:* ₹${bal}\n• *Overdue Amount:* ₹${overdue}\n\nPlease arrange UPI settlement to ensure uninterrupted stock replenishment:\n📲 *UPI ID:* 9347453135@ybl (RAIS Agencies)\n\nThank you for your partnership!\n*RAIS Agencies*, Reddies Colony, Rayachoty\nHotline: 9347453135 / 9573261696`;
+    openWhatsApp(customer?.phone || '', text);
   };
 
   const filteredCustomers = useMemo(() => {

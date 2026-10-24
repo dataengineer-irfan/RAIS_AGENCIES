@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { orderApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
+import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
 import { useAuth } from '../context/AuthContext';
 import { OrderBuilderModal } from '../components/OrderBuilderModal';
 import { StatusBadge } from '../components/StatusBadge';
@@ -124,11 +125,16 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   };
 
   const handleSendWhatsAppConfirmation = (ord) => {
-    const total = parseFloat(ord.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const cPerson = ord.customer_contact;
-    const cName = cPerson && cPerson.toLowerCase() !== (ord.customer_name || '').toLowerCase() ? `${ord.customer_name} (${cPerson})` : ord.customer_name;
-    const text = `*RAIS AGENCIES — Order Booking Confirmation*\n\nOrder Ref: *${ord.order_number}*\nCustomer: *${cName}*\nTotal Amount: *₹${total}*\nStatus: *${ord.status}*\n\nThank you for ordering with RAIS Agencies, Rayachoty.`;
-    openWhatsApp(ord.customer_phone || '9347453135', text);
+    if (!ord) return;
+    const items = ord.items && ord.items.length > 0
+      ? ord.items
+      : (selectedOrderId === ord.id && selectedOrderDetails?.items ? selectedOrderDetails.items : []);
+    shareOrderOnWhatsApp({ order: ord, items });
+  };
+
+  const handlePrintOrder = (ord) => {
+    if (!ord?.id) return;
+    window.open(orderApi.getPrintHtmlUrl(ord.id), '_blank');
   };
 
   // Micro-Metrics & Status Counts for 1-Click Ribbon
@@ -476,6 +482,19 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                         </span>
                       </div>
 
+                      {/* Quick Print Order Slip Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrintOrder(ord);
+                        }}
+                        className="p-1 rounded-lg bg-slate-800/80 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 border border-slate-700/50 transition opacity-80 group-hover:opacity-100"
+                        title="Print / Save PDF Order Slip"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </button>
+
                       {/* Quick WhatsApp Confirmation Button */}
                       <button
                         type="button"
@@ -557,6 +576,13 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                       <span>{convertingId === selectedOrder.id ? 'Converting...' : 'Convert to Invoice'}</span>
                     </button>
                   )}
+                  <button
+                    onClick={() => handlePrintOrder(selectedOrder)}
+                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
+                    title="Print / Save PDF Order Slip"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={() => handleSendWhatsAppConfirmation(selectedOrder)}
                     className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
@@ -707,6 +733,17 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                           </div>
                         </button>
                       )}
+
+                      <button
+                        onClick={() => handlePrintOrder(selectedOrder)}
+                        className="p-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 rounded-xl flex items-center gap-2.5 text-left text-blue-400 transition-all hover:scale-[1.02]"
+                      >
+                        <Printer className="w-5 h-5" />
+                        <div>
+                          <div className="font-bold text-xs text-white">Print / PDF Order Slip</div>
+                          <span className="text-[10px] text-slate-400">Open official wholesale order confirmation</span>
+                        </div>
+                      </button>
 
                       <button
                         onClick={() => handleSendWhatsAppConfirmation(selectedOrder)}

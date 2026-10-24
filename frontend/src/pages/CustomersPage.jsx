@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { customerApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
+import { shareCustomerStatementOnWhatsApp } from '../utils/whatsappShare';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { CustomerModal } from '../components/CustomerModal';
@@ -166,9 +167,16 @@ export const CustomersPage = ({
   };
 
   const handleSendWhatsApp = (cust) => {
-    const balance = cust.outstanding_balance || 0;
-    const text = `*RAIS AGENCIES — Customer Statement*\n\nDear ${cust.business_name || cust.contact_person},\nYour current account balance with RAIS Agencies is *₹${Number(balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}*.\n\nFor wholesale order bookings, pricing or direct settlement, contact Rayachoty Depot: *9347453135*.\n\n*RAIS Agencies*, Reddies Colony, Rayachoty.`;
-    openWhatsApp(cust.phone, text);
+    if (!cust) return;
+    shareCustomerStatementOnWhatsApp({
+      customer: cust,
+      ledger: Array.isArray(ledgerData) ? ledgerData : []
+    });
+  };
+
+  const handlePrintStatement = (cust) => {
+    if (!cust?.id) return;
+    window.open(customerApi.getStatementPrintUrl(cust.id), '_blank');
   };
 
   const handleDeleteCustomer = async () => {
@@ -791,6 +799,14 @@ export const CustomersPage = ({
                   </button>
 
                   <button
+                    onClick={() => handlePrintStatement(selectedCustomer)}
+                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
+                    title="Print / Save PDF Account Statement"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
                     onClick={() => handleSendWhatsApp(selectedCustomer)}
                     className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
                     title="Send Statement via WhatsApp"
@@ -1325,13 +1341,24 @@ export const CustomersPage = ({
                       </button>
 
                       <button
+                        onClick={() => handlePrintStatement(selectedCustomer)}
+                        className="p-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 rounded-xl flex items-center gap-2.5 text-left text-blue-400 transition-all hover:scale-[1.02]"
+                      >
+                        <Printer className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-bold text-xs text-white">Print / PDF Statement</div>
+                          <span className="text-[10px] text-slate-400">Official statement with ledger history</span>
+                        </div>
+                      </button>
+
+                      <button
                         onClick={() => handleSendWhatsApp(selectedCustomer)}
                         className="p-3 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 rounded-xl flex items-center gap-2.5 text-left text-emerald-400 transition-all hover:scale-[1.02]"
                       >
                         <MessageSquare className="w-5 h-5 shrink-0" />
                         <div>
                           <div className="font-bold text-xs text-white">Send WhatsApp Statement</div>
-                          <span className="text-[10px] text-slate-400">Instant dispatch via 9347453135</span>
+                          <span className="text-[10px] text-slate-400">Itemized ledger & balance summary</span>
                         </div>
                       </button>
 

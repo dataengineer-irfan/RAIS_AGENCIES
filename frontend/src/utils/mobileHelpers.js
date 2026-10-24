@@ -53,8 +53,11 @@ export const openWhatsApp = (phone, text) => {
     const encoded = encodeURIComponent(rawText);
     const cleanPhone = (phone || '').toString().replace(/[^0-9]/g, '');
 
+    // Prevent self-targeting: Never send customer-bound messages to RAIS Agencies' own numbers
+    const isCompanyPhone = cleanPhone.endsWith('9347453135') || cleanPhone.endsWith('9573261696');
+
     let url = `https://api.whatsapp.com/send?text=${encoded}`;
-    if (cleanPhone.length >= 10) {
+    if (cleanPhone.length >= 10 && !isCompanyPhone) {
       // If 10 digits (standard Indian mobile), prepend 91
       const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
       url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encoded}`;

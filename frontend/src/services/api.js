@@ -59,6 +59,8 @@ export const API_BASE_URL = rawApiUrl
 
 export const getInvoicePrintUrl = (id) => `${API_BASE_URL}/invoices/${id}/print-html`;
 export const getPaymentPrintUrl = (id) => `${API_BASE_URL}/payments/${id}/print-html`;
+export const getOrderPrintUrl = (id) => `${API_BASE_URL}/orders/${id}/print-html`;
+export const getCustomerStatementPrintUrl = (id) => `${API_BASE_URL}/customers/${id}/statement/print-html`;
 
 // 45-second timeout ensures tolerance for Render Free Tier cold boots (which take ~30-50s)
 const api = axios.create({
@@ -243,6 +245,7 @@ export const customerApi = {
   getLedger: async (id) => {
     return cachedGet(`/customers/${id}/ledger`);
   },
+  getStatementPrintUrl: (id) => `${API_BASE_URL}/customers/${id}/statement/print-html`,
   getReorderAlerts: async (daysThreshold = 5) => {
     try {
       const res = await cachedGet('/customers/reorder-alerts', { 
@@ -383,7 +386,8 @@ export const orderApi = {
   convertToInvoice: async (id) => {
     const res = await api.post(`/orders/${id}/convert-to-invoice`);
     return res.data;
-  }
+  },
+  getPrintHtmlUrl: (id) => `${API_BASE_URL}/orders/${id}/print-html`
 };
 
 export const inventoryApi = {

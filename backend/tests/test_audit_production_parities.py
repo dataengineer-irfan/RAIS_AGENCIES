@@ -241,3 +241,36 @@ def test_payment_receipt_fields_and_print_html(test_db):
     assert "₹1,500.00" in html_content
     assert "OFFICIAL PAYMENT RECEIPT" in html_content
 
+def test_order_print_html(test_db):
+    """Verifies that Order print-html renders customer details, item table, and amounts accurately."""
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+
+    order = OrderService.create_order(
+        test_db,
+        OrderCreate(
+            customer_id=cust.id,
+            items=[OrderItemCreate(product_id=prod.id, quantity=Decimal("5.00"), unit_price=Decimal("250.00"))]
+        )
+    )
+
+    from app.api.orders import get_printable_order
+    html_resp = get_printable_order(order.id, test_db)
+    html_content = html_resp.body.decode("utf-8")
+    assert order.order_number in html_content
+    assert cust.business_name in html_content
+    assert "WHOLESALE ORDER BOOKING" in html_content
+    assert "₹1,250.00" in html_content
+
+def test_customer_statement_print_html(test_db):
+    """Verifies that Customer Account Statement print-html renders ledger history and outstanding balance."""
+    cust = test_db.query(Customer).first()
+
+    from app.api.customers import get_printable_statement
+    html_resp = get_printable_statement(cust.id, test_db)
+    html_content = html_resp.body.decode("utf-8")
+    assert cust.business_name in html_content
+    assert cust.customer_code in html_content
+    assert "CUSTOMER ACCOUNT STATEMENT" in html_content
+
+
