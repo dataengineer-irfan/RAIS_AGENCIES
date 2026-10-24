@@ -15,6 +15,11 @@ export const getPublicInvoicePdfUrl = (invoiceId) => {
   return `${API_BASE_URL}/invoices/${invoiceId}/print-html`;
 };
 
+export const getPublicPaymentPdfUrl = (paymentId) => {
+  if (!paymentId) return '';
+  return `${API_BASE_URL}/payments/${paymentId}/print-html`;
+};
+
 export const shareInvoiceOnWhatsApp = async ({
   invoice,
   customer,
@@ -204,3 +209,85 @@ ${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n` : ''}
 
   openWhatsApp(custPhone, message);
 };
+
+export const sharePaymentOnWhatsApp = ({
+  payment,
+  customer
+}) => {
+  const pNumber = payment?.payment_number || 'RECEIPT';
+  const bName = customer?.business_name || payment?.customer_name || 'Valued Customer';
+  const cPerson = customer?.contact_person || payment?.customer_contact;
+  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custPhone = customer?.phone || payment?.customer_phone || '';
+  const payAmt = parseFloat(payment?.amount || 0);
+  const payAmtFormatted = payAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  const method = (payment?.payment_method || 'CASH').toUpperCase();
+  const fallbackRef = method === 'CASH' ? 'Direct Cash Settlement' : method === 'UPI' ? 'UPI Transfer' : 'Direct Bank Settlement';
+  const refStr = payment?.reference_number || fallbackRef;
+
+  // Format payment date & time
+  const { fullText: paymentDateTimeStr } = formatInvoiceDateTime(payment?.payment_date, payment?.created_at);
+
+  // Allocations breakdown
+  let allocSection = '';
+  if (payment?.allocations && payment.allocations.length > 0) {
+    const lines = payment.allocations.map((a, idx) => {
+      const invNum = a.invoice_number || `INV-${a.invoice_id?.slice(0, 6) || idx + 1}`;
+      const allocAmt = parseFloat(a.allocated_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      return `▫️ *Bill #${invNum}* ➔ Settled *₹${allocAmt}*`;
+    }).join('\n');
+    allocSection = `\n📄 *ALLOCATED INVOICES:*\n${lines}\n`;
+  }
+
+  // Unallocated advance note
+  let advanceNote = '';
+  const unallocAmt = parseFloat(payment?.unallocated_amount || 0);
+  if (unallocAmt > 0) {
+    advanceNote = `ℹ️ *Advance / On-Account Balance:* ₹${unallocAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+  }
+
+  // Outstanding ledger balance
+  let ledgerSection = '';
+  let overallDue = null;
+  if (payment?.customer_outstanding_balance !== undefined && payment?.customer_outstanding_balance !== null) {
+    overallDue = parseFloat(payment.customer_outstanding_balance);
+  } else if (customer?.outstanding_balance !== undefined && customer?.outstanding_balance !== null) {
+    overallDue = parseFloat(customer.outstanding_balance);
+  }
+
+  if (overallDue !== null) {
+    if (overallDue > 0) {
+      ledgerSection = `⚠️ *Current Remaining Ledger Due:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+    } else {
+      ledgerSection = `✅ *Current Ledger Status:* *All Dues Fully Cleared (₹0.00)*\n`;
+    }
+  }
+
+  // Digital printable voucher link
+  let pdfSection = '';
+  if (payment?.id) {
+    const pdfUrl = getPublicPaymentPdfUrl(payment.id);
+    pdfSection = `📄 *Official Payment Voucher (Print/PDF):*\n👉 ${pdfUrl}\n\n`;
+  }
+
+  const message =
+`🟢 *PAYMENT SETTLEMENT RECEIPT — RAIS AGENCIES*
+━━━━━━━━━━━━━━━━━━━━
+🧾 *Receipt #:* #${pNumber}
+📅 *Date & Time:* ${paymentDateTimeStr}
+🏪 *Received From:* *${custName}*
+${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━━━━━━━━━━━
+💰 *AMOUNT RECEIVED:* *₹${payAmtFormatted}*
+💳 *Payment Mode:* *${method}*
+🔖 *Ref / UTR:* ${refStr}
+${allocSection}${advanceNote}
+━━━━━━━━━━━━━━━━━━━━
+${ledgerSection}
+${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
+📞 _Accounts Desk: 9347453135 | 9573261696_
+❄️ _Quality Frozen Foods & Reliable Service_
+🙏 _Thank you for your timely settlement!_`;
+
+  openWhatsApp(custPhone, message);
+};
+

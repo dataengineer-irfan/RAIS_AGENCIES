@@ -169,7 +169,7 @@ class PaymentService:
         return allocation
 
     @staticmethod
-    def _build_payment_response(p: Payment) -> PaymentResponse:
+    def _build_payment_response(p: Payment, cust_balance: Optional[Decimal] = None) -> PaymentResponse:
         allocs = []
         if p.allocations:
             for a in p.allocations:
@@ -184,6 +184,15 @@ class PaymentService:
                     )
                 )
 
+        cust_address = None
+        if p.customer:
+            parts = [p.customer.address_line1]
+            if p.customer.address_line2:
+                parts.append(p.customer.address_line2)
+            if p.customer.city:
+                parts.append(p.customer.city)
+            cust_address = ", ".join([pt for pt in parts if pt])
+
         return PaymentResponse(
             id=p.id,
             payment_number=p.payment_number,
@@ -191,6 +200,9 @@ class PaymentService:
             customer_name=p.customer.business_name if p.customer else None,
             customer_contact=p.customer.contact_person if p.customer else None,
             customer_code=p.customer.customer_code if p.customer else None,
+            customer_phone=p.customer.phone if p.customer else None,
+            customer_address=cust_address,
+            customer_outstanding_balance=cust_balance,
             payment_date=p.payment_date,
             amount=p.amount,
             allocated_amount=p.allocated_amount,
@@ -210,7 +222,16 @@ class PaymentService:
         ).filter(Payment.id == payment_id).first()
         if not p:
             raise EntityNotFoundException("Payment", payment_id)
-        return PaymentService._build_payment_response(p)
+
+        cust_balance = None
+        if p.customer_id:
+            try:
+                from app.services.customer_service import CustomerService
+                _, _, cust_balance = CustomerService.get_customer_balances(db, p.customer_id)
+            except Exception:
+                cust_balance = None
+
+        return PaymentService._build_payment_response(p, cust_balance=cust_balance)
 
     @staticmethod
     def list_payments(
@@ -233,7 +254,19 @@ class PaymentService:
             query = query.filter(Payment.payment_date <= to_date)
 
         payments = query.order_by(Payment.payment_date.desc(), Payment.created_at.desc()).offset(skip).limit(limit).all()
-        return [PaymentService._build_payment_response(p) for p in payments]
+
+        cust_balance_map = {}
+        cust_ids = list({p.customer_id for p in payments if p.customer_id})
+        if cust_ids:
+            try:
+                from app.services.customer_service import CustomerService
+                for cid in cust_ids:
+                    _, _, b = CustomerService.get_customer_balances(db, cid)
+                    cust_balance_map[cid] = b
+            except Exception:
+                pass
+
+        return [PaymentService._build_payment_response(p, cust_balance=cust_balance_map.get(p.customer_id)) for p in payments]
 
     @staticmethod
     def update_payment(

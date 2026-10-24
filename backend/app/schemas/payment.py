@@ -41,6 +41,9 @@ class PaymentResponse(BaseModel):
     customer_name: Optional[str] = None
     customer_contact: Optional[str] = None
     customer_code: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_address: Optional[str] = None
+    customer_outstanding_balance: Optional[Decimal] = None
     payment_date: date
     amount: Decimal
     allocated_amount: Decimal

@@ -1,5 +1,6 @@
 import pytest
 from decimal import Decimal
+from datetime import date
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.database import Base
@@ -202,4 +203,41 @@ def test_customer_contact_person_in_invoice_and_thermal_receipt(test_db):
     assert receipt["invoice_meta"]["customer_contact"] == "Mohammad Shafi"
     assert "Mohammad Shafi" in receipt["invoice_meta"]["customer_name"]
     assert "AFC Sundupalli Outlet" in receipt["invoice_meta"]["customer_name"]
+
+def test_payment_receipt_fields_and_print_html(test_db):
+    """Verifies that PaymentResponse includes customer_phone, customer_outstanding_balance, and print-html renders cleanly."""
+    cust = test_db.query(Customer).first()
+    cust.business_name = "Golden Fry Point"
+    cust.contact_person = "Imran Khan"
+    cust.phone = "9876543210"
+    test_db.commit()
+
+    # Record payment
+    payment = PaymentService.record_payment(
+        test_db,
+        PaymentCreate(
+            customer_id=cust.id,
+            amount=Decimal("1500.00"),
+            payment_date=date.today(),
+            payment_method="UPI",
+            reference_number="UPI-9876543210"
+        ),
+        user_id="user-1",
+        username="admin"
+    )
+
+    resp = PaymentService.get_payment_by_id(test_db, payment.id)
+    assert resp.customer_name == "Golden Fry Point"
+    assert resp.customer_contact == "Imran Khan"
+    assert resp.customer_phone == "9876543210"
+    assert resp.customer_outstanding_balance is not None
+
+    from app.api.payments import get_printable_payment
+    html_resp = get_printable_payment(payment.id, test_db)
+    html_content = html_resp.body.decode("utf-8")
+    assert "Golden Fry Point" in html_content
+    assert "Imran Khan" in html_content
+    assert "9876543210" in html_content
+    assert "₹1,500.00" in html_content
+    assert "OFFICIAL PAYMENT RECEIPT" in html_content
 

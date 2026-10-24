@@ -58,6 +58,7 @@ export const API_BASE_URL = rawApiUrl
   : '/api';
 
 export const getInvoicePrintUrl = (id) => `${API_BASE_URL}/invoices/${id}/print-html`;
+export const getPaymentPrintUrl = (id) => `${API_BASE_URL}/payments/${id}/print-html`;
 
 // 45-second timeout ensures tolerance for Render Free Tier cold boots (which take ~30-50s)
 const api = axios.create({
@@ -465,7 +466,8 @@ export const paymentApi = {
       params: customerId ? { customer_id: customerId } : {}
     });
     return res.data;
-  }
+  },
+  getPrintHtmlUrl: (id) => `${API_BASE_URL}/payments/${id}/print-html`
 };
 
 export const reportApi = {

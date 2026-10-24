@@ -18,10 +18,12 @@ import {
   Trash2,
   AlertTriangle,
   ArrowLeft,
-  Zap
+  Zap,
+  Printer
 } from 'lucide-react';
 import { paymentApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
+import { sharePaymentOnWhatsApp } from '../utils/whatsappShare';
 import { useAuth } from '../context/AuthContext';
 import { EditPaymentModal } from '../components/EditPaymentModal';
 
@@ -123,12 +125,13 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   const [isReconciling, setIsReconciling] = useState(false);
 
   const handleSendWhatsAppReceipt = (p) => {
-    const amount = parseFloat(p.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    const method = (p.payment_method || '').toUpperCase();
-    const fallbackRef = method === 'CASH' ? 'Direct Cash Settlement' : method === 'UPI' ? 'UPI Counter Transfer' : 'Direct Bank Settlement';
-    const refStr = p.reference_number || fallbackRef;
-    const text = `*RAIS AGENCIES — Payment Settlement Receipt*\n\nReceipt #: *${p.payment_number}*\nCustomer: *${p.customer_name}*\nAmount Received: *₹${amount}*\nMethod: *${p.payment_method}*\nRef / UTR: *${refStr}*\nDate: *${formatVoucherDate(p.payment_date)}*\n\nThank you for your timely settlement!\n*RAIS Agencies*, Rayachoty.\nHotline: 9347453135`;
-    openWhatsApp(p?.customer_phone || p?.phone || '9347453135', text);
+    if (!p) return;
+    sharePaymentOnWhatsApp({ payment: p });
+  };
+
+  const handlePrintVoucher = (p) => {
+    if (!p?.id) return;
+    window.open(paymentApi.getPrintHtmlUrl(p.id), '_blank');
   };
 
   const handleReconcileCustomer = async (customerId) => {
@@ -828,6 +831,17 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            handlePrintVoucher(p);
+                          }}
+                          className="p-1 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-lg transition-colors"
+                          title="Print / Save PDF Voucher"
+                        >
+                          <Printer className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleSendWhatsAppReceipt(p);
                           }}
                           className="p-1 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 rounded-lg transition-colors"
@@ -945,6 +959,15 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Delete</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePrintVoucher(selectedPayment)}
+                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+                    title="Print / Save PDF Voucher"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Print Voucher</span>
                   </button>
 
                   <button
@@ -1147,6 +1170,17 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                         <div>
                           <div className="font-bold text-xs text-rose-300">Delete / Reverse</div>
                           <span className="text-[10px] text-rose-400/80">Reverses allocations & restores invoice</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handlePrintVoucher(selectedPayment)}
+                        className="p-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 rounded-xl flex items-center gap-2.5 text-left text-blue-400 transition-all hover:scale-[1.02]"
+                      >
+                        <Printer className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-bold text-xs text-white">Print / PDF Voucher</div>
+                          <span className="text-[10px] text-slate-400">Open official settlement voucher</span>
                         </div>
                       </button>
 

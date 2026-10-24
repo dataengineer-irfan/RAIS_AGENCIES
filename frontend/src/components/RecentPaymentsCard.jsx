@@ -1,11 +1,10 @@
 import React from 'react';
 import { CreditCard, CheckCircle2, ArrowRight, MessageSquare } from 'lucide-react';
-import { openWhatsApp } from '../utils/mobileHelpers';
+import { sharePaymentOnWhatsApp } from '../utils/whatsappShare';
 
 export const RecentPaymentsCard = ({ payments = [], onNavigateToPayments }) => {
   const handleSendWhatsAppReceipt = (p) => {
-    const text = `*RAIS AGENCIES — Payment Settlement Confirmation*\n\nDear *${p?.customer_name || 'Customer'}*,\nWe acknowledge receipt of *₹${parseFloat(p?.amount || 0).toFixed(2)}* via *${p?.payment_method || 'UPI/Cash'}*.\nReceipt Ref: *${p?.payment_number || 'REC'}*\nDate: *${p?.payment_date || new Date().toISOString().slice(0, 10)}*\n\nThank you for doing business with RAIS Agencies!\nHotline: 9347453135`;
-    openWhatsApp(p?.customer_phone || '9347453135', text);
+    sharePaymentOnWhatsApp({ payment: p });
   };
 
   const getMethodBadge = (method) => {
