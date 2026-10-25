@@ -105,6 +105,17 @@ export const InvoiceBuilderModal = ({
       }
 
       // ─── CREATE MODE: Normal initialization ───
+      // Reset financial inputs to prevent bleeding from previous invoice
+      setCollectedAmount('');
+      setInvoiceDiscount('0');
+      setMarkAsPaid(false);
+      setNotes('');
+      setShowNotes(false);
+      const curToday = getLocalDateString();
+      setInvoiceDate(curToday);
+      setDueDate(curToday);
+      setPaymentTerms('Cash on Delivery / Immediate Settlement');
+
       // 1. Resolve initial customer
       if (preselectedCustomer) {
         setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
@@ -252,6 +263,11 @@ export const InvoiceBuilderModal = ({
     setDueDate(curToday);
     // Do not pre-select any product by default - user chooses SKU
     setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
+  };
+
+  const handleCloseModal = () => {
+    resetForm();
+    if (onClose) onClose();
   };
 
   const handleProductChange = (index, prodId) => {
@@ -635,7 +651,7 @@ export const InvoiceBuilderModal = ({
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -708,7 +724,7 @@ export const InvoiceBuilderModal = ({
 
               {/* SECONDARY ACTION: Done */}
               <button
-                onClick={onClose}
+                onClick={handleCloseModal}
                 className="w-full sm:w-auto px-4 py-3 text-slate-400 hover:text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
               >
                 Done
@@ -1683,7 +1699,7 @@ export const InvoiceBuilderModal = ({
               <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleCloseModal}
                   className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors shrink-0"
                 >
                   Cancel

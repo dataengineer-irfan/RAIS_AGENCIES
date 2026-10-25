@@ -292,7 +292,7 @@ export const sharePaymentOnWhatsApp = ({
 📅 *Date & Time:* ${paymentDateTimeStr}
 🏪 *Received From:* *${custName}*
 ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━━━━━━━━━━━
-💰 *AMOUNT RECEIVED:* *₹${payAmtFormatted}*
+💰 *Amount Paid:* *₹${payAmtFormatted}*
 💳 *Payment Mode:* *${method}*
 🔖 *Ref / UTR:* ${refStr}
 ${allocSection}${advanceNote}
@@ -316,8 +316,6 @@ export const shareCustomerStatementOnWhatsApp = ({
   const custPhone = customer?.phone || '';
   const bal = parseFloat(customer?.outstanding_balance || 0);
   const balFormatted = bal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-  const billed = parseFloat(customer?.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-  const paid = parseFloat(customer?.total_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   // Recent transactions summary (last 3 entries)
   let recentTxns = '';
@@ -351,9 +349,6 @@ export const shareCustomerStatementOnWhatsApp = ({
 🏪 *Account:* *${custName}*
 ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━━━━━━━━━━━
 ${statusLine}
-
-💰 *All-Time Billed:* ₹${billed}
-💳 *All-Time Paid:* ₹${paid}
 ${recentTxns}
 ━━━━━━━━━━━━━━━━━━━━
 ${pdfSection}📲 *DIRECT UPI SETTLEMENT:*

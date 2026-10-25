@@ -36,7 +36,10 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: true };
     } catch (err) {
-      const msg = err.response?.data?.detail || err.response?.data?.message || 'Login failed. Please check credentials.';
+      const isColdBootOrNetwork = !err.response || err.code === 'ECONNABORTED' || [502, 503, 504].includes(err.response?.status);
+      const msg = isColdBootOrNetwork
+        ? 'Server is starting up or network unavailable. Please wait a few seconds and try again.'
+        : (err.response?.data?.detail || err.response?.data?.message || 'Login failed. Please check credentials.');
       return { success: false, error: msg };
     } finally {
       setLoading(false);

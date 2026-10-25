@@ -186,9 +186,10 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Auto-Retry for cold boot on idempotent GET queries
+    // Auto-Retry for cold boot on idempotent GET queries and login requests
     // Catches timeout (ECONNABORTED) or Render spinning up 502/503/504 gateway errors
-    if (config && config.method?.toLowerCase() === 'get') {
+    const isRetryableMethod = config && (config.method?.toLowerCase() === 'get' || config.url?.includes('/auth/login-json'));
+    if (isRetryableMethod) {
       config.__retryCount = config.__retryCount || 0;
       const isTimeout = error.code === 'ECONNABORTED' || (error.message && error.message.toLowerCase().includes('timeout'));
       const isGatewayError = error.response && [502, 503, 504].includes(error.response.status);
