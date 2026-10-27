@@ -185,13 +185,14 @@ class BillingService:
                     raise InvalidFinancialOperationException(f"Unit price must be strictly positive (> 0), got {unit_price}.")
                 if unit_price != product.base_price:
                     # Negotiated pricing override: log audit trail
-                    diff_pct = (((unit_price - product.base_price) / product.base_price) * 100).quantize(Decimal("0.1"))
+                    base_pr = product.base_price if product.base_price and product.base_price > Decimal("0.00") else Decimal("1.00")
+                    diff_pct = (((unit_price - base_pr) / base_pr) * 100).quantize(Decimal("0.1"))
                     
                     # Resolve landed cost to evaluate margin safety
                     landed_cost_raw = db.query(StockMovement.purchase_cost)\
                         .filter(StockMovement.product_id == product.id, StockMovement.purchase_cost.isnot(None))\
-                        .order_by(StockMovement.created_at.desc()).scalar()
-                    landed_cost = Decimal(str(landed_cost_raw)) if landed_cost_raw is not None else (product.base_price * Decimal("0.80"))
+                        .order_by(StockMovement.created_at.desc()).limit(1).scalar()
+                    landed_cost = Decimal(str(landed_cost_raw)) if landed_cost_raw is not None else (base_pr * Decimal("0.80"))
                     
                     is_below_cost = unit_price < landed_cost
                     is_severe_outlier = unit_price < (landed_cost * Decimal("0.50"))

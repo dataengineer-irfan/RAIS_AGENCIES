@@ -112,7 +112,7 @@ def get_product(
     p = CatalogueService.get_product_by_id(db, product_id)
     latest_cost = db.query(StockMovement.purchase_cost)\
         .filter(StockMovement.product_id == p.id, StockMovement.purchase_cost.isnot(None))\
-        .order_by(StockMovement.created_at.desc()).scalar()
+        .order_by(StockMovement.created_at.desc()).limit(1).scalar()
     return ProductResponse(
         id=p.id,
         category_id=p.category_id,
