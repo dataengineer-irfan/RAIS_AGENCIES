@@ -8,27 +8,45 @@ import { generatePaymentFile, downloadPaymentImage } from './paymentImageGenerat
  */
 import { API_BASE_URL } from '../services/api.js';
 
+const PROD_RENDER_HOST = 'https://rais-backend.onrender.com/api';
+
+/**
+ * Returns a guaranteed absolute, public HTTPS backend URL for WhatsApp messages.
+ * Prevents broken relative (/api) or localhost URLs on customer devices.
+ */
+export const getPublicApiBaseUrl = () => {
+  if (
+    typeof API_BASE_URL === 'string' &&
+    API_BASE_URL.startsWith('http') &&
+    !API_BASE_URL.includes('localhost') &&
+    !API_BASE_URL.includes('127.0.0.1')
+  ) {
+    return API_BASE_URL.replace(/\/$/, '');
+  }
+  return PROD_RENDER_HOST;
+};
+
 /**
  * Returns the active API URL for PDF receipts.
  */
 export const getPublicInvoicePdfUrl = (invoiceId) => {
   if (!invoiceId) return '';
-  return `${API_BASE_URL}/invoices/${invoiceId}/print-html`;
+  return `${getPublicApiBaseUrl()}/invoices/${invoiceId}/print-html`;
 };
 
 export const getPublicPaymentPdfUrl = (paymentId) => {
   if (!paymentId) return '';
-  return `${API_BASE_URL}/payments/${paymentId}/print-html`;
+  return `${getPublicApiBaseUrl()}/payments/${paymentId}/print-html`;
 };
 
 export const getPublicOrderPdfUrl = (orderId) => {
   if (!orderId) return '';
-  return `${API_BASE_URL}/orders/${orderId}/print-html`;
+  return `${getPublicApiBaseUrl()}/orders/${orderId}/print-html`;
 };
 
 export const getPublicCustomerStatementPdfUrl = (customerId) => {
   if (!customerId) return '';
-  return `${API_BASE_URL}/customers/${customerId}/statement/print-html`;
+  return `${getPublicApiBaseUrl()}/customers/${customerId}/statement/print-html`;
 };
 
 export const PUBLIC_CATALOGUE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html';
@@ -102,7 +120,7 @@ export const shareInvoiceOnWhatsApp = async ({
   let imageSection = '';
   if (invoice?.id) {
     const pdfUrl = getPublicInvoicePdfUrl(invoice.id);
-    const imgUrl = `${API_BASE_URL}/invoices/${invoice.id}/image`;
+    const imgUrl = `${getPublicApiBaseUrl()}/invoices/${invoice.id}/image`;
     imageSection = `🖼️ *Digital Invoice Receipt (Image Card):*\n👉 ${imgUrl}\n\n`;
     pdfSection = `📄 *Official Tax Invoice Receipt (PDF):*\n👉 ${pdfUrl}\n\n`;
   }
@@ -300,7 +318,7 @@ export const sharePaymentOnWhatsApp = async ({
   let imageSection = '';
   if (payment?.id) {
     const pdfUrl = getPublicPaymentPdfUrl(payment.id);
-    const imgUrl = `${API_BASE_URL}/payments/${payment.id}/image`;
+    const imgUrl = `${getPublicApiBaseUrl()}/payments/${payment.id}/image`;
     imageSection = `🖼️ *Digital Settlement Receipt (Image Card):*\n👉 ${imgUrl}\n\n`;
     pdfSection = `📄 *Official Payment Voucher (Print/PDF):*\n👉 ${pdfUrl}\n\n`;
   }
