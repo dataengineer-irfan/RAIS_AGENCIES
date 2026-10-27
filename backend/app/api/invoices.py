@@ -144,15 +144,22 @@ def get_printable_invoice(
     # Render rich HTML invoice template for direct print / PDF generation
     items_rows = ""
     for idx, itm in enumerate(inv.items, 1):
+        desc = getattr(itm, 'item_description', 'Product')
+        pkg = getattr(itm, 'packaging_unit', 'PKT')
+        hsn = getattr(itm, 'hsn_code', '-') or '-'
+        qty = getattr(itm, 'quantity', 1)
+        price = float(getattr(itm, 'unit_price', 0))
+        disc = float(getattr(itm, 'discount_rate', 0) or 0)
+        ltotal = float(getattr(itm, 'line_total', 0))
         items_rows += f"""
         <tr class="border-b border-gray-200 text-sm">
             <td class="py-2.5 text-center">{idx}</td>
-            <td class="py-2.5 font-medium text-gray-800">{itm.item_description} <span class="text-xs text-gray-500">({itm.packaging_unit})</span></td>
-            <td class="py-2.5 text-center text-gray-600">{itm.hsn_code or '-'}</td>
-            <td class="py-2.5 text-center font-bold">{itm.quantity}</td>
-            <td class="py-2.5 text-right font-mono">₹{itm.unit_price:.2f}</td>
-            <td class="py-2.5 text-right text-gray-600">{itm.discount_rate}%</td>
-            <td class="py-2.5 text-right font-bold font-mono">₹{itm.line_total:.2f}</td>
+            <td class="py-2.5 font-medium text-gray-800">{desc} <span class="text-xs text-gray-500">({pkg})</span></td>
+            <td class="py-2.5 text-center text-gray-600">{hsn}</td>
+            <td class="py-2.5 text-center font-bold">{qty}</td>
+            <td class="py-2.5 text-right font-mono">₹{price:.2f}</td>
+            <td class="py-2.5 text-right text-gray-600">{disc}%</td>
+            <td class="py-2.5 text-right font-bold font-mono">₹{ltotal:.2f}</td>
         </tr>
         """
 
@@ -199,7 +206,7 @@ def get_printable_invoice(
                     <span class="inline-block px-3 py-1 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded mb-2">WHOLESALE INVOICE</span>
                     <h2 class="text-xl font-bold font-mono text-gray-900">{inv.invoice_number}</h2>
                     <p class="text-xs text-gray-500 mt-1">Date & Time: <span class="font-medium text-gray-800">{created_str}</span></p>
-                    <p class="text-xs text-gray-500">Due Date: <span class="font-medium text-gray-800">{inv.due_date}</span></p>
+                    <p class="text-xs text-gray-500">Due Date: <span class="font-medium text-gray-800">{getattr(inv, 'due_date', '-') or '-'}</span></p>
                     <span class="inline-block mt-2 px-2.5 py-0.5 rounded text-xs font-bold uppercase {'bg-emerald-100 text-emerald-800' if inv.status == 'PAID' else 'bg-amber-100 text-amber-800' if inv.status == 'PARTIALLY_PAID' else 'bg-blue-100 text-blue-800'}">
                         {inv.status}
                     </span>
