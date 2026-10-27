@@ -18,11 +18,12 @@ import {
   Package,
   Calendar,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Share2
 } from 'lucide-react';
-import { orderApi } from '../services/api';
+import { orderApi, billingApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
-import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
+import { shareOrderOnWhatsApp, shareInvoiceOnWhatsApp, shareInvoiceImageFile } from '../utils/whatsappShare';
 import { useAuth } from '../context/AuthContext';
 import { OrderBuilderModal } from '../components/OrderBuilderModal';
 import { StatusBadge } from '../components/StatusBadge';
@@ -42,6 +43,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedCardOrderId, setCopiedCardOrderId] = useState(null);
   const [convertingId, setConvertingId] = useState(null);
+  const [convertedInvoiceModal, setConvertedInvoiceModal] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
 
@@ -103,13 +105,9 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
     setConvertingId(orderId);
     try {
       const inv = await orderApi.convertToInvoice(orderId);
-      showToast(`Order converted to Invoice ${inv.invoice_number || 'INV'} successfully! Stock deducted.`, 'success');
+      setConvertedInvoiceModal(inv);
+      showToast(`Order converted to Invoice ${inv.invoice_number || 'INV'} successfully!`, 'success');
       await loadOrders(orderId);
-      if (onOpenBillingForInvoice) {
-        setTimeout(() => {
-          onOpenBillingForInvoice(inv);
-        }, 800);
-      }
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'Failed to convert order to invoice.';
       showToast(msg, 'error');
@@ -779,6 +777,105 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
           loadOrders(newOrd?.id);
         }}
       />
+
+      {/* ─── ORDER-TO-INVOICE SUCCESS DIALOG (Unified with InvoiceBuilderModal) ─── */}
+      {convertedInvoiceModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-6 sm:p-8 max-w-lg w-full text-center shadow-2xl relative">
+            <button
+              onClick={() => setConvertedInvoiceModal(null)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-lg shadow-emerald-500/10 mb-4">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono">Order Converted to Official Bill</span>
+            <h3 className="text-xl font-bold text-white mt-1">
+              Invoice #{convertedInvoiceModal.invoice_number} Ready!
+            </h3>
+            <p className="text-sm text-slate-300 mt-2">
+              Billed to <strong className="text-white">{convertedInvoiceModal.customer_name}</strong> | Grand Total: <strong className="text-amber-400 font-mono">₹{parseFloat(convertedInvoiceModal.total_amount || 0).toFixed(2)}</strong>
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-6 flex-wrap">
+              {/* 1-Tap Customer WhatsApp */}
+              <button
+                type="button"
+                onClick={() => {
+                  shareInvoiceOnWhatsApp({
+                    invoice: convertedInvoiceModal,
+                    customer: {
+                      business_name: convertedInvoiceModal.customer_name,
+                      phone: convertedInvoiceModal.customer_phone,
+                      contact_person: convertedInvoiceModal.customer_contact,
+                      customer_code: convertedInvoiceModal.customer_code,
+                      outstanding_balance: convertedInvoiceModal.customer_outstanding_balance
+                    },
+                    items: convertedInvoiceModal.items || []
+                  });
+                }}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
+                title="Open WhatsApp directly with customer"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Send to Customer (WhatsApp)</span>
+              </button>
+
+              {/* Share Image Card File */}
+              <button
+                type="button"
+                onClick={() => {
+                  shareInvoiceImageFile({
+                    invoice: convertedInvoiceModal,
+                    customer: {
+                      business_name: convertedInvoiceModal.customer_name,
+                      phone: convertedInvoiceModal.customer_phone,
+                      contact_person: convertedInvoiceModal.customer_contact,
+                      customer_code: convertedInvoiceModal.customer_code,
+                      outstanding_balance: convertedInvoiceModal.customer_outstanding_balance
+                    },
+                    items: convertedInvoiceModal.items || []
+                  });
+                }}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-xl font-semibold text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95"
+                title="Share generated PNG image card"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share Image Card</span>
+              </button>
+
+              {/* Print PDF */}
+              <a
+                href={billingApi.getPrintHtmlUrl(convertedInvoiceModal.id)}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print PDF</span>
+              </a>
+
+              {/* Navigate to Billing if requested */}
+              {onOpenBillingForInvoice && (
+                <button
+                  onClick={() => {
+                    const inv = convertedInvoiceModal;
+                    setConvertedInvoiceModal(null);
+                    onOpenBillingForInvoice(inv);
+                  }}
+                  className="w-full sm:w-auto px-4 py-3 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
+                >
+                  Open in Billing
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

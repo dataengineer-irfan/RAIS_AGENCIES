@@ -69,7 +69,8 @@ export const shareInvoiceOnWhatsApp = async ({
   invoice,
   customer,
   items = [],
-  products = []
+  products = [],
+  mode = 'direct'
 }) => {
   const invNumber = invoice?.invoice_number || 'DRAFT';
   const bName = customer?.business_name || invoice?.customer_name || 'Customer';
@@ -149,7 +150,9 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
 ❄️ _Frozen Food Is Our Specialty (-18°C)_
 🙏 _Thank you for your valued partnership!_`;
 
-  // Try generating the invoice image card and sharing it natively with image attached
+  const cleanPhone = (custPhone || '').toString().replace(/[^0-9]/g, '');
+  const hasDirectCustomer = cleanPhone.length >= 10;
+
   try {
     let invoiceFile = null;
     try {
@@ -163,7 +166,65 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
       console.warn('Canvas image generation skipped/failed:', imgErr);
     }
 
-    // 1. Mobile Web Share API with image file
+    // MODE 1: EXPLICIT FILE SHARE (User tapped "Share Image Card")
+    if (mode === 'file') {
+      if (
+        invoiceFile &&
+        typeof navigator !== 'undefined' &&
+        navigator.canShare &&
+        navigator.canShare({ files: [invoiceFile] })
+      ) {
+        try {
+          await navigator.share({
+            title: `RAIS Invoice #${invNumber}`,
+            text: message,
+            files: [invoiceFile]
+          });
+          return;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return;
+          console.warn('Native file share cancelled or failed, falling back to direct link:', shareErr);
+        }
+      }
+
+      // If file share not supported or failed on desktop, download image card
+      if (invoiceFile) {
+        try {
+          await downloadInvoiceImage({
+            invoice,
+            customer: customer || { business_name: custName, phone: custPhone },
+            items,
+            products
+          });
+        } catch (dlErr) {
+          console.warn('Image auto-download failed:', dlErr);
+        }
+      }
+      openWhatsApp(custPhone, message);
+      return;
+    }
+
+    // MODE 2: DIRECT CUSTOMER CHAT (Default 1-tap WhatsApp delivery)
+    if (hasDirectCustomer) {
+      // Auto-cache image card in background so it's in the device gallery ready to drop in if needed
+      if (invoiceFile) {
+        try {
+          await downloadInvoiceImage({
+            invoice,
+            customer: customer || { business_name: custName, phone: custPhone },
+            items,
+            products
+          });
+        } catch (dlErr) {
+          // non-blocking
+        }
+      }
+      // Instantly open direct chat with customer
+      openWhatsApp(custPhone, message);
+      return;
+    }
+
+    // MODE 3: Fallback when customer has NO registered phone number
     if (
       invoiceFile &&
       typeof navigator !== 'undefined' &&
@@ -178,15 +239,10 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
         });
         return;
       } catch (shareErr) {
-        if (shareErr.name === 'AbortError') {
-          return; // User cancelled share sheet
-        }
-        console.warn('Native file share failed, falling back to download & direct link:', shareErr);
+        if (shareErr.name === 'AbortError') return;
       }
     }
 
-    // 2. If file sharing is not supported (e.g. desktop web or older Android webview):
-    // Auto-save the invoice image to downloads/gallery so user has it ready
     if (invoiceFile) {
       try {
         await downloadInvoiceImage({
@@ -199,13 +255,19 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
         console.warn('Image auto-download failed:', dlErr);
       }
     }
-
-    // 3. Launch WhatsApp with message & Render PDF link
     openWhatsApp(custPhone, message);
   } catch (err) {
     console.error('Invoice share pipeline error:', err);
     openWhatsApp(custPhone, message);
   }
+};
+
+/**
+ * Dedicated helper to share high-resolution invoice image card file
+ * via the native OS share sheet (WhatsApp, Drive, Email, etc.)
+ */
+export const shareInvoiceImageFile = async (params) => {
+  return shareInvoiceOnWhatsApp({ ...params, mode: 'file' });
 };
 
 export const shareOrderOnWhatsApp = ({
@@ -262,7 +324,8 @@ ${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n\n` : '\n'}${
 
 export const sharePaymentOnWhatsApp = async ({
   payment,
-  customer
+  customer,
+  mode = 'direct'
 }) => {
   const pNumber = payment?.payment_number || 'RECEIPT';
   const bName = customer?.business_name || payment?.customer_name || 'Valued Customer';
@@ -341,7 +404,9 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
 ❄️ _Quality Frozen Foods & Reliable Service_
 🙏 _Thank you for your timely settlement!_`;
 
-  // Try generating the payment image card and sharing it natively with image attached
+  const cleanPhone = (custPhone || '').toString().replace(/[^0-9]/g, '');
+  const hasDirectCustomer = cleanPhone.length >= 10;
+
   try {
     let paymentFile = null;
     try {
@@ -353,7 +418,58 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
       console.warn('Payment canvas image generation skipped/failed:', imgErr);
     }
 
-    // 1. Mobile Web Share API with image file
+    // MODE 1: EXPLICIT FILE SHARE (User tapped "Share Image Card")
+    if (mode === 'file') {
+      if (
+        paymentFile &&
+        typeof navigator !== 'undefined' &&
+        navigator.canShare &&
+        navigator.canShare({ files: [paymentFile] })
+      ) {
+        try {
+          await navigator.share({
+            title: `RAIS Payment Receipt #${pNumber}`,
+            text: message,
+            files: [paymentFile]
+          });
+          return;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return;
+          console.warn('Native payment share cancelled or failed, falling back to direct link:', shareErr);
+        }
+      }
+
+      if (paymentFile) {
+        try {
+          await downloadPaymentImage({
+            payment,
+            customer: customer || { business_name: custName, phone: custPhone }
+          });
+        } catch (dlErr) {
+          console.warn('Payment image auto-download failed:', dlErr);
+        }
+      }
+      openWhatsApp(custPhone, message);
+      return;
+    }
+
+    // MODE 2: DIRECT CUSTOMER CHAT (Default 1-tap WhatsApp delivery)
+    if (hasDirectCustomer) {
+      if (paymentFile) {
+        try {
+          await downloadPaymentImage({
+            payment,
+            customer: customer || { business_name: custName, phone: custPhone }
+          });
+        } catch (dlErr) {
+          // non-blocking
+        }
+      }
+      openWhatsApp(custPhone, message);
+      return;
+    }
+
+    // MODE 3: Fallback when customer has NO registered phone number
     if (
       paymentFile &&
       typeof navigator !== 'undefined' &&
@@ -368,15 +484,10 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
         });
         return;
       } catch (shareErr) {
-        if (shareErr.name === 'AbortError') {
-          return; // User cancelled share sheet
-        }
-        console.warn('Native payment share failed, falling back to download & direct link:', shareErr);
+        if (shareErr.name === 'AbortError') return;
       }
     }
 
-    // 2. If file sharing is not supported (e.g. desktop web or older Android webview):
-    // Auto-save the payment image to downloads/gallery so user has it ready
     if (paymentFile) {
       try {
         await downloadPaymentImage({
@@ -387,13 +498,19 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES �
         console.warn('Payment image auto-download failed:', dlErr);
       }
     }
-
-    // 3. Launch WhatsApp with message & Render PDF link
     openWhatsApp(custPhone, message);
   } catch (err) {
     console.error('Payment share pipeline error:', err);
     openWhatsApp(custPhone, message);
   }
+};
+
+/**
+ * Dedicated helper to share high-resolution payment settlement image card
+ * via native OS share sheet (WhatsApp, Drive, Email, etc.)
+ */
+export const sharePaymentImageFile = async (params) => {
+  return sharePaymentOnWhatsApp({ ...params, mode: 'file' });
 };
 
 export const shareCustomerStatementOnWhatsApp = ({

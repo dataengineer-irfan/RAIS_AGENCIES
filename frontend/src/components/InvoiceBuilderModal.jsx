@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic } from 'lucide-react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic, Share2 } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi, paymentApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
-import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
+import { shareInvoiceOnWhatsApp, shareInvoiceImageFile } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { VoiceDictationModal } from './VoiceDictationModal';
@@ -718,57 +718,97 @@ export const InvoiceBuilderModal = ({
               Date: {successInvoice.invoice_date} • Terms: {successInvoice.payment_terms || 'Cash on Delivery'}
             </p>
 
-            {/* Action Buttons: Singular Emerald Primary CTA + Subtle Secondary Options */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 w-full max-w-lg">
-              {/* PRIMARY CTA: WhatsApp Share */}
-              <button
-                type="button"
-                onClick={() => {
-                  const overallBal = (successInvoice?.customer_outstanding_balance !== undefined && successInvoice?.customer_outstanding_balance !== null)
-                    ? successInvoice.customer_outstanding_balance
-                    : (parseFloat(selectedCustomerObj?.outstanding_balance || 0) + parseFloat(successInvoice?.total_amount || 0));
-                  shareInvoiceOnWhatsApp({
-                    invoice: {
-                      ...successInvoice,
-                      customer_outstanding_balance: overallBal
-                    },
-                    customer: selectedCustomerObj || { business_name: successInvoice.customer_name },
-                    items: items,
-                    products: products
-                  });
-                }}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>Share WhatsApp & PDF</span>
-              </button>
+            {/* Action Buttons: Fast Direct Customer WhatsApp + Dedicated Image Card + Print */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-4 w-full max-w-xl flex-wrap">
+              {(() => {
+                const overallBal = (successInvoice?.customer_outstanding_balance !== undefined && successInvoice?.customer_outstanding_balance !== null)
+                  ? successInvoice.customer_outstanding_balance
+                  : (parseFloat(selectedCustomerObj?.outstanding_balance || 0) + parseFloat(successInvoice?.total_amount || 0));
 
-              {/* SECONDARY ACTION: Print PDF */}
-              <a
-                href={billingApi.getPrintHtmlUrl(successInvoice.id)}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print PDF</span>
-              </a>
+                const customerData = {
+                  id: successInvoice.customer_id || selectedCustomerObj?.id,
+                  business_name: successInvoice.customer_name || selectedCustomerObj?.business_name,
+                  phone: successInvoice.customer_phone || selectedCustomerObj?.phone || '',
+                  contact_person: successInvoice.customer_contact || selectedCustomerObj?.contact_person || '',
+                  address: successInvoice.customer_address || selectedCustomerObj?.address || '',
+                  customer_code: successInvoice.customer_code || selectedCustomerObj?.customer_code || '',
+                  outstanding_balance: overallBal
+                };
 
-              {/* SECONDARY ACTION: Create Another */}
-              <button
-                onClick={resetForm}
-                className="w-full sm:w-auto px-4 py-3 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
-              >
-                Create Another
-              </button>
+                const invoicePayload = {
+                  ...successInvoice,
+                  customer_outstanding_balance: overallBal
+                };
 
-              {/* SECONDARY ACTION: Done */}
-              <button
-                onClick={handleCloseModal}
-                className="w-full sm:w-auto px-4 py-3 text-slate-400 hover:text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
-              >
-                Done
-              </button>
+                return (
+                  <>
+                    {/* PRIMARY CTA: Direct WhatsApp to Customer Chat */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        shareInvoiceOnWhatsApp({
+                          invoice: invoicePayload,
+                          customer: customerData,
+                          items: items,
+                          products: products,
+                          mode: 'direct'
+                        });
+                      }}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95"
+                      title={customerData.phone ? `Open WhatsApp direct chat with ${customerData.business_name} (${customerData.phone})` : 'Send via WhatsApp'}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Send to Customer (WhatsApp)</span>
+                    </button>
+
+                    {/* SECONDARY CTA: Share High-Res PNG Image Card via Native OS Drawer */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        shareInvoiceImageFile({
+                          invoice: invoicePayload,
+                          customer: customerData,
+                          items: items,
+                          products: products
+                        });
+                      }}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-xl font-semibold text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95"
+                      title="Share generated high-resolution PNG receipt card (Any App / Status)"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Share Image Card</span>
+                    </button>
+
+                    {/* ACTION: Print / Save PDF */}
+                    <a
+                      href={billingApi.getPrintHtmlUrl(successInvoice.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
+                      title="Print or view formal tax invoice"
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span>Print PDF</span>
+                    </a>
+
+                    {/* ACTION: Create Another */}
+                    <button
+                      onClick={resetForm}
+                      className="w-full sm:w-auto px-4 py-3 bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
+                    >
+                      Create Another
+                    </button>
+
+                    {/* ACTION: Done */}
+                    <button
+                      onClick={handleCloseModal}
+                      className="w-full sm:w-auto px-4 py-3 text-slate-400 hover:text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition-colors"
+                    >
+                      Done
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </div>
         ) : showPreview ? (

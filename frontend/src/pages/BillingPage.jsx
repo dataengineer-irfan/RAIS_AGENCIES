@@ -21,7 +21,8 @@ import {
   ArrowLeft,
   Trash2,
   AlertTriangle,
-  Pencil
+  Pencil,
+  Share2
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -29,7 +30,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { InvoiceBuilderModal } from '../components/InvoiceBuilderModal';
-import { shareInvoiceOnWhatsApp } from '../utils/whatsappShare';
+import { shareInvoiceOnWhatsApp, shareInvoiceImageFile } from '../utils/whatsappShare';
 import { formatInvoiceDateTime } from '../utils/invoiceImageGenerator';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
@@ -196,6 +197,29 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
       }
     }
     await shareInvoiceOnWhatsApp({
+      invoice: fullInvoice,
+      customer: {
+        business_name: fullInvoice.customer_name,
+        phone: fullInvoice.customer_phone,
+        address: fullInvoice.customer_address,
+        customer_code: fullInvoice.customer_code,
+        outstanding_balance: fullInvoice.customer_outstanding_balance
+      },
+      items: fullInvoice.items || []
+    });
+  };
+
+  const handleShareInvoiceImage = async (inv) => {
+    if (!inv) return;
+    let fullInvoice = inv;
+    if (!fullInvoice.items || fullInvoice.items.length === 0) {
+      try {
+        fullInvoice = await billingApi.getInvoice(inv.id);
+      } catch (e) {
+        console.warn('Could not fetch full invoice items, sharing available data:', e);
+      }
+    }
+    await shareInvoiceImageFile({
       invoice: fullInvoice,
       customer: {
         business_name: fullInvoice.customer_name,
@@ -730,14 +754,24 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                       <span>Thermal Slip</span>
                     </button>
 
-                    {/* WhatsApp Bill */}
+                    {/* WhatsApp Bill (Direct Customer Chat) */}
                     <button
                       onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
                       className="h-8 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
-                      title="Send Invoice via WhatsApp"
+                      title="Send Invoice directly to Customer on WhatsApp"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
                       <span>WhatsApp Bill</span>
+                    </button>
+
+                    {/* Share Image Card (PNG Attachment) */}
+                    <button
+                      onClick={() => handleShareInvoiceImage(selectedInvoice)}
+                      className="h-8 px-2.5 bg-slate-800 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                      title="Share High-Resolution PNG Receipt Card"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Image Card</span>
                     </button>
 
                     {/* A4 PDF View */}
@@ -997,6 +1031,28 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice }) =
                           <span className="text-[10px] text-slate-400">Full formal B2B wholesale invoice</span>
                         </div>
                       </a>
+
+                      <button
+                        onClick={() => handleSendWhatsAppInvoice(selectedInvoice)}
+                        className="p-3 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 rounded-xl flex items-center gap-2.5 text-left text-emerald-400 transition-all hover:scale-[1.02]"
+                      >
+                        <MessageSquare className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-bold text-xs text-white">Send WhatsApp to Customer</div>
+                          <span className="text-[10px] text-slate-400">Direct WhatsApp chat with customer</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleShareInvoiceImage(selectedInvoice)}
+                        className="p-3 bg-slate-800 hover:bg-emerald-950/60 border border-emerald-500/30 rounded-xl flex items-center gap-2.5 text-left text-emerald-400 transition-all hover:scale-[1.02]"
+                      >
+                        <Share2 className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-bold text-xs text-white">Share Image Card</div>
+                          <span className="text-[10px] text-slate-400">Share high-res PNG invoice card</span>
+                        </div>
+                      </button>
 
                       {selectedInvoice.status === 'DRAFT' && hasRole(['ADMIN', 'OPERATOR']) && (
                         <button
