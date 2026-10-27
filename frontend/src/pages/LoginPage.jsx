@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, User, Sparkles, MapPin, ShieldCheck } from 'lucide-react';
+import { Lock, User, Sparkles, MapPin, ShieldCheck, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { RaisLogo } from '../components/RaisLogo';
 
@@ -133,6 +133,34 @@ export const LoginPage = () => {
             >
               Viewer
             </button>
+          </div>
+        </div>
+
+        {/* Public Visitor & Restaurant Leads Access */}
+        <div className="pt-4 border-t border-slate-800 text-center space-y-1">
+          <p className="text-[11px] text-slate-400">
+            Visiting as a Restaurant Partner or Commercial Chef?
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs pt-1">
+            <a
+              href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300 font-bold underline inline-flex items-center gap-1"
+            >
+              <span>Browse 66-SKU Visual Catalogue</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <span className="text-slate-600 hidden sm:inline">•</span>
+            <a
+              href="https://wa.me/919347453135"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 font-bold underline inline-flex items-center gap-1"
+            >
+              <span>WhatsApp Order Desk</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
 

@@ -1,17 +1,29 @@
 import React, { useState } from 'react';
-import { X, Share2, Copy, CheckCircle2, FileText, Phone } from 'lucide-react';
+import { X, Share2, Copy, CheckCircle2, FileText, Phone, ExternalLink } from 'lucide-react';
 import { copyToClipboard } from '../utils/mobileHelpers';
 
 export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categories = [] }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedCatalogue, setCopiedCatalogue] = useState(false);
 
   if (!isOpen) return null;
+
+  const CATALOGUE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html';
+  const PRODUCTS_PAGE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products';
+  const WA_HOTLINE_URL = 'https://wa.me/919347453135';
 
   // Build formatted WhatsApp pricing message
   const generatePriceText = () => {
     let text = `📦 *RAIS AGENCIES — WHOLESALE PRICE LIST*\n`;
     text += `📍 *Reddies Colony, Rayachoty (516269)*\n`;
     text += `📞 *Order Hotline: 9347453135*\n`;
+    text += `─────────────────────────\n`;
+    text += `📖 *Direct Online 66-SKU Catalogue (Photos & Pack Sizes):*\n`;
+    text += `👉 ${CATALOGUE_URL}\n\n`;
+    text += `🌐 *Interactive Products Showcase:*\n`;
+    text += `👉 ${PRODUCTS_PAGE_URL}\n\n`;
+    text += `📲 *Direct WhatsApp One-Tap Order Desk:*\n`;
+    text += `👉 ${WA_HOTLINE_URL}\n`;
     text += `─────────────────────────\n\n`;
 
     (categories || []).forEach(cat => {
@@ -38,6 +50,12 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
     await copyToClipboard(priceText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleCopyCatalogueLink = async () => {
+    await copyToClipboard(CATALOGUE_URL);
+    setCopiedCatalogue(true);
+    setTimeout(() => setCopiedCatalogue(false), 2500);
   };
 
   return (
@@ -80,31 +98,64 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg uppercase tracking-wider text-xs"
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg uppercase tracking-wider text-xs shadow-lg shadow-emerald-600/20 transition-all"
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Copied to Clipboard!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span>Copy for WhatsApp</span>
-                </>
-              )}
-            </button>
+          <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg uppercase tracking-wider text-xs"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyCatalogueLink}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold rounded-lg uppercase tracking-wider text-xs transition-all"
+                title="Copy customer-facing 66-SKU visual catalogue URL without prices"
+              >
+                {copiedCatalogue ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Catalogue Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <a
+                href={CATALOGUE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold transition-all"
+                title="Open Online Catalogue in new window"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Preview</span>
+              </a>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg uppercase tracking-wider text-xs shadow-lg shadow-emerald-600/20 transition-all"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Price List</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
