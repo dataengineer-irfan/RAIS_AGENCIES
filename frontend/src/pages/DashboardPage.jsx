@@ -1732,6 +1732,23 @@ export const DashboardPage = ({
                     <span>Payment</span>
                   </button>
                 </div>
+
+                {/* Margin Leakage Alert Banner (Mobile) */}
+                {kpis?.margin_leakage_alerts?.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMarginLeakageModal(true)}
+                    className="w-full mt-2.5 flex items-center justify-between p-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-xl border border-rose-500/40 text-xs transition-all animate-pulse"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span className="font-bold text-left">Margin Leakage: {kpis.margin_leakage_alerts.length} Below-Cost {kpis.margin_leakage_alerts.length === 1 ? 'Item' : 'Items'}</span>
+                    </div>
+                    <span className="bg-rose-500 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-full shrink-0">
+                      Review ↗
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Compact Executive Pulse Chip (1-Line Status, Tap for Full Details) */}
