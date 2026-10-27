@@ -138,7 +138,7 @@ export const Sidebar = ({
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 transition-all group"
-            title="Open customer-facing 66-SKU visual catalogue"
+            title="Open customer-facing Photo Catalogue"
           >
             <div className="flex items-center gap-3">
               <Globe className="w-4 h-4 text-amber-500/80 group-hover:text-amber-400" />

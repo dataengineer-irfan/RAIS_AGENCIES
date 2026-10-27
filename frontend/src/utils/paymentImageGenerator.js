@@ -45,8 +45,9 @@ export const generatePaymentCanvas = ({
   const rowHeight = 36;
   const tableHeight = tableHeaderHeight + (Math.max(allocations.length, 1) * rowHeight) + 15;
   const ledgerBoxHeight = 75;
+  const linksBoxHeight = 72;
   const footerHeight = 100;
-  const height = headerHeight + 20 + custBoxHeight + 15 + heroBoxHeight + 15 + tableHeight + ledgerBoxHeight + footerHeight;
+  const height = headerHeight + 20 + custBoxHeight + 15 + heroBoxHeight + 15 + tableHeight + ledgerBoxHeight + linksBoxHeight + footerHeight;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -286,6 +287,36 @@ export const generatePaymentCanvas = ({
     }
     curY += 55;
   }
+
+  // 5b. Bold Green Quick Links Banner
+  const linkBannerHeight = 58;
+  ctx.fillStyle = '#ecfdf5';
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(30, curY, width - 60, linkBannerHeight, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#a7f3d0';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  } else {
+    ctx.fillRect(30, curY, width - 60, linkBannerHeight);
+  }
+
+  // Row 1: WhatsApp Order Desk & Website
+  ctx.fillStyle = '#047857';
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🟢 WhatsApp Order Desk: wa.me/919347453135', 46, curY + 22);
+
+  ctx.fillStyle = '#065f46';
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🌐 Website: dataengineer-irfan.github.io/RAIS-AGENCIES/#/products', 380, curY + 22);
+
+  // Row 2: Photo Catalogue
+  ctx.fillStyle = '#047857';
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('📖 Photo Catalogue: dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html', 46, curY + 44);
+
+  curY += linkBannerHeight + 15;
 
   // 6. Footer Notes
   ctx.strokeStyle = '#e2e8f0';

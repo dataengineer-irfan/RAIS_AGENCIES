@@ -31,6 +31,22 @@ export const getPublicCustomerStatementPdfUrl = (customerId) => {
   return `${API_BASE_URL}/customers/${customerId}/statement/print-html`;
 };
 
+export const PUBLIC_CATALOGUE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html';
+export const PUBLIC_PRODUCTS_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products';
+export const PUBLIC_WA_ORDER_URL = 'https://wa.me/919347453135';
+
+export const QUICK_LINKS_WHATSAPP_SECTION = 
+`📖 *Photo Catalogue:*
+👉 ${PUBLIC_CATALOGUE_URL}
+
+🌐 *Website & Products:*
+👉 ${PUBLIC_PRODUCTS_URL}
+
+📲 *WhatsApp Order Desk:*
+👉 ${PUBLIC_WA_ORDER_URL}
+
+`;
+
 export const shareInvoiceOnWhatsApp = async ({
   invoice,
   customer,
@@ -110,7 +126,7 @@ ${dueSection}💳 *Payment Terms:* ${terms}
 • Payee: *RAIS AGENCIES*
 • GPay / PhonePe: *9347453135*
 
-${imageSection}${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
+${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
 📞 _Order Desk: 9347453135 | 9573261696_
 ❄️ _Frozen Food Is Our Specialty (-18°C)_
 🙏 _Thank you for your valued partnership!_`;
@@ -219,7 +235,7 @@ ${lines}
 
 ━━━━━━━━━━━━━━━━━━━━
 🚚 *Delivery:* ${deliveryDate}
-${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n\n` : '\n'}${pdfSection}📍 _RAIS AGENCIES — Rayachoty Depot_
+${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n\n` : '\n'}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES — Rayachoty Depot_
 📞 _Hotline: 9347453135 | 9573261696_
 ❄️ _Cold-chain dispatch scheduled!_`;
 
@@ -302,7 +318,7 @@ ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━
 ${allocSection}${advanceNote}
 ━━━━━━━━━━━━━━━━━━━━
 ${ledgerSection}
-${imageSection}${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
+${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
 📞 _Accounts Desk: 9347453135 | 9573261696_
 ❄️ _Quality Frozen Foods & Reliable Service_
 🙏 _Thank you for your timely settlement!_`;
@@ -407,7 +423,7 @@ ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━
 ${statusLine}
 ${recentTxns}
 ━━━━━━━━━━━━━━━━━━━━
-${pdfSection}📲 *DIRECT UPI SETTLEMENT:*
+${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}📲 *DIRECT UPI SETTLEMENT:*
 • UPI ID: \`9347453135@ybl\`
 • Payee: *RAIS AGENCIES*
 

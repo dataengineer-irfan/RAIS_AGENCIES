@@ -271,8 +271,34 @@ def get_printable_invoice(
                 </div>
             </div>
 
+            <!-- Direct Quick Links (Bold Green Badges) -->
+            <div class="mt-8 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 print:hidden flex flex-wrap items-center justify-between gap-3">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                    ⚡ Quick Online Links:
+                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="https://wa.me/919347453135" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
+                        <span>🟢 WhatsApp Orders</span>
+                    </a>
+                    <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
+                        <span>📖 Photo Catalogue</span>
+                    </a>
+                    <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
+                        <span>🌐 Website & Products</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Printed Links (For paper print / PDF rendering) -->
+            <div class="hidden print:block mt-6 pt-3 border-t border-gray-200 text-[10px] text-gray-600">
+                <p><strong>🟢 WhatsApp Orders:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>📖 Photo Catalogue:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html &nbsp;•&nbsp; <strong>🌐 Website:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/#/products</p>
+            </div>
+
             <!-- Footer Signatures -->
-            <div class="flex justify-between items-end mt-12 pt-8 text-xs text-gray-500 border-t border-gray-200">
+            <div class="flex justify-between items-end mt-10 pt-6 text-xs text-gray-500 border-t border-gray-200">
                 <div>
                     <p class="font-bold text-gray-700">Customer Signature / Stamp</p>
                 </div>
@@ -311,7 +337,7 @@ def get_invoice_image(
     # Dynamic sizing based on item rows
     width = 800
     row_height = 34
-    height = 560 + (item_count * row_height)
+    height = 620 + (item_count * row_height)
     
     img = Image.new("RGB", (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
@@ -408,8 +434,15 @@ def get_invoice_image(
     if inv.outstanding_amount > 0 and inv.outstanding_amount != inv.total_amount:
         draw.text((455, cur_y + 84), f"Balance Due: ₹{inv.outstanding_amount:.2f}", fill=(239, 68, 68), font=f_bold)
 
+    # 4b. Direct Quick Links Banner (Bold Emerald Card)
+    cur_y += 120
+    draw.rectangle([(30, cur_y), (width - 30, cur_y + 48)], fill=(236, 253, 245), outline=(167, 243, 208))
+    draw.text((45, cur_y + 8), "🟢 WhatsApp Orders: wa.me/919347453135", fill=(4, 120, 87), font=f_bold)
+    draw.text((410, cur_y + 8), "🌐 Website: dataengineer-irfan.github.io/RAIS-AGENCIES/#/products", fill=(6, 95, 70), font=f_bold)
+    draw.text((45, cur_y + 26), "📖 Photo Catalogue: dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html", fill=(4, 120, 87), font=f_bold)
+
     # 5. Footer
-    cur_y += 125
+    cur_y += 58
     draw.line([(0, cur_y), (width, cur_y)], fill=(226, 232, 240))
     draw.text((30, cur_y + 8), "Official Computer Generated Invoice • RAIS AGENCIES Rayachoty (-18°C Deep Cold-Chain Depot)", fill=(100, 116, 139), font=f_small)
 

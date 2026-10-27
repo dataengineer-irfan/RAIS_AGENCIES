@@ -85,8 +85,9 @@ export const generateInvoiceCanvas = ({
   const rowHeight = 36;
   const tableHeight = tableHeaderHeight + (processedItems.length * rowHeight) + 10;
   const totalsHeight = 170;
+  const linksHeight = 72;
   const footerHeight = 120;
-  const height = headerHeight + 110 + tableHeight + totalsHeight + footerHeight;
+  const height = headerHeight + 110 + tableHeight + totalsHeight + linksHeight + footerHeight;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -352,8 +353,38 @@ export const generateInvoiceCanvas = ({
   ctx.font = 'italic 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('Please share payment screenshot on WhatsApp for instant receipt credit.', 46, curY + 116);
 
+  // 4b. Bold Green Quick Links Banner
+  curY += 152;
+  const linksBoxHeight = 58;
+  ctx.fillStyle = '#ecfdf5';
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(30, curY, width - 60, linksBoxHeight, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#a7f3d0';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  } else {
+    ctx.fillRect(30, curY, width - 60, linksBoxHeight);
+  }
+
+  // Row 1: WhatsApp Order Desk & Website
+  ctx.fillStyle = '#047857';
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🟢 WhatsApp Order Desk: wa.me/919347453135', 46, curY + 22);
+
+  ctx.fillStyle = '#065f46';
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🌐 Website: dataengineer-irfan.github.io/RAIS-AGENCIES/#/products', 380, curY + 22);
+
+  // Row 2: Photo Catalogue
+  ctx.fillStyle = '#047857';
+  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('📖 Photo Catalogue: dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html', 46, curY + 44);
+
+  curY += linksBoxHeight + 12;
+
   // 5. Footer Notes & Signoff
-  curY += 155;
   ctx.fillStyle = '#f8fafc';
   ctx.fillRect(0, curY, width, height - curY);
   ctx.strokeStyle = '#e2e8f0';

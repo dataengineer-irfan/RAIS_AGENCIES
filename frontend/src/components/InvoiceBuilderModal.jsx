@@ -900,6 +900,47 @@ export const InvoiceBuilderModal = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Direct Quick Links (Bold Green Hyperlinks) */}
+                <div className="mt-4 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 print:hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 shrink-0">
+                    ⚡ Quick Online Links:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <a
+                      href="https://wa.me/919347453135"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-sm transition-colors"
+                      title="1-Tap WhatsApp Order Desk"
+                    >
+                      <span>🟢 WhatsApp Orders</span>
+                    </a>
+                    <a
+                      href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-sm transition-colors"
+                      title="Open Visual Photo Catalogue"
+                    >
+                      <span>📖 Photo Catalogue</span>
+                    </a>
+                    <a
+                      href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-sm transition-colors"
+                      title="Open Website & Products"
+                    >
+                      <span>🌐 Website</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Print version of quick links */}
+                <div className="hidden print:block mt-4 pt-2 border-t border-gray-200 text-[9px] text-gray-500">
+                  <p><strong>WhatsApp:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>Photo Catalogue:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html &nbsp;•&nbsp; <strong>Website:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/#/products</p>
+                </div>
               </div>
             </div>
 

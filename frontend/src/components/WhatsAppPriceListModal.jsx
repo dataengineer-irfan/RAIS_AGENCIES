@@ -18,7 +18,7 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
     text += `📍 *Reddies Colony, Rayachoty (516269)*\n`;
     text += `📞 *Order Hotline: 9347453135*\n`;
     text += `─────────────────────────\n`;
-    text += `📖 *Direct Online 66-SKU Catalogue (Photos & Pack Sizes):*\n`;
+    text += `📖 *Direct Online Photo Catalogue (Photos & Pack Sizes):*\n`;
     text += `👉 ${CATALOGUE_URL}\n\n`;
     text += `🌐 *Interactive Products Showcase:*\n`;
     text += `👉 ${PRODUCTS_PAGE_URL}\n\n`;
@@ -111,7 +111,7 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
                 type="button"
                 onClick={handleCopyCatalogueLink}
                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold rounded-lg uppercase tracking-wider text-xs transition-all"
-                title="Copy customer-facing 66-SKU visual catalogue URL without prices"
+                title="Copy customer-facing Photo Catalogue URL without prices"
               >
                 {copiedCatalogue ? (
                   <>

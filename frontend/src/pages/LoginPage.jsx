@@ -148,7 +148,7 @@ export const LoginPage = () => {
               rel="noopener noreferrer"
               className="text-amber-400 hover:text-amber-300 font-bold underline inline-flex items-center gap-1"
             >
-              <span>Browse 66-SKU Visual Catalogue</span>
+              <span>Browse Photo Catalogue</span>
               <ExternalLink className="w-3 h-3" />
             </a>
             <span className="text-slate-600 hidden sm:inline">•</span>
