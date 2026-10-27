@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
 from app.models.user import User
+from decimal import Decimal
 from app.models.catalogue import Category, Product
+from app.models.inventory import StockMovement
 from app.schemas.catalogue import (
     CategoryCreate, CategoryResponse, ProductCreate,
     ProductUpdate, ProductResponse
@@ -67,6 +69,17 @@ def list_products(
         db, category_id=category_id, search=search, brand=brand,
         active_only=active_only, skip=skip, limit=limit
     )
+    # Fast in-memory cost map lookup
+    cost_rows = db.query(
+        StockMovement.product_id,
+        StockMovement.purchase_cost
+    ).filter(StockMovement.purchase_cost.isnot(None))\
+     .order_by(StockMovement.created_at.desc()).all()
+    cost_map = {}
+    for pid, c in cost_rows:
+        if pid not in cost_map and c is not None:
+            cost_map[pid] = Decimal(str(c))
+
     return [
         ProductResponse(
             id=p.id,
@@ -78,6 +91,7 @@ def list_products(
             packaging_unit=p.packaging_unit,
             unit_quantity=p.unit_quantity,
             base_price=p.base_price,
+            landed_cost=cost_map.get(p.id) or (p.base_price * Decimal("0.80")),
             tax_rate=p.tax_rate,
             hsn_code=p.hsn_code,
             description=p.description,
@@ -96,6 +110,9 @@ def get_product(
     current_user: User = Depends(require_any_authenticated)
 ):
     p = CatalogueService.get_product_by_id(db, product_id)
+    latest_cost = db.query(StockMovement.purchase_cost)\
+        .filter(StockMovement.product_id == p.id, StockMovement.purchase_cost.isnot(None))\
+        .order_by(StockMovement.created_at.desc()).scalar()
     return ProductResponse(
         id=p.id,
         category_id=p.category_id,
@@ -106,6 +123,7 @@ def get_product(
         packaging_unit=p.packaging_unit,
         unit_quantity=p.unit_quantity,
         base_price=p.base_price,
+        landed_cost=Decimal(str(latest_cost)) if latest_cost is not None else (p.base_price * Decimal("0.80")),
         tax_rate=p.tax_rate,
         hsn_code=p.hsn_code,
         description=p.description,

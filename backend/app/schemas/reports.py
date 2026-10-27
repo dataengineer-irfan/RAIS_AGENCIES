@@ -19,6 +19,7 @@ class DashboardKPIs(BaseModel):
     revenue_periods: Optional[Dict[str, Any]] = None
     today_comparison: Optional[Dict[str, Any]] = None
     daily_trend_7d: Optional[List[Dict[str, Any]]] = None
+    margin_leakage_alerts: Optional[List[Dict[str, Any]]] = None
 
 class SalesReportItem(BaseModel):
     period: str

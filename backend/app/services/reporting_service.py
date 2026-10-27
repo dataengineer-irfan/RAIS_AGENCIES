@@ -332,6 +332,44 @@ class ReportingService:
             overall_profit = Decimal("0.00")
             overall_loss = abs(net_profit_loss).quantize(Decimal("0.01"))
 
+        # 12. End-of-Day / Live Margin Leakage Anomaly Check (Today's invoices sold below landed cost)
+        today_sold_items = db.query(
+            Invoice.invoice_number,
+            Customer.business_name,
+            Product.sku,
+            Product.name,
+            InvoiceItem.quantity,
+            InvoiceItem.unit_price,
+            InvoiceItem.line_total,
+            InvoiceItem.product_id,
+            Invoice.created_at
+        ).join(InvoiceItem, Invoice.id == InvoiceItem.invoice_id)\
+         .outerjoin(Customer, Customer.id == Invoice.customer_id)\
+         .outerjoin(Product, Product.id == InvoiceItem.product_id)\
+         .filter(
+             Invoice.invoice_date == today,
+             Invoice.status != InvoiceStatus.CANCELLED.value
+         ).all()
+
+        margin_leakage_alerts = []
+        for inv_num, b_name, sku, p_name, qty, u_price, l_total, pid, c_at in today_sold_items:
+            qty_d = Decimal(str(qty or "0"))
+            u_price_d = Decimal(str(u_price or "0"))
+            p_cost = cost_map.get(pid)
+            if p_cost and u_price_d < p_cost:
+                loss_per_unit = p_cost - u_price_d
+                margin_leakage_alerts.append({
+                    "invoice_number": inv_num,
+                    "customer_name": b_name or "Unknown",
+                    "sku": sku or "N/A",
+                    "product_name": p_name or "Item",
+                    "quantity": float(qty_d),
+                    "unit_price": float(u_price_d),
+                    "landed_cost": float(p_cost),
+                    "loss_amount": round(float(loss_per_unit * qty_d), 2),
+                    "time": c_at.strftime("%I:%M %p") if c_at else ""
+                })
+
         kpis = DashboardKPIs(
             total_revenue_month=total_revenue_month,
             total_outstanding=total_outstanding,
@@ -347,7 +385,8 @@ class ReportingService:
             recent_payments=recent_payments,
             revenue_periods=revenue_periods,
             today_comparison=today_comparison,
-            daily_trend_7d=daily_trend_7d
+            daily_trend_7d=daily_trend_7d,
+            margin_leakage_alerts=margin_leakage_alerts
         )
 
         _DASHBOARD_CACHE["timestamp"] = now_ts

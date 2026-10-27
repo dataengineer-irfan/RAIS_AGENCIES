@@ -56,6 +56,7 @@ class ProductUpdate(BaseModel):
 class ProductResponse(ProductBase):
     id: str
     category_name: Optional[str] = None
+    landed_cost: Optional[Decimal] = None
     created_at: datetime
     updated_at: datetime
 

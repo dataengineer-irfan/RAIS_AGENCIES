@@ -32,6 +32,8 @@ export const InvoiceBuilderModal = ({
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [voiceNotification, setVoiceNotification] = useState(null);
   const [voiceConflictPrompt, setVoiceConflictPrompt] = useState(null);
+  const [priceWarningModalOpen, setPriceWarningModalOpen] = useState(false);
+  const [belowCostWarningItems, setBelowCostWarningItems] = useState([]);
 
   // Form State - Cash business default: invoiceDate and dueDate are identical today
   const todayStr = getLocalDateString();
@@ -469,11 +471,49 @@ export const InvoiceBuilderModal = ({
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleConfirmBelowCostSubmit = () => {
+    setPriceWarningModalOpen(false);
+    handleSubmit(null, true);
+  };
+
+  const handleCancelPriceWarning = () => {
+    setPriceWarningModalOpen(false);
+  };
+
+  const handleSubmit = async (e, bypassPriceWarning = false) => {
     if (e) e.preventDefault();
     setError('');
 
     if (!validateForm()) return;
+
+    // Check for below-cost / severe pricing outliers
+    if (!bypassPriceWarning) {
+      const outliers = [];
+      (items || []).forEach((itm, idx) => {
+        const prod = (products || []).find(p => p.id === itm.product_id);
+        const cost = prod ? parseFloat(prod.landed_cost || (prod.base_price * 0.8) || 0) : 0;
+        const price = parseFloat(itm.unit_price || 0);
+        const qty = parseFloat(itm.quantity || 1);
+        if (prod && price > 0 && cost > 0 && price < cost) {
+          outliers.push({
+            index: idx,
+            sku: prod.sku,
+            name: prod.name,
+            qty,
+            unitPrice: price,
+            landedCost: cost,
+            lossPerUnit: cost - price,
+            totalLoss: (cost - price) * qty
+          });
+        }
+      });
+
+      if (outliers.length > 0) {
+        setBelowCostWarningItems(outliers);
+        setPriceWarningModalOpen(true);
+        return;
+      }
+    }
 
     setSubmitting(true);
     try {
@@ -1129,6 +1169,9 @@ export const InvoiceBuilderModal = ({
                     const isZeroStock = selProd && curStock <= 0;
                     const isLowStock = selProd && curStock > 0 && curStock <= parseFloat(selProd.min_stock_alert || 10);
                     const lineTotal = (qtyVal * parseFloat(item.unit_price || 0) * (1 - (parseFloat(item.discount_rate || 0) / 100))).toFixed(2);
+                    const landedCost = selProd ? parseFloat(selProd.landed_cost || (selProd.base_price * 0.8) || 0) : 0;
+                    const unitPriceVal = parseFloat(item.unit_price || 0);
+                    const isBelowCost = selProd && unitPriceVal > 0 && landedCost > 0 && unitPriceVal < landedCost;
 
                     return (
                       <React.Fragment key={index}>
@@ -1224,9 +1267,19 @@ export const InvoiceBuilderModal = ({
                                 onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
                                 placeholder="0"
                                 required
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-5 pr-2 py-1.5 text-xs text-right font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                                className={`w-full bg-slate-900 border rounded-lg pl-5 pr-2 py-1.5 text-xs text-right font-mono font-bold focus:outline-none transition-colors ${
+                                  isBelowCost
+                                    ? 'border-rose-500 text-rose-300 focus:border-rose-400 bg-rose-950/20'
+                                    : 'border-slate-800 text-slate-200 focus:border-amber-500'
+                                }`}
                               />
                             </div>
+                            {isBelowCost && (
+                              <div className="text-[9px] text-rose-400 font-bold flex items-center justify-end gap-1 mt-0.5" title={`Landed cost is ₹${landedCost.toFixed(2)}`}>
+                                <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                                <span>Cost: ₹{Math.round(landedCost)}</span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="col-span-2">
@@ -1340,16 +1393,28 @@ export const InvoiceBuilderModal = ({
                             </div>
 
                             {/* Unit Price */}
-                            <div className="flex items-center bg-slate-900 rounded-lg border border-slate-800 px-2 py-1 shrink-0">
-                              <span className="text-[11px] text-slate-500 font-mono mr-1">₹</span>
-                              <input
-                                type="number"
-                                step="1"
-                                min="0"
-                                value={item.unit_price}
-                                onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
-                                className="w-14 text-xs font-mono font-bold text-slate-200 bg-transparent focus:outline-none"
-                              />
+                            <div className="flex flex-col items-end shrink-0">
+                              <div className={`flex items-center bg-slate-900 rounded-lg border px-2 py-1 ${
+                                isBelowCost ? 'border-rose-500 bg-rose-950/20' : 'border-slate-800'
+                              }`}>
+                                <span className="text-[11px] text-slate-500 font-mono mr-1">₹</span>
+                                <input
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  value={item.unit_price}
+                                  onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
+                                  className={`w-14 text-xs font-mono font-bold bg-transparent focus:outline-none ${
+                                    isBelowCost ? 'text-rose-300' : 'text-slate-200'
+                                  }`}
+                                />
+                              </div>
+                              {isBelowCost && (
+                                <span className="text-[9px] text-rose-400 font-bold mt-0.5 flex items-center gap-0.5">
+                                  <AlertTriangle className="w-2 h-2 shrink-0" />
+                                  Cost: ₹{Math.round(landedCost)}
+                                </span>
+                              )}
                             </div>
 
                             {/* Disc % */}
@@ -1792,6 +1857,67 @@ export const InvoiceBuilderModal = ({
                 className="text-xs text-slate-400 hover:text-white transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Below-Cost Pricing Confirmation Modal */}
+      {priceWarningModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-rose-500/50 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-400 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Low Price Warning</h4>
+                <p className="text-xs text-rose-300">
+                  {belowCostWarningItems.length} item(s) entered below landed purchase cost
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 space-y-2 max-h-48 overflow-y-auto">
+              {belowCostWarningItems.map((outlier, i) => (
+                <div key={i} className="flex items-center justify-between text-xs border-b border-slate-800/60 pb-2 last:border-b-0 last:pb-0">
+                  <div className="min-w-0 pr-2">
+                    <p className="font-bold text-white truncate">{outlier.name}</p>
+                    <p className="text-[10px] font-mono text-slate-400">
+                      SKU: {outlier.sku} • Qty: {outlier.qty}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-mono font-bold text-rose-400">
+                      ₹{outlier.unitPrice.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      Cost: ₹{outlier.landedCost.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Selling below cost creates a net loss on these items. Did you mean to enter these rates, or was this a typing error?
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleCancelPriceWarning}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs transition-all shadow-md active:scale-95"
+              >
+                ✏️ Re-Enter Price
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBelowCostSubmit}
+                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+              >
+                Proceed Anyway
               </button>
             </div>
           </div>

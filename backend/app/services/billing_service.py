@@ -3,11 +3,13 @@ from decimal import Decimal, ROUND_HALF_UP
 from datetime import date, timedelta, datetime, timezone
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import or_, func
+import logging
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.quotation import Quotation, QuotationItem
 from app.models.order import Order, OrderItem
 from app.models.customer import Customer
 from app.models.catalogue import Product
+from app.models.inventory import StockMovement
 from app.schemas.invoice import (
     InvoiceCreate, InvoiceUpdate, InvoiceResponse, InvoiceItemResponse,
     InvoiceAllocationItem, InvoiceStatusUpdate
@@ -26,6 +28,7 @@ def quantize_amount(val: Decimal) -> Decimal:
 
 _INVOICES_CACHE: Dict[str, Any] = {}
 _INVOICES_CACHE_TTL: float = 60.0  # 60 seconds server-side in-memory TTL
+logger = logging.getLogger("billing_service")
 
 class BillingService:
     @staticmethod
@@ -183,6 +186,27 @@ class BillingService:
                 if unit_price != product.base_price:
                     # Negotiated pricing override: log audit trail
                     diff_pct = (((unit_price - product.base_price) / product.base_price) * 100).quantize(Decimal("0.1"))
+                    
+                    # Resolve landed cost to evaluate margin safety
+                    landed_cost_raw = db.query(StockMovement.purchase_cost)\
+                        .filter(StockMovement.product_id == product.id, StockMovement.purchase_cost.isnot(None))\
+                        .order_by(StockMovement.created_at.desc()).scalar()
+                    landed_cost = Decimal(str(landed_cost_raw)) if landed_cost_raw is not None else (product.base_price * Decimal("0.80"))
+                    
+                    is_below_cost = unit_price < landed_cost
+                    is_severe_outlier = unit_price < (landed_cost * Decimal("0.50"))
+                    
+                    if is_severe_outlier:
+                        logger.warning(
+                            f"[CRITICAL_PRICE_WARNING] SKU {product.sku} ({product.name}) sold at severe loss: "
+                            f"Price=Rs.{unit_price}, Landed Cost=Rs.{landed_cost} (Loss: -Rs.{landed_cost - unit_price}/unit)"
+                        )
+                    elif is_below_cost:
+                        logger.info(
+                            f"[PRICE_WARNING] SKU {product.sku} ({product.name}) sold below landed cost: "
+                            f"Price=Rs.{unit_price}, Landed Cost=Rs.{landed_cost}"
+                        )
+
                     AuditService.log(
                         db=db,
                         action=AuditAction.PRICE_OVERRIDE,
@@ -194,8 +218,11 @@ class BillingService:
                         after_state={
                             "product_sku": product.sku,
                             "catalogue_base_price": str(product.base_price),
+                            "landed_cost": str(landed_cost),
                             "negotiated_unit_price": str(unit_price),
-                            "variance_pct": str(diff_pct)
+                            "variance_pct": str(diff_pct),
+                            "is_below_cost": is_below_cost,
+                            "is_severe_outlier": is_severe_outlier
                         }
                     )
 
