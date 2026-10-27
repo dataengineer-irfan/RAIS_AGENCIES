@@ -1,5 +1,6 @@
 import { openWhatsApp } from './mobileHelpers.js';
 import { generateInvoiceFile, downloadInvoiceImage, formatInvoiceDateTime } from './invoiceImageGenerator.js';
+import { generatePaymentFile, downloadPaymentImage } from './paymentImageGenerator.js';
 
 /**
  * Always returns the public production Render URL for PDF receipts.
@@ -225,7 +226,7 @@ ${parseFloat(totalAmt) > 0 ? `💰 *Est. Total:* *₹${totalAmt}*\n\n` : '\n'}${
   openWhatsApp(custPhone, message);
 };
 
-export const sharePaymentOnWhatsApp = ({
+export const sharePaymentOnWhatsApp = async ({
   payment,
   customer
 }) => {
@@ -278,10 +279,13 @@ export const sharePaymentOnWhatsApp = ({
     }
   }
 
-  // Digital printable voucher link
+  // Guaranteed Live Render URLs for Image & PDF
   let pdfSection = '';
+  let imageSection = '';
   if (payment?.id) {
     const pdfUrl = getPublicPaymentPdfUrl(payment.id);
+    const imgUrl = `${API_BASE_URL}/payments/${payment.id}/image`;
+    imageSection = `🖼️ *Digital Settlement Receipt (Image Card):*\n👉 ${imgUrl}\n\n`;
     pdfSection = `📄 *Official Payment Voucher (Print/PDF):*\n👉 ${pdfUrl}\n\n`;
   }
 
@@ -298,12 +302,64 @@ ${custPhone ? `📞 *Phone:* ${custPhone}\n` : ''}━━━━━━━━━━
 ${allocSection}${advanceNote}
 ━━━━━━━━━━━━━━━━━━━━
 ${ledgerSection}
-${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
+${imageSection}${pdfSection}📍 _RAIS AGENCIES — Rayachoty Cold-Chain Depot_
 📞 _Accounts Desk: 9347453135 | 9573261696_
 ❄️ _Quality Frozen Foods & Reliable Service_
 🙏 _Thank you for your timely settlement!_`;
 
-  openWhatsApp(custPhone, message);
+  // Try generating the payment image card and sharing it natively with image attached
+  try {
+    let paymentFile = null;
+    try {
+      paymentFile = await generatePaymentFile({
+        payment,
+        customer: customer || { business_name: custName, phone: custPhone }
+      });
+    } catch (imgErr) {
+      console.warn('Payment canvas image generation skipped/failed:', imgErr);
+    }
+
+    // 1. Mobile Web Share API with image file
+    if (
+      paymentFile &&
+      typeof navigator !== 'undefined' &&
+      navigator.canShare &&
+      navigator.canShare({ files: [paymentFile] })
+    ) {
+      try {
+        await navigator.share({
+          title: `RAIS Payment Receipt #${pNumber}`,
+          text: message,
+          files: [paymentFile]
+        });
+        return;
+      } catch (shareErr) {
+        if (shareErr.name === 'AbortError') {
+          return; // User cancelled share sheet
+        }
+        console.warn('Native payment share failed, falling back to download & direct link:', shareErr);
+      }
+    }
+
+    // 2. If file sharing is not supported (e.g. desktop web or older Android webview):
+    // Auto-save the payment image to downloads/gallery so user has it ready
+    if (paymentFile) {
+      try {
+        await downloadPaymentImage({
+          payment,
+          customer: customer || { business_name: custName, phone: custPhone }
+        });
+      } catch (dlErr) {
+        console.warn('Payment image auto-download failed:', dlErr);
+      }
+    }
+
+    // 3. Launch WhatsApp with message & Render PDF link
+    openWhatsApp(custPhone, message);
+  } catch (err) {
+    console.error('Payment share pipeline error:', err);
+    openWhatsApp(custPhone, message);
+  }
 };
 
 export const shareCustomerStatementOnWhatsApp = ({

@@ -3,8 +3,8 @@ import { CreditCard, CheckCircle2, ArrowRight, MessageSquare } from 'lucide-reac
 import { sharePaymentOnWhatsApp } from '../utils/whatsappShare';
 
 export const RecentPaymentsCard = ({ payments = [], onNavigateToPayments }) => {
-  const handleSendWhatsAppReceipt = (p) => {
-    sharePaymentOnWhatsApp({ payment: p });
+  const handleSendWhatsAppReceipt = async (p) => {
+    await sharePaymentOnWhatsApp({ payment: p });
   };
 
   const getMethodBadge = (method) => {

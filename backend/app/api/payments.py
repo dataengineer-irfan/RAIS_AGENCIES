@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+import io
+from PIL import Image, ImageDraw, ImageFont
+from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -139,7 +141,9 @@ def get_printable_payment(
         <title>Payment Receipt {p.payment_number} - RAIS Agencies</title>
         <meta property="og:title" content="RAIS AGENCIES — Payment Settlement Receipt #{p.payment_number}">
         <meta property="og:description" content="Received From: {cust_display} • Amount: ₹{p.amount:,.2f} • Date: {created_str}">
+        <meta property="og:image" content="https://rais-backend.onrender.com/api/payments/{p.id}/image">
         <meta property="og:type" content="website">
+        <meta name="twitter:card" content="summary_large_image">
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
             @media print {{
@@ -260,6 +264,148 @@ def get_printable_payment(
     </html>
     """
     return HTMLResponse(content=html)
+
+
+@router.get("/{payment_id}/image")
+def get_payment_image(
+    payment_id: str,
+    db: Session = Depends(get_db)
+):
+    p = PaymentService.get_payment_by_id(db, payment_id)
+
+    # Format date & short time in IST
+    created_str = str(p.payment_date)
+    if p.created_at:
+        try:
+            ist_time = p.created_at + timedelta(hours=5, minutes=30)
+            created_str = ist_time.strftime("%d-%b-%Y, %I:%M %p")
+        except Exception:
+            created_str = str(p.payment_date)
+
+    allocations = list(p.allocations) if p.allocations else []
+    alloc_count = len(allocations) if allocations else 1
+
+    # Dynamic sizing based on allocation rows
+    width = 800
+    row_height = 34
+    height = 560 + (alloc_count * row_height)
+
+    img = Image.new("RGB", (width, height), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+
+    def load_font(size, bold=False):
+        candidates = ["arial.ttf", "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf", "calibri.ttf", "segoeui.ttf"]
+        for c in candidates:
+            try:
+                return ImageFont.truetype(c, size)
+            except Exception:
+                pass
+        return ImageFont.load_default()
+
+    f_title = load_font(24, bold=True)
+    f_sub = load_font(12)
+    f_bold = load_font(12, bold=True)
+    f_regular = load_font(11)
+    f_mono = load_font(12, bold=True)
+    f_large_amt = load_font(22, bold=True)
+    f_small = load_font(10)
+
+    # 1. Header Banner (Deep Navy + Emerald Accent)
+    draw.rectangle([(0, 0), (width, 130)], fill=(15, 23, 42))
+    draw.rectangle([(0, 126), (width, 130)], fill=(16, 185, 129))
+
+    draw.text((30, 18), settings.COMPANY_NAME, fill=(16, 185, 129), font=f_title)
+    draw.text((30, 50), settings.COMPANY_TAGLINE, fill=(148, 163, 184), font=f_sub)
+    draw.text((30, 72), f"{settings.COMPANY_ADDRESS} • Accounts: {settings.COMPANY_PHONE_PRIMARY}", fill=(203, 213, 225), font=f_small)
+    draw.text((30, 90), f"Depot Desk: {settings.COMPANY_PHONE_SECONDARY} • Timely Settlements Acknowledged", fill=(203, 213, 225), font=f_small)
+
+    # Payment Meta Box (Header Right)
+    draw.rectangle([(width - 250, 16), (width - 30, 115)], fill=(30, 41, 59), outline=(51, 65, 85))
+    draw.text((width - 235, 24), "SETTLEMENT RECEIPT", fill=(248, 250, 252), font=f_bold)
+    draw.text((width - 235, 44), f"#{p.payment_number}", fill=(16, 185, 129), font=f_mono)
+    draw.text((width - 235, 64), f"Date: {created_str}", fill=(148, 163, 184), font=f_small)
+    draw.text((width - 235, 86), "STATUS: CONFIRMED", fill=(16, 185, 129), font=f_bold)
+
+    # 2. Customer Info Card
+    draw.rectangle([(30, 145), (width - 30, 225)], fill=(248, 250, 252), outline=(226, 232, 240))
+    draw.text((45, 155), "RECEIVED FROM (CUSTOMER ACCOUNT):", fill=(100, 116, 139), font=f_small)
+    cust_display = p.customer_name or "Valued Customer"
+    draw.text((45, 172), cust_display, fill=(15, 23, 42), font=f_bold)
+    contact_info = f"Phone: {p.customer_phone or '-'}  •  Code: {p.customer_code or '-'}  •  Contact: {p.customer_contact or '-'}"
+    draw.text((45, 194), contact_info, fill=(71, 85, 105), font=f_regular)
+
+    # 3. Hero Amount & Method Banner
+    cur_y = 238
+    draw.rectangle([(30, cur_y), (width - 30, cur_y + 60)], fill=(236, 253, 245), outline=(167, 243, 208))
+    draw.text((45, cur_y + 10), "AMOUNT RECEIVED:", fill=(4, 120, 87), font=f_bold)
+    draw.text((45, cur_y + 28), f"₹{p.amount:,.2f}", fill=(6, 95, 70), font=f_large_amt)
+
+    method = (p.payment_method or "CASH").upper()
+    fallback_ref = "Direct Cash Settlement" if method == "CASH" else ("UPI Transfer" if method == "UPI" else "Direct Bank Settlement")
+    ref_str = p.reference_number or fallback_ref
+
+    draw.text((450, cur_y + 12), f"Payment Mode: {method}", fill=(15, 23, 42), font=f_bold)
+    draw.text((450, cur_y + 32), f"Ref / UTR: {ref_str}", fill=(71, 85, 105), font=f_regular)
+
+    # 4. Allocations Table
+    tbl_y = cur_y + 75
+    draw.rectangle([(30, tbl_y), (width - 30, tbl_y + 30)], fill=(15, 23, 42))
+    draw.text((42, tbl_y + 8), "#", fill=(248, 250, 252), font=f_bold)
+    draw.text((80, tbl_y + 8), "ALLOCATED INVOICE #", fill=(248, 250, 252), font=f_bold)
+    draw.text((430, tbl_y + 8), "ALLOCATED DATE", fill=(248, 250, 252), font=f_bold)
+    draw.text((650, tbl_y + 8), "SETTLED AMOUNT (₹)", fill=(248, 250, 252), font=f_bold)
+
+    cur_y = tbl_y + 30
+    if allocations:
+        for idx, a in enumerate(allocations, 1):
+            bg = (255, 255, 255) if idx % 2 == 1 else (248, 250, 252)
+            draw.rectangle([(30, cur_y), (width - 30, cur_y + row_height)], fill=bg)
+            draw.line([(30, cur_y + row_height), (width - 30, cur_y + row_height)], fill=(241, 245, 249))
+
+            draw.text((42, cur_y + 9), str(idx), fill=(100, 116, 139), font=f_regular)
+            inv_num = a.invoice_number or a.invoice_id or f"Invoice {idx}"
+            draw.text((80, cur_y + 9), f"Bill #{inv_num}", fill=(30, 41, 59), font=f_bold)
+
+            alloc_date_str = str(p.payment_date)
+            if a.allocated_at:
+                try:
+                    alloc_ist = a.allocated_at + timedelta(hours=5, minutes=30)
+                    alloc_date_str = alloc_ist.strftime("%d-%b-%Y")
+                except Exception:
+                    pass
+            draw.text((430, cur_y + 9), alloc_date_str, fill=(100, 116, 139), font=f_regular)
+            draw.text((650, cur_y + 9), f"₹{a.allocated_amount:,.2f}", fill=(4, 120, 87), font=f_bold)
+            cur_y += row_height
+    else:
+        draw.rectangle([(30, cur_y), (width - 30, cur_y + row_height)], fill=(255, 255, 255))
+        draw.text((80, cur_y + 9), "Direct credit settlement on customer account ledger.", fill=(71, 85, 105), font=f_regular)
+        cur_y += row_height
+
+    # 5. Ledger Status Box & Unallocated Note
+    cur_y += 15
+    if p.unallocated_amount and float(p.unallocated_amount) > 0:
+        draw.rectangle([(30, cur_y), (width - 30, cur_y + 32)], fill=(254, 243, 199), outline=(253, 230, 138))
+        draw.text((45, cur_y + 8), f"Advance / On-Account Credit Retained: ₹{float(p.unallocated_amount):,.2f}", fill=(180, 83, 9), font=f_bold)
+        cur_y += 42
+
+    bal = float(p.customer_outstanding_balance) if p.customer_outstanding_balance is not None else None
+    if bal is not None:
+        if bal > 0:
+            draw.rectangle([(30, cur_y), (width - 30, cur_y + 40)], fill=(255, 241, 242), outline=(254, 205, 211))
+            draw.text((45, cur_y + 12), "CURRENT REMAINING LEDGER DUE:", fill=(159, 18, 57), font=f_bold)
+            draw.text((620, cur_y + 12), f"₹{bal:,.2f}", fill=(190, 18, 60), font=f_mono)
+        else:
+            draw.rectangle([(30, cur_y), (width - 30, cur_y + 40)], fill=(236, 253, 245), outline=(167, 243, 208))
+            draw.text((45, cur_y + 12), "CURRENT LEDGER STATUS: ALL DUES FULLY CLEARED (₹0.00)", fill=(4, 120, 87), font=f_bold)
+        cur_y += 50
+
+    # 6. Footer
+    draw.line([(0, cur_y), (width, cur_y)], fill=(226, 232, 240))
+    draw.text((30, cur_y + 8), "Official Computer Generated Settlement Receipt • RAIS AGENCIES Rayachoty (-18°C Cold-Chain Depot)", fill=(100, 116, 139), font=f_small)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return Response(content=buf.getvalue(), media_type="image/png")
 
 @router.post("", response_model=PaymentResponse)
 def record_payment(

@@ -130,9 +130,9 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
 
   const [isReconciling, setIsReconciling] = useState(false);
 
-  const handleSendWhatsAppReceipt = (p) => {
+  const handleSendWhatsAppReceipt = async (p) => {
     if (!p) return;
-    sharePaymentOnWhatsApp({ payment: p });
+    await sharePaymentOnWhatsApp({ payment: p });
   };
 
   const handlePrintVoucher = (p) => {
