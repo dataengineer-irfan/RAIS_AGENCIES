@@ -444,9 +444,9 @@ def get_invoice_image(
     # 4b. Direct Quick Links Banner (Bold Emerald Card)
     cur_y += 120
     draw.rectangle([(30, cur_y), (width - 30, cur_y + 48)], fill=(236, 253, 245), outline=(167, 243, 208))
-    draw.text((45, cur_y + 8), "🟢 WhatsApp Orders: wa.me/919347453135", fill=(4, 120, 87), font=f_bold)
-    draw.text((410, cur_y + 8), "🌐 Website: dataengineer-irfan.github.io/RAIS-AGENCIES/#/products", fill=(6, 95, 70), font=f_bold)
-    draw.text((45, cur_y + 26), "📖 Photo Catalogue: dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html", fill=(4, 120, 87), font=f_bold)
+    draw.text((45, cur_y + 8), "🟢 WhatsApp Orders: 9347453135 (wa.me/919347453135)", fill=(4, 120, 87), font=f_bold)
+    draw.text((430, cur_y + 8), "🌐 Online Store: Live Products & Pricing", fill=(6, 95, 70), font=f_bold)
+    draw.text((45, cur_y + 26), "📖 Photo Catalogue: 66+ Frozen SKUs Available (Tap links in message to open)", fill=(4, 120, 87), font=f_bold)
 
     # 5. Footer
     cur_y += 58

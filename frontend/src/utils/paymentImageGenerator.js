@@ -302,19 +302,19 @@ export const generatePaymentCanvas = ({
     ctx.fillRect(30, curY, width - 60, linkBannerHeight);
   }
 
-  // Row 1: WhatsApp Order Desk & Website
+  // Row 1: WhatsApp Order Desk & Online Store
   ctx.fillStyle = '#047857';
-  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('🟢 WhatsApp Order Desk: wa.me/919347453135', 46, curY + 22);
+  ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🟢 WhatsApp Order Desk: 9347453135 (wa.me/919347453135)', 46, curY + 22);
 
   ctx.fillStyle = '#065f46';
-  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('🌐 Website: dataengineer-irfan.github.io/RAIS-AGENCIES/#/products', 380, curY + 22);
+  ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🌐 Online Store: Live Products & Pricing', 420, curY + 22);
 
   // Row 2: Photo Catalogue
   ctx.fillStyle = '#047857';
-  ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('📖 Photo Catalogue: dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html', 46, curY + 44);
+  ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('📖 Photo Catalogue: 66+ Frozen SKUs Available (Tap links in WhatsApp message to open)', 46, curY + 44);
 
   curY += linkBannerHeight + 15;
 

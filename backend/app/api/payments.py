@@ -427,9 +427,9 @@ def get_payment_image(
 
     # 5b. Direct Quick Links Banner (Bold Emerald Card)
     draw.rectangle([(30, cur_y), (width - 30, cur_y + 48)], fill=(236, 253, 245), outline=(167, 243, 208))
-    draw.text((45, cur_y + 8), "🟢 WhatsApp Order Desk: wa.me/919347453135", fill=(4, 120, 87), font=f_bold)
-    draw.text((410, cur_y + 8), "🌐 Website: dataengineer-irfan.github.io/RAIS-AGENCIES/#/products", fill=(6, 95, 70), font=f_bold)
-    draw.text((45, cur_y + 26), "📖 Photo Catalogue: dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html", fill=(4, 120, 87), font=f_bold)
+    draw.text((45, cur_y + 8), "🟢 WhatsApp Orders: 9347453135 (wa.me/919347453135)", fill=(4, 120, 87), font=f_bold)
+    draw.text((430, cur_y + 8), "🌐 Online Store: Live Products & Pricing", fill=(6, 95, 70), font=f_bold)
+    draw.text((45, cur_y + 26), "📖 Photo Catalogue: 66+ Frozen SKUs Available (Tap links in message to open)", fill=(4, 120, 87), font=f_bold)
     cur_y += 58
 
     # 6. Footer
