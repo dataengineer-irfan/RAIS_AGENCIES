@@ -171,7 +171,7 @@ class CustomerService:
             func.min(Invoice.invoice_date).label("first_inv")
         ).filter(
             Invoice.customer_id.in_(cust_ids),
-            Invoice.status != InvoiceStatus.CANCELLED.value
+            Invoice.status.in_(valid_statuses)
         ).group_by(Invoice.customer_id).all()
         first_inv_map = {row[0]: row[1] for row in first_inv_rows}
 
@@ -274,17 +274,24 @@ class CustomerService:
         total_invoiced, total_paid, outstanding = CustomerService.get_customer_balances(db, c.id)
         gross_profit = CustomerService.get_customer_profit(db, c.id)
 
+        valid_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+
         top_items_rows = db.query(InvoiceItem.item_description).join(
             Invoice, Invoice.id == InvoiceItem.invoice_id
         ).filter(
             Invoice.customer_id == c.id,
-            Invoice.status != InvoiceStatus.CANCELLED.value
+            Invoice.status.in_(valid_statuses)
         ).distinct().limit(8).all()
         top_items = [r[0] for r in top_items_rows if r[0]]
 
         first_inv = db.query(func.min(Invoice.invoice_date)).filter(
             Invoice.customer_id == c.id,
-            Invoice.status != InvoiceStatus.CANCELLED.value
+            Invoice.status.in_(valid_statuses)
         ).scalar()
         cust_since = datetime.combine(first_inv, datetime.min.time()) if first_inv else c.created_at
 
@@ -346,6 +353,13 @@ class CustomerService:
 
             cust_ids = [c.id for c in customers]
 
+            valid_statuses = [
+                InvoiceStatus.ISSUED.value,
+                InvoiceStatus.PARTIALLY_PAID.value,
+                InvoiceStatus.PAID.value,
+                InvoiceStatus.OVERDUE.value
+            ]
+
             # Consolidated query: Latest invoice date AND total invoiced sum in a single SQL roundtrip
             inv_data = db.query(
                 Invoice.customer_id,
@@ -353,7 +367,7 @@ class CustomerService:
                 func.sum(Invoice.total_amount).label("tot_inv")
             ).filter(
                 Invoice.customer_id.in_(cust_ids),
-                Invoice.status != InvoiceStatus.CANCELLED.value
+                Invoice.status.in_(valid_statuses)
             ).group_by(Invoice.customer_id).all()
             last_inv_map = {row[0]: row[1] for row in inv_data}
             inv_tot_map = {row[0]: Decimal(str(row[2] or "0.00")) for row in inv_data}
@@ -384,7 +398,7 @@ class CustomerService:
                 Invoice.invoice_date
             ).filter(
                 Invoice.customer_id.in_(cust_ids),
-                Invoice.status != InvoiceStatus.CANCELLED.value
+                Invoice.status.in_(valid_statuses)
             ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).all()
             
             last_inv_amount_map = {}

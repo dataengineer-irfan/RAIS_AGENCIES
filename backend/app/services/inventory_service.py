@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import List, Optional
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.catalogue import Product
 from app.models.inventory import StockMovement
@@ -357,43 +358,48 @@ class InventoryService:
         if not product:
             return
 
-        # Guard: Check if a restoration movement already exists for this product and invoice
-        existing_restore = db.query(StockMovement).filter(
-            StockMovement.product_id == product_id,
-            StockMovement.reference_type == "INVOICE_RESTORE",
-            StockMovement.reference_number == invoice_number
-        ).first()
-        if existing_restore:
-            # Already restored; do not restore twice
-            return
+        # Calculate total stock deducted for this product from this invoice (and its source order if converted)
+        from app.models.invoice import Invoice
+        from app.models.order import Order
 
-        # Guard: Check original deduction movement to ensure we only reverse actual committed movements
-        original_deduction = db.query(StockMovement).filter(
+        # Deductions directly under INVOICE
+        inv_deductions = db.query(func.coalesce(func.sum(func.abs(StockMovement.quantity_change)), 0)).filter(
             StockMovement.product_id == product_id,
             StockMovement.reference_type == "INVOICE",
             StockMovement.reference_number == invoice_number
-        ).first()
+        ).scalar() or 0
 
-        if not original_deduction:
-            # Check if invoice was converted from an order where deduction was logged under ORDER
-            from app.models.invoice import Invoice
-            from app.models.order import Order
-            inv = db.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
-            if inv and inv.order_id:
-                ord_obj = db.query(Order).filter(Order.id == inv.order_id).first()
-                if ord_obj:
-                    original_deduction = db.query(StockMovement).filter(
-                        StockMovement.product_id == product_id,
-                        StockMovement.reference_type == "ORDER",
-                        StockMovement.reference_number == ord_obj.order_number
-                    ).first()
+        # If converted from an order, also check deductions recorded under ORDER
+        order_deductions = 0
+        inv = db.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
+        if inv and inv.order_id:
+            ord_obj = db.query(Order).filter(Order.id == inv.order_id).first()
+            if ord_obj:
+                order_deductions = db.query(func.coalesce(func.sum(func.abs(StockMovement.quantity_change)), 0)).filter(
+                    StockMovement.product_id == product_id,
+                    StockMovement.reference_type == "ORDER",
+                    StockMovement.reference_number == ord_obj.order_number
+                ).scalar() or 0
 
-        if not original_deduction:
-            # No deduction recorded for this product on this invoice or its origin order; do not fabricate stock
+        total_deducted = Decimal(str(inv_deductions)) + Decimal(str(order_deductions))
+        if total_deducted <= Decimal("0.00"):
+            # No recorded deduction for this product; do not fabricate stock
             return
 
-        actual_deducted = abs(Decimal(str(original_deduction.quantity_change)))
-        qty_to_restore = min(qty, actual_deducted)
+        # Calculate total stock already restored for this invoice
+        inv_restored = db.query(func.coalesce(func.sum(StockMovement.quantity_change), 0)).filter(
+            StockMovement.product_id == product_id,
+            StockMovement.reference_type == "INVOICE_RESTORE",
+            StockMovement.reference_number == invoice_number
+        ).scalar() or 0
+
+        total_restored = Decimal(str(inv_restored))
+        max_restorable = max(Decimal("0.00"), total_deducted - total_restored)
+        qty_to_restore = min(qty, max_restorable)
+
+        if qty_to_restore <= Decimal("0.00"):
+            # All deducted stock has already been restored; prevent duplicate restoration
+            return
 
         prev_stock = Decimal(str(product.current_stock or 0))
         new_stock = prev_stock + qty_to_restore
@@ -423,25 +429,30 @@ class InventoryService:
         if not product:
             return
 
-        # Check if already restored
-        existing_restore = db.query(StockMovement).filter(
-            StockMovement.product_id == product_id,
-            StockMovement.reference_type == "ORDER_RESTORE",
-            StockMovement.reference_number == order_number
-        ).first()
-        if existing_restore:
-            return
-
-        original_deduction = db.query(StockMovement).filter(
+        # Calculate total stock deducted for this order
+        total_deducted_query = db.query(func.coalesce(func.sum(func.abs(StockMovement.quantity_change)), 0)).filter(
             StockMovement.product_id == product_id,
             StockMovement.reference_type == "ORDER",
             StockMovement.reference_number == order_number
-        ).first()
-        if not original_deduction:
+        ).scalar() or 0
+        total_deducted = Decimal(str(total_deducted_query))
+
+        if total_deducted <= Decimal("0.00"):
             return
 
-        actual_deducted = abs(Decimal(str(original_deduction.quantity_change)))
-        qty_to_restore = min(qty, actual_deducted)
+        # Calculate total stock already restored for this order
+        total_restored_query = db.query(func.coalesce(func.sum(StockMovement.quantity_change), 0)).filter(
+            StockMovement.product_id == product_id,
+            StockMovement.reference_type == "ORDER_RESTORE",
+            StockMovement.reference_number == order_number
+        ).scalar() or 0
+        total_restored = Decimal(str(total_restored_query))
+
+        max_restorable = max(Decimal("0.00"), total_deducted - total_restored)
+        qty_to_restore = min(qty, max_restorable)
+
+        if qty_to_restore <= Decimal("0.00"):
+            return
 
         prev_stock = Decimal(str(product.current_stock or 0))
         new_stock = prev_stock + qty_to_restore

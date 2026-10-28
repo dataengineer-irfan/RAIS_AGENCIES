@@ -34,9 +34,16 @@ class ReconciliationService:
             Payment.customer_id == customer_id
         ).order_by(Payment.payment_date.asc(), Payment.created_at.asc()).all()
 
+        valid_billable_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+
         invoices = db.query(Invoice).filter(
             Invoice.customer_id == customer_id,
-            Invoice.status != InvoiceStatus.CANCELLED.value
+            Invoice.status.in_(valid_billable_statuses)
         ).order_by(Invoice.invoice_date.asc(), Invoice.created_at.asc()).all()
 
         # Step 1: Remove existing allocations for this customer

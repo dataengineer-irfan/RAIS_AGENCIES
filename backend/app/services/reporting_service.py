@@ -81,7 +81,7 @@ class ReportingService:
         invoices_count = db.query(func.count(Invoice.id)).filter(
             Invoice.invoice_date >= first_day_month,
             Invoice.invoice_date <= today,
-            Invoice.status != InvoiceStatus.CANCELLED.value
+            Invoice.status.in_(valid_statuses)
         ).scalar() or 0
 
         # 5. Open Invoices Count (Unpaid or Partially Paid)
@@ -254,7 +254,7 @@ class ReportingService:
             joinedload(Invoice.customer),
             joinedload(Invoice.items)
         ).filter(
-            Invoice.status != InvoiceStatus.CANCELLED.value
+            Invoice.status.notin_([InvoiceStatus.CANCELLED.value, InvoiceStatus.VOID.value])
         ).order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).limit(100).all()
 
         recent_invoices = [
@@ -348,7 +348,7 @@ class ReportingService:
          .outerjoin(Product, Product.id == InvoiceItem.product_id)\
          .filter(
              Invoice.invoice_date == today,
-             Invoice.status != InvoiceStatus.CANCELLED.value
+             Invoice.status.notin_([InvoiceStatus.CANCELLED.value, InvoiceStatus.VOID.value])
          ).all()
 
         margin_leakage_alerts = []
