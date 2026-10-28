@@ -749,6 +749,9 @@ class BillingService:
                 )
 
         inv_number = invoice.invoice_number
+        cust_name = invoice.customer.business_name if invoice.customer else None
+        cust_code = invoice.customer.customer_code if invoice.customer else None
+        items_cnt = len(invoice.items) if invoice.items else 0
         AuditService.log(
             db=db,
             action=AuditAction.DELETE,
@@ -759,7 +762,10 @@ class BillingService:
             user_role=user_role,
             before_state={
                 "invoice_number": inv_number,
-                "total_amount": str(invoice.total_amount)
+                "total_amount": str(invoice.total_amount),
+                "customer_name": cust_name,
+                "customer_code": cust_code,
+                "items_count": items_cnt
             }
         )
 

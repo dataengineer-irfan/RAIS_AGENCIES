@@ -30,6 +30,7 @@ export const App = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
 
   const [selectedCustomerIdForDossier, setSelectedCustomerIdForDossier] = useState(null);
+  const [auditInitialParams, setAuditInitialParams] = useState(null);
 
   const handleNavigate = (target, payload = null) => {
     const dashboardSubPages = ['overview', 'forecast', 'targets', 'receivables', 'products', 'activity'];
@@ -41,6 +42,9 @@ export const App = () => {
       if (target === 'customers' && payload) {
         const custId = typeof payload === 'object' ? (payload.customer_id || payload.id) : payload;
         setSelectedCustomerIdForDossier(custId);
+      }
+      if (target === 'audit' && payload) {
+        setAuditInitialParams(payload);
       }
       setActiveTab(target);
     }
@@ -278,6 +282,7 @@ export const App = () => {
               key={dataRefreshKey}
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentForInvoice={(inv) => handleOpenPayment({ id: inv.customer_id, business_name: inv.customer_name }, inv)}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -293,7 +298,7 @@ export const App = () => {
 
           {activeTab === 'ai' && <AIAssistantPage />}
 
-          {activeTab === 'audit' && <AuditPage />}
+          {activeTab === 'audit' && <AuditPage initialParams={auditInitialParams} />}
         </main>
       </div>
 

@@ -6,29 +6,32 @@ import {
   Eye, 
   Clock, 
   User,
-  Copy,
-  Check,
-  ChevronRight,
-  Sparkles,
-  FileCode,
-  Layers,
-  CheckCircle2,
-  AlertCircle,
-  Database,
-  Download,
-  HardDrive,
-  RefreshCw,
-  FileText
+  Copy, 
+  Check, 
+  ChevronRight, 
+  Sparkles, 
+  FileCode, 
+  Layers, 
+  CheckCircle2, 
+  AlertCircle, 
+  Database, 
+  Download, 
+  HardDrive, 
+  RefreshCw, 
+  FileText,
+  Trash2,
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
 import { auditApi, backupApi } from '../services/api';
 import { copyToClipboard } from '../utils/mobileHelpers';
 
-export const AuditPage = () => {
+export const AuditPage = ({ initialParams = null }) => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [entityFilter, setEntityFilter] = useState('');
-  const [actionFilter, setActionFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [entityFilter, setEntityFilter] = useState(() => initialParams?.entity || initialParams?.entity_name || '');
+  const [actionFilter, setActionFilter] = useState(() => initialParams?.action || '');
+  const [searchTerm, setSearchTerm] = useState(() => initialParams?.search || initialParams?.searchTerm || '');
   
   // Master-Detail State
   const [selectedLogId, setSelectedLogId] = useState(null);
@@ -41,6 +44,21 @@ export const AuditPage = () => {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupBannerMsg, setBackupBannerMsg] = useState(null);
   const [showVaultInfo, setShowVaultInfo] = useState(false);
+
+  // Sync initialParams whenever caller updates it (e.g. 1-click navigate from Invoices Hub)
+  useEffect(() => {
+    if (initialParams) {
+      if (initialParams.entity || initialParams.entity_name) {
+        setEntityFilter(initialParams.entity || initialParams.entity_name);
+      }
+      if (initialParams.action) {
+        setActionFilter(initialParams.action);
+      }
+      if (initialParams.search || initialParams.searchTerm) {
+        setSearchTerm(initialParams.search || initialParams.searchTerm);
+      }
+    }
+  }, [initialParams]);
 
   useEffect(() => {
     loadAuditLogs();
@@ -104,20 +122,55 @@ export const AuditPage = () => {
     }
   };
 
-  const handleCopy = async (text) => {
+  const handleCopy = async (textOrObj) => {
+    const text = typeof textOrObj === 'string' ? textOrObj : JSON.stringify(textOrObj, null, 2);
     await copyToClipboard(text);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const parseSnapshot = (raw) => {
+    if (!raw) return null;
+    if (typeof raw === 'object') return raw;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return { raw_content: raw };
+    }
+  };
+
+  const formatTimestamp = (isoStr) => {
+    if (!isoStr) return 'Recently';
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return isoStr;
+    }
+  };
+
   const filteredLogs = logs.filter(l => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
+    const beforeStr = typeof l.before_state === 'string' ? l.before_state.toLowerCase() : JSON.stringify(l.before_state || '').toLowerCase();
+    const afterStr = typeof l.after_state === 'string' ? l.after_state.toLowerCase() : JSON.stringify(l.after_state || '').toLowerCase();
+    
     return (
-      (l.user_username || '').toLowerCase().includes(term) ||
+      (l.username || l.user_username || '').toLowerCase().includes(term) ||
+      (l.user_role || '').toLowerCase().includes(term) ||
       (l.action || '').toLowerCase().includes(term) ||
       (l.entity_name || '').toLowerCase().includes(term) ||
-      (l.entity_id || '').toLowerCase().includes(term)
+      (l.entity_id || '').toLowerCase().includes(term) ||
+      beforeStr.includes(term) ||
+      afterStr.includes(term)
     );
   });
 
@@ -142,6 +195,12 @@ export const AuditPage = () => {
     }
   };
 
+  const selectedBefore = parseSnapshot(selectedLog?.before_state);
+  const selectedAfter = parseSnapshot(selectedLog?.after_state);
+  const selectedInvNum = selectedBefore?.invoice_number || selectedAfter?.invoice_number;
+  const selectedAmount = selectedBefore?.total_amount || selectedAfter?.total_amount;
+  const selectedCust = selectedBefore?.customer_name || selectedAfter?.customer_name;
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
@@ -161,7 +220,7 @@ export const AuditPage = () => {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Security Logs & Immutable Activity Mutation Journal
+              Cryptographically Recorded Activity & Mutation Journal (PostgreSQL)
             </p>
           </div>
         </div>
@@ -174,9 +233,17 @@ export const AuditPage = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search user, entity, ID..."
-              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-32 sm:w-44"
+              placeholder="Search invoice #, customer, user..."
+              className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-36 sm:w-48"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           <select
@@ -202,7 +269,9 @@ export const AuditPage = () => {
             <option value="">All Actions</option>
             <option value="CREATE">CREATE</option>
             <option value="UPDATE">UPDATE</option>
+            <option value="DELETE">DELETE (Audit Trace)</option>
             <option value="STATUS_CHANGE">STATUS_CHANGE</option>
+            <option value="CANCELLED">CANCELLED</option>
             <option value="ALLOCATION">ALLOCATION</option>
             <option value="LOGIN">LOGIN</option>
             <option value="EXPORT">EXPORT</option>
@@ -340,6 +409,13 @@ export const AuditPage = () => {
             ) : (
               filteredLogs.map(l => {
                 const isSelected = l.id === selectedLogId;
+                const before = parseSnapshot(l.before_state);
+                const after = parseSnapshot(l.after_state);
+                const invNum = before?.invoice_number || after?.invoice_number;
+                const amount = before?.total_amount || after?.total_amount;
+                const custName = before?.customer_name || after?.customer_name;
+                const actorName = l.username || l.user_username || 'SYSTEM';
+                const actorRole = l.user_role ? `(${l.user_role})` : '';
 
                 return (
                   <div
@@ -354,18 +430,30 @@ export const AuditPage = () => {
                         : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
-                    <div className="overflow-hidden pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[9px] font-black uppercase px-2 py-0.2 rounded border ${getActionBadgeClass(l.action)}`}>
+                    <div className="overflow-hidden pr-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${getActionBadgeClass(l.action)}`}>
                           {l.action}
                         </span>
                         <span className="font-mono text-white text-xs font-bold">
                           {l.entity_name}
                         </span>
+                        {invNum && (
+                          <span className="text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                            #{invNum}
+                          </span>
+                        )}
+                        {amount && (
+                          <span className="text-[11px] font-mono font-bold text-emerald-400">
+                            ₹{Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                        Actor: <strong className="text-slate-300">{l.user_username || 'SYSTEM'}</strong> {l.entity_id ? `• ID: ${l.entity_id.slice(0, 8)}...` : ''}
-                      </p>
+                      <div className="text-[10px] text-slate-400 truncate mt-1 flex items-center gap-1">
+                        <span>Actor: <strong className="text-slate-300">{actorName} {actorRole}</strong></span>
+                        {custName && <span>• <strong className="text-slate-200">{custName}</strong></span>}
+                        {l.entity_id && !invNum && <span>• ID: {l.entity_id.slice(0, 8)}...</span>}
+                      </div>
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
@@ -402,27 +490,37 @@ export const AuditPage = () => {
               {/* Inspector Header */}
               <div className="flex items-start justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-xs font-black uppercase px-2.5 py-0.5 rounded-full border ${getActionBadgeClass(selectedLog.action)}`}>
                       {selectedLog.action}
                     </span>
                     <span className="font-mono font-bold text-sm text-white">
                       {selectedLog.entity_name}
                     </span>
+                    {selectedInvNum && (
+                      <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                        #{selectedInvNum}
+                      </span>
+                    )}
+                    {selectedAmount && (
+                      <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                        ₹{Number(selectedAmount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
-                    Triggered by <strong className="text-white">{selectedLog.user_username || 'SYSTEM'}</strong> on {selectedLog.created_at || 'Recently'}
+                    Triggered by <strong className="text-white">{selectedLog.username || selectedLog.user_username || 'SYSTEM'}</strong> {selectedLog.user_role ? `(${selectedLog.user_role})` : ''} on {formatTimestamp(selectedLog.created_at)}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
-                    onClick={() => handleCopy(selectedLog.changes_snapshot || selectedLog)}
+                    onClick={() => handleCopy(selectedLog)}
                     className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    title="Copy Raw JSON Snapshot"
+                    title="Copy Full Audit Record JSON"
                   >
                     {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">Copy JSON</span>
+                    <span className="hidden sm:inline">Copy Log</span>
                   </button>
                 </div>
               </div>
@@ -430,7 +528,7 @@ export const AuditPage = () => {
               {/* Inspector Tab Bar */}
               <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-800/80 shrink-0">
                 {[
-                  { id: 'json', label: 'JSON Diff Inspector', icon: FileCode },
+                  { id: 'json', label: 'Mutation & State Diff', icon: FileCode },
                   { id: 'metadata', label: 'Actor & IP Telemetry', icon: Layers },
                   { id: 'compliance', label: 'Immutability Check', icon: ShieldCheck },
                 ].map(tab => {
@@ -454,15 +552,136 @@ export const AuditPage = () => {
               </div>
 
               {/* Inspector Content Area (Internal Scroll) */}
-              <div className="flex-1 min-h-0 overflow-y-auto pt-3 pr-1">
+              <div className="flex-1 min-h-0 overflow-y-auto pt-3 pr-1 space-y-3">
                 
-                {/* ─── TAB 1: RAW JSON DIFF INSPECTOR ─── */}
+                {/* ─── HIGHLIGHT CARD: DELETED INVOICE AUDIT ─── */}
+                {selectedLog.action === 'DELETE' && (
+                  <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-2xl space-y-3 shadow-md animate-in fade-in">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2 text-rose-300 font-bold text-sm">
+                        <Trash2 className="w-4 h-4 text-rose-400" />
+                        <span>Permanently Purged {selectedLog.entity_name} Record</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold">
+                        Stock Restored to Live Depot
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs text-slate-300 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Document Number</span>
+                        <span className="font-mono text-amber-400 font-bold text-sm">
+                          #{selectedInvNum || selectedLog.entity_id}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Total Bill Value</span>
+                        <span className="font-mono text-emerald-400 font-bold text-sm">
+                          {selectedAmount ? `₹${Number(selectedAmount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">Deleted By Actor</span>
+                        <span className="font-bold text-white">
+                          {selectedLog.username || selectedLog.user_username || 'admin'} ({selectedLog.user_role || 'ADMIN'})
+                        </span>
+                      </div>
+                      {selectedCust && (
+                        <div className="col-span-2">
+                          <span className="text-[10px] text-slate-500 block uppercase font-bold">Customer</span>
+                          <span className="font-semibold text-slate-200">
+                            {selectedCust}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between border-t border-rose-500/20 pt-2 flex-wrap gap-1">
+                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> 
+                        Guaranteed: No customer WhatsApp message sent on deletion
+                      </span>
+                      <span className="text-slate-500 font-mono text-[10px]">
+                        Log ID: {selectedLog.id?.slice(0, 8)}...
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* ─── TAB 1: RAW JSON & MUTATION DIFF INSPECTOR ─── */}
                 {activeInspectorTab === 'json' && (
                   <div className="space-y-3">
-                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-xs text-amber-300 overflow-x-auto shadow-inner">
-                      <pre className="whitespace-pre-wrap leading-relaxed">
-                        {JSON.stringify(selectedLog.changes_snapshot || { info: "No before/after mutations recorded" }, null, 2)}
-                      </pre>
+                    {/* Before State */}
+                    {selectedBefore ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+                            State Before Action (Snapshot)
+                          </span>
+                          <button
+                            onClick={() => handleCopy(selectedBefore)}
+                            className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                          >
+                            <Copy className="w-3 h-3" /> Copy Before
+                          </button>
+                        </div>
+                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-rose-300 overflow-x-auto shadow-inner">
+                          <pre className="whitespace-pre-wrap leading-relaxed">
+                            {JSON.stringify(selectedBefore, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* After State */}
+                    {selectedAfter ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                            State After Action (Snapshot)
+                          </span>
+                          <button
+                            onClick={() => handleCopy(selectedAfter)}
+                            className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                          >
+                            <Copy className="w-3 h-3" /> Copy After
+                          </button>
+                        </div>
+                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-300 overflow-x-auto shadow-inner">
+                          <pre className="whitespace-pre-wrap leading-relaxed">
+                            {JSON.stringify(selectedAfter, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* If neither before nor after state recorded */}
+                    {!selectedBefore && !selectedAfter && (
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 text-center text-xs text-slate-400">
+                        No state snapshot mutations recorded for this audit entry.
+                      </div>
+                    )}
+
+                    {/* Complete Raw Log Entry */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 pt-2 border-t border-slate-800/80">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Complete Audit Record Payload (PostgreSQL)
+                        </span>
+                        <button
+                          onClick={() => handleCopy(selectedLog)}
+                          className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                        >
+                          <Copy className="w-3 h-3" /> Copy Raw Record
+                        </button>
+                      </div>
+                      <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 font-mono text-[11px] text-amber-300/90 overflow-x-auto shadow-inner">
+                        <pre className="whitespace-pre-wrap leading-relaxed">
+                          {JSON.stringify(selectedLog, null, 2)}
+                        </pre>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -477,7 +696,11 @@ export const AuditPage = () => {
                       <div className="grid grid-cols-2 gap-2 text-slate-300">
                         <div>
                           <span className="text-slate-500 text-[10px] block">Actor Username:</span>
-                          <span className="font-bold text-white">{selectedLog.user_username || 'SYSTEM'}</span>
+                          <span className="font-bold text-white">{selectedLog.username || selectedLog.user_username || 'SYSTEM'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Actor Role:</span>
+                          <span className="font-bold text-amber-400 font-mono">{selectedLog.user_role || 'ADMIN'}</span>
                         </div>
                         <div>
                           <span className="text-slate-500 text-[10px] block">User ID:</span>
@@ -489,7 +712,11 @@ export const AuditPage = () => {
                         </div>
                         <div>
                           <span className="text-slate-500 text-[10px] block">Entity Record UUID:</span>
-                          <span className="font-mono text-xs">{selectedLog.entity_id || 'N/A'}</span>
+                          <span className="font-mono text-xs text-slate-300">{selectedLog.entity_id || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Recorded Timestamp:</span>
+                          <span className="font-mono text-xs text-emerald-400">{formatTimestamp(selectedLog.created_at)}</span>
                         </div>
                         <div className="col-span-2">
                           <span className="text-slate-500 text-[10px] block">Network IP / Client Agent:</span>
@@ -507,10 +734,19 @@ export const AuditPage = () => {
                       <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                       <div>
                         <h4 className="text-xs font-bold text-emerald-300">Cryptographically Sealed Audit Entry</h4>
-                        <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                          This mutation is appended to the PostgreSQL immutable log stream. It cannot be altered or purged by application users.
+                        <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                          This mutation is appended to the PostgreSQL immutable log stream. It cannot be altered, overwritten, or purged by any application role.
                         </p>
                       </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-2 text-xs">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Warehouse Inventory Lineage Assurance
+                      </h4>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Whenever an invoice is deleted, RAIS executes an atomic stock reversal: each line item's quantity is immediately credited back to live depot inventory with a corresponding movement record in <code className="text-amber-400 bg-slate-900 px-1 py-0.5 rounded">stock_movements</code>.
+                      </p>
                     </div>
                   </div>
                 )}
