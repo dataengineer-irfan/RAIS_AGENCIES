@@ -32,6 +32,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { backupApi } from '../services/api';
 import { RaisLogo } from './RaisLogo';
+import { ContinuousLiveTicker } from './DashboardLiveTicker';
 
 export const Header = ({ 
   onToggleAI, 
@@ -80,8 +81,8 @@ export const Header = ({
     <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all pt-[env(safe-area-inset-top,0px)]">
       {/* ─── DESKTOP HEADER (md and above) ─── */}
       <div className="hidden md:flex h-16 px-4 sm:px-6 items-center justify-between gap-3">
-        {/* Left section: Top-Left Toggle Bar + Search */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl">
+        {/* Left section: Top-Left Toggle Bar + Continuous Scrolling Live Ticker */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-2xl xl:max-w-3xl">
           {/* Top-Left Corner Toggle Bar Button */}
           <div 
             onMouseEnter={onHoverTopLeft}
@@ -105,17 +106,8 @@ export const Header = ({
             </button>
           </div>
 
-          {/* Global Search Input */}
-          <div className="relative w-full max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={globalSearchTerm}
-              onChange={(e) => onGlobalSearch(e.target.value)}
-              placeholder="Search customers, invoices, products..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-            />
-          </div>
+          {/* Continuous Scrolling Live Operational Ticker */}
+          <ContinuousLiveTicker className="w-full flex-1 min-w-0" />
         </div>
 
         {/* Business Meta & AI Trigger */}
@@ -260,6 +252,11 @@ export const Header = ({
               {user?.full_name?.charAt(0) || user?.username?.charAt(0) || 'A'}
             </button>
           </div>
+        </div>
+
+        {/* Continuous Scrolling Live Operational Ticker for Mobile */}
+        <div className="pt-1.5 pb-1">
+          <ContinuousLiveTicker className="w-full text-[11px]" />
         </div>
 
         {/* Collapsible Mobile Search Input */}

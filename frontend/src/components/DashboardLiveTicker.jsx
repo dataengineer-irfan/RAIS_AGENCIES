@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { reportApi } from '../services/api';
 
 /**
  * Calculates Indian Standard Time (IST, UTC+5:30) reliably
@@ -60,18 +61,17 @@ export const generateTickerItems = (kpis) => {
   const items = [];
   const greeting = getISTGreeting();
 
-  // Slide 1: Welcome & Live Greeting
+  // 1. Welcome & Time-Aware Greeting
   items.push({
     id: 'greeting',
     type: 'greeting',
     icon: greeting.icon,
     badge: 'RAIS DEPOT',
-    badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    headline: greeting.title,
-    subtext: 'Central Cold-Chain & Packaging Depot'
+    badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    headline: `${greeting.title} — Rayachoti Central Cold-Chain & Packaging Depot`
   });
 
-  // Slide 2: Real-time Live Orders & Sales Today (100% DB telemetry)
+  // 2. Real-time Live Orders & Sales Today (100% DB telemetry)
   const todayOrders = kpis?.revenue_periods?.today?.invoices_count !== undefined
     ? parseInt(kpis.revenue_periods.today.invoices_count || 0, 10)
     : (kpis?.recent_invoices ? kpis.recent_invoices.length : 0);
@@ -80,39 +80,37 @@ export const generateTickerItems = (kpis) => {
 
   let ordersHeadline = '';
   if (todayOrders === 0) {
-    ordersHeadline = 'Till now 0 orders today';
+    ordersHeadline = 'Till now 0 orders today • Depot active & ready for dispatch';
   } else if (todayOrders === 1) {
-    ordersHeadline = `Till now 1 order today (₹${todayRevenue.toLocaleString('en-IN')})`;
+    ordersHeadline = `Till now 1 order today (₹${todayRevenue.toLocaleString('en-IN')}) dispatched`;
   } else {
-    ordersHeadline = `Till now ${todayOrders} orders today (₹${todayRevenue.toLocaleString('en-IN')})`;
+    ordersHeadline = `Till now ${todayOrders} orders today (₹${todayRevenue.toLocaleString('en-IN')}) dispatched`;
   }
 
   items.push({
     id: 'orders',
     type: 'orders',
     icon: '📦',
-    badge: 'TODAY',
+    badge: 'LIVE ORDERS',
     badgeColor: todayOrders > 0
-      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
       : 'bg-slate-800 text-slate-400 border-slate-700',
-    headline: ordersHeadline,
-    subtext: todayOrders > 0 ? 'Active dispatch from -18°C storage' : 'Depot ready for incoming orders'
+    headline: ordersHeadline
   });
 
-  // Slide 3: Real-Time High Demand / Low Stock Alerts
+  // 3. Real-Time High Demand / Low Stock Alerts from DB
   const lowStock = kpis?.low_stock_alerts || [];
   if (lowStock && lowStock.length > 0) {
-    lowStock.slice(0, 3).forEach((p, idx) => {
+    lowStock.forEach((p, idx) => {
       const stock = parseFloat(p.current_stock || 0);
       const unit = p.packaging_unit || 'PACKETS';
       items.push({
         id: `low_stock_${p.product_id || idx}`,
         type: 'alert',
         icon: '⚠️',
-        badge: 'LOW STOCK',
-        badgeColor: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-        headline: `${p.name} low: only ${stock} ${unit} left`,
-        subtext: `Stock (${stock}) below min safety alert (${p.min_stock_alert || 5})`
+        badge: 'HIGH DEMAND',
+        badgeColor: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+        headline: `${p.name} low stock: only ${stock} ${unit} left at depot!`
       });
     });
   } else {
@@ -120,89 +118,134 @@ export const generateTickerItems = (kpis) => {
       id: 'depot_health',
       type: 'health',
       icon: '❄️',
-      badge: 'STOCK HEALTH',
-      badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-      headline: 'Depot Stock Healthy: All critical items available',
-      subtext: 'Cold room & packaging depot fully supplied'
+      badge: 'DEPOT HEALTH',
+      badgeColor: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+      headline: 'Depot stock healthy: All critical frozen SKUs & packaging ready in -18°C cold store'
     });
   }
+
+  // 4. Quality & Hotline info
+  items.push({
+    id: 'dispatch_hotline',
+    type: 'info',
+    icon: '⚡',
+    badge: 'ORDER DESK',
+    badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+    headline: 'Same-day restaurant delivery across Rayachoti • Wholesale Order Hotline: 9347453135'
+  });
 
   return items;
 };
 
-export const DashboardLiveTicker = ({ kpis, className = '' }) => {
-  const tickerItems = useMemo(() => generateTickerItems(kpis), [kpis]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+/**
+ * ContinuousLiveTicker:
+ * Continuous horizontal marquee ticker running at the top navbar.
+ * Mathematically seamless infinite loop with hover-to-pause.
+ */
+export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
+  const [internalKpis, setInternalKpis] = useState(kpis);
 
+  // Self-fetch if not provided via props (e.g. in top Header navbar)
   useEffect(() => {
-    if (tickerItems.length <= 1 || isPaused) return;
+    if (kpis) {
+      setInternalKpis(kpis);
+      return;
+    }
 
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % tickerItems.length);
-    }, 4000);
+    let isMounted = true;
+    reportApi.getDashboard()
+      .then((data) => {
+        if (isMounted && data) {
+          setInternalKpis(data);
+        }
+      })
+      .catch(() => {});
 
-    return () => clearInterval(timer);
-  }, [tickerItems.length, isPaused]);
+    return () => {
+      isMounted = false;
+    };
+  }, [kpis]);
 
-  // Safe bounds guard
-  const activeItem = tickerItems[currentIndex] || tickerItems[0];
-  if (!activeItem) return null;
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % tickerItems.length);
-  };
+  const items = useMemo(() => generateTickerItems(internalKpis), [internalKpis]);
 
   return (
     <div
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onClick={handleNext}
-      title="Live Operational Ticker • Hover to pause, click to advance"
-      className={`relative flex items-center overflow-hidden bg-slate-950/80 hover:bg-slate-950 border border-slate-800/80 hover:border-slate-700/80 rounded-lg px-2.5 py-1 transition-all duration-300 cursor-pointer select-none group shadow-inner ${className}`}
+      className={`relative flex items-center overflow-hidden bg-slate-950/90 border border-slate-800/90 rounded-xl h-9 px-2 shadow-inner group select-none ${className}`}
+      title="Live Depot Telemetry • Continuous Scroll • Hover to Pause"
     >
-      {/* Live Pulsing Dot */}
-      <span className="relative flex h-2 w-2 mr-2 shrink-0">
-        <span
-          className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-            activeItem.type === 'alert' ? 'bg-rose-400' : 'bg-emerald-400'
-          }`}
-        />
-        <span
-          className={`relative inline-flex rounded-full h-2 w-2 ${
-            activeItem.type === 'alert' ? 'bg-rose-500' : 'bg-emerald-500'
-          }`}
-        />
-      </span>
+      <style>{`
+        @keyframes raisContinuousMarquee {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
+        .rais-ticker-track {
+          display: flex;
+          align-items: center;
+          width: max-content;
+          animation: raisContinuousMarquee 42s linear infinite;
+          will-change: transform;
+        }
+        .rais-ticker-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-      {/* Slide Content with smooth transition */}
-      <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
-        {/* Category Pill */}
-        <span
-          className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border shrink-0 ${activeItem.badgeColor}`}
-        >
-          {activeItem.badge}
+      {/* Static Left Label with Pulsing Dot */}
+      <div className="flex items-center gap-1.5 shrink-0 pr-3 border-r border-slate-800/80 mr-2 bg-slate-950/90 z-20">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
         </span>
-
-        {/* Dynamic Headline */}
-        <span className="text-xs font-bold text-slate-200 truncate group-hover:text-amber-300 transition-colors">
-          {activeItem.icon} {activeItem.headline}
+        <span className="text-[10px] font-black tracking-wider text-slate-300 uppercase">
+          LIVE
         </span>
       </div>
 
-      {/* Cycle indicator dots */}
-      <div className="flex items-center gap-1 ml-2 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
-        {tickerItems.map((_, idx) => (
-          <span
-            key={idx}
-            className={`h-1 rounded-full transition-all duration-300 ${
-              idx === currentIndex ? 'w-2.5 bg-amber-400' : 'w-1 bg-slate-600'
-            }`}
-          />
-        ))}
+      {/* Subtle Fade Edge Masks for smooth entrance/exit */}
+      <div className="pointer-events-none absolute left-14 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-950 to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10" />
+
+      {/* Continuous Marquee Track (Duplicated twice for seamless infinite loop) */}
+      <div className="overflow-hidden flex-1 flex items-center min-w-0">
+        <div className="rais-ticker-track">
+          {/* Loop Set 1 */}
+          <div className="flex items-center gap-6 pr-6 shrink-0">
+            {items.map((item, idx) => (
+              <div key={`set1-${item.id}-${idx}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}`}>
+                  {item.badge}
+                </span>
+                <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-200 transition-colors">
+                  {item.icon} {item.headline}
+                </span>
+                <span className="text-slate-600 font-black ml-2">•</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Loop Set 2 (Identical twin for seamless wrap) */}
+          <div className="flex items-center gap-6 pr-6 shrink-0" aria-hidden="true">
+            {items.map((item, idx) => (
+              <div key={`set2-${item.id}-${idx}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}`}>
+                  {item.badge}
+                </span>
+                <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-200 transition-colors">
+                  {item.icon} {item.headline}
+                </span>
+                <span className="text-slate-600 font-black ml-2">•</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default DashboardLiveTicker;
+export const DashboardLiveTicker = ContinuousLiveTicker;
+export default ContinuousLiveTicker;
