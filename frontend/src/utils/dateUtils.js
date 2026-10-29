@@ -26,3 +26,25 @@ export const getYesterdayString = (d = new Date()) => {
   dateObj.setDate(dateObj.getDate() - 1);
   return getLocalDateString(dateObj);
 };
+
+export const getISTDateString = (dateVal) => {
+  if (!dateVal) return '';
+  let str = String(dateVal);
+  if (typeof str === 'string' && str.includes('T') && !str.endsWith('Z') && !str.includes('+') && !str.includes('-0')) {
+    str += 'Z';
+  }
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+};
+
+export const formatToIST = (dateVal, options = { dateStyle: 'medium', timeStyle: 'short' }) => {
+  if (!dateVal) return '-';
+  let str = String(dateVal);
+  if (typeof str === 'string' && str.includes('T') && !str.endsWith('Z') && !str.includes('+') && !str.includes('-0')) {
+    str += 'Z';
+  }
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return String(dateVal);
+  return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', ...options });
+};

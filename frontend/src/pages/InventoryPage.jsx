@@ -38,7 +38,8 @@ import {
   FileText,
   X,
   Building2,
-  Tag
+  Tag,
+  Calendar
 } from 'lucide-react';
 import { inventoryApi, catalogueApi, billingApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -51,6 +52,13 @@ import { UploadInvoiceModal } from '../components/UploadInvoiceModal';
 import { VoiceDictationModal } from '../components/VoiceDictationModal';
 import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 import { smartProductMatch, cleanProductName } from '../utils/productHelpers';
+import { 
+  getLocalDateString, 
+  getYesterdayString, 
+  getStartOfWeekString, 
+  getISTDateString, 
+  formatToIST 
+} from '../utils/dateUtils';
 
 export const InventoryPage = () => {
   const { hasRole } = useAuth();
@@ -74,6 +82,8 @@ export const InventoryPage = () => {
 
   // Live Lineage Filter & Drilldown State
   const [lineageFilter, setLineageFilter] = useState('ALL'); // 'ALL', 'OUTFLOW', 'INFLOW', 'ADJUSTMENT'
+  const [lineageDateFilter, setLineageDateFilter] = useState('ALL'); // 'ALL', 'TODAY', 'YESTERDAY', 'WEEK', 'MONTH', 'CUSTOM'
+  const [lineageCustomDate, setLineageCustomDate] = useState('');
   const [lineageSearch, setLineageSearch] = useState('');
   const [previewInvoiceId, setPreviewInvoiceId] = useState(null);
   const [previewInvoiceLoading, setPreviewInvoiceLoading] = useState(false);
@@ -171,52 +181,57 @@ export const InventoryPage = () => {
   };
 
   const handleExportLineageCsv = () => {
-    if (!selectedProduct || movementsData.length === 0) return;
+    const dataToExport = filteredLineage.length > 0 ? filteredLineage : movementsData;
+    if (!selectedProduct || dataToExport.length === 0) return;
     const headers = [
-      'Date & Time',
+      'Date & Time (IST)',
       'Movement Type',
-      'Reference #',
+      'Reference No',
       'Customer / Source',
       'Quantity Change',
-      'Unit',
+      'Packaging Unit',
       'Balance Stock',
       'Unit Price (INR)',
       'Total Value (INR)',
-      'Batch #',
+      'Batch No',
       'Expiry Date',
       'Reason / Notes'
     ];
-    const rows = movementsData.map(m => {
-      const dt = new Date(m.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' });
+    const rows = dataToExport.map(m => {
+      const dt = formatToIST(m.created_at, { dateStyle: 'medium', timeStyle: 'short' });
       const isPositive = parseFloat(m.quantity_change) > 0;
       const qtyStr = isPositive ? `+${m.quantity_change}` : `${m.quantity_change}`;
       const custOrSupp = m.customer_name || m.supplier || '-';
       const price = m.unit_price || m.purchase_cost || '-';
       const totalVal = m.total_value ? parseFloat(m.total_value).toFixed(2) : '-';
       return [
-        `"${dt}"`,
+        `"${dt.replace(/"/g, '""')}"`,
         `"${getMovementDisplayType(m.movement_type)}"`,
-        `"${m.reference_number || '-'}"`,
+        `"${(m.reference_number || '-').replace(/"/g, '""')}"`,
         `"${custOrSupp.replace(/"/g, '""')}"`,
         qtyStr,
-        `"${m.unit || selectedProduct.packaging_unit}"`,
+        `"${(m.unit || selectedProduct.packaging_unit || '').replace(/"/g, '""')}"`,
         m.new_stock,
         price,
         totalVal,
-        `"${m.batch_number || '-'}"`,
-        `"${m.expiry_date || '-'}"`,
+        `"${(m.batch_number || '-').replace(/"/g, '""')}"`,
+        `"${(m.expiry_date || '-').replace(/"/g, '""')}"`,
         `"${(m.notes || m.reason || '-').replace(/"/g, '""')}"`
       ].join(',');
     });
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvText = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob(['\uFEFF' + csvText], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${selectedProduct.sku}_Stock_Lineage_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.href = url;
+    const filterSuffix = lineageFilter !== 'ALL' ? `_${lineageFilter}` : '';
+    const dateSuffix = lineageDateFilter !== 'ALL' ? `_${lineageDateFilter}` : '';
+    link.setAttribute('download', `${selectedProduct.sku}_Lineage${filterSuffix}${dateSuffix}_${getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
   const handleSelectProduct = (item) => {
@@ -298,7 +313,7 @@ export const InventoryPage = () => {
     if (!movementsData || movementsData.length === 0) {
       return { todayOutflow: 0, totalOutflow: 0, totalInflow: 0, topCustomer: null, topCustomerQty: 0, outflowCount: 0, inflowCount: 0, adjCount: 0 };
     }
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     let todayOutflow = 0;
     let totalOutflow = 0;
     let totalInflow = 0;
@@ -309,7 +324,7 @@ export const InventoryPage = () => {
 
     movementsData.forEach(m => {
       const qty = parseFloat(m.quantity_change || 0);
-      const mDate = (m.created_at || '').slice(0, 10);
+      const mDate = getISTDateString(m.created_at);
       const type = (m.movement_type || '').toUpperCase();
 
       if (type.includes('ADJUST')) {
@@ -345,14 +360,29 @@ export const InventoryPage = () => {
   }, [movementsData]);
 
   const filteredLineage = useMemo(() => {
+    const todayStr = getLocalDateString();
+    const yesterdayStr = getYesterdayString();
+    const weekStartStr = getStartOfWeekString();
+    const currentMonthPrefix = todayStr.slice(0, 7);
+
     return movementsData.filter(m => {
       const qty = parseFloat(m.quantity_change || 0);
       const type = (m.movement_type || '').toUpperCase();
+      const mDate = getISTDateString(m.created_at);
 
+      // 1. Movement Type Filter
       if (lineageFilter === 'OUTFLOW' && qty >= 0) return false;
       if (lineageFilter === 'INFLOW' && qty <= 0) return false;
       if (lineageFilter === 'ADJUSTMENT' && !type.includes('ADJUST')) return false;
 
+      // 2. Date Filter
+      if (lineageDateFilter === 'TODAY' && mDate !== todayStr) return false;
+      if (lineageDateFilter === 'YESTERDAY' && mDate !== yesterdayStr) return false;
+      if (lineageDateFilter === 'WEEK' && mDate < weekStartStr) return false;
+      if (lineageDateFilter === 'MONTH' && !mDate.startsWith(currentMonthPrefix)) return false;
+      if (lineageDateFilter === 'CUSTOM' && lineageCustomDate && mDate !== lineageCustomDate) return false;
+
+      // 3. Search Filter
       if (lineageSearch.trim()) {
         const q = lineageSearch.toLowerCase().trim();
         const ref = (m.reference_number || '').toLowerCase();
@@ -365,7 +395,7 @@ export const InventoryPage = () => {
       }
       return true;
     });
-  }, [movementsData, lineageFilter, lineageSearch]);
+  }, [movementsData, lineageFilter, lineageDateFilter, lineageCustomDate, lineageSearch]);
 
   const selectedProduct = stockItems.find(i => i.product_id === selectedProductId) || filteredItems[0] || stockItems[0];
   const selectedProductZone = selectedProduct ? getStorageZone(selectedProduct) : null;
@@ -1272,7 +1302,7 @@ export const InventoryPage = () => {
                         <div className="flex items-center gap-1.5 self-end sm:self-auto">
                           <button
                             onClick={handleExportLineageCsv}
-                            disabled={movementsData.length === 0}
+                            disabled={filteredLineage.length === 0}
                             className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-[10px] font-bold transition-all disabled:opacity-40"
                             title="Export Lineage Ledger as CSV"
                           >
@@ -1346,6 +1376,62 @@ export const InventoryPage = () => {
                             className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-6 pr-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-amber-500 placeholder:text-slate-600"
                           />
                         </div>
+                      </div>
+
+                      {/* Date Filter Slicer Ribbon */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-[11px]">
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 mr-1">
+                            <Calendar className="w-3 h-3 text-amber-400" />
+                            <span>Date:</span>
+                          </span>
+                          {[
+                            { id: 'ALL', label: 'All' },
+                            { id: 'TODAY', label: 'Today' },
+                            { id: 'YESTERDAY', label: 'Yesterday' },
+                            { id: 'WEEK', label: 'This Week' },
+                            { id: 'MONTH', label: 'This Month' },
+                            { id: 'CUSTOM', label: 'Custom' }
+                          ].map(df => (
+                            <button
+                              key={df.id}
+                              onClick={() => setLineageDateFilter(df.id)}
+                              className={`px-2 py-0.5 rounded-md whitespace-nowrap font-bold text-[10px] transition-all ${
+                                lineageDateFilter === df.id
+                                  ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                              }`}
+                            >
+                              {df.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {lineageDateFilter === 'CUSTOM' && (
+                          <div className="flex items-center gap-1 ml-auto">
+                            <input
+                              type="date"
+                              value={lineageCustomDate}
+                              onChange={(e) => setLineageCustomDate(e.target.value)}
+                              className="bg-slate-900 border border-slate-700 text-slate-200 rounded px-1.5 py-0.5 text-[10px] focus:outline-none focus:border-emerald-500"
+                            />
+                            {lineageCustomDate && (
+                              <button
+                                onClick={() => setLineageCustomDate('')}
+                                className="text-slate-400 hover:text-slate-200 text-xs px-1"
+                                title="Clear date"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {(lineageDateFilter !== 'ALL' || lineageFilter !== 'ALL' || lineageSearch) && (
+                          <span className="text-[10px] font-bold text-amber-400 ml-auto">
+                            {filteredLineage.length} of {movementsData.length} movements
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -1459,7 +1545,7 @@ export const InventoryPage = () => {
 
                                       {/* Timestamp & Notes */}
                                       <p className="text-[10px] text-slate-500 mt-1">
-                                        {new Date(m.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                        {formatToIST(m.created_at, { dateStyle: 'medium', timeStyle: 'short' })}
                                         {m.notes && ` • ${m.notes}`}
                                       </p>
                                     </div>

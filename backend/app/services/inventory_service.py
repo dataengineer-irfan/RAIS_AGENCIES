@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import timezone
 from typing import List, Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -329,7 +330,7 @@ class InventoryService:
                 "total_value": total_val,
                 "reason": m.reason,
                 "notes": m.notes,
-                "created_at": m.created_at
+                "created_at": m.created_at.replace(tzinfo=timezone.utc) if m.created_at and m.created_at.tzinfo is None else m.created_at
             })
         return results
 
