@@ -75,6 +75,11 @@ class StockMovementResponse(BaseModel):
     expiry_date: Optional[date] = None
     reference_type: Optional[str] = None
     reference_number: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_code: Optional[str] = None
+    invoice_id: Optional[str] = None
+    unit_price: Optional[Decimal] = None
+    total_value: Optional[Decimal] = None
     reason: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime

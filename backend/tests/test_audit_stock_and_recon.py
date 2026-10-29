@@ -46,9 +46,11 @@ def test_audit_stock_restoration_and_fifo_reconciliation():
         db.add(cust)
 
         # Seed test category
-        cat = Category(code="DAIRY", name="Dairy", description="Dairy Products")
-        db.add(cat)
-        db.flush()
+        cat = db.query(Category).filter_by(code="DAIRY").first()
+        if not cat:
+            cat = Category(code="DAIRY", name="Dairy", description="Dairy Products")
+            db.add(cat)
+            db.flush()
 
         # Seed test product with 50 units initial stock
         prod = Product(

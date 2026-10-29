@@ -4,6 +4,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.catalogue import Product
 from app.models.inventory import StockMovement
+from app.models.invoice import Invoice, InvoiceItem
+from app.models.order import Order
 from app.schemas.inventory import ReceiveStockRequest, AdjustStockRequest
 from app.services.sequence_service import SequenceService
 from app.services.audit_service import AuditService
@@ -256,8 +258,54 @@ class InventoryService:
             query = query.filter(StockMovement.product_id == product_id)
         
         movements = query.limit(limit).all()
+
+        # Batch resolve references for customer, invoice and pricing info (O(1) database trips)
+        inv_numbers = [m.reference_number for m in movements if m.reference_number and str(m.reference_number).startswith("INV-")]
+        ord_numbers = [m.reference_number for m in movements if m.reference_number and str(m.reference_number).startswith("ORD-")]
+
+        invoices_map = {}
+        if inv_numbers:
+            invoices = db.query(Invoice).options(
+                joinedload(Invoice.customer),
+                joinedload(Invoice.items)
+            ).filter(Invoice.invoice_number.in_(inv_numbers)).all()
+            for inv in invoices:
+                invoices_map[inv.invoice_number] = inv
+
+        orders_map = {}
+        if ord_numbers:
+            orders = db.query(Order).options(joinedload(Order.customer)).filter(Order.order_number.in_(ord_numbers)).all()
+            for o in orders:
+                orders_map[o.order_number] = o
+
         results = []
         for m in movements:
+            cust_name = None
+            cust_code = None
+            inv_id = None
+            unit_price = None
+            total_val = None
+
+            if m.reference_number and m.reference_number in invoices_map:
+                inv = invoices_map[m.reference_number]
+                inv_id = inv.id
+                if inv.customer:
+                    cust_name = inv.customer.business_name
+                    cust_code = inv.customer.customer_code
+                if inv.items:
+                    matched = next((it for it in inv.items if it.product_id == m.product_id), None)
+                    if matched and matched.unit_price is not None:
+                        unit_price = Decimal(str(matched.unit_price))
+                        total_val = abs(Decimal(str(m.quantity_change))) * unit_price
+            elif m.reference_number and m.reference_number in orders_map:
+                o = orders_map[m.reference_number]
+                if o.customer:
+                    cust_name = o.customer.business_name
+                    cust_code = o.customer.customer_code
+
+            if total_val is None and m.purchase_cost:
+                total_val = abs(Decimal(str(m.quantity_change))) * Decimal(str(m.purchase_cost))
+
             results.append({
                 "id": m.id,
                 "product_id": m.product_id,
@@ -274,6 +322,11 @@ class InventoryService:
                 "expiry_date": m.expiry_date,
                 "reference_type": m.reference_type,
                 "reference_number": m.reference_number,
+                "customer_name": cust_name,
+                "customer_code": cust_code,
+                "invoice_id": inv_id,
+                "unit_price": unit_price,
+                "total_value": total_val,
                 "reason": m.reason,
                 "notes": m.notes,
                 "created_at": m.created_at

@@ -34,9 +34,13 @@ import {
   Truck,
   Camera,
   FileUp,
-  Mic
+  Mic,
+  FileText,
+  X,
+  Building2,
+  Tag
 } from 'lucide-react';
-import { inventoryApi, catalogueApi } from '../services/api';
+import { inventoryApi, catalogueApi, billingApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ReceiveStockModal } from '../components/ReceiveStockModal';
 import { AdjustStockModal } from '../components/AdjustStockModal';
@@ -67,6 +71,13 @@ export const InventoryPage = () => {
   const [movementsData, setMovementsData] = useState([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
+
+  // Live Lineage Filter & Drilldown State
+  const [lineageFilter, setLineageFilter] = useState('ALL'); // 'ALL', 'OUTFLOW', 'INFLOW', 'ADJUSTMENT'
+  const [lineageSearch, setLineageSearch] = useState('');
+  const [previewInvoiceId, setPreviewInvoiceId] = useState(null);
+  const [previewInvoiceLoading, setPreviewInvoiceLoading] = useState(false);
+  const [previewInvoiceData, setPreviewInvoiceData] = useState(null);
 
   // Modals
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
@@ -123,8 +134,10 @@ export const InventoryPage = () => {
   const loadMovementsForProduct = async (prodId) => {
     if (!prodId) return;
     setMovementsLoading(true);
+    setLineageFilter('ALL');
+    setLineageSearch('');
     try {
-      const data = await inventoryApi.getMovements({ product_id: prodId, limit: 25 });
+      const data = await inventoryApi.getMovements({ product_id: prodId, limit: 100 });
       setMovementsData(Array.isArray(data) ? data : (data?.items || []));
     } catch (err) {
       console.error('Failed to load stock movements for product:', err);
@@ -132,6 +145,78 @@ export const InventoryPage = () => {
     } finally {
       setMovementsLoading(false);
     }
+  };
+
+  const getMovementDisplayType = (type) => {
+    if (type === 'RECEIPT' || type === 'BATCH_RECEIVE') return 'Truck Intake Delivery';
+    if (type === 'INVOICE_DEDUCTION' || type === 'INVOICE' || type === 'SALE' || type === 'ORDER_DEDUCTION') return 'Invoice Dispatch';
+    if (type === 'ADJUSTMENT_INCREASE') return 'Manual Stock Added';
+    if (type === 'ADJUSTMENT_DECREASE' || type === 'ADJUSTMENT') return 'Damage / Count Correction';
+    return (type || 'Stock Movement').replace(/_/g, ' ');
+  };
+
+  const handleOpenInvoicePreview = async (invId) => {
+    if (!invId) return;
+    setPreviewInvoiceId(invId);
+    setPreviewInvoiceLoading(true);
+    try {
+      const inv = await billingApi.getInvoice(invId);
+      setPreviewInvoiceData(inv);
+    } catch (err) {
+      console.error('Failed to load invoice preview:', err);
+      setPreviewInvoiceData(null);
+    } finally {
+      setPreviewInvoiceLoading(false);
+    }
+  };
+
+  const handleExportLineageCsv = () => {
+    if (!selectedProduct || movementsData.length === 0) return;
+    const headers = [
+      'Date & Time',
+      'Movement Type',
+      'Reference #',
+      'Customer / Source',
+      'Quantity Change',
+      'Unit',
+      'Balance Stock',
+      'Unit Price (INR)',
+      'Total Value (INR)',
+      'Batch #',
+      'Expiry Date',
+      'Reason / Notes'
+    ];
+    const rows = movementsData.map(m => {
+      const dt = new Date(m.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' });
+      const isPositive = parseFloat(m.quantity_change) > 0;
+      const qtyStr = isPositive ? `+${m.quantity_change}` : `${m.quantity_change}`;
+      const custOrSupp = m.customer_name || m.supplier || '-';
+      const price = m.unit_price || m.purchase_cost || '-';
+      const totalVal = m.total_value ? parseFloat(m.total_value).toFixed(2) : '-';
+      return [
+        `"${dt}"`,
+        `"${getMovementDisplayType(m.movement_type)}"`,
+        `"${m.reference_number || '-'}"`,
+        `"${custOrSupp.replace(/"/g, '""')}"`,
+        qtyStr,
+        `"${m.unit || selectedProduct.packaging_unit}"`,
+        m.new_stock,
+        price,
+        totalVal,
+        `"${m.batch_number || '-'}"`,
+        `"${m.expiry_date || '-'}"`,
+        `"${(m.notes || m.reason || '-').replace(/"/g, '""')}"`
+      ].join(',');
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${selectedProduct.sku}_Stock_Lineage_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleSelectProduct = (item) => {
@@ -207,6 +292,80 @@ export const InventoryPage = () => {
   const inStockCount = stockItems.filter(i => i.stock_status === 'IN_STOCK').length;
   const lowStockCount = stockItems.filter(i => i.stock_status === 'LOW_STOCK').length;
   const outOfStockCount = stockItems.filter(i => i.stock_status === 'OUT_OF_STOCK').length;
+
+  // ─── LIVE STOCK LINEAGE ANALYTICS & SLICING ───
+  const lineageKpis = useMemo(() => {
+    if (!movementsData || movementsData.length === 0) {
+      return { todayOutflow: 0, totalOutflow: 0, totalInflow: 0, topCustomer: null, topCustomerQty: 0, outflowCount: 0, inflowCount: 0, adjCount: 0 };
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let todayOutflow = 0;
+    let totalOutflow = 0;
+    let totalInflow = 0;
+    let outflowCount = 0;
+    let inflowCount = 0;
+    let adjCount = 0;
+    const customerTallies = {};
+
+    movementsData.forEach(m => {
+      const qty = parseFloat(m.quantity_change || 0);
+      const mDate = (m.created_at || '').slice(0, 10);
+      const type = (m.movement_type || '').toUpperCase();
+
+      if (type.includes('ADJUST')) {
+        adjCount++;
+      }
+
+      if (qty < 0) {
+        outflowCount++;
+        const absQty = Math.abs(qty);
+        totalOutflow += absQty;
+        if (mDate === todayStr) {
+          todayOutflow += absQty;
+        }
+        if (m.customer_name) {
+          customerTallies[m.customer_name] = (customerTallies[m.customer_name] || 0) + absQty;
+        }
+      } else if (qty > 0) {
+        inflowCount++;
+        totalInflow += qty;
+      }
+    });
+
+    let topCustomer = null;
+    let topCustomerQty = 0;
+    Object.entries(customerTallies).forEach(([cust, q]) => {
+      if (q > topCustomerQty) {
+        topCustomer = cust;
+        topCustomerQty = q;
+      }
+    });
+
+    return { todayOutflow, totalOutflow, totalInflow, topCustomer, topCustomerQty, outflowCount, inflowCount, adjCount };
+  }, [movementsData]);
+
+  const filteredLineage = useMemo(() => {
+    return movementsData.filter(m => {
+      const qty = parseFloat(m.quantity_change || 0);
+      const type = (m.movement_type || '').toUpperCase();
+
+      if (lineageFilter === 'OUTFLOW' && qty >= 0) return false;
+      if (lineageFilter === 'INFLOW' && qty <= 0) return false;
+      if (lineageFilter === 'ADJUSTMENT' && !type.includes('ADJUST')) return false;
+
+      if (lineageSearch.trim()) {
+        const q = lineageSearch.toLowerCase().trim();
+        const ref = (m.reference_number || '').toLowerCase();
+        const cust = (m.customer_name || '').toLowerCase();
+        const supp = (m.supplier || '').toLowerCase();
+        const batch = (m.batch_number || '').toLowerCase();
+        const notes = (m.notes || '').toLowerCase();
+        const reason = (m.reason || '').toLowerCase();
+        return ref.includes(q) || cust.includes(q) || supp.includes(q) || batch.includes(q) || notes.includes(q) || reason.includes(q);
+      }
+      return true;
+    });
+  }, [movementsData, lineageFilter, lineageSearch]);
 
   const selectedProduct = stockItems.find(i => i.product_id === selectedProductId) || filteredItems[0] || stockItems[0];
   const selectedProductZone = selectedProduct ? getStorageZone(selectedProduct) : null;
@@ -1094,61 +1253,247 @@ export const InventoryPage = () => {
 
                 {/* ─── TAB 2: LIVE STOCK LINEAGE STREAM ─── */}
                 {activeInspectorTab === 'lineage' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
+                    {/* Top Executive Lineage KPI Strip & Actions */}
+                    <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                        <div className="flex items-center gap-2">
+                          <History className="w-4 h-4 text-amber-400 shrink-0" />
+                          <div>
+                            <span className="text-xs font-black text-white uppercase tracking-wider block">
+                              Live Stock Movement Lineage
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Chronological FIFO audit trail of customer sales, dispatches & warehouse intake
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                          <button
+                            onClick={handleExportLineageCsv}
+                            disabled={movementsData.length === 0}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-[10px] font-bold transition-all disabled:opacity-40"
+                            title="Export Lineage Ledger as CSV"
+                          >
+                            <Download className="w-3 h-3 text-amber-400" />
+                            <span>Export CSV</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Mini Executive Velocity Strip */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Today's Outflow</span>
+                          <span className="text-sm font-black font-mono text-rose-400 block mt-0.5">
+                            {lineageKpis.todayOutflow > 0 ? `-${lineageKpis.todayOutflow.toFixed(1)}` : '0.0'} pk
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Total Outflow</span>
+                          <span className="text-sm font-black font-mono text-rose-300 block mt-0.5">
+                            -{lineageKpis.totalOutflow.toFixed(1)} pk
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Total Inward</span>
+                          <span className="text-sm font-black font-mono text-emerald-400 block mt-0.5">
+                            +{lineageKpis.totalInflow.toFixed(1)} pk
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800/80">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Top Outlet / Buyer</span>
+                          <span className="text-xs font-bold text-amber-400 block truncate mt-0.5" title={lineageKpis.topCustomer || 'No customer dispatches yet'}>
+                            {lineageKpis.topCustomer ? `${lineageKpis.topCustomer} (${lineageKpis.topCustomerQty.toFixed(0)} pk)` : 'None'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Slicer & Quick Filter Bar */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1">
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-[11px] font-bold">
+                          {[
+                            { id: 'ALL', label: `All (${movementsData.length})` },
+                            { id: 'OUTFLOW', label: `Dispatches (${lineageKpis.outflowCount})` },
+                            { id: 'INFLOW', label: `Inward (${lineageKpis.inflowCount})` },
+                            { id: 'ADJUSTMENT', label: `Adjustments (${lineageKpis.adjCount})` }
+                          ].map(f => (
+                            <button
+                              key={f.id}
+                              onClick={() => setLineageFilter(f.id)}
+                              className={`px-2 py-0.5 rounded-lg whitespace-nowrap transition-all ${
+                                lineageFilter === f.id
+                                  ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="relative min-w-0 sm:w-48">
+                          <Search className="w-3 h-3 absolute left-2 top-2 text-slate-500" />
+                          <input
+                            type="text"
+                            value={lineageSearch}
+                            onChange={(e) => setLineageSearch(e.target.value)}
+                            placeholder="Filter customer, ref, batch..."
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-6 pr-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-amber-500 placeholder:text-slate-600"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Movement Stream */}
                     {movementsLoading ? (
                       <div className="p-8 text-center text-slate-500 text-xs animate-pulse">
                         Fetching chronological stock lineage audit records...
                       </div>
-                    ) : movementsData.length === 0 ? (
+                    ) : filteredLineage.length === 0 ? (
                       <div className="p-8 text-center text-slate-500 text-xs bg-slate-950 rounded-xl border border-slate-800">
                         <History className="w-6 h-6 mx-auto mb-1.5 opacity-40" />
-                        <p>No recent movement vouchers recorded for this SKU.</p>
+                        <p>No matching stock movements found in this filter.</p>
                       </div>
                     ) : (
-                      <div className="space-y-1.5">
-                        {movementsData.map((m, idx) => {
+                      <div className="space-y-2">
+                        {filteredLineage.map((m, idx) => {
                           const isPositive = parseFloat(m.quantity_change) > 0;
+                          const isLowStock = parseFloat(m.new_stock) <= selectedMinAlert;
+                          
+                          // Check if safety threshold was breached at this point
+                          const prevItem = filteredLineage[idx + 1];
+                          const thresholdBreachedHere = isLowStock && prevItem && parseFloat(prevItem.new_stock) > selectedMinAlert;
+
                           return (
-                            <div 
-                              key={m.id || idx}
-                              className="p-2.5 bg-slate-950 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs"
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold ${
-                                  isPositive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                                }`}>
-                                  {isPositive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-slate-200">
-                                      {m.movement_type === 'RECEIPT' ? 'Intake Delivery' :
-                                       m.movement_type === 'INVOICE' || m.movement_type === 'SALE' ? 'Invoice Deduction' :
-                                       m.movement_type === 'ADJUSTMENT' ? 'Manual Adjustment' : m.movement_type}
-                                    </span>
-                                    {m.reference_number && (
-                                      <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                                        {m.reference_number}
-                                      </span>
-                                    )}
+                            <React.Fragment key={m.id || idx}>
+                              {thresholdBreachedHere && (
+                                <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center justify-between shadow-sm animate-in fade-in duration-200">
+                                  <div className="flex items-center gap-1.5">
+                                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                                    <span>⚠️ SAFETY BUFFER BREACHED (Stock dropped to {m.new_stock} pk ≤ {selectedMinAlert} pk Alert Threshold)</span>
                                   </div>
-                                  <p className="text-[10px] text-slate-500 mt-0.5">
-                                    {new Date(m.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                                    {m.notes && ` • ${m.notes}`}
-                                  </p>
+                                  <span className="text-[10px] font-mono text-amber-200/80 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-600/40">
+                                    Restock Point Triggered
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800/80 hover:border-slate-700 transition-all text-xs">
+                                <div className="flex items-start justify-between gap-2">
+                                  {/* Left: Direction Icon & Details */}
+                                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0 mt-0.5 ${
+                                      isPositive 
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                                    }`}>
+                                      {isPositive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      {/* Header: Action type & Clickable Reference Badge */}
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-slate-200">
+                                          {getMovementDisplayType(m.movement_type)}
+                                        </span>
+
+                                        {m.reference_number && (
+                                          m.invoice_id ? (
+                                            <button
+                                              onClick={() => handleOpenInvoicePreview(m.invoice_id)}
+                                              className="font-mono text-[10px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-1 transition-all group"
+                                              title="Click to view full invoice audit breakdown"
+                                            >
+                                              <span>{m.reference_number}</span>
+                                              <ExternalLink className="w-2.5 h-2.5 opacity-70 group-hover:opacity-100" />
+                                            </button>
+                                          ) : (
+                                            <span className="font-mono text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                                              {m.reference_number}
+                                            </span>
+                                          )
+                                        )}
+                                      </div>
+
+                                      {/* Customer / Supplier Destination */}
+                                      {(m.customer_name || m.supplier) && (
+                                        <div className="mt-1 flex items-center gap-1.5 text-xs">
+                                          {m.customer_name ? (
+                                            <span className="font-semibold text-cyan-300 flex items-center gap-1 truncate">
+                                              <Building2 className="w-3 h-3 text-cyan-400 shrink-0" />
+                                              <span>{m.customer_name}</span>
+                                              {m.customer_code && <span className="text-[10px] font-mono text-slate-500">({m.customer_code})</span>}
+                                            </span>
+                                          ) : (
+                                            <span className="font-semibold text-emerald-300 flex items-center gap-1 truncate">
+                                              <Truck className="w-3 h-3 text-emerald-400 shrink-0" />
+                                              <span>{m.supplier}</span>
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Batch / Expiry / Reason Pills */}
+                                      <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[10px] text-slate-400">
+                                        {m.batch_number && (
+                                          <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 font-mono text-slate-300">
+                                            Batch: {m.batch_number}
+                                          </span>
+                                        )}
+                                        {m.expiry_date && (
+                                          <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 font-mono text-amber-300/90">
+                                            Exp: {m.expiry_date}
+                                          </span>
+                                        )}
+                                        {m.reason && !m.customer_name && (
+                                          <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-slate-300">
+                                            {m.reason}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Timestamp & Notes */}
+                                      <p className="text-[10px] text-slate-500 mt-1">
+                                        {new Date(m.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                        {m.notes && ` • ${m.notes}`}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Quantity Change, Price & Balance */}
+                                  <div className="text-right shrink-0">
+                                    <span className={`font-mono font-bold text-xs ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                      {isPositive ? `+${m.quantity_change}` : m.quantity_change} {m.unit || selectedProduct.packaging_unit || 'pk'}
+                                    </span>
+
+                                    {/* Valuation / Rate Impact */}
+                                    {m.unit_price ? (
+                                      <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
+                                        @ ₹{parseFloat(m.unit_price).toFixed(0)} = <strong className="text-slate-200">₹{parseFloat(m.total_value || 0).toFixed(0)}</strong>
+                                      </span>
+                                    ) : m.purchase_cost ? (
+                                      <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
+                                        @ ₹{parseFloat(m.purchase_cost).toFixed(0)} cost = <strong className="text-emerald-400">₹{parseFloat(m.total_value || 0).toFixed(0)}</strong>
+                                      </span>
+                                    ) : null}
+
+                                    {/* Warehouse Stock Balance */}
+                                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-mono mt-1 ${
+                                      isLowStock 
+                                        ? 'bg-rose-950/60 text-rose-300 border border-rose-800/60 font-bold' 
+                                        : 'bg-slate-900 text-slate-400 border border-slate-800'
+                                    }`}>
+                                      Bal: {m.new_stock} pk {isLowStock ? '⚠️ Low' : ''}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-
-                              <div className="text-right">
-                                <span className={`font-mono font-bold text-xs ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                  {isPositive ? `+${m.quantity_change}` : m.quantity_change} pk
-                                </span>
-                                <span className="block text-[10px] font-mono text-slate-500">
-                                  Bal: {m.new_stock} pk
-                                </span>
-                              </div>
-                            </div>
+                            </React.Fragment>
                           );
                         })}
                       </div>
@@ -1276,6 +1621,161 @@ export const InventoryPage = () => {
         products={stockItems}
         onApplyParsedData={handleApplyVoiceInventory}
       />
+
+      {/* ─── LIVE STOCK LINEAGE: QUICK INVOICE AUDIT PREVIEW MODAL ─── */}
+      {previewInvoiceId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950 shrink-0">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-amber-400" />
+                <h3 className="font-bold text-white text-sm">
+                  Invoice Dispatch Audit: <span className="font-mono text-amber-400">{previewInvoiceData?.invoice_number || 'Loading...'}</span>
+                </h3>
+                {previewInvoiceData?.status && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                    previewInvoiceData.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                    previewInvoiceData.status === 'PARTIALLY_PAID' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                    'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  }`}>
+                    {previewInvoiceData.status}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => { setPreviewInvoiceId(null); setPreviewInvoiceData(null); }}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-3 overflow-y-auto flex-1">
+              {previewInvoiceLoading ? (
+                <div className="py-12 text-center text-slate-500 text-xs animate-pulse">
+                  Loading bill details and items...
+                </div>
+              ) : previewInvoiceData ? (
+                <>
+                  {/* Customer & Date */}
+                  <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-400 block">Customer / Outlet</span>
+                      <span className="font-bold text-slate-100 text-sm">
+                        {previewInvoiceData.customer?.business_name || previewInvoiceData.customer?.contact_person || 'Walk-in Customer'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono block">
+                        {previewInvoiceData.customer?.customer_code} • {previewInvoiceData.customer?.phone}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 block">Invoice Date</span>
+                      <span className="font-mono font-bold text-slate-200">
+                        {previewInvoiceData.invoice_date}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        Terms: {previewInvoiceData.payment_terms || 'COD'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Line Items Table */}
+                  <div className="rounded-xl border border-slate-800 overflow-hidden">
+                    <div className="bg-slate-950 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 grid grid-cols-12">
+                      <span className="col-span-6">Item Description</span>
+                      <span className="col-span-2 text-center">Qty</span>
+                      <span className="col-span-2 text-right">Rate</span>
+                      <span className="col-span-2 text-right">Total</span>
+                    </div>
+                    <div className="divide-y divide-slate-800/80 bg-slate-900/60 max-h-48 overflow-y-auto">
+                      {(previewInvoiceData.items || []).map((itm, i) => {
+                        const isHighlighted = itm.product_id === selectedProductId;
+                        return (
+                          <div 
+                            key={itm.id || i}
+                            className={`px-3 py-2 text-xs grid grid-cols-12 items-center ${
+                              isHighlighted ? 'bg-amber-500/10 font-bold border-l-2 border-amber-400' : ''
+                            }`}
+                          >
+                            <div className="col-span-6">
+                              <span className="text-slate-200 block truncate">{itm.item_description || itm.product_name}</span>
+                              {isHighlighted && <span className="text-[9px] text-amber-400 font-bold">★ Selected Product</span>}
+                            </div>
+                            <span className="col-span-2 text-center font-mono text-slate-300">
+                              {parseFloat(itm.quantity)} {itm.packaging_unit || 'pk'}
+                            </span>
+                            <span className="col-span-2 text-right font-mono text-slate-400">
+                              ₹{parseFloat(itm.unit_price).toFixed(2)}
+                            </span>
+                            <span className="col-span-2 text-right font-mono font-bold text-slate-100">
+                              ₹{parseFloat(itm.total_amount).toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Totals Summary */}
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-1">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Subtotal:</span>
+                      <span className="font-mono text-slate-200">₹{parseFloat(previewInvoiceData.subtotal || 0).toFixed(2)}</span>
+                    </div>
+                    {parseFloat(previewInvoiceData.discount_amount || 0) > 0 && (
+                      <div className="flex justify-between text-amber-400">
+                        <span>Discount:</span>
+                        <span className="font-mono">-₹{parseFloat(previewInvoiceData.discount_amount).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-slate-200 font-bold pt-1 border-t border-slate-800">
+                      <span>Total Amount:</span>
+                      <span className="font-mono text-amber-400 text-sm">₹{parseFloat(previewInvoiceData.total_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Paid / Settled:</span>
+                      <span className="font-mono">₹{parseFloat(previewInvoiceData.paid_amount || 0).toFixed(2)}</span>
+                    </div>
+                    {parseFloat(previewInvoiceData.outstanding_amount || 0) > 0 && (
+                      <div className="flex justify-between text-rose-400 font-bold">
+                        <span>Balance Due:</span>
+                        <span className="font-mono">₹{parseFloat(previewInvoiceData.outstanding_amount).toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="py-8 text-center text-rose-400 text-xs">
+                  Unable to load invoice details.
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-slate-800 bg-slate-950 flex items-center justify-between shrink-0">
+              {previewInvoiceData?.id && (
+                <a
+                  href={billingApi.getPrintHtmlUrl(previewInvoiceData.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Print / PDF View</span>
+                </a>
+              )}
+              <button
+                onClick={() => { setPreviewInvoiceId(null); setPreviewInvoiceData(null); }}
+                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs transition-colors ml-auto"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
