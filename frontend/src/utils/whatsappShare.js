@@ -1,6 +1,13 @@
 import { openWhatsApp } from './mobileHelpers.js';
-import { generateInvoiceFile, downloadInvoiceImage, formatInvoiceDateTime } from './invoiceImageGenerator.js';
+import { 
+  generateInvoiceFile, 
+  downloadInvoiceImage, 
+  formatInvoiceDateTime,
+  formatCustomerDisplayName 
+} from './invoiceImageGenerator.js';
 import { generatePaymentFile, downloadPaymentImage } from './paymentImageGenerator.js';
+
+export { formatCustomerDisplayName };
 
 /**
  * Always returns the public production Render URL for PDF receipts.
@@ -49,8 +56,8 @@ export const getPublicCustomerStatementPdfUrl = (customerId) => {
   return `${getPublicApiBaseUrl()}/customers/${customerId}/statement/print-html`;
 };
 
-export const PUBLIC_CATALOGUE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html';
-export const PUBLIC_PRODUCTS_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products';
+export const PUBLIC_CATALOGUE_URL = 'https://rais-frontend.onrender.com/catalogue.html';
+export const PUBLIC_PRODUCTS_URL = 'https://rais-frontend.onrender.com/#/products';
 export const PUBLIC_WA_ORDER_URL = 'https://wa.me/919347453135';
 
 export const QUICK_LINKS_WHATSAPP_SECTION = 
@@ -75,7 +82,7 @@ export const shareInvoiceOnWhatsApp = async ({
   const invNumber = invoice?.invoice_number || 'DRAFT';
   const bName = customer?.business_name || invoice?.customer_name || 'Customer';
   const cPerson = customer?.contact_person || invoice?.customer_contact;
-  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custName = formatCustomerDisplayName(bName, cPerson);
   const custPhone = customer?.phone || invoice?.customer_phone || '';
   const terms = invoice?.payment_terms || 'Cash on Delivery';
   const billAmt = parseFloat(invoice?.total_amount || 0);
@@ -192,7 +199,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
         try {
           await downloadInvoiceImage({
             invoice,
-            customer: customer || { business_name: custName, phone: custPhone },
+            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
             items,
             products
           });
@@ -211,7 +218,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
         try {
           await downloadInvoiceImage({
             invoice,
-            customer: customer || { business_name: custName, phone: custPhone },
+            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
             items,
             products
           });
@@ -247,7 +254,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
       try {
         await downloadInvoiceImage({
           invoice,
-          customer: customer || { business_name: custName, phone: custPhone },
+          customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
           items,
           products
         });
@@ -280,7 +287,7 @@ export const shareOrderOnWhatsApp = ({
   const ordDate = order?.order_date || new Date().toISOString().split('T')[0];
   const bName = customer?.business_name || order?.customer_name || 'Customer';
   const cPerson = customer?.contact_person || order?.customer_contact;
-  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custName = formatCustomerDisplayName(bName, cPerson);
   const custPhone = customer?.phone || order?.customer_phone || '';
   const deliveryDate = order?.expected_delivery_date || 'Same-Day / Next Morning';
   const totalAmt = parseFloat(order?.total_amount || 0).toFixed(2);
@@ -330,7 +337,7 @@ export const sharePaymentOnWhatsApp = async ({
   const pNumber = payment?.payment_number || 'RECEIPT';
   const bName = customer?.business_name || payment?.customer_name || 'Valued Customer';
   const cPerson = customer?.contact_person || payment?.customer_contact;
-  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custName = formatCustomerDisplayName(bName, cPerson);
   const custPhone = customer?.phone || payment?.customer_phone || '';
   const payAmt = parseFloat(payment?.amount || 0);
   const payAmtFormatted = payAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
@@ -412,7 +419,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
     try {
       paymentFile = await generatePaymentFile({
         payment,
-        customer: customer || { business_name: custName, phone: custPhone }
+        customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
       });
     } catch (imgErr) {
       console.warn('Payment canvas image generation skipped/failed:', imgErr);
@@ -443,7 +450,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
         try {
           await downloadPaymentImage({
             payment,
-            customer: customer || { business_name: custName, phone: custPhone }
+            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
           });
         } catch (dlErr) {
           console.warn('Payment image auto-download failed:', dlErr);
@@ -459,7 +466,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
         try {
           await downloadPaymentImage({
             payment,
-            customer: customer || { business_name: custName, phone: custPhone }
+            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
           });
         } catch (dlErr) {
           // non-blocking
@@ -492,7 +499,7 @@ ${imageSection}${pdfSection}${QUICK_LINKS_WHATSAPP_SECTION}ðŸ“ _RAIS AGENCIES â
       try {
         await downloadPaymentImage({
           payment,
-          customer: customer || { business_name: custName, phone: custPhone }
+          customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
         });
       } catch (dlErr) {
         console.warn('Payment image auto-download failed:', dlErr);
@@ -519,7 +526,7 @@ export const shareCustomerStatementOnWhatsApp = ({
 }) => {
   const bName = customer?.business_name || customer?.name || 'Valued Customer';
   const cPerson = customer?.contact_person;
-  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custName = formatCustomerDisplayName(bName, cPerson);
   const custPhone = customer?.phone || '';
   const bal = parseFloat(customer?.outstanding_balance || 0);
   const balFormatted = bal.toLocaleString('en-IN', { minimumFractionDigits: 2 });

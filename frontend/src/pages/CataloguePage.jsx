@@ -320,7 +320,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             </button>
 
             <a
-              href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html"
+              href="/catalogue.html"
               target="_blank"
               rel="noopener noreferrer"
               className="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-sm"

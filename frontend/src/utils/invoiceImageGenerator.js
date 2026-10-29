@@ -42,6 +42,17 @@ export const formatInvoiceDateTime = (invoiceDate, createdAt) => {
   return { datePart, timePart, fullText: timePart ? `${datePart} • ${timePart}` : datePart };
 };
 
+export const formatCustomerDisplayName = (businessName, contactPerson) => {
+  let bName = (businessName || '').trim();
+  // Deduplicate any immediate consecutive duplicate parenthesized strings like "(Foo) (Foo)"
+  bName = bName.replace(/\(([^)]+)\)\s*\(\1\)/gi, '($1)').trim();
+  const cPerson = (contactPerson || '').trim();
+  if (!bName) return cPerson || 'Valued Customer';
+  if (!cPerson) return bName;
+  if (bName.toLowerCase().includes(cPerson.toLowerCase())) return bName;
+  return `${bName} (${cPerson})`;
+};
+
 export const generateInvoiceCanvas = ({
   invoice,
   customer,
@@ -51,7 +62,7 @@ export const generateInvoiceCanvas = ({
   const invNumber = invoice?.invoice_number || 'INV-DRAFT';
   const bName = customer?.business_name || invoice?.customer_name || 'Valued Customer';
   const cPerson = customer?.contact_person || invoice?.customer_contact;
-  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custName = formatCustomerDisplayName(bName, cPerson);
   const custPhone = customer?.phone || invoice?.customer_phone || '';
   const custAddress = customer?.address || invoice?.customer_address || '';
   const custCode = customer?.customer_code || invoice?.customer_code || '';

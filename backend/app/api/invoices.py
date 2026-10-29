@@ -218,7 +218,7 @@ def get_printable_invoice(
                 <div>
                     <h3 class="font-bold text-gray-500 uppercase tracking-wider mb-1">Billed To (Customer):</h3>
                     <p class="text-base font-bold text-gray-900">{inv.customer_name}</p>
-                    {f'<p class="text-xs font-semibold text-gray-700 mt-0.5">Contact Person: <strong class="text-gray-900">{inv.customer_contact}</strong></p>' if getattr(inv, 'customer_contact', None) and inv.customer_contact.strip() and inv.customer_contact.strip().lower() != inv.customer_name.strip().lower() else ''}
+                    {f'<p class="text-xs font-semibold text-gray-700 mt-0.5">Contact Person: <strong class="text-gray-900">{inv.customer_contact}</strong></p>' if getattr(inv, 'customer_contact', None) and inv.customer_contact.strip() and inv.customer_contact.strip().lower() != inv.customer_name.strip().lower() and inv.customer_contact.strip().lower() not in (inv.customer_name or "").lower() else ''}
                     <p class="text-gray-600 mt-0.5">{inv.customer_address}</p>
                     <p class="text-gray-600 mt-0.5">Phone: <span class="font-medium text-gray-800">{inv.customer_phone}</span></p>
                 </div>
@@ -288,11 +288,11 @@ def get_printable_invoice(
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
                         <span>🟢 WhatsApp Orders</span>
                     </a>
-                    <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html" target="_blank" rel="noopener noreferrer" 
+                    <a href="https://rais-frontend.onrender.com/catalogue.html" target="_blank" rel="noopener noreferrer" 
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
                         <span>📖 Photo Catalogue</span>
                     </a>
-                    <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products" target="_blank" rel="noopener noreferrer" 
+                    <a href="https://rais-frontend.onrender.com/#/products" target="_blank" rel="noopener noreferrer" 
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
                         <span>🌐 Website & Products</span>
                     </a>
@@ -301,7 +301,7 @@ def get_printable_invoice(
 
             <!-- Printed Links (For paper print / PDF rendering) -->
             <div class="hidden print:block mt-6 pt-3 border-t border-gray-200 text-[10px] text-gray-600">
-                <p><strong>🟢 WhatsApp Orders:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>📖 Photo Catalogue:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html &nbsp;•&nbsp; <strong>🌐 Website:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/#/products</p>
+                <p><strong>🟢 WhatsApp Orders:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>📖 Photo Catalogue:</strong> rais-frontend.onrender.com/catalogue.html &nbsp;•&nbsp; <strong>🌐 Website:</strong> rais-frontend.onrender.com</p>
             </div>
 
             <!-- Footer Signatures -->

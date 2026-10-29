@@ -4,7 +4,7 @@
  * for direct WhatsApp image sharing and 1-click downloads.
  */
 
-import { formatInvoiceDateTime } from './invoiceImageGenerator.js';
+import { formatInvoiceDateTime, formatCustomerDisplayName } from './invoiceImageGenerator.js';
 
 export const generatePaymentCanvas = ({
   payment,
@@ -13,7 +13,7 @@ export const generatePaymentCanvas = ({
   const pNumber = payment?.payment_number || 'PAY-RECEIPT';
   const bName = customer?.business_name || payment?.customer_name || 'Valued Customer';
   const cPerson = customer?.contact_person || payment?.customer_contact;
-  const custName = cPerson && cPerson.trim().toLowerCase() !== bName.trim().toLowerCase() ? `${bName} (${cPerson.trim()})` : bName;
+  const custName = formatCustomerDisplayName(bName, cPerson);
   const custPhone = customer?.phone || payment?.customer_phone || '';
   const custCode = customer?.customer_code || payment?.customer_code || '';
   const method = (payment?.payment_method || 'CASH').toUpperCase();

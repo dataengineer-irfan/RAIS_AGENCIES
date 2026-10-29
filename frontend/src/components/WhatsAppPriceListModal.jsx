@@ -8,8 +8,8 @@ export const WhatsAppPriceListModal = ({ isOpen, onClose, products = [], categor
 
   if (!isOpen) return null;
 
-  const CATALOGUE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html';
-  const PRODUCTS_PAGE_URL = 'https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products';
+  const CATALOGUE_URL = 'https://rais-frontend.onrender.com/catalogue.html';
+  const PRODUCTS_PAGE_URL = 'https://rais-frontend.onrender.com/#/products';
   const WA_HOTLINE_URL = 'https://wa.me/919347453135';
 
   // Build formatted WhatsApp pricing message

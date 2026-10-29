@@ -75,7 +75,7 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
   };
 
   const handleSendWhatsAppRestockPing = (cust) => {
-    const text = `*RAIS AGENCIES — Restock & Order Reminder* 🍟🍗\n\nDear *${cust.business_name}*,\nIt has been *${cust.days_inactive} days* since your last stock replenishment with RAIS Agencies (Last order: *${cust.last_activity_str}*).\n\nDo you need to restock any of your fast-moving items today?\n• French Fries (Hiphop / Premium 6mm & 9mm)\n• Burger Patties & Veg/Non-Veg Nuggets\n• Momos, Spring Rolls & Finger Foods\n• Mozzarella Cheese, Sauces & Tortillas\n\n📖 *Browse Photo Catalogue:*\n👉 https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html\n\n📲 *1-Tap WhatsApp Order Desk:*\n👉 https://wa.me/919347453135\n\n📍 *RAIS Agencies — Rayachoty Central Cold-Chain Depot*`;
+    const text = `*RAIS AGENCIES — Restock & Order Reminder* 🍟🍗\n\nDear *${cust.business_name}*,\nIt has been *${cust.days_inactive} days* since your last stock replenishment with RAIS Agencies (Last order: *${cust.last_activity_str}*).\n\nDo you need to restock any of your fast-moving items today?\n• French Fries (Hiphop / Premium 6mm & 9mm)\n• Burger Patties & Veg/Non-Veg Nuggets\n• Momos, Spring Rolls & Finger Foods\n• Mozzarella Cheese, Sauces & Tortillas\n\n📖 *Browse Photo Catalogue:*\n👉 https://rais-frontend.onrender.com/catalogue.html\n\n📲 *1-Tap WhatsApp Order Desk:*\n👉 https://wa.me/919347453135\n\n📍 *RAIS Agencies — Rayachoty Central Cold-Chain Depot*`;
     openWhatsApp(cust.phone, text);
     setContactedMap(prev => ({ ...prev, [cust.customer_id]: true }));
   };

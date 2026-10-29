@@ -143,7 +143,7 @@ export const LoginPage = () => {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs pt-1">
             <a
-              href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html"
+              href="/catalogue.html"
               target="_blank"
               rel="noopener noreferrer"
               className="text-amber-400 hover:text-amber-300 font-bold underline inline-flex items-center gap-1"

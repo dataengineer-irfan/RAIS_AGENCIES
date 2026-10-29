@@ -134,7 +134,7 @@ export const Sidebar = ({
         {/* Public Customer Facing Showcase */}
         <div className="pt-2 border-t border-slate-800/60 mt-2">
           <a
-            href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html"
+            href="/catalogue.html"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 transition-all group"

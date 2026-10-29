@@ -73,7 +73,7 @@ def get_printable_payment(
 
     cust_display = p.customer_name or "Customer"
     contact_person_str = ""
-    if p.customer_contact and p.customer_contact.strip() and p.customer_contact.strip().lower() != (p.customer_name or "").strip().lower():
+    if p.customer_contact and p.customer_contact.strip() and p.customer_contact.strip().lower() != (p.customer_name or "").strip().lower() and p.customer_contact.strip().lower() not in (p.customer_name or "").lower():
         contact_person_str = f'<p class="text-xs font-semibold text-gray-700 mt-0.5">Contact Person: <strong class="text-gray-900">{p.customer_contact}</strong></p>'
 
     method = (p.payment_method or "CASH").upper()
@@ -258,11 +258,11 @@ def get_printable_payment(
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
                         <span>🟢 WhatsApp Order Desk</span>
                     </a>
-                    <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html" target="_blank" rel="noopener noreferrer" 
+                    <a href="https://rais-frontend.onrender.com/catalogue.html" target="_blank" rel="noopener noreferrer" 
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
                         <span>📖 Photo Catalogue</span>
                     </a>
-                    <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products" target="_blank" rel="noopener noreferrer" 
+                    <a href="https://rais-frontend.onrender.com/#/products" target="_blank" rel="noopener noreferrer" 
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm transition-colors">
                         <span>🌐 Website & Products</span>
                     </a>
@@ -271,7 +271,7 @@ def get_printable_payment(
 
             <!-- Printed Links (For paper print / PDF rendering) -->
             <div class="hidden print:block mt-4 pt-2 border-t border-gray-200 text-[10px] text-gray-600">
-                <p><strong>🟢 WhatsApp Order Desk:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>📖 Photo Catalogue:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html &nbsp;•&nbsp; <strong>🌐 Website:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/#/products</p>
+                <p><strong>🟢 WhatsApp Order Desk:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>📖 Photo Catalogue:</strong> rais-frontend.onrender.com/catalogue.html &nbsp;•&nbsp; <strong>🌐 Website:</strong> rais-frontend.onrender.com</p>
             </div>
 
             <!-- Footer Signatures -->

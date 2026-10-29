@@ -971,7 +971,7 @@ export const InvoiceBuilderModal = ({
                       <span>🟢 WhatsApp Orders</span>
                     </a>
                     <a
-                      href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html"
+                      href="https://rais-frontend.onrender.com/catalogue.html"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-sm transition-colors"
@@ -980,7 +980,7 @@ export const InvoiceBuilderModal = ({
                       <span>📖 Photo Catalogue</span>
                     </a>
                     <a
-                      href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#/products"
+                      href="https://rais-frontend.onrender.com/#/products"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-sm transition-colors"
@@ -993,7 +993,7 @@ export const InvoiceBuilderModal = ({
 
                 {/* Print version of quick links */}
                 <div className="hidden print:block mt-4 pt-2 border-t border-gray-200 text-[9px] text-gray-500">
-                  <p><strong>WhatsApp:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>Photo Catalogue:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html &nbsp;•&nbsp; <strong>Website:</strong> dataengineer-irfan.github.io/RAIS-AGENCIES/#/products</p>
+                  <p><strong>WhatsApp:</strong> wa.me/919347453135 &nbsp;•&nbsp; <strong>Photo Catalogue:</strong> rais-frontend.onrender.com/catalogue.html &nbsp;•&nbsp; <strong>Website:</strong> rais-frontend.onrender.com/#/products</p>
                 </div>
               </div>
             </div>
