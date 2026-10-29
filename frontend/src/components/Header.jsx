@@ -81,8 +81,8 @@ export const Header = ({
     <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20 transition-all pt-[env(safe-area-inset-top,0px)]">
       {/* ─── DESKTOP HEADER (md and above) ─── */}
       <div className="hidden md:flex h-16 px-4 sm:px-6 items-center justify-between gap-3">
-        {/* Left section: Top-Left Toggle Bar + Continuous Scrolling Live Ticker */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-2xl xl:max-w-3xl">
+        {/* Left section: Top-Left Toggle Bar + Continuous Scrolling Live Ticker (Expands to all available space) */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           {/* Top-Left Corner Toggle Bar Button */}
           <div 
             onMouseEnter={onHoverTopLeft}
@@ -110,62 +110,88 @@ export const Header = ({
           <ContinuousLiveTicker className="w-full flex-1 min-w-0" />
         </div>
 
-        {/* Business Meta & AI Trigger */}
-        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-          {/* Rayachoty Badge */}
-          <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400 border border-slate-800/80 bg-slate-950/60 px-3 py-1.5 rounded-lg">
-            <MapPin className="w-3.5 h-3.5 text-amber-500" />
-            <span>Reddies Colony, Rayachoty (516269)</span>
-            <span className="text-slate-600">|</span>
-            <Phone className="w-3 h-3 text-amber-500" />
-            <span>9347453135</span>
+        {/* Compact Action Icons with Hover Tooltips (Icons Only) */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* 1. Depot Location & Order Desk (Only Icon with Tooltip) */}
+          <div className="relative group">
+            <button
+              type="button"
+              className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 text-slate-300 hover:text-amber-400 transition-all shadow-sm flex items-center justify-center active:scale-95"
+              aria-label="Depot Location & Order Hotline"
+            >
+              <MapPin className="w-4 h-4 text-amber-500" />
+            </button>
+            {/* Hover Tooltip */}
+            <div className="absolute right-0 top-full mt-2 hidden group-hover:flex flex-col gap-1 w-64 p-2.5 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 pointer-events-none animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>RAIS Central Depot</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-tight">
+                Reddies Colony, Sundupalli Road, Rayachoty (516269), AP
+              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono font-bold mt-1 pt-1 border-t border-slate-800/80">
+                <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>Order Desk: 9347453135</span>
+              </div>
+            </div>
           </div>
 
-          {/* Global Re-Stock Alerts Notification Bell (Desktop) */}
+          {/* 2. Global Alerts Bell (Only 🔔 Icon + 11 Counter Badge with Tooltip) */}
           {onOpenInactiveReminder && (
-            <button
-              onClick={onOpenInactiveReminder}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-750 hover:border-amber-500/50 rounded-lg text-slate-300 hover:text-white text-xs font-bold transition-all shadow-sm shrink-0"
-              title="Inactive Outlets & Re-Stock Alerts"
-            >
-              <Bell className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Alerts</span>
-              {alertsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[10px]">
-                  {alertsCount}
-                </span>
-              )}
-            </button>
+            <div className="relative group">
+              <button
+                onClick={onOpenInactiveReminder}
+                className="relative p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 text-slate-300 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95"
+                aria-label="Stock & Outlet Re-Order Alerts"
+              >
+                <Bell className="w-4 h-4 text-amber-400" />
+                {alertsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[9px] flex items-center justify-center shadow-md">
+                    {alertsCount > 99 ? '99+' : alertsCount}
+                  </span>
+                )}
+              </button>
+              {/* Hover Tooltip */}
+              <div className="absolute right-0 top-full mt-2 hidden group-hover:block whitespace-nowrap px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 pointer-events-none text-xs text-slate-200 animate-in fade-in duration-150">
+                <span className="font-bold text-amber-400">{alertsCount}</span> Stock & Outlet Re-Order Alerts
+              </div>
+            </div>
           )}
 
-          {/* AI Assistant Quick Toggle */}
-          <button
-            onClick={onToggleAI}
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 rounded-lg text-amber-400 text-xs font-bold transition-all shadow-sm shrink-0"
-            title="Executive AI Assistant"
-          >
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            <span className="hidden sm:inline">AI Assistant</span>
-          </button>
+          {/* 3. AI Assistant (Only ✨ Icon with Tooltip) */}
+          <div className="relative group">
+            <button
+              onClick={onToggleAI}
+              className="p-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-400 transition-all shadow-sm flex items-center justify-center active:scale-95"
+              aria-label="Executive AI Assistant"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+            </button>
+            {/* Hover Tooltip */}
+            <div className="absolute right-0 top-full mt-2 hidden group-hover:block whitespace-nowrap px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 pointer-events-none text-xs text-slate-200 animate-in fade-in duration-150">
+              Executive AI Co-Pilot & Query Assistant
+            </div>
+          </div>
 
-          {/* Theme Switcher Toggle (Desktop) */}
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-500/50 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 active:scale-95"
-            title={theme === 'dark' ? "Switch to High-Clarity Light Theme" : "Switch to Executive Midnight Dark Theme"}
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden xl:inline text-slate-200">Light</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="hidden xl:inline text-slate-800">Dark</span>
-              </>
-            )}
-          </button>
+          {/* 4. 1-Click Dark/Light Theme Switcher (Only ☀️/🌙 Icon with Tooltip) */}
+          <div className="relative group">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 text-slate-300 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95"
+              aria-label={theme === 'dark' ? "Switch to High-Clarity Light Theme" : "Switch to Executive Midnight Dark Theme"}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-400" />
+              )}
+            </button>
+            {/* Hover Tooltip */}
+            <div className="absolute right-0 top-full mt-2 hidden group-hover:block whitespace-nowrap px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 pointer-events-none text-xs text-slate-200 animate-in fade-in duration-150">
+              {theme === 'dark' ? "Switch to High-Clarity Light Theme" : "Switch to Executive Midnight Dark Theme"}
+            </div>
+          </div>
         </div>
       </div>
 

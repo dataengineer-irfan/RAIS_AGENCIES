@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Pause, Play } from 'lucide-react';
 import { reportApi } from '../services/api';
 
 /**
@@ -139,11 +140,13 @@ export const generateTickerItems = (kpis) => {
 
 /**
  * ContinuousLiveTicker:
- * Continuous horizontal marquee ticker running at the top navbar.
- * Mathematically seamless infinite loop with hover-to-pause.
+ * Continuous horizontal marquee ticker running at comfortable, relaxed speed (72s).
+ * Includes 1-click user Pause/Play toggle and hover-pause.
  */
 export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
   const [internalKpis, setInternalKpis] = useState(kpis);
+  const [isUserPaused, setIsUserPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Self-fetch if not provided via props (e.g. in top Header navbar)
   useEffect(() => {
@@ -170,8 +173,10 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
 
   return (
     <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`relative flex items-center overflow-hidden bg-slate-950/90 border border-slate-800/90 rounded-xl h-9 px-2 shadow-inner group select-none ${className}`}
-      title="Live Depot Telemetry • Continuous Scroll • Hover to Pause"
+      title={isUserPaused ? "Live ticker paused • Click PLAY to resume" : "Live Depot Telemetry • Hover or click ⏸ to pause"}
     >
       <style>{`
         @keyframes raisContinuousMarquee {
@@ -186,32 +191,58 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
           display: flex;
           align-items: center;
           width: max-content;
-          animation: raisContinuousMarquee 42s linear infinite;
+          animation: raisContinuousMarquee 72s linear infinite;
           will-change: transform;
-        }
-        .rais-ticker-track:hover {
-          animation-play-state: paused;
         }
       `}</style>
 
-      {/* Static Left Label with Pulsing Dot */}
-      <div className="flex items-center gap-1.5 shrink-0 pr-3 border-r border-slate-800/80 mr-2 bg-slate-950/90 z-20">
+      {/* Static Left Control Badge with Pulsing Dot & 1-Click Pause/Play */}
+      <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-slate-800/80 mr-2 bg-slate-950/90 z-20">
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          <span
+            className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+              isUserPaused ? 'bg-amber-400' : 'bg-emerald-400'
+            }`}
+          />
+          <span
+            className={`relative inline-flex rounded-full h-2 w-2 ${
+              isUserPaused ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}
+          />
         </span>
         <span className="text-[10px] font-black tracking-wider text-slate-300 uppercase">
           LIVE
         </span>
+
+        {/* 1-Click Pause / Play Toggle Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsUserPaused((prev) => !prev);
+          }}
+          title={isUserPaused ? "Click to resume scrolling" : "Click to freeze/pause scrolling"}
+          className="ml-1 p-1 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-750 hover:border-amber-500/50 text-slate-300 hover:text-white transition-all flex items-center justify-center active:scale-95"
+          aria-label={isUserPaused ? "Resume live scrolling" : "Pause live scrolling"}
+        >
+          {isUserPaused ? (
+            <Play className="w-2.5 h-2.5 text-emerald-400 fill-emerald-400" />
+          ) : (
+            <Pause className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+          )}
+        </button>
       </div>
 
       {/* Subtle Fade Edge Masks for smooth entrance/exit */}
-      <div className="pointer-events-none absolute left-14 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-950 to-transparent z-10" />
+      <div className="pointer-events-none absolute left-20 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-950 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10" />
 
       {/* Continuous Marquee Track (Duplicated twice for seamless infinite loop) */}
       <div className="overflow-hidden flex-1 flex items-center min-w-0">
-        <div className="rais-ticker-track">
+        <div
+          className="rais-ticker-track"
+          style={{ animationPlayState: (isUserPaused || isHovered) ? 'paused' : 'running' }}
+        >
           {/* Loop Set 1 */}
           <div className="flex items-center gap-6 pr-6 shrink-0">
             {items.map((item, idx) => (
