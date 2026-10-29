@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     DEFAULT_CURRENCY: str = "INR"
     DEFAULT_CURRENCY_SYMBOL: str = "₹"
     
+    # Recommendations & Restock Upsell Feature Flag (Kill Switch)
+    ENABLE_RESTOCK_SUGGESTIONS: bool = True
+
     # AI Engine
     AI_PROVIDER: str = "semantic_engine"
     GEMINI_API_KEY: str = ""

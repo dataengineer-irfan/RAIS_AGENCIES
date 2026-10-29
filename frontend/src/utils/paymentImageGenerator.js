@@ -79,7 +79,7 @@ export const generatePaymentCanvas = ({
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('❄️ FROZEN FOOD IS OUR SPECIALTY • -18°C COLD-CHAIN DEPOT', 30, 72);
+  ctx.fillText('❄️ FROZEN FOODS & 📦 RESTAURANT PACKAGING SOLUTIONS', 30, 72);
 
   ctx.fillStyle = '#cbd5e1';
   ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';

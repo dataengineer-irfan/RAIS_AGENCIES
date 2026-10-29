@@ -142,6 +142,36 @@ def get_printable_invoice(
             created_str = str(inv.invoice_date)
 
     # Render rich HTML invoice template for direct print / PDF generation
+    # Calculate intelligent in-stock restock recommendation based on customer history (strictly NO PRICES)
+    restock_banner = ""
+    try:
+        from app.services.recommendation_service import RecommendationService
+        exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
+        suggestion = RecommendationService.get_customer_restock_suggestion(
+            db=db,
+            customer_id=str(inv.customer_id),
+            exclude_product_ids=exclude_pids
+        )
+        if suggestion:
+            ctx_note = suggestion.get("context_note", "In Stock at Depot")
+            p_name = suggestion.get("name", "Product")
+            p_unit = suggestion.get("packaging_unit", "PACKET")
+            restock_banner = f"""
+            <div class="mt-5 p-3.5 bg-amber-50/70 border border-amber-200/90 rounded-lg text-xs flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-lg">📦</span>
+                    <div>
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-amber-800 block">{ctx_note}:</span>
+                        <span class="font-bold text-gray-900">{p_name}</span>
+                        <span class="text-gray-600 font-mono text-[11px]">({p_unit})</span>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold rounded uppercase shrink-0">In Stock at Depot</span>
+            </div>
+            """
+    except Exception:
+        restock_banner = ""
+
     items_rows = ""
     for idx, itm in enumerate(inv.items, 1):
         desc = getattr(itm, 'item_description', 'Product')
@@ -277,6 +307,8 @@ def get_printable_invoice(
                     </div>
                 </div>
             </div>
+
+            {restock_banner}
 
             <!-- Direct Quick Links (Bold Green Badges) -->
             <div class="mt-8 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 print:hidden flex flex-wrap items-center justify-between gap-3">
@@ -470,3 +502,26 @@ def get_invoice_image(
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return Response(content=buf.getvalue(), media_type="image/png")
+
+@router.get("/{invoice_id}/restock-suggestion")
+def get_invoice_restock_suggestion(
+    invoice_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns an intelligent, in-stock restock suggestion based on customer history (strictly NO PRICES).
+    Safe, read-only endpoint with graceful empty fallback.
+    """
+    try:
+        from app.services.recommendation_service import RecommendationService
+        inv = BillingService.get_invoice_by_id(db, invoice_id)
+        exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
+        suggestion = RecommendationService.get_customer_restock_suggestion(
+            db=db,
+            customer_id=str(inv.customer_id),
+            exclude_product_ids=exclude_pids
+        )
+        return {"suggestion": suggestion}
+    except Exception:
+        return {"suggestion": None}
+

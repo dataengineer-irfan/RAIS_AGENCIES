@@ -133,6 +133,33 @@ def get_printable_payment(
         </div>
         """
 
+    # Calculate intelligent in-stock restock recommendation for this customer (strictly NO PRICES)
+    restock_banner = ""
+    try:
+        from app.services.recommendation_service import RecommendationService
+        suggestion = RecommendationService.get_customer_restock_suggestion(
+            db=db,
+            customer_id=str(p.customer_id)
+        )
+        if suggestion:
+            p_name = suggestion.get("name", "Product")
+            p_unit = suggestion.get("packaging_unit", "PACKET")
+            restock_banner = f"""
+            <div class="my-5 p-3.5 bg-emerald-50/80 border border-emerald-300 rounded-lg text-xs text-emerald-950 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-lg">📦</span>
+                    <div>
+                        <span class="font-bold uppercase tracking-wider text-[10px] text-emerald-800 block">Ready for your next order?</span>
+                        <span class="font-bold text-gray-900">{p_name}</span>
+                        <span class="text-gray-600 font-mono text-[11px]">({p_unit})</span>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded uppercase shrink-0 shadow-sm">In Stock at Depot</span>
+            </div>
+            """
+    except Exception:
+        restock_banner = ""
+
     html = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -237,6 +264,7 @@ def get_printable_payment(
 
             {balance_card}
             {notes_section}
+            {restock_banner}
 
             <!-- Bottom Support & Bank Settlement -->
             <div class="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-600 flex justify-between items-start">
@@ -519,3 +547,24 @@ def delete_payment(
         username=current_user.username,
         user_role=current_user.role
     )
+
+@router.get("/{payment_id}/restock-suggestion")
+def get_payment_restock_suggestion(
+    payment_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns an intelligent, in-stock restock suggestion based on customer history (strictly NO PRICES).
+    Safe, read-only endpoint with graceful empty fallback.
+    """
+    try:
+        from app.services.recommendation_service import RecommendationService
+        p = PaymentService.get_payment_by_id(db, payment_id)
+        suggestion = RecommendationService.get_customer_restock_suggestion(
+            db=db,
+            customer_id=str(p.customer_id)
+        )
+        return {"suggestion": suggestion}
+    except Exception:
+        return {"suggestion": None}
+

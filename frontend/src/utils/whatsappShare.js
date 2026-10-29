@@ -76,11 +76,79 @@ ${downloadLine}📖 *Photo Catalogue:* ${PUBLIC_CATALOGUE_URL}
 
 export const QUICK_LINKS_WHATSAPP_SECTION = getCompactQuickLinks('', 'Download Bill');
 
+/**
+ * Intelligent helper to deduce an in-stock restock recommendation (Zero Prices).
+ * Strictly filters by current_stock > 0 and excludes products already on the bill.
+ */
+export const deriveRestockSuggestion = (items = [], products = [], explicitSuggestion = null) => {
+  if (explicitSuggestion) return explicitSuggestion;
+  if (!products || !products.length) return null;
+
+  const currentProductIds = new Set((items || []).map(i => i.product_id));
+
+  // Detect affinity from current items
+  const itemTexts = (items || []).map(i => {
+    const p = products.find(x => x.id === i.product_id);
+    return `${p?.name || ''} ${i.item_description || ''}`.toUpperCase();
+  }).join(' ');
+
+  const isPizza = /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(itemTexts);
+  const isBurger = /BURGER|PATTY|BUN/i.test(itemTexts);
+  const isSnack = /FRIES|MOMO|NUGGET|POPCORN|POPS/i.test(itemTexts);
+
+  // Filter products with current_stock > 0 and not on current bill
+  const available = products.filter(p => {
+    const stock = parseFloat(p.current_stock || 0);
+    return stock > 0 && !currentProductIds.has(p.id) && p.is_active !== false;
+  });
+
+  if (!available.length) return null;
+
+  let candidate = null;
+  let contextNote = 'In Stock at Depot';
+
+  if (isPizza) {
+    candidate = available.find(p => /PIZZA BOX/i.test(p.name)) || available.find(p => /OREGANO/i.test(p.name));
+    if (candidate) contextNote = 'In Stock for your Pizzas';
+  }
+
+  if (!candidate && isBurger) {
+    candidate = available.find(p => /BURGER BOX/i.test(p.name)) || available.find(p => /MAYO/i.test(p.name));
+    if (candidate) contextNote = 'In Stock for your Burgers';
+  }
+
+  if (!candidate && isSnack) {
+    candidate = available.find(p => /PERI PERI/i.test(p.name)) || available.find(p => /KETCHUP/i.test(p.name));
+    if (candidate) contextNote = 'In Stock for your Kitchen';
+  }
+
+  if (!candidate) {
+    candidate = available.find(p => /BOX/i.test(p.name) || (p.category && p.category.code === 'PACKAGING'));
+    if (candidate) contextNote = 'In Stock at Packaging Depot';
+  }
+
+  if (!candidate) {
+    candidate = available[0];
+  }
+
+  if (!candidate) return null;
+
+  const unit = candidate.packaging_unit || 'PACKET';
+  return {
+    name: candidate.name,
+    packaging_unit: unit,
+    context_note: contextNote,
+    display_text: `📦 *${contextNote}:* ${candidate.name} (${unit})`
+  };
+};
+
 export const shareInvoiceOnWhatsApp = async ({
   invoice,
   customer,
   items = [],
   products = [],
+  restockSuggestion = null,
+  showRestock = true,
   mode = 'direct'
 }) => {
   const invNumber = invoice?.invoice_number || 'DRAFT';
@@ -138,6 +206,15 @@ export const shareInvoiceOnWhatsApp = async ({
   const billIdentifier = invoice?.invoice_number || invoice?.id || '';
   const cleanBillUrl = getCleanBillUrl(billIdentifier, 'invoice');
 
+  // Derive in-stock restock suggestion (strictly NO PRICES)
+  let restockSection = '';
+  if (showRestock) {
+    const finalSuggestion = deriveRestockSuggestion(items, products, restockSuggestion);
+    if (finalSuggestion && finalSuggestion.display_text) {
+      restockSection = `\n${finalSuggestion.display_text}\n`;
+    }
+  }
+
   const message = 
 `🧾 *TAX INVOICE — RAIS AGENCIES*
 📄 *Bill #${invNumber}* • ${invoiceDateTimeStr}
@@ -147,7 +224,7 @@ export const shareInvoiceOnWhatsApp = async ({
 ${itemLines}
 ━━━━━━━━━━━━━━━━━━━━
 💰 *Bill Total:* *₹${totalAmtFormatted}*
-${dueSection}
+${dueSection}${restockSection}
 📲 *Pay via UPI:* \`9347453135@ybl\` (RAIS AGENCIES)
 GPay / PhonePe: 9347453135
 ${getCompactQuickLinks(cleanBillUrl, 'Download Bill')}`;
@@ -329,6 +406,8 @@ ${getCompactQuickLinks(cleanOrderUrl, 'Download Order Slip')}`;
 export const sharePaymentOnWhatsApp = async ({
   payment,
   customer,
+  restockSuggestion = null,
+  showRestock = true,
   mode = 'direct'
 }) => {
   const pNumber = payment?.payment_number || 'RECEIPT';
@@ -380,6 +459,12 @@ export const sharePaymentOnWhatsApp = async ({
     }
   }
 
+  // Optional in-stock restock note for next order (strictly NO PRICES)
+  let restockSection = '';
+  if (showRestock && restockSuggestion && restockSuggestion.display_text) {
+    restockSection = `${restockSuggestion.display_text}\n`;
+  }
+
   const payIdentifier = payment?.payment_number || payment?.id || '';
   const cleanPayUrl = getCleanBillUrl(payIdentifier, 'payment');
 
@@ -391,7 +476,7 @@ export const sharePaymentOnWhatsApp = async ({
 💰 *Amount Received:* *₹${payAmtFormatted}*
 💳 *Payment Mode:* ${method} (${refStr})
 ${allocSection}${advanceNote}━━━━━━━━━━━━━━━━━━━━
-${ledgerSection}${getCompactQuickLinks(cleanPayUrl, 'Download Voucher')}`;
+${ledgerSection}${restockSection}${getCompactQuickLinks(cleanPayUrl, 'Download Voucher')}`;
 
   const cleanPhone = (custPhone || '').toString().replace(/[^0-9]/g, '');
   const hasDirectCustomer = cleanPhone.length >= 10;

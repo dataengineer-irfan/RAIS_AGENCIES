@@ -47,6 +47,7 @@ export const InvoiceBuilderModal = ({
   const [showNotes, setShowNotes] = useState(false);
   const [autoIssue, setAutoIssue] = useState(true);
   const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [includeRestockSuggestion, setIncludeRestockSuggestion] = useState(true);
   const [isSplitPayment, setIsSplitPayment] = useState(false);
   const [upiSplitAmount, setUpiSplitAmount] = useState('');
   const [cashSplitAmount, setCashSplitAmount] = useState('');
@@ -765,6 +766,7 @@ export const InvoiceBuilderModal = ({
                           customer: customerData,
                           items: items,
                           products: products,
+                          showRestock: includeRestockSuggestion,
                           mode: 'direct'
                         });
                       }}
@@ -783,7 +785,8 @@ export const InvoiceBuilderModal = ({
                           invoice: invoicePayload,
                           customer: customerData,
                           items: items,
-                          products: products
+                          products: products,
+                          showRestock: includeRestockSuggestion
                         });
                       }}
                       className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-xl font-semibold text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95"
@@ -792,6 +795,19 @@ export const InvoiceBuilderModal = ({
                       <Share2 className="w-4 h-4" />
                       <span>Share Image Card</span>
                     </button>
+
+                    {/* Restock Toggle Pill (Instant Kill-Switch per Bill) */}
+                    <div className="w-full flex items-center justify-center pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-950/80 hover:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={includeRestockSuggestion}
+                          onChange={(e) => setIncludeRestockSuggestion(e.target.checked)}
+                          className="w-3.5 h-3.5 text-emerald-600 rounded bg-slate-900 border-slate-700 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        <span>📦 Include in-stock restock suggestion on WhatsApp</span>
+                      </label>
+                    </div>
 
                     {/* ACTION: Print / Save PDF */}
                     <a
