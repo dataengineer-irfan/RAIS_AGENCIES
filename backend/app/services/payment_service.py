@@ -2,6 +2,7 @@ from typing import List, Optional
 from decimal import Decimal
 from datetime import date, datetime, timezone
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 from app.models.payment import Payment, PaymentAllocation
 from app.models.invoice import Invoice
 from app.models.customer import Customer
@@ -219,7 +220,7 @@ class PaymentService:
         p = db.query(Payment).options(
             joinedload(Payment.customer),
             joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
-        ).filter(Payment.id == payment_id).first()
+        ).filter(or_(Payment.id == payment_id, Payment.payment_number == payment_id)).first()
         if not p:
             raise EntityNotFoundException("Payment", payment_id)
 

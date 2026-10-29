@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RAIS Agencies — Official Digital Bill & Settlement Voucher</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      margin: 0;
+      padding: 0;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Sticky Executive Action Bar (Hidden when printing) -->
+  <header class="no-print sticky top-0 z-50 bg-slate-900 border-b border-slate-800 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center font-black text-slate-950 text-sm shadow">
+          R
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
+            RAIS AGENCIES
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              OFFICIAL BILL
+            </span>
+          </h1>
+          <p class="text-[10px] text-slate-400">Rayachoty Cold-Chain Central Depot</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="printBtn" onclick="handlePrint()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          <span>Download / Print</span>
+        </button>
+
+        <a href="/catalogue.html" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-lg border border-slate-700 transition flex items-center gap-1">
+          <span>📖 Catalogue</span>
+        </a>
+
+        <a href="https://wa.me/919347453135" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs rounded-lg border border-slate-700 transition flex items-center gap-1">
+          <span>🟢 Support</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Document Viewport -->
+  <main class="flex-1 flex flex-col items-center justify-center p-2 sm:p-6">
+    <!-- Loading State -->
+    <div id="loadingState" class="py-20 flex flex-col items-center text-center space-y-3">
+      <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-sm font-semibold text-slate-600">Loading official bill receipt...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden max-w-md w-full bg-white p-6 rounded-2xl shadow-lg border border-slate-200 text-center space-y-4 my-10">
+      <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+        ⚠️
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-slate-800">Bill Record Not Accessible</h3>
+        <p class="text-xs text-slate-500 mt-1" id="errorMsg">
+          We could not load this bill reference. Please verify the link or connect with our accounts desk.
+        </p>
+      </div>
+      <div class="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+        <a href="https://wa.me/919347453135" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition">
+          Chat on WhatsApp (9347453135)
+        </a>
+        <a href="/catalogue.html" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition">
+          Browse Products
+        </a>
+      </div>
+    </div>
+
+    <!-- Bill Content Container -->
+    <div id="billContainer" class="w-full max-w-4xl bg-white shadow-sm sm:shadow-lg rounded-xl overflow-hidden hidden">
+      <iframe id="billFrame" class="w-full border-0 min-h-[850px]" title="Official Bill"></iframe>
+    </div>
+  </main>
+
+  <!-- Clean Bottom Branding Bar -->
+  <footer class="no-print bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-400">
+    <div class="max-w-4xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
+      <p>RAIS AGENCIES • Certified -18°C Cold-Chain Depot • Rayachoty (516269)</p>
+      <div class="flex items-center gap-3 text-slate-300 font-semibold">
+        <a href="/catalogue.html" class="hover:text-amber-400 transition">Visual Catalogue</a>
+        <span>•</span>
+        <a href="https://wa.me/919347453135" class="hover:text-emerald-400 transition">Accounts: 9347453135</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const API_PROD_URL = 'https://rais-backend.onrender.com/api';
+
+    function getBackendUrl() {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:8000/api';
+      }
+      return API_PROD_URL;
+    }
+
+    function handlePrint() {
+      const frame = document.getElementById('billFrame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      } else {
+        window.print();
+      }
+    }
+
+    async function loadBill() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id') || params.get('inv') || params.get('bill');
+      const type = (params.get('type') || 'invoice').toLowerCase();
+
+      const loading = document.getElementById('loadingState');
+      const errorState = document.getElementById('errorState');
+      const container = document.getElementById('billContainer');
+      const frame = document.getElementById('billFrame');
+
+      if (!id) {
+        loading.classList.add('hidden');
+        errorState.classList.remove('hidden');
+        document.getElementById('errorMsg').innerText = 'No invoice or payment identifier provided in URL.';
+        return;
+      }
+
+      const backendBase = getBackendUrl();
+      let targetEndpoint = '';
+
+      if (type === 'payment' || type === 'receipt') {
+        targetEndpoint = `${backendBase}/payments/${encodeURIComponent(id)}/print-html`;
+        document.title = `Payment Voucher #${id} — RAIS Agencies`;
+      } else if (type === 'order') {
+        targetEndpoint = `${backendBase}/orders/${encodeURIComponent(id)}/print-html`;
+        document.title = `Order Slip #${id} — RAIS Agencies`;
+      } else if (type === 'statement') {
+        targetEndpoint = `${backendBase}/customers/${encodeURIComponent(id)}/statement/print-html`;
+        document.title = `Account Statement — RAIS Agencies`;
+      } else {
+        targetEndpoint = `${backendBase}/invoices/${encodeURIComponent(id)}/print-html`;
+        document.title = `Tax Invoice #${id} — RAIS Agencies`;
+      }
+
+      try {
+        const response = await fetch(targetEndpoint);
+        if (!response.ok) {
+          throw new Error(`Server returned HTTP ${response.status}`);
+        }
+        const html = await response.text();
+
+        loading.classList.add('hidden');
+        container.classList.remove('hidden');
+
+        // Write HTML into the sandboxed iframe for perfect CSS isolation and printing
+        const doc = frame.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+
+        // Adjust iframe height dynamically based on rendered content
+        setTimeout(() => {
+          try {
+            const h = frame.contentWindow.document.body.scrollHeight;
+            if (h && h > 400) {
+              frame.style.height = (h + 40) + 'px';
+            }
+          } catch (e) {
+            // fallback default
+          }
+        }, 300);
+
+      } catch (err) {
+        console.error('Failed to load bill:', err);
+        loading.classList.add('hidden');
+        errorState.classList.remove('hidden');
+        document.getElementById('errorMsg').innerText = `Could not load ${type} record (${err.message}). Please contact our accounts desk directly.`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadBill);
+  </script>
+</body>
+</html>

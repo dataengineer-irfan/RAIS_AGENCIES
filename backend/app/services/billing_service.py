@@ -882,7 +882,7 @@ class BillingService:
             joinedload(Invoice.customer),
             selectinload(Invoice.items),
             selectinload(Invoice.allocations).joinedload(PaymentAllocation.payment)
-        ).filter(Invoice.id == invoice_id).first()
+        ).filter(or_(Invoice.id == invoice_id, Invoice.invoice_number == invoice_id)).first()
         if not inv:
             raise EntityNotFoundException("Invoice", invoice_id)
         
