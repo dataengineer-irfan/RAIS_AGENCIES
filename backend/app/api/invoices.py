@@ -373,10 +373,24 @@ def get_invoice_image(
     items = list(inv.items) if inv.items else []
     item_count = len(items) if items else 1
     
-    # Dynamic sizing based on item rows
+    # Dynamic sizing based on item rows + restock recommendation strip
     width = 800
     row_height = 34
-    height = 650 + (item_count * row_height)
+    
+    suggestion = None
+    try:
+        from app.services.recommendation_service import RecommendationService
+        exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in items if getattr(itm, 'product_id', None)]
+        suggestion = RecommendationService.get_customer_restock_suggestion(
+            db=db,
+            customer_id=str(inv.customer_id),
+            exclude_product_ids=exclude_pids
+        )
+    except Exception:
+        suggestion = None
+
+    rec_strip_h = 44 if suggestion else 0
+    height = 650 + (item_count * row_height) + rec_strip_h
     
     img = Image.new("RGB", (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
@@ -452,6 +466,19 @@ def get_invoice_image(
         draw.text((700, cur_y + 9), f"₹{inv.total_amount:.2f}", fill=(15, 23, 42), font=f_bold)
         cur_y += row_height
 
+    # 3b. In-Stock Restock Strip on Image Card (strictly NO PRICES)
+    if suggestion:
+        cur_y += 10
+        strip_h = 32
+        draw.rectangle([(30, cur_y), (width - 30, cur_y + strip_h)], fill=(254, 243, 199), outline=(251, 191, 36))
+        ctx_tag = (suggestion.get("context_note") or "In Stock at Depot").upper()
+        p_name = (suggestion.get("name") or "Product")[:42]
+        p_unit = suggestion.get("packaging_unit") or "PACKET"
+        draw.text((45, cur_y + 8), f"📦 {ctx_tag}: {p_name} ({p_unit})", fill=(146, 64, 14), font=f_bold)
+        draw.rectangle([(width - 170, cur_y + 5), (width - 45, cur_y + strip_h - 5)], fill=(5, 150, 105))
+        draw.text((width - 158, cur_y + 8), "IN STOCK AT DEPOT", fill=(255, 255, 255), font=f_small)
+        cur_y += strip_h
+
     # 4. Summary & UPI Cards
     cur_y += 15
     box_h = 130
@@ -501,7 +528,11 @@ def get_invoice_image(
 
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
-    return Response(content=buf.getvalue(), media_type="image/png")
+    return Response(
+        content=buf.getvalue(),
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="RAIS_Invoice_{inv.invoice_number}.png"'}
+    )
 
 @router.get("/{invoice_id}/restock-suggestion")
 def get_invoice_restock_suggestion(

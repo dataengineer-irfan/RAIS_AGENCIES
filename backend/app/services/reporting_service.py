@@ -370,6 +370,24 @@ class ReportingService:
                     "time": c_at.strftime("%I:%M %p") if c_at else ""
                 })
 
+        # 13. Low Stock / High Demand Restock Alerts (Real live stock from DB)
+        low_stock_query = db.query(Product).filter(
+            Product.is_active == True,
+            Product.current_stock <= Product.min_stock_alert
+        ).order_by(Product.current_stock.asc()).limit(10).all()
+
+        low_stock_alerts = [
+            {
+                "product_id": p.id,
+                "name": p.name,
+                "sku": p.sku,
+                "packaging_unit": p.packaging_unit,
+                "current_stock": float(p.current_stock),
+                "min_stock_alert": float(p.min_stock_alert)
+            }
+            for p in low_stock_query
+        ]
+
         kpis = DashboardKPIs(
             total_revenue_month=total_revenue_month,
             total_outstanding=total_outstanding,
@@ -386,7 +404,8 @@ class ReportingService:
             revenue_periods=revenue_periods,
             today_comparison=today_comparison,
             daily_trend_7d=daily_trend_7d,
-            margin_leakage_alerts=margin_leakage_alerts
+            margin_leakage_alerts=margin_leakage_alerts,
+            low_stock_alerts=low_stock_alerts
         )
 
         _DASHBOARD_CACHE["timestamp"] = now_ts

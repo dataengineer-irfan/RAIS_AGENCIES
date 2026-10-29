@@ -39,6 +39,7 @@ import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { MiniSparkline } from '../components/MiniSparkline';
 import { ProductVisualBadge } from '../utils/productIcons';
 import { getLocalDateString, getYesterdayString, getStartOfWeekString } from '../utils/dateUtils';
+import DashboardLiveTicker from '../components/DashboardLiveTicker';
 
 // Compact date formatter for mobile cards and tables (e.g. "Today", "Y'day", "08 Oct")
 const formatShortDate = (dateStr) => {
@@ -1238,26 +1239,8 @@ export const DashboardPage = ({
                     </span>
                   </div>
 
-                  {/* In-Stream Invoice Search Bar */}
-                  <div className="relative flex-1 min-w-[130px] max-w-[200px]">
-                    <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={dashboardInvoiceSearch}
-                      onChange={(e) => setDashboardInvoiceSearch(e.target.value)}
-                      placeholder="Search bill, outlet, item..."
-                      className="w-full pl-6 pr-5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
-                    />
-                    {dashboardInvoiceSearch && (
-                      <button
-                        onClick={() => setDashboardInvoiceSearch('')}
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
-                        title="Clear search"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+                  {/* Live Operational Depot Ticker */}
+                  <DashboardLiveTicker kpis={kpis} className="flex-1 min-w-[200px] max-w-[420px]" />
 
                   {/* Quick Settlement Filter Pills */}
                   <div className="flex items-center gap-1 shrink-0">
@@ -2006,25 +1989,8 @@ export const DashboardPage = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0">
-                  {/* Search Input */}
-                  <div className="relative w-32 sm:w-36 min-w-0">
-                    <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={dashboardInvoiceSearch}
-                      onChange={(e) => setDashboardInvoiceSearch(e.target.value)}
-                      placeholder="Search #, buyer..."
-                      className="w-full pl-6 pr-5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                    />
-                    {dashboardInvoiceSearch && (
-                      <button
-                        onClick={() => setDashboardInvoiceSearch('')}
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+                  {/* Live Operational Depot Ticker */}
+                  <DashboardLiveTicker kpis={kpis} className="w-full sm:w-auto flex-1 min-w-0" />
 
                   {/* Filter Pills */}
                   <div className="flex items-center gap-0.5 bg-slate-950 p-0.5 rounded-lg border border-slate-800">

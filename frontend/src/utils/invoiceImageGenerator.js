@@ -53,11 +53,75 @@ export const formatCustomerDisplayName = (businessName, contactPerson) => {
   return `${bName} (${cPerson})`;
 };
 
+export const deriveRestockSuggestion = (items = [], products = [], explicitSuggestion = null) => {
+  if (explicitSuggestion) return explicitSuggestion;
+  if (!products || !products.length) return null;
+
+  const currentProductIds = new Set((items || []).map(i => i.product_id));
+
+  // Detect affinity from current items
+  const itemTexts = (items || []).map(i => {
+    const p = products.find(x => x.id === i.product_id);
+    return `${p?.name || ''} ${i.item_description || ''}`.toUpperCase();
+  }).join(' ');
+
+  const isPizza = /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(itemTexts);
+  const isBurger = /BURGER|PATTY|BUN/i.test(itemTexts);
+  const isSnack = /FRIES|MOMO|NUGGET|POPCORN|POPS/i.test(itemTexts);
+
+  // Filter products with current_stock > 0 and not on current bill
+  const available = products.filter(p => {
+    const stock = parseFloat(p.current_stock || 0);
+    return stock > 0 && !currentProductIds.has(p.id) && p.is_active !== false;
+  });
+
+  if (!available.length) return null;
+
+  let candidate = null;
+  let contextNote = 'In Stock at Depot';
+
+  if (isPizza) {
+    candidate = available.find(p => /PIZZA BOX/i.test(p.name)) || available.find(p => /OREGANO/i.test(p.name));
+    if (candidate) contextNote = 'In Stock for your Pizzas';
+  }
+
+  if (!candidate && isBurger) {
+    candidate = available.find(p => /BURGER BOX/i.test(p.name)) || available.find(p => /MAYO/i.test(p.name));
+    if (candidate) contextNote = 'In Stock for your Burgers';
+  }
+
+  if (!candidate && isSnack) {
+    candidate = available.find(p => /PERI PERI/i.test(p.name)) || available.find(p => /KETCHUP/i.test(p.name));
+    if (candidate) contextNote = 'In Stock for your Kitchen';
+  }
+
+  if (!candidate) {
+    candidate = available.find(p => /BOX/i.test(p.name) || (p.category && p.category.code === 'PACKAGING'));
+    if (candidate) contextNote = 'In Stock at Packaging Depot';
+  }
+
+  if (!candidate) {
+    candidate = available[0];
+  }
+
+  if (!candidate) return null;
+
+  const unit = candidate.packaging_unit || 'PACKET';
+  return {
+    name: candidate.name,
+    packaging_unit: unit,
+    context_note: contextNote,
+    display_text: `📦 *${contextNote.toUpperCase()}:* ${candidate.name} (${unit}) — _Ready for immediate delivery_`
+  };
+};
+
 export const generateInvoiceCanvas = ({
   invoice,
   customer,
   items = [],
-  products = []
+  products = [],
+  restockSuggestion = null,
+  includeRestockSuggestion = true
 }) => {
   const invNumber = invoice?.invoice_number || 'INV-DRAFT';
   const bName = customer?.business_name || invoice?.customer_name || 'Valued Customer';
@@ -88,6 +152,12 @@ export const generateInvoiceCanvas = ({
     { item_description: 'Wholesale Frozen Food & Supplies', quantity: 1, packaging_unit: 'UNIT', unit_price: totalAmount, line_total: totalAmount }
   ];
 
+  // Derive restock recommendation (strictly ZERO PRICES)
+  const suggestion = includeRestockSuggestion !== false
+    ? deriveRestockSuggestion(processedItems, products, restockSuggestion || invoice?.restock_suggestion)
+    : null;
+  const restockStripHeight = suggestion ? 44 : 0;
+
   // Canvas Sizing
   const scale = 2; // 2x for Retina / Mobile High-DPI
   const width = 800;
@@ -98,7 +168,7 @@ export const generateInvoiceCanvas = ({
   const totalsHeight = 170;
   const linksHeight = 72;
   const footerHeight = 120;
-  const height = headerHeight + 110 + tableHeight + totalsHeight + linksHeight + footerHeight;
+  const height = headerHeight + 110 + tableHeight + restockStripHeight + totalsHeight + linksHeight + footerHeight;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -270,6 +340,55 @@ export const generateInvoiceCanvas = ({
 
     curY += rowHeight;
   });
+
+  // 3b. In-Stock Restock Pill Strip on Image Card (strictly NO PRICES)
+  if (suggestion) {
+    curY += 10;
+    const stripH = 34;
+    const pillX = 30;
+    const pillW = width - 60;
+
+    ctx.fillStyle = '#fef3c7';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(pillX, curY, pillW, stripH, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else {
+      ctx.fillRect(pillX, curY, pillW, stripH);
+    }
+
+    const ctxTag = (suggestion.context_note || 'In Stock at Depot').toUpperCase();
+    const pName = suggestion.name || 'Packaging Solutions';
+    const pUnit = suggestion.packaging_unit || 'PACKET';
+    const labelText = `📦 ${ctxTag}: ${pName} (${pUnit})`;
+    const truncatedLabel = labelText.length > 55 ? labelText.substring(0, 52) + '...' : labelText;
+
+    ctx.fillStyle = '#92400e';
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(truncatedLabel, pillX + 14, curY + 21);
+
+    // Green In Stock badge on right
+    const badgeW = 140;
+    const badgeH = 22;
+    const badgeX = pillX + pillW - badgeW - 6;
+    const badgeY = curY + 6;
+    ctx.fillStyle = '#059669';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+      ctx.fill();
+    } else {
+      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('IN STOCK AT DEPOT', badgeX + 12, badgeY + 15);
+
+    curY += stripH;
+  }
 
   // 4. Financial Summary Card & UPI Card
   curY += 15;
