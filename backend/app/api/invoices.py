@@ -344,7 +344,7 @@ def get_invoice_image(
     # Dynamic sizing based on item rows
     width = 800
     row_height = 34
-    height = 620 + (item_count * row_height)
+    height = 650 + (item_count * row_height)
     
     img = Image.new("RGB", (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
@@ -422,27 +422,41 @@ def get_invoice_image(
 
     # 4. Summary & UPI Cards
     cur_y += 15
+    box_h = 130
+
     # UPI Box (Left)
-    draw.rectangle([(30, cur_y), (420, cur_y + 110)], fill=(240, 253, 244), outline=(187, 247, 208))
-    draw.text((45, cur_y + 14), "💳 OFFICIAL UPI SETTLEMENT:", fill=(21, 128, 61), font=f_bold)
-    draw.text((45, cur_y + 36), "9347453135@ybl", fill=(15, 23, 42), font=f_title)
+    draw.rectangle([(30, cur_y), (420, cur_y + box_h)], fill=(240, 253, 244), outline=(187, 247, 208))
+    draw.text((45, cur_y + 12), "💳 OFFICIAL UPI SETTLEMENT:", fill=(21, 128, 61), font=f_bold)
+    draw.text((45, cur_y + 34), "9347453135@ybl", fill=(15, 23, 42), font=f_title)
     draw.text((45, cur_y + 70), "Payee: RAIS AGENCIES • GPay / PhonePe: 9347453135", fill=(51, 65, 85), font=f_regular)
-    draw.text((45, cur_y + 88), "Share payment confirmation on WhatsApp for instant credit.", fill=(21, 128, 61), font=f_small)
+    draw.text((45, cur_y + 92), "Share payment confirmation on WhatsApp for instant credit.", fill=(21, 128, 61), font=f_small)
 
     # Totals Box (Right)
-    draw.rectangle([(440, cur_y), (width - 30, cur_y + 110)], fill=(248, 250, 252), outline=(226, 232, 240))
-    draw.text((455, cur_y + 14), "Subtotal:", fill=(100, 116, 139), font=f_regular)
-    draw.text((660, cur_y + 14), f"₹{inv.subtotal:.2f}", fill=(30, 41, 59), font=f_bold)
+    draw.rectangle([(440, cur_y), (width - 30, cur_y + box_h)], fill=(248, 250, 252), outline=(226, 232, 240))
+    draw.text((455, cur_y + 10), "Subtotal:", fill=(100, 116, 139), font=f_regular)
+    draw.text((660, cur_y + 10), f"₹{inv.subtotal:.2f}", fill=(30, 41, 59), font=f_bold)
 
-    draw.rectangle([(450, cur_y + 38), (width - 40, cur_y + 72)], fill=(15, 23, 42))
-    draw.text((462, cur_y + 47), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
-    draw.text((650, cur_y + 47), f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
+    # Dark Card for Invoice Total
+    draw.rectangle([(450, cur_y + 30), (width - 40, cur_y + 62)], fill=(15, 23, 42))
+    draw.text((462, cur_y + 39), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
+    draw.text((650, cur_y + 39), f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
 
-    if inv.outstanding_amount > 0 and inv.outstanding_amount != inv.total_amount:
-        draw.text((455, cur_y + 84), f"Balance Due: ₹{inv.outstanding_amount:.2f}", fill=(239, 68, 68), font=f_bold)
+    if inv.paid_amount > 0:
+        draw.text((455, cur_y + 72), "Paid / Advance Settled:", fill=(5, 150, 105), font=f_regular)
+        draw.text((660, cur_y + 72), f"-₹{inv.paid_amount:.2f}", fill=(5, 150, 105), font=f_bold)
+
+        if inv.outstanding_amount > 0:
+            draw.text((455, cur_y + 96), "Balance Due on Bill:", fill=(225, 29, 72), font=f_bold)
+            draw.text((660, cur_y + 96), f"₹{inv.outstanding_amount:.2f}", fill=(225, 29, 72), font=f_mono)
+        else:
+            draw.text((455, cur_y + 96), "Balance Due on Bill:", fill=(5, 150, 105), font=f_bold)
+            draw.text((660, cur_y + 96), "₹0.00 (PAID)", fill=(5, 150, 105), font=f_mono)
+    else:
+        draw.text((455, cur_y + 80), "Balance Due on Bill:", fill=(225, 29, 72), font=f_bold)
+        draw.text((660, cur_y + 80), f"₹{inv.total_amount:.2f}", fill=(225, 29, 72), font=f_mono)
 
     # 4b. Direct Quick Links Banner (Bold Emerald Card)
-    cur_y += 120
+    cur_y += box_h + 10
     draw.rectangle([(30, cur_y), (width - 30, cur_y + 48)], fill=(236, 253, 245), outline=(167, 243, 208))
     draw.text((45, cur_y + 8), "🟢 WhatsApp Orders: 9347453135 (wa.me/919347453135)", fill=(4, 120, 87), font=f_bold)
     draw.text((430, cur_y + 8), "🌐 Online Store: Live Products & Pricing", fill=(6, 95, 70), font=f_bold)

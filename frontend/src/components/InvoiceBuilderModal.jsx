@@ -47,6 +47,9 @@ export const InvoiceBuilderModal = ({
   const [showNotes, setShowNotes] = useState(false);
   const [autoIssue, setAutoIssue] = useState(true);
   const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [isSplitPayment, setIsSplitPayment] = useState(false);
+  const [upiSplitAmount, setUpiSplitAmount] = useState('');
+  const [cashSplitAmount, setCashSplitAmount] = useState('');
 
   // Line items
   const [items, setItems] = useState([]);
@@ -111,6 +114,9 @@ export const InvoiceBuilderModal = ({
       setCollectedAmount('');
       setInvoiceDiscount('0');
       setMarkAsPaid(false);
+      setIsSplitPayment(false);
+      setUpiSplitAmount('');
+      setCashSplitAmount('');
       setNotes('');
       setShowNotes(false);
       const curToday = getLocalDateString();
@@ -548,9 +554,16 @@ export const InvoiceBuilderModal = ({
           ? crypto.randomUUID()
           : `inv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
+        const numCash = parseFloat(cashSplitAmount) || 0;
+        const numUpi = parseFloat(upiSplitAmount) || 0;
+        const isSplit = isSplitPayment && (numCash > 0 || numUpi > 0);
+        const splitTotal = numCash + numUpi;
+
         const numCollected = parseFloat(collectedAmount) || 0;
-        const willMarkAsPaid = markAsPaid || (numCollected >= parseFloat(totals.total));
-        const effectiveAmountPaid = numCollected > 0 ? numCollected : (willMarkAsPaid ? parseFloat(totals.total) : 0);
+        const willMarkAsPaid = markAsPaid || (numCollected >= parseFloat(totals.total)) || (isSplit && splitTotal >= parseFloat(totals.total));
+        const effectiveAmountPaid = isSplit
+          ? splitTotal
+          : (numCollected > 0 ? numCollected : (willMarkAsPaid ? parseFloat(totals.total) : 0));
 
         const payload = {
           customer_id: customerId,
@@ -562,13 +575,14 @@ export const InvoiceBuilderModal = ({
           auto_issue: autoIssue,
           mark_as_paid: willMarkAsPaid,
           amount_paid: effectiveAmountPaid > 0 ? effectiveAmountPaid : undefined,
+          ...(isSplit ? { cash_amount: numCash, upi_amount: numUpi } : {}),
           idempotency_key: idempotencyKey,
           items: itemsPayload
         };
         res = await billingApi.createInvoice(payload);
 
         // Fallback immediate cash settlement if marked as paid/collected and backend hasn't already auto-settled
-        if (effectiveAmountPaid > 0 && res?.id && res?.status !== 'PAID' && res?.status !== 'PARTIALLY_PAID') {
+        if (!isSplit && effectiveAmountPaid > 0 && res?.id && res?.status !== 'PAID' && res?.status !== 'PARTIALLY_PAID') {
           try {
             const payRes = await paymentApi.record({
               customer_id: customerId,
@@ -1079,10 +1093,38 @@ export const InvoiceBuilderModal = ({
 
                 {/* Date, Due Date & Terms Row - Compact 3-col grid on mobile, flex row on tablet/desktop */}
                 <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center sm:gap-2 shrink-0">
-                  <div className="min-w-0 sm:w-32 shrink-0">
-                    <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5 truncate">
-                      Date
-                    </label>
+                  <div className="min-w-0 sm:w-36 shrink-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                        Date
+                      </label>
+                      <div className="flex items-center gap-1 text-[9px]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const y = new Date();
+                            y.setDate(y.getDate() - 1);
+                            const yStr = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
+                            handleInvoiceDateChange(yStr);
+                          }}
+                          className="text-amber-400 hover:text-amber-300 font-bold px-1 rounded bg-slate-800 border border-slate-700/60"
+                          title="Set to Yesterday"
+                        >
+                          Y'day
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const tStr = getLocalDateString();
+                            handleInvoiceDateChange(tStr);
+                          }}
+                          className="text-slate-300 hover:text-white font-bold px-1 rounded bg-slate-800 border border-slate-700/60"
+                          title="Set to Today"
+                        >
+                          Today
+                        </button>
+                      </div>
+                    </div>
                     <input
                       type="date"
                       value={invoiceDate}
@@ -1598,9 +1640,15 @@ export const InvoiceBuilderModal = ({
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
-                          onClick={() => { setCollectedAmount(''); setMarkAsPaid(false); }}
+                          onClick={() => {
+                            setCollectedAmount('');
+                            setMarkAsPaid(false);
+                            setIsSplitPayment(false);
+                            setUpiSplitAmount('');
+                            setCashSplitAmount('');
+                          }}
                           className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
-                            (!collectedAmount || parseFloat(collectedAmount) === 0) && !markAsPaid
+                            (!collectedAmount || parseFloat(collectedAmount) === 0) && !markAsPaid && !isSplitPayment
                               ? 'bg-slate-700 text-white border-slate-500 ring-1 ring-slate-400/50'
                               : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700/80'
                           }`}
@@ -1612,14 +1660,35 @@ export const InvoiceBuilderModal = ({
                           onClick={() => {
                             setCollectedAmount(String(parseFloat(totals.total)));
                             setMarkAsPaid(true);
+                            setIsSplitPayment(false);
+                            setUpiSplitAmount('');
+                            setCashSplitAmount('');
                           }}
                           className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
-                            parseFloat(collectedAmount) === parseFloat(totals.total)
+                            parseFloat(collectedAmount) === parseFloat(totals.total) && !isSplitPayment
                               ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/70 ring-1 ring-emerald-500/50 font-black'
                               : 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 border-emerald-800/60'
                           }`}
                         >
                           Exact (₹{parseFloat(totals.total).toFixed(0)})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !isSplitPayment;
+                            setIsSplitPayment(next);
+                            if (next) {
+                              setMarkAsPaid(true);
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
+                            isSplitPayment
+                              ? 'bg-amber-500/30 text-amber-300 border-amber-500 ring-1 ring-amber-500/50 font-black'
+                              : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-400 border-amber-800/60'
+                          }`}
+                          title="Split payment between Cash and UPI"
+                        >
+                          ⚡ Split (Cash + UPI)
                         </button>
                         {custLedgerDue > 0 && (
                           <button
@@ -1628,9 +1697,12 @@ export const InvoiceBuilderModal = ({
                               const fullClear = (parseFloat(totals.total) + custLedgerDue).toFixed(2);
                               setCollectedAmount(String(fullClear));
                               setMarkAsPaid(true);
+                              setIsSplitPayment(false);
+                              setUpiSplitAmount('');
+                              setCashSplitAmount('');
                             }}
                             className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all active:scale-95 shadow-sm cursor-pointer ${
-                              parseFloat(collectedAmount) === (parseFloat(totals.total) + custLedgerDue)
+                              parseFloat(collectedAmount) === (parseFloat(totals.total) + custLedgerDue) && !isSplitPayment
                                 ? 'bg-amber-500/25 text-amber-200 border-amber-500/70 ring-1 ring-amber-500/50 font-black'
                                 : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-400 border-amber-800/60'
                             }`}
@@ -1641,27 +1713,109 @@ export const InvoiceBuilderModal = ({
                         )}
                       </div>
                     </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-xs text-emerald-500 font-mono font-bold">₹</span>
-                      <input
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={collectedAmount}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setCollectedAmount(val);
-                          const num = parseFloat(val) || 0;
-                          if (num >= parseFloat(totals.total) && parseFloat(totals.total) > 0) {
-                            setMarkAsPaid(true);
-                          } else if (num < parseFloat(totals.total)) {
-                            setMarkAsPaid(false);
-                          }
-                        }}
-                        placeholder={`Enter cash/UPI received (e.g. ${totals.total})`}
-                        className="w-full bg-slate-900 border border-emerald-500/40 rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono font-black text-emerald-300 focus:outline-none focus:border-emerald-400 transition-colors shadow-inner placeholder:text-slate-600"
-                      />
-                    </div>
+
+                    {isSplitPayment ? (
+                      <div className="p-2 rounded-xl bg-slate-900/90 border border-amber-500/40 space-y-2 mt-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-0.5">
+                              📱 UPI (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="1"
+                              min="0"
+                              value={upiSplitAmount}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setUpiSplitAmount(val);
+                                const u = parseFloat(val) || 0;
+                                const c = parseFloat(cashSplitAmount) || 0;
+                                setCollectedAmount(String(u + c));
+                                setMarkAsPaid((u + c) >= parseFloat(totals.total) && parseFloat(totals.total) > 0);
+                              }}
+                              placeholder="e.g. 1500"
+                              className="w-full bg-slate-950 border border-cyan-500/50 rounded-lg px-2 py-1.5 text-xs font-mono font-black text-cyan-300 focus:outline-none focus:border-cyan-400"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                                💵 Cash (₹)
+                              </label>
+                              {parseFloat(totals.total) > (parseFloat(upiSplitAmount) || 0) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const rem = Math.max(0, parseFloat(totals.total) - (parseFloat(upiSplitAmount) || 0));
+                                    setCashSplitAmount(String(rem));
+                                    const u = parseFloat(upiSplitAmount) || 0;
+                                    setCollectedAmount(String(u + rem));
+                                    setMarkAsPaid((u + rem) >= parseFloat(totals.total) && parseFloat(totals.total) > 0);
+                                  }}
+                                  className="text-[9px] text-amber-400 hover:text-amber-300 underline font-bold"
+                                  title="Fill remaining balance into Cash"
+                                >
+                                  Rem: ₹{Math.max(0, parseFloat(totals.total) - (parseFloat(upiSplitAmount) || 0))}
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="number"
+                              step="1"
+                              min="0"
+                              value={cashSplitAmount}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCashSplitAmount(val);
+                                const c = parseFloat(val) || 0;
+                                const u = parseFloat(upiSplitAmount) || 0;
+                                setCollectedAmount(String(u + c));
+                                setMarkAsPaid((u + c) >= parseFloat(totals.total) && parseFloat(totals.total) > 0);
+                              }}
+                              placeholder="e.g. 200"
+                              className="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-2 py-1.5 text-xs font-mono font-black text-emerald-300 focus:outline-none focus:border-emerald-400"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800">
+                          <span className="text-slate-400">
+                            Split Paid: <strong className="text-white font-mono">₹{((parseFloat(upiSplitAmount) || 0) + (parseFloat(cashSplitAmount) || 0)).toFixed(2)}</strong>
+                          </span>
+                          {parseFloat(totals.total) > ((parseFloat(upiSplitAmount) || 0) + (parseFloat(cashSplitAmount) || 0)) ? (
+                            <span className="text-rose-400 font-bold">
+                              Due: ₹{(parseFloat(totals.total) - ((parseFloat(upiSplitAmount) || 0) + (parseFloat(cashSplitAmount) || 0))).toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400 font-bold">
+                              ✓ Fully Settled
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2 text-xs text-emerald-500 font-mono font-bold">₹</span>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={collectedAmount}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCollectedAmount(val);
+                            const num = parseFloat(val) || 0;
+                            if (num >= parseFloat(totals.total) && parseFloat(totals.total) > 0) {
+                              setMarkAsPaid(true);
+                            } else if (num < parseFloat(totals.total)) {
+                              setMarkAsPaid(false);
+                            }
+                          }}
+                          placeholder={`Enter cash/UPI received (e.g. ${totals.total})`}
+                          className="w-full bg-slate-900 border border-emerald-500/40 rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono font-black text-emerald-300 focus:outline-none focus:border-emerald-400 transition-colors shadow-inner placeholder:text-slate-600"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

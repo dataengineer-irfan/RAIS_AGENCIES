@@ -65,6 +65,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   const [activeStatusFilter, setActiveStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('DATE_DESC'); // DATE_DESC, DATE_ASC, AMOUNT_DESC, AMOUNT_ASC, DUE_DESC, INV_DESC
+  const [dateFilter, setDateFilter] = useState('ALL'); // 'ALL', 'TODAY', 'YESTERDAY', '7D', 'MONTH', 'CUSTOM'
+  const [customDate, setCustomDate] = useState('');
   
   // Master-Detail State (Pre-seeded at Frame 0 from persistent cache)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(() => {
@@ -307,6 +309,34 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       } else if (activeStatusFilter !== 'ALL') {
         if (inv.status !== activeStatusFilter) return false;
       }
+      if (dateFilter !== 'ALL') {
+        const invD = inv.invoice_date || '';
+        const now = new Date();
+        const toYMD = (d) => {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
+        if (dateFilter === 'TODAY') {
+          if (invD !== toYMD(now)) return false;
+        } else if (dateFilter === 'YESTERDAY') {
+          const y = new Date();
+          y.setDate(y.getDate() - 1);
+          if (invD !== toYMD(y)) return false;
+        } else if (dateFilter === '7D') {
+          const limit = new Date();
+          limit.setDate(limit.getDate() - 7);
+          if (invD < toYMD(limit)) return false;
+        } else if (dateFilter === 'MONTH') {
+          const mStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+          if (invD < mStart) return false;
+        } else if (dateFilter === 'CUSTOM' && customDate) {
+          if (invD !== customDate) return false;
+        }
+      }
+
       if (term) {
         const matchesHeader = (
           (inv.invoice_number || '').toLowerCase().includes(term) ||
@@ -338,7 +368,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       // Default: DATE_DESC
       return new Date(b.invoice_date || b.created_at || 0) - new Date(a.invoice_date || a.created_at || 0);
     });
-  }, [invoices, activeStatusFilter, searchTerm, sortBy]);
+  }, [invoices, activeStatusFilter, searchTerm, sortBy, dateFilter, customDate]);
 
   const selectedInvoice = selectedInvoiceDetails || invoices.find(i => i.id === selectedInvoiceId);
 
@@ -468,35 +498,37 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           </select>
         </div>
 
-        {/* Live Financial Micro-Ticker */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
-          <span className="text-slate-400">Billed: <strong className="text-white">₹{statusCounts.totalBilled.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
-          <span className="text-slate-700">|</span>
-          <span className="text-amber-400">Due: <strong className="font-bold">₹{statusCounts.totalDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {/* Live Financial Micro-Ticker */}
+          <div className="hidden 2xl:flex items-center gap-2 px-2.5 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
+            <span className="text-slate-400">Billed: <strong className="text-white">₹{statusCounts.totalBilled.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+            <span className="text-slate-700">|</span>
+            <span className="text-amber-400">Due: <strong className="font-bold">₹{statusCounts.totalDue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
+          </div>
+
+          {/* Deleted Invoices Audit Shortcut */}
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('audit', { entity: 'Invoice', action: 'DELETE' })}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/30 rounded-xl text-xs font-bold transition shadow-sm shrink-0"
+              title="Inspect audit records for deleted and cancelled invoices"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden 2xl:inline">Deleted Audit</span>
+            </button>
+          )}
+
+          {/* Right: + Invoice CTA */}
+          {hasRole(['ADMIN', 'OPERATOR']) && (
+            <button
+              onClick={onOpenInvoiceBuilder}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Invoice</span>
+            </button>
+          )}
         </div>
-
-        {/* Deleted Invoices Audit Shortcut */}
-        {onNavigate && (
-          <button
-            onClick={() => onNavigate('audit', { entity: 'Invoice', action: 'DELETE' })}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/30 rounded-xl text-xs font-bold transition shadow-sm shrink-0"
-            title="Inspect audit records for deleted and cancelled invoices"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden lg:inline">Deleted Invoices Audit</span>
-          </button>
-        )}
-
-        {/* Right: + Invoice CTA */}
-        {hasRole(['ADMIN', 'OPERATOR']) && (
-          <button
-            onClick={onOpenInvoiceBuilder}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Invoice</span>
-          </button>
-        )}
       </div>
 
       {/* ─── MOBILE COMPACT SEARCH & ACTION BAR (< md) ─── */}
@@ -614,9 +646,46 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
         
         {/* ─── LEFT MASTER PANE (Invoices List) ─── */}
         <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-3 shadow-lg flex-col overflow-hidden`}>
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
-            <span>{loading && invoices.length === 0 ? 'Tax Invoices' : invoices.length > 0 ? `Tax Invoices (${filteredInvoices.length})` : 'Tax Invoices'}</span>
-            <span>Total / Due</span>
+          <div className="pb-2 mb-2 border-b border-slate-800/80 shrink-0 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span>{loading && invoices.length === 0 ? 'Tax Invoices' : invoices.length > 0 ? `Tax Invoices (${filteredInvoices.length})` : 'Tax Invoices'}</span>
+              <span>Total / Due</span>
+            </div>
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-[11px] font-bold">
+              {[
+                { id: 'ALL', label: 'All' },
+                { id: 'TODAY', label: 'Today' },
+                { id: 'YESTERDAY', label: 'Yesterday' },
+                { id: '7D', label: '7 Days' },
+                { id: 'MONTH', label: 'This Month' }
+              ].map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => { setDateFilter(d.id); if (d.id !== 'CUSTOM') setCustomDate(''); }}
+                  className={`px-2 py-0.5 rounded-lg whitespace-nowrap transition-all ${
+                    dateFilter === d.id
+                      ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => {
+                  setCustomDate(e.target.value);
+                  if (e.target.value) setDateFilter('CUSTOM');
+                }}
+                className={`px-1.5 py-0.5 rounded-lg text-[10px] font-mono border transition-all cursor-pointer ${
+                  dateFilter === 'CUSTOM'
+                    ? 'bg-amber-500 text-slate-950 font-bold border-amber-400'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+                title="Pick custom date"
+              />
+            </div>
           </div>
 
           {/* Master Scrollable List */}

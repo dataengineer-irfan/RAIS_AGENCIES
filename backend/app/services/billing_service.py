@@ -315,12 +315,109 @@ class BillingService:
             customer.customer_code == "CUST-0044" or
             "cash" in (customer.business_name or "").lower().strip()
         )
+        cash_val = Decimal(str(data.cash_amount)) if getattr(data, "cash_amount", None) is not None and Decimal(str(data.cash_amount)) > Decimal("0.00") else Decimal("0.00")
+        upi_val = Decimal(str(data.upi_amount)) if getattr(data, "upi_amount", None) is not None and Decimal(str(data.upi_amount)) > Decimal("0.00") else Decimal("0.00")
+        is_split = (cash_val > Decimal("0.00") and upi_val > Decimal("0.00"))
+
         should_settle = (
             invoice.status == InvoiceStatus.ISSUED.value and
-            (has_custom_payment or bool(getattr(data, "mark_as_paid", False)) or is_cash_customer)
+            (is_split or has_custom_payment or bool(getattr(data, "mark_as_paid", False)) or is_cash_customer)
         )
 
-        if should_settle and invoice.total_amount > Decimal("0.00"):
+        if is_split and invoice.status == InvoiceStatus.ISSUED.value and invoice.total_amount > Decimal("0.00"):
+            from app.models.payment import Payment, PaymentAllocation
+            from app.domain.enums import PaymentMethod
+            now_dt = datetime.now(timezone.utc)
+
+            # 1. UPI Payment Voucher
+            pay_upi_num = SequenceService.get_next_sequence(db, "PAY")
+            alloc_upi = min(invoice.outstanding_amount, upi_val)
+            surplus_upi = max(Decimal("0.00"), upi_val - alloc_upi)
+
+            pay_upi = Payment(
+                payment_number=pay_upi_num,
+                customer_id=customer.id,
+                payment_date=invoice.invoice_date,
+                amount=upi_val,
+                allocated_amount=alloc_upi,
+                unallocated_amount=surplus_upi,
+                payment_method=PaymentMethod.UPI.value,
+                reference_number=f"Split UPI #{invoice.invoice_number}",
+                notes=f"Split settlement (UPI: ₹{upi_val}) for Invoice #{invoice.invoice_number}",
+                created_by_id=user_id
+            )
+            db.add(pay_upi)
+            db.flush()
+
+            alloc_upi_rec = PaymentAllocation(
+                payment_id=pay_upi.id,
+                invoice_id=invoice.id,
+                allocated_amount=alloc_upi,
+                allocated_at=now_dt
+            )
+            db.add(alloc_upi_rec)
+            invoice.paid_amount += alloc_upi
+            invoice.outstanding_amount = quantize_amount(invoice.total_amount - invoice.paid_amount)
+
+            # 2. CASH Payment Voucher
+            pay_cash_num = SequenceService.get_next_sequence(db, "PAY")
+            alloc_cash = min(invoice.outstanding_amount, cash_val)
+            surplus_cash = max(Decimal("0.00"), cash_val - alloc_cash)
+
+            pay_cash = Payment(
+                payment_number=pay_cash_num,
+                customer_id=customer.id,
+                payment_date=invoice.invoice_date,
+                amount=cash_val,
+                allocated_amount=alloc_cash,
+                unallocated_amount=surplus_cash,
+                payment_method=PaymentMethod.CASH.value,
+                reference_number=f"Split Cash #{invoice.invoice_number}",
+                notes=f"Split settlement (Cash: ₹{cash_val}) for Invoice #{invoice.invoice_number}",
+                created_by_id=user_id
+            )
+            db.add(pay_cash)
+            db.flush()
+
+            alloc_cash_rec = PaymentAllocation(
+                payment_id=pay_cash.id,
+                invoice_id=invoice.id,
+                allocated_amount=alloc_cash,
+                allocated_at=now_dt
+            )
+            db.add(alloc_cash_rec)
+            invoice.paid_amount += alloc_cash
+            invoice.outstanding_amount = quantize_amount(invoice.total_amount - invoice.paid_amount)
+
+            if invoice.outstanding_amount <= Decimal("0.00"):
+                invoice.status = InvoiceStatus.PAID.value
+            else:
+                invoice.status = InvoiceStatus.PARTIALLY_PAID.value
+
+            # If customer paid surplus, apply to past dues
+            if (surplus_upi + surplus_cash) > Decimal("0.00"):
+                from app.services.reconciliation_service import ReconciliationService
+                ReconciliationService.reconcile_customer_fifo(db, customer.id, auto_commit=False)
+
+            AuditService.log(
+                db=db,
+                action=AuditAction.CREATE,
+                entity_name="Payment",
+                entity_id=pay_upi.id,
+                user_id=user_id,
+                username=username,
+                user_role=user_role,
+                after_state={
+                    "type": "SPLIT_PAYMENT",
+                    "upi_payment": pay_upi_num,
+                    "cash_payment": pay_cash_num,
+                    "upi_amount": str(upi_val),
+                    "cash_amount": str(cash_val),
+                    "invoice_number": invoice.invoice_number
+                }
+            )
+
+        elif should_settle and invoice.total_amount > Decimal("0.00"):
             from app.models.payment import Payment, PaymentAllocation
             from app.domain.enums import PaymentMethod
             

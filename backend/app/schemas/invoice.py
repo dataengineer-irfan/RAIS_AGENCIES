@@ -40,6 +40,8 @@ class InvoiceCreate(BaseModel):
     auto_issue: bool = False # If True, mark as ISSUED immediately
     mark_as_paid: Optional[bool] = False # If True, atomically record cash settlement into cash/UPI register
     amount_paid: Optional[Decimal] = Field(None, ge=Decimal("0.00"), description="Optional counter amount paid now during billing")
+    cash_amount: Optional[Decimal] = Field(None, ge=Decimal("0.00"), description="Optional cash amount in split settlement")
+    upi_amount: Optional[Decimal] = Field(None, ge=Decimal("0.00"), description="Optional UPI amount in split settlement")
     idempotency_key: Optional[str] = Field(None, max_length=64, description="Client idempotency key for safe retries")
     items: List[InvoiceItemCreate] = Field(..., min_length=1, description="Invoice must contain at least one item")
 
