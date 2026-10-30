@@ -918,99 +918,128 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
             <div className="h-full flex flex-col overflow-hidden">
               
               {/* Inspector Header */}
-              <div className="flex items-start justify-between pb-3 border-b border-slate-800 shrink-0">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
-                      {selectedPayment.payment_number}
-                      <button 
-                        onClick={() => handleCopyCode(selectedPayment.payment_number)}
-                        className="hover:text-white"
-                        title="Copy Payment #"
-                      >
-                        {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </span>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                      {selectedPayment.payment_method}
-                    </span>
+              <div className="pb-3 border-b border-slate-800 shrink-0 space-y-2.5">
+                {/* Row 1: Identity & Settled Amount Banner */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 inline-flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+                        <span>{selectedPayment.payment_number}</span>
+                        <button 
+                          type="button"
+                          onClick={() => handleCopyCode(selectedPayment.payment_number)}
+                          className="hover:text-white transition-colors p-0.5 rounded hover:bg-emerald-500/20"
+                          title="Copy Payment #"
+                        >
+                          {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </span>
+                      <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700 whitespace-nowrap shadow-sm">
+                        {selectedPayment.payment_method}
+                      </span>
+                      <span className="text-xs text-slate-400 whitespace-nowrap">
+                        Settled on {formatVoucherDate(selectedPayment.payment_date)}
+                      </span>
+                      {selectedPayment.reference_number && (
+                        <span className="text-[11px] font-mono text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 whitespace-nowrap hidden sm:inline-block">
+                          Ref: {selectedPayment.reference_number}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <h2 className="text-base sm:text-lg font-black text-white mt-1.5 leading-snug break-words">
+                      {selectedPayment.customer_name}
+                      {selectedPayment.customer_contact && selectedPayment.customer_contact.toLowerCase() !== (selectedPayment.customer_name || '').toLowerCase() && (
+                        <span className="text-amber-300 font-semibold text-sm ml-1.5">({selectedPayment.customer_contact})</span>
+                      )}
+                    </h2>
                   </div>
-                  <h2 className="text-base sm:text-lg font-black text-white mt-1">
-                    {selectedPayment.customer_name}
-                    {selectedPayment.customer_contact && selectedPayment.customer_contact.toLowerCase() !== (selectedPayment.customer_name || '').toLowerCase() && (
-                      <span className="text-amber-300 font-bold ml-1.5">({selectedPayment.customer_contact})</span>
-                    )}
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Settled on {formatVoucherDate(selectedPayment.payment_date)} {selectedPayment.reference_number ? `• Ref: ${selectedPayment.reference_number}` : ''}
-                  </p>
+
+                  {/* Settled Amount Card */}
+                  <div className="text-right shrink-0 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Settled Amount</span>
+                    <div className="text-base sm:text-lg font-black font-mono text-emerald-400">
+                      ₹{parseFloat(selectedPayment.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Direct Action Chips */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {hasRole(['ADMIN', 'OPERATOR']) && (
+                {/* Row 2: Dedicated Action Toolbar (Spacious, grouped, never crowds the header) */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60 flex-wrap">
+                  {/* Share & Export Tools */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <button
-                      onClick={() => onOpenPaymentModal && onOpenPaymentModal({ id: selectedPayment.customer_id, business_name: selectedPayment.customer_name }, null)}
-                      className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                      title={`Collect New Payment for ${selectedPayment.customer_name}`}
+                      type="button"
+                      onClick={() => handleSendWhatsAppReceipt(selectedPayment)}
+                      className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                      title="Send Receipt via WhatsApp to Customer"
                     >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">+ Collect</span>
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>WhatsApp</span>
                     </button>
-                  )}
 
-                  <button
-                    onClick={() => setEditingPayment(selectedPayment)}
-                    className="p-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    title="Edit Payment Voucher"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Edit</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSharePaymentImage(selectedPayment)}
+                      className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-emerald-950/60 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                      title="Share High-Res PNG Receipt Card"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Image Card</span>
+                    </button>
 
-                  <button
-                    onClick={() => openDeleteModal(selectedPayment)}
-                    className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    title="Delete / Reverse Payment"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Delete</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePrintVoucher(selectedPayment)}
+                      className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                      title="Print / Save PDF Voucher"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Print Voucher</span>
+                    </button>
+                  </div>
 
-                  <button
-                    onClick={() => handlePrintVoucher(selectedPayment)}
-                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    title="Print / Save PDF Voucher"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Print Voucher</span>
-                  </button>
+                  {/* Record Administration Tools */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {hasRole(['ADMIN', 'OPERATOR']) && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenPaymentModal && onOpenPaymentModal({ id: selectedPayment.customer_id, business_name: selectedPayment.customer_name }, null)}
+                        className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                        title={`Collect New Payment for ${selectedPayment.customer_name}`}
+                      >
+                        <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>+ Collect</span>
+                      </button>
+                    )}
 
-                  <button
-                    onClick={() => handleSendWhatsAppReceipt(selectedPayment)}
-                    className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    title="Send Receipt via WhatsApp to Customer"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">WhatsApp</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingPayment(selectedPayment)}
+                      className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                      title="Edit Payment Voucher"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Edit</span>
+                    </button>
 
-                  <button
-                    onClick={() => handleSharePaymentImage(selectedPayment)}
-                    className="p-2 bg-slate-800 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    title="Share High-Res PNG Receipt Card"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Image Card</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => openDeleteModal(selectedPayment)}
+                      className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center justify-center transition-all active:scale-95"
+                      title="Delete / Reverse Payment"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Inspector Tab Bar */}
-              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-800/80 shrink-0">
+              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
                 {[
-                  { id: 'metadata', label: 'Voucher & Method Details', icon: CreditCard },
-                  { id: 'allocations', label: 'Invoice Allocations', icon: FileText },
+                  { id: 'metadata', label: 'Voucher Details', icon: CreditCard },
+                  { id: 'allocations', label: `Allocations (${selectedPayment.allocations?.length || 0})`, icon: FileText },
                   { id: 'actions', label: 'Action Console', icon: CheckCircle2 },
                 ].map(tab => {
                   const Icon = tab.icon;
@@ -1019,7 +1048,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveInspectorTab(tab.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                         isActive
                           ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
