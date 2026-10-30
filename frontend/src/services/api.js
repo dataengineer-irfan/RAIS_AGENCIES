@@ -17,6 +17,13 @@ const isStagingMode = Boolean(
   import.meta.env.MODE === 'staging'
 );
 
+// In native mobile shell (production APK), if pointing to localhost or empty, always route to live Render production API
+if (isNativePlatform && !isStagingMode) {
+  if (!rawApiUrl || rawApiUrl.includes('localhost') || rawApiUrl.includes('127.0.0.1')) {
+    rawApiUrl = PROD_API_HOST;
+  }
+}
+
 // Validate API endpoint and prevent accidental production usage
 if (rawApiUrl) {
   if (!rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
@@ -43,8 +50,8 @@ if (rawApiUrl) {
 
 // In native shell, missing VITE_API_URL must fail closed rather than silently falling back to production
 if (!rawApiUrl) {
-  if (isNativePlatform) {
-    throw new Error('[FATAL API SAFETY ERROR] Native shell requires an explicit API endpoint. Missing VITE_API_URL.');
+  if (isNativePlatform && !isStagingMode) {
+    rawApiUrl = PROD_API_HOST;
   } else if (isStagingMode) {
     throw new Error('[FATAL API SAFETY ERROR] Staging mode requires an explicit staging API URL. Missing VITE_API_URL.');
   } else {
