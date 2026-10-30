@@ -430,6 +430,9 @@ export const inventoryApi = {
       }
     });
     return res.data;
+  },
+  getDemandRadar: async (params = {}) => {
+    return cachedGet('/inventory/demand-radar', { params });
   }
 };
 

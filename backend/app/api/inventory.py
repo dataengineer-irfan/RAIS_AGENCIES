@@ -26,6 +26,19 @@ def get_stock_overview(
     """List all stock inventory balances with In Stock, Low Stock, and Out of Stock indicators."""
     return InventoryService.get_stock_overview(db, category_id=category_id, search=search)
 
+@router.get("/demand-radar")
+def get_regional_demand_radar(
+    force_refresh: bool = Query(False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """
+    Regional Demand Gap & Procurement Radar for Rayalaseema QSR corridors.
+    Correlates trailing 60-day food ingredient consumption with auxiliary packaging SKUs.
+    """
+    from app.services.recommendation_service import RecommendationService
+    return RecommendationService.get_regional_demand_radar(db, force_refresh=force_refresh)
+
 @router.post("/receive")
 def receive_stock(
     data: ReceiveStockRequest,

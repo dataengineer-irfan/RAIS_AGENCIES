@@ -39,10 +39,16 @@ import {
   X,
   Building2,
   Tag,
-  Calendar
+  Calendar,
+  Target,
+  RefreshCw,
+  Store,
+  MapPin,
+  Layers
 } from 'lucide-react';
 import { inventoryApi, catalogueApi, billingApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { ProductModal } from '../components/ProductModal';
 import { ReceiveStockModal } from '../components/ReceiveStockModal';
 import { AdjustStockModal } from '../components/AdjustStockModal';
 import { StockMovementsDrawer } from '../components/StockMovementsDrawer';
@@ -75,10 +81,16 @@ export const InventoryPage = () => {
 
   // Master-Detail Selected SKU
   const [selectedProductId, setSelectedProductId] = useState(null);
-  const [activeInspectorTab, setActiveInspectorTab] = useState('dossier'); // dossier, lineage, velocity
+  const [activeInspectorTab, setActiveInspectorTab] = useState('dossier'); // dossier, lineage, velocity, radar
   const [movementsData, setMovementsData] = useState([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
+
+  // Regional Demand Gap & Procurement Radar State
+  const [demandRadarData, setDemandRadarData] = useState(null);
+  const [radarLoading, setRadarLoading] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [productToCreateOrEdit, setProductToCreateOrEdit] = useState(null);
 
   // Live Lineage Filter & Drilldown State
   const [lineageFilter, setLineageFilter] = useState('ALL'); // 'ALL', 'OUTFLOW', 'INFLOW', 'ADJUSTMENT'
@@ -111,8 +123,38 @@ export const InventoryPage = () => {
     }
   };
 
+  const loadDemandRadar = async (forceRefresh = false) => {
+    setRadarLoading(true);
+    try {
+      const res = await inventoryApi.getDemandRadar(forceRefresh ? { force_refresh: true } : {});
+      setDemandRadarData(res);
+    } catch (err) {
+      console.error('Failed to load Regional Demand Radar:', err);
+    } finally {
+      setRadarLoading(false);
+    }
+  };
+
+  const handleAddRadarSku = (recSku) => {
+    setProductToCreateOrEdit({
+      sku: recSku.sku,
+      name: recSku.name,
+      category_id: recSku.category_id,
+      brand: recSku.brand || 'Packaging Solutions',
+      packaging_unit: recSku.packaging_unit,
+      base_price: recSku.base_price,
+      tax_rate: recSku.tax_rate || 18.00,
+      hsn_code: recSku.hsn_code || '4819',
+      description: recSku.description || '',
+      current_stock: 0,
+      min_stock_alert: 10
+    });
+    setProductModalOpen(true);
+  };
+
   useEffect(() => {
     loadInventory();
+    loadDemandRadar();
   }, []);
 
   const loadInventory = async (keepSelection = true) => {
@@ -549,6 +591,25 @@ export const InventoryPage = () => {
               >
                 <FileUp className="w-4 h-4" />
               </button>
+              <button
+                onClick={() => {
+                  setActiveInspectorTab('radar');
+                  setMobileView('detail');
+                }}
+                className={`p-1.5 rounded-xl text-xs font-bold transition-all relative ${
+                  activeInspectorTab === 'radar'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30'
+                }`}
+                title="Regional Demand Radar"
+              >
+                <Target className="w-4 h-4" />
+                {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center">
+                    {demandRadarData.summary.identified_procurement_gaps}
+                  </span>
+                )}
+              </button>
             </div>
           )}
         </div>
@@ -738,6 +799,27 @@ export const InventoryPage = () => {
                 >
                   <Truck className="w-3.5 h-3.5" />
                   <span>Truck Inward</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveInspectorTab('radar');
+                    setMobileView('detail');
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                    activeInspectorTab === 'radar'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30'
+                  }`}
+                  title="Regional Demand Gap & Procurement Radar"
+                >
+                  <Target className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Demand Radar</span>
+                  {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
+                    <span className="px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded-full text-[10px] font-black">
+                      {demandRadarData.summary.identified_procurement_gaps}
+                    </span>
+                  )}
                 </button>
               </>
             )}
@@ -1056,7 +1138,7 @@ export const InventoryPage = () => {
                   </div>
                 </div>
 
-                {/* 3 Inspector Tabs */}
+                {/* 4 Inspector Tabs */}
                 <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-800/80 overflow-x-auto no-scrollbar shrink-0">
                   <button
                     onClick={() => setActiveInspectorTab('dossier')}
@@ -1092,6 +1174,23 @@ export const InventoryPage = () => {
                   >
                     <TrendingUp className="w-3.5 h-3.5" />
                     <span>Sales Velocity & Run-Rate</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveInspectorTab('radar')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
+                      activeInspectorTab === 'radar'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Regional Demand Radar</span>
+                    {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
+                      <span className="px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded-full text-[9px] font-black">
+                        {demandRadarData.summary.identified_procurement_gaps}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1622,6 +1721,236 @@ export const InventoryPage = () => {
                   </div>
                 )}
 
+                {/* ─── TAB 4: REGIONAL DEMAND GAP & PROCUREMENT RADAR ─── */}
+                {activeInspectorTab === 'radar' && (
+                  <div className="space-y-3">
+                    {/* Executive KPI Territory Ribbon */}
+                    <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 space-y-3 shadow-md">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-amber-400" />
+                              <span>Rayachoty HQ • 516269</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              Trailing 60 Days Live SQL Audit
+                            </span>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-black text-white mt-1">
+                            Rayalaseema QSR Supply Corridor: Food Format Auxiliary Radar
+                          </h4>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Detects commercial packaging & auxiliary gaps correlated with active food ingredient purchases across Rayachoty, Madanapalle & Kadapa routes.
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => loadDemandRadar(true)}
+                          disabled={radarLoading}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition-all shrink-0 self-start sm:self-center"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${radarLoading ? 'animate-spin' : ''}`} />
+                          <span>{radarLoading ? 'Scanning DB...' : 'Refresh Radar'}</span>
+                        </button>
+                      </div>
+
+                      {/* 4 Territory Summary Metrics */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Food Accounts</span>
+                          <span className="text-base font-black text-white font-mono mt-0.5 block">
+                            {demandRadarData?.summary?.total_active_accounts || 0} Accounts
+                          </span>
+                          <span className="text-[9px] text-slate-500">Trailing 60 days</span>
+                        </div>
+
+                        <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Identified Catalog Gaps</span>
+                          <span className={`text-base font-black font-mono mt-0.5 block ${
+                            (demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 ? 'text-amber-400' : 'text-emerald-400'
+                          }`}>
+                            {demandRadarData?.summary?.identified_procurement_gaps ?? 0} Missing SKUs
+                          </span>
+                          <span className="text-[9px] text-slate-500">Immediate demand</span>
+                        </div>
+
+                        <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Est. Revenue Gap</span>
+                          <span className="text-base font-black text-emerald-400 font-mono mt-0.5 block">
+                            ₹{(demandRadarData?.summary?.total_monthly_revenue_opportunity || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} / mo
+                          </span>
+                          <span className="text-[9px] text-slate-500">Packaging turnover</span>
+                        </div>
+
+                        <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Avg. Gross Margin</span>
+                          <span className="text-base font-black text-cyan-400 font-mono mt-0.5 block">
+                            {demandRadarData?.summary?.avg_gross_margin_pct || 31}%
+                          </span>
+                          <span className="text-[9px] text-slate-500">Direct wholesale margin</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Format Cards Stream */}
+                    {radarLoading && !demandRadarData ? (
+                      <div className="p-8 text-center text-slate-400 text-xs bg-slate-950 rounded-xl border border-slate-800">
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-amber-400 mb-2" />
+                        <p>Correlating invoice line items with regional QSR consumption formulas...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {(demandRadarData?.formats || []).map((format) => {
+                          const rec = format.recommended_sku;
+                          const isInCatalog = format.is_in_catalog;
+
+                          return (
+                            <div
+                              key={format.format_id}
+                              className={`p-3.5 rounded-xl border transition-all ${
+                                isInCatalog
+                                  ? 'bg-slate-950/80 border-slate-800'
+                                  : 'bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/5'
+                              }`}
+                            >
+                              {/* Card Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs font-black text-white">
+                                      {format.format_title}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded">
+                                      {format.regional_hub}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/50 border border-cyan-800/50 px-2 py-0.5 rounded">
+                                      {format.food_category}
+                                    </span>
+                                  </div>
+
+                                  {/* Associated Ingredients & Active Accounts */}
+                                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-400">
+                                    <span className="text-amber-400 font-mono font-bold">
+                                      {format.historical_consumption_label}
+                                    </span>
+                                    <span className="text-slate-600">•</span>
+                                    <span>
+                                      {format.active_accounts_count > 0 ? (
+                                        <>
+                                          <strong className="text-slate-200">{format.active_accounts_count} Accounts</strong>
+                                          {format.sample_customers?.length > 0 && ` (${format.sample_customers.join(', ')})`}
+                                        </>
+                                      ) : (
+                                        <span className="text-slate-500">Benchmark Corridor Volume</span>
+                                      )}
+                                    </span>
+                                    <span className="text-slate-600">•</span>
+                                    <span className="text-slate-400">
+                                      Territory: {format.cities_served?.join(', ') || 'Rayachoty'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Status Badge */}
+                                <div className="shrink-0 self-start sm:self-auto">
+                                  {isInCatalog ? (
+                                    <span className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span>In Catalogue ({rec.current_stock} in stock)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-black flex items-center gap-1 animate-pulse">
+                                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>Missing Auxiliary SKU</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Rationale & Consumption Ratio */}
+                              <div className="py-2.5 text-xs text-slate-300 space-y-1.5">
+                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                  <strong className="text-slate-300 font-semibold">Strategic Rationale: </strong>
+                                  {format.strategic_rationale}
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px]">
+                                  <div className="bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-800">
+                                    <span className="text-slate-500">Conversion Ratio: </span>
+                                    <strong className="text-slate-200 font-mono">{format.ratio_desc}</strong>
+                                  </div>
+                                  <div className="bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-800">
+                                    <span className="text-slate-500">Corridor Run-Rate: </span>
+                                    <strong className="text-amber-400 font-mono">{format.derived_packaging_demand}</strong>
+                                  </div>
+                                  <div className="bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-800">
+                                    <span className="text-slate-500">Gross Margin: </span>
+                                    <strong className="text-emerald-400 font-mono">{format.margin_estimate}</strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Recommended SKU Box & Action */}
+                              <div className="mt-2 p-2.5 sm:p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-black rounded">
+                                      {rec.sku}
+                                    </span>
+                                    <span className="text-xs font-bold text-white">
+                                      {rec.name}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 font-mono">
+                                    <span>Pack: <strong className="text-slate-200">{rec.packaging_unit}</strong></span>
+                                    <span className="text-slate-600">|</span>
+                                    <span>Rate: <strong className="text-emerald-400 font-bold">₹{parseFloat(rec.base_price).toFixed(2)}</strong></span>
+                                    <span className="text-slate-600">|</span>
+                                    <span>HSN: <strong className="text-slate-300">{rec.hsn_code}</strong></span>
+                                    <span className="text-slate-600">|</span>
+                                    <span>GST: <strong className="text-slate-300">{rec.tax_rate}%</strong></span>
+                                    <span className="text-slate-600">|</span>
+                                    <span>Est. Monthly: <strong className="text-amber-400">₹{format.estimated_monthly_revenue?.toLocaleString('en-IN')}</strong> ({format.estimated_monthly_packs} packs)</span>
+                                  </div>
+                                </div>
+
+                                {/* 1-Click Button */}
+                                <div className="shrink-0">
+                                  {isInCatalog ? (
+                                    <button
+                                      onClick={() => {
+                                        if (rec.existing_product_id) {
+                                          setSelectedProductId(rec.existing_product_id);
+                                          loadMovementsForProduct(rec.existing_product_id);
+                                          setActiveInspectorTab('dossier');
+                                        }
+                                      }}
+                                      className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>View in Stock Dossier</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleAddRadarSku(rec)}
+                                      className="w-full sm:w-auto px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-lg text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-105 flex items-center justify-center gap-1.5"
+                                    >
+                                      <PlusCircle className="w-3.5 h-3.5 text-slate-950" />
+                                      <span>+ Add SKU to Catalogue</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </>
           ) : (
@@ -1635,6 +1964,22 @@ export const InventoryPage = () => {
       </div>
 
       {/* ─── MODALS ─── */}
+      {productModalOpen && (
+        <ProductModal
+          isOpen={productModalOpen}
+          onClose={() => {
+            setProductModalOpen(false);
+            setProductToCreateOrEdit(null);
+          }}
+          productToEdit={productToCreateOrEdit}
+          categories={categories}
+          onProductSaved={() => {
+            loadInventory(true);
+            loadDemandRadar(true);
+          }}
+        />
+      )}
+
       <ReceiveStockModal
         isOpen={receiveModalOpen}
         onClose={() => setReceiveModalOpen(false)}

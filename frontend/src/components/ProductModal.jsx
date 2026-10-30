@@ -67,7 +67,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           setBrand(productToEdit.brand || 'RAIS Master');
           setPackagingUnit(productToEdit.packaging_unit || '1 KG PACKET');
           setBasePrice(productToEdit.base_price?.toString() || '');
-          setTaxRate('0.00');
+          setTaxRate(productToEdit.tax_rate?.toString() || '0.00');
           setHsnCode(productToEdit.hsn_code || '');
           setDescription(productToEdit.description || '');
           setCurrentStock(productToEdit.current_stock?.toString() || '0');
@@ -135,7 +135,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
 
     setLoading(true);
     try {
-      if (productToEdit) {
+      if (productToEdit && productToEdit.id) {
         await catalogueApi.updateProduct(productToEdit.id, {
           name: name.trim(),
           category_id: categoryId,
@@ -193,9 +193,11 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
             </div>
             <div>
               <h2 className="text-base font-bold text-white tracking-tight">
-                {productToEdit ? 'Edit Product' : 'New Product'}
+                {productToEdit?.id ? 'Edit Product' : (productToEdit ? 'Add Recommended SKU to Catalogue' : 'New Product')}
               </h2>
-              <p className="text-xs text-slate-400">Pricing & stock details</p>
+              <p className="text-xs text-slate-400">
+                {productToEdit && !productToEdit.id ? 'Pre-filled from Regional Demand Radar' : 'Pricing & stock details'}
+              </p>
             </div>
           </div>
           <button
