@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { reportApi } from '../services/api';
 
@@ -10,6 +10,28 @@ export const getISTDate = () => {
   const now = new Date();
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   return new Date(utc + (3600000 * 5.5));
+};
+
+/**
+ * Formats time in Indian Standard Time (e.g., "08:05 PM IST")
+ */
+export const formatISTTime = (date = new Date()) => {
+  try {
+    const istStr = date.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${istStr} IST`;
+  } catch {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const h12 = hours % 12 || 12;
+    const mStr = minutes < 10 ? `0${minutes}` : minutes;
+    return `${h12}:${mStr} ${ampm} IST`;
+  }
 };
 
 /**
@@ -53,16 +75,20 @@ export const getISTGreeting = (date = getISTDate()) => {
 };
 
 /**
- * Derives live operational ticker items (Zero Hardcoding).
+ * Derives enterprise-grade live operational ticker items (Zero Hardcoding).
  * 1. Live IST-aware greeting
- * 2. Today's live order count & volume from DB
- * 3. Live high-demand / low-stock depot alerts from DB
+ * 2. Today's live invoice count & billed volume (strictly separated from dispatches)
+ * 3. Physical order fulfillment (dispatched/delivered) if order records exist
+ * 4. Prioritized inventory: zero-stock first, then critical low stock
+ * 5. Rotating popular products from actual sales data
+ * 6. Cold-chain certified operating standards
+ * 7. Actionable order desk (tap-to-call & prefilled WhatsApp)
  */
 export const generateTickerItems = (kpis) => {
   const items = [];
   const greeting = getISTGreeting();
 
-  // 1. Welcome & Time-Aware Greeting
+  // 1. Time-Aware Salutation & Welcome
   items.push({
     id: 'greeting',
     type: 'greeting',
@@ -72,67 +98,138 @@ export const generateTickerItems = (kpis) => {
     headline: `${greeting.title} — Rayachoti Central Cold-Chain & Packaging Depot`
   });
 
-  // 2. Real-time Live Orders & Sales Today (100% DB telemetry)
-  const todayOrders = kpis?.revenue_periods?.today?.invoices_count !== undefined
+  // 2. Verified Billed Invoices Today (Strictly separated from dispatches)
+  const todayInvoices = kpis?.revenue_periods?.today?.invoices_count !== undefined
     ? parseInt(kpis.revenue_periods.today.invoices_count || 0, 10)
     : (kpis?.recent_invoices ? kpis.recent_invoices.length : 0);
 
   const todayRevenue = parseFloat(kpis?.revenue_periods?.today?.revenue || 0);
 
-  let ordersHeadline = '';
-  if (todayOrders === 0) {
-    ordersHeadline = 'Till now 0 orders today • Depot active & ready for dispatch';
-  } else if (todayOrders === 1) {
-    ordersHeadline = `Till now 1 order today (₹${todayRevenue.toLocaleString('en-IN')}) dispatched`;
+  let invoiceHeadline = '';
+  if (todayInvoices === 0) {
+    invoiceHeadline = 'Invoices Today: 0 bills recorded';
+  } else if (todayInvoices === 1) {
+    invoiceHeadline = `Invoices Today: 1 bill (₹${todayRevenue.toLocaleString('en-IN')}) billed`;
   } else {
-    ordersHeadline = `Till now ${todayOrders} orders today (₹${todayRevenue.toLocaleString('en-IN')}) dispatched`;
+    invoiceHeadline = `Invoices Today: ${todayInvoices} bills (₹${todayRevenue.toLocaleString('en-IN')}) billed`;
   }
 
   items.push({
-    id: 'orders',
-    type: 'orders',
-    icon: '📦',
-    badge: 'LIVE ORDERS',
-    badgeColor: todayOrders > 0
+    id: 'invoices',
+    type: 'invoices',
+    icon: '🧾',
+    badge: 'INVOICES TODAY',
+    badgeColor: todayInvoices > 0
       ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
       : 'bg-slate-800 text-slate-400 border-slate-700',
-    headline: ordersHeadline
+    headline: invoiceHeadline
   });
 
-  // 3. Real-Time High Demand / Low Stock Alerts from DB
-  const lowStock = kpis?.low_stock_alerts || [];
-  if (lowStock && lowStock.length > 0) {
-    lowStock.forEach((p, idx) => {
-      const stock = parseFloat(p.current_stock || 0);
-      const unit = p.packaging_unit || 'PACKETS';
-      items.push({
-        id: `low_stock_${p.product_id || idx}`,
-        type: 'alert',
-        icon: '⚠️',
-        badge: 'HIGH DEMAND',
-        badgeColor: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-        headline: `${p.name} low stock: only ${stock} ${unit} left at depot!`
-      });
+  // 3. Physical Order Fulfillment (Only when verified order records exist today)
+  const orderFulfillment = kpis?.today_order_fulfillment;
+  if (orderFulfillment && orderFulfillment.total_orders > 0) {
+    const { total_orders, dispatched_count, delivered_count } = orderFulfillment;
+    items.push({
+      id: 'order_fulfillment',
+      type: 'orders',
+      icon: '🚚',
+      badge: 'FULFILLMENT',
+      badgeColor: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+      headline: `Today's Deliveries: ${dispatched_count} dispatched • ${delivered_count} delivered (of ${total_orders} orders)`
     });
-  } else {
+  }
+
+  // 4. Real-Time High-Demand & Low-Stock Alerts (Zero-stock first, deduplicated)
+  const lowStock = kpis?.low_stock_alerts || [];
+  const seenProductIds = new Set();
+  const prioritizedStock = [...lowStock].sort((a, b) => {
+    const aStock = parseFloat(a.current_stock || 0);
+    const bStock = parseFloat(b.current_stock || 0);
+    if (aStock <= 0 && bStock > 0) return -1;
+    if (bStock <= 0 && aStock > 0) return 1;
+    return aStock - bStock;
+  });
+
+  let addedStockAlerts = 0;
+  prioritizedStock.forEach((p, idx) => {
+    const pId = p.product_id || p.sku || `item_${idx}`;
+    if (seenProductIds.has(pId)) return;
+    seenProductIds.add(pId);
+
+    const stock = parseFloat(p.current_stock || 0);
+    const unit = p.packaging_unit || 'PACKETS';
+    const sku = p.sku ? `(${p.sku})` : '';
+
+    if (stock <= 0) {
+      items.push({
+        id: `oos_${pId}`,
+        type: 'critical',
+        icon: '🚨',
+        badge: 'OUT OF STOCK',
+        badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        headline: `${p.name} ${sku} — 0 ${unit} available • Immediate reorder required`
+      });
+      addedStockAlerts++;
+    } else {
+      items.push({
+        id: `low_stock_${pId}`,
+        type: 'warning',
+        icon: '⚠️',
+        badge: 'LOW STOCK',
+        badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+        headline: `${p.name} ${sku} — only ${stock} ${unit} left (Alert: ${p.min_stock_alert || 5})`
+      });
+      addedStockAlerts++;
+    }
+  });
+
+  if (addedStockAlerts === 0) {
     items.push({
       id: 'depot_health',
       type: 'health',
       icon: '❄️',
       badge: 'DEPOT HEALTH',
-      badgeColor: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-      headline: 'Depot stock healthy: All critical frozen SKUs & packaging ready in -18°C cold store'
+      badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      headline: 'Depot stock healthy: All critical frozen SKUs & packaging ready in -18°C storage'
     });
   }
 
-  // 4. Quality & Hotline info
+  // 5. Rotating Section: Fast-Moving / Popular Products from actual sales
+  const topProducts = kpis?.top_selling_products || [];
+  if (topProducts.length > 0) {
+    const topItem = topProducts[0];
+    const topName = topItem.name || topItem.product_name || 'Top Volume SKU';
+    const topQty = topItem.quantity_sold || topItem.total_quantity || topItem.quantity || topItem.units_sold;
+    const topQtyStr = topQty ? ` (${topQty} units moved)` : '';
+    items.push({
+      id: 'top_seller',
+      type: 'popular',
+      icon: '🔥',
+      badge: 'TOP MOVER',
+      badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      headline: `Fast Moving: ${topName}${topQtyStr} — High Restaurant Demand`
+    });
+  }
+
+  // 6. Cold-Chain Facility Standard (Honesty Rule: No fake sensor temperatures)
   items.push({
-    id: 'dispatch_hotline',
-    type: 'info',
+    id: 'cold_chain_standard',
+    type: 'facility',
+    icon: '❄️',
+    badge: 'COLD-CHAIN',
+    badgeColor: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+    headline: 'Certified -18°C Deep-Freeze Storage Depot • Verified Dispatch Standards'
+  });
+
+  // 7. Actionable Order Desk (Tap-to-Call & Prefilled WhatsApp)
+  items.push({
+    id: 'order_desk_actions',
+    type: 'action',
     icon: '⚡',
     badge: 'ORDER DESK',
     badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
-    headline: 'Same-day restaurant delivery across Rayachoti • Wholesale Order Hotline: 9347453135'
+    headline: 'Wholesale Order Desk:',
+    isOrderDesk: true
   });
 
   return items;
@@ -140,43 +237,115 @@ export const generateTickerItems = (kpis) => {
 
 /**
  * ContinuousLiveTicker:
- * Continuous horizontal marquee ticker running at comfortable, relaxed speed (72s).
- * Includes 1-click user Pause/Play toggle and hover-pause.
+ * Enterprise-grade cold-chain and packaging operations ribbon.
+ * Features:
+ * - Data freshness tracking with IST timestamp (LIVE / DATA DELAYED / CONNECTION ERROR).
+ * - Never clears previous data on fetch error.
+ * - 72-second continuous infinite marquee animation.
+ * - 1-Click user pause/play toggle, hover pause, keyboard focus pause.
+ * - Pauses when tab is hidden and respects prefers-reduced-motion.
  */
 export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
   const [internalKpis, setInternalKpis] = useState(kpis);
+  const [lastSyncTime, setLastSyncTime] = useState(() => new Date());
+  const [connectionStatus, setConnectionStatus] = useState('live'); // 'live' | 'delayed' | 'error'
   const [isUserPaused, setIsUserPaused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isTabHidden, setIsTabHidden] = useState(false);
 
-  // Self-fetch if not provided via props (e.g. in top Header navbar)
+  const isMountedRef = useRef(true);
+
+  // Sync prop changes
   useEffect(() => {
     if (kpis) {
       setInternalKpis(kpis);
-      return;
+      setLastSyncTime(new Date());
+      setConnectionStatus('live');
     }
-
-    let isMounted = true;
-    reportApi.getDashboard()
-      .then((data) => {
-        if (isMounted && data) {
-          setInternalKpis(data);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
   }, [kpis]);
 
+  // Tab visibility listener: Pause marquee when backgrounded
+  useEffect(() => {
+    const handleVisibility = () => {
+      const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+      setIsTabHidden(hidden);
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
+  }, []);
+
+  // Background Data Fetcher with Sensible Interval (90 seconds)
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    const fetchData = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return; // Skip poll if tab is in background
+      }
+      try {
+        const data = await reportApi.getDashboard();
+        if (isMountedRef.current && data) {
+          setInternalKpis(data);
+          setLastSyncTime(new Date());
+          setConnectionStatus('live');
+        }
+      } catch (err) {
+        if (isMountedRef.current) {
+          // Rule 1: Never replace a failed query with zero values; retain existing data!
+          setConnectionStatus('error');
+        }
+      }
+    };
+
+    // Initial fetch if not provided via props
+    if (!kpis) {
+      fetchData();
+    }
+
+    // 90-second refresh interval
+    const intervalId = setInterval(fetchData, 90000);
+
+    // Stale data watchdog (if no fresh sync for > 150 seconds, mark as delayed)
+    const watchdogId = setInterval(() => {
+      if (!isMountedRef.current) return;
+      const ageSeconds = (Date.now() - lastSyncTime.getTime()) / 1000;
+      if (ageSeconds > 150 && connectionStatus === 'live') {
+        setConnectionStatus('delayed');
+      }
+    }, 15000);
+
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(intervalId);
+      clearInterval(watchdogId);
+    };
+  }, [kpis, lastSyncTime, connectionStatus]);
+
   const items = useMemo(() => generateTickerItems(internalKpis), [internalKpis]);
+  const formattedSyncTime = useMemo(() => formatISTTime(lastSyncTime), [lastSyncTime]);
+
+  const isPaused = isUserPaused || isHovered || isFocused || isTabHidden;
 
   return (
     <div
+      tabIndex={0}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative flex items-center overflow-hidden bg-slate-950/90 border border-slate-800/90 rounded-xl h-9 px-2 shadow-inner group select-none ${className}`}
-      title={isUserPaused ? "Live ticker paused • Click PLAY to resume" : "Live Depot Telemetry • Hover or click ⏸ to pause"}
+      className={`relative flex items-center overflow-hidden bg-slate-950/90 border border-slate-800/90 rounded-xl h-9 px-2 shadow-inner group select-none outline-none focus:border-amber-500/50 transition-colors ${className}`}
+      title={
+        isUserPaused
+          ? "Live ticker paused • Click PLAY to resume"
+          : `Live Depot Telemetry • Synced ${formattedSyncTime} • Hover or click ⏸ to pause`
+      }
     >
       <style>{`
         @keyframes raisContinuousMarquee {
@@ -194,27 +363,54 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
           animation: raisContinuousMarquee 72s linear infinite;
           will-change: transform;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .rais-ticker-track {
+            animation: none !important;
+          }
+        }
       `}</style>
 
-      {/* Static Left Control Badge with Pulsing Dot & 1-Click Pause/Play */}
-      <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-slate-800/80 mr-2 bg-slate-950/90 z-20">
+      {/* Static Left Control Badge with Freshness Dot, Status & 1-Click Pause/Play */}
+      <div className="flex items-center gap-1.5 shrink-0 pr-2.5 border-r border-slate-800/80 mr-2 bg-slate-950/90 z-20">
+        {/* Connection Freshness Indicator */}
         <span className="relative flex h-2 w-2">
-          <span
-            className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              isUserPaused ? 'bg-amber-400' : 'bg-emerald-400'
-            }`}
-          />
-          <span
-            className={`relative inline-flex rounded-full h-2 w-2 ${
-              isUserPaused ? 'bg-amber-500' : 'bg-emerald-500'
-            }`}
-          />
-        </span>
-        <span className="text-[10px] font-black tracking-wider text-slate-300 uppercase">
-          LIVE
+          {connectionStatus === 'live' && (
+            <>
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  isUserPaused ? 'bg-amber-400' : 'bg-emerald-400'
+                }`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  isUserPaused ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+              />
+            </>
+          )}
+          {connectionStatus === 'delayed' && (
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+          )}
+          {connectionStatus === 'error' && (
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+          )}
         </span>
 
-        {/* 1-Click Pause / Play Toggle Button */}
+        {/* Status Label with Tooltip */}
+        <span
+          className={`text-[9.5px] font-black tracking-wider uppercase ${
+            connectionStatus === 'live'
+              ? (isUserPaused ? 'text-amber-400' : 'text-emerald-400')
+              : (connectionStatus === 'delayed' ? 'text-amber-400' : 'text-rose-400')
+          }`}
+          title={`Data Freshness: ${connectionStatus.toUpperCase()} (Synced ${formattedSyncTime})`}
+        >
+          {connectionStatus === 'live'
+            ? 'LIVE'
+            : (connectionStatus === 'delayed' ? 'DATA DELAYED' : 'CONN ERROR')}
+        </span>
+
+        {/* 1-Click Pause / Play Toggle Button (Manual toggle is latching and sticky) */}
         <button
           type="button"
           onClick={(e) => {
@@ -234,14 +430,14 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
       </div>
 
       {/* Subtle Fade Edge Masks for smooth entrance/exit */}
-      <div className="pointer-events-none absolute left-20 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-950 to-transparent z-10" />
+      <div className="pointer-events-none absolute left-24 top-0 bottom-0 w-6 bg-gradient-to-r from-slate-950 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10" />
 
       {/* Continuous Marquee Track (Duplicated twice for seamless infinite loop) */}
       <div className="overflow-hidden flex-1 flex items-center min-w-0">
         <div
           className="rais-ticker-track"
-          style={{ animationPlayState: (isUserPaused || isHovered) ? 'paused' : 'running' }}
+          style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
         >
           {/* Loop Set 1 */}
           <div className="flex items-center gap-6 pr-6 shrink-0">
@@ -250,9 +446,36 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
                 <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}`}>
                   {item.badge}
                 </span>
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-200 transition-colors">
-                  {item.icon} {item.headline}
-                </span>
+
+                {item.isOrderDesk ? (
+                  <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <span>{item.icon} {item.headline}</span>
+                    <a
+                      href="tel:+919347453135"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 underline underline-offset-2 font-bold px-1 py-0.5 rounded hover:bg-slate-800 transition"
+                      title="Tap to call RAIS Order Desk"
+                    >
+                      📞 9347453135
+                    </a>
+                    <span className="text-slate-500">•</span>
+                    <a
+                      href="https://wa.me/919347453135?text=Hello%20RAIS%20Agencies%2C%20I%20would%20like%20to%20place%20a%20wholesale%20order."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-bold px-1 py-0.5 rounded hover:bg-slate-800 transition"
+                      title="Open WhatsApp to place wholesale order"
+                    >
+                      📲 WhatsApp Order
+                    </a>
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-200 transition-colors">
+                    {item.icon} {item.headline}
+                  </span>
+                )}
+
                 <span className="text-slate-600 font-black ml-2">•</span>
               </div>
             ))}
@@ -265,9 +488,36 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
                 <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}`}>
                   {item.badge}
                 </span>
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-200 transition-colors">
-                  {item.icon} {item.headline}
-                </span>
+
+                {item.isOrderDesk ? (
+                  <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <span>{item.icon} {item.headline}</span>
+                    <a
+                      href="tel:+919347453135"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-amber-300 hover:text-amber-200 underline underline-offset-2 font-bold px-1 py-0.5 rounded hover:bg-slate-800 transition"
+                      title="Tap to call RAIS Order Desk"
+                    >
+                      📞 9347453135
+                    </a>
+                    <span className="text-slate-500">•</span>
+                    <a
+                      href="https://wa.me/919347453135?text=Hello%20RAIS%20Agencies%2C%20I%20would%20like%20to%20place%20a%20wholesale%20order."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-bold px-1 py-0.5 rounded hover:bg-slate-800 transition"
+                      title="Open WhatsApp to place wholesale order"
+                    >
+                      📲 WhatsApp Order
+                    </a>
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-slate-200 group-hover:text-amber-200 transition-colors">
+                    {item.icon} {item.headline}
+                  </span>
+                )}
+
                 <span className="text-slate-600 font-black ml-2">•</span>
               </div>
             ))}

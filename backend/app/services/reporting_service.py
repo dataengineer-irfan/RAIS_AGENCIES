@@ -8,11 +8,12 @@ from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment
 from app.models.customer import Customer
 from app.models.catalogue import Product, Category
+from app.models.order import Order
 from app.schemas.reports import (
     DashboardKPIs, SalesReportItem, AgingBucket,
     CustomerAgingReportItem, ProductPerformanceItem
 )
-from app.domain.enums import InvoiceStatus, CustomerStatus, PaymentMethod
+from app.domain.enums import InvoiceStatus, CustomerStatus, PaymentMethod, OrderStatus
 
 from app.core.datetime_utils import get_ist_today, get_ist_now
 
@@ -370,23 +371,52 @@ class ReportingService:
                     "time": c_at.strftime("%I:%M %p") if c_at else ""
                 })
 
-        # 13. Low Stock / High Demand Restock Alerts (Real live stock from DB)
+        # 13. Low Stock / High Demand Restock Alerts (Priority: Zero-stock first, then by ascending stock)
         low_stock_query = db.query(Product).filter(
             Product.is_active == True,
             Product.current_stock <= Product.min_stock_alert
-        ).order_by(Product.current_stock.asc()).limit(10).all()
+        ).order_by(
+            case((Product.current_stock <= 0, 0), else_=1),
+            Product.current_stock.asc()
+        ).limit(10).all()
 
         low_stock_alerts = [
             {
-                "product_id": p.id,
+                "product_id": str(p.id),
                 "name": p.name,
                 "sku": p.sku,
-                "packaging_unit": p.packaging_unit,
+                "packaging_unit": p.packaging_unit or "PACKET",
                 "current_stock": float(p.current_stock),
-                "min_stock_alert": float(p.min_stock_alert)
+                "min_stock_alert": float(p.min_stock_alert),
+                "reorder_status": "CRITICAL_STOCKOUT" if p.current_stock <= 0 else ("URGENT_REORDER" if p.current_stock <= (p.min_stock_alert / Decimal("2.0")) else "LOW_STOCK")
             }
             for p in low_stock_query
         ]
+
+        # 14. Real-time Order fulfillment today (Strictly separated from invoices)
+        today_order_fulfillment = None
+        try:
+            today_orders_query = db.query(
+                func.count(Order.id).label("total_orders"),
+                func.coalesce(func.sum(case((Order.status == OrderStatus.DISPATCHED.value, 1), else_=0)), 0).label("dispatched_count"),
+                func.coalesce(func.sum(case((Order.status == OrderStatus.DELIVERED.value, 1), else_=0)), 0).label("delivered_count"),
+                func.coalesce(func.sum(case((Order.status == OrderStatus.CONFIRMED.value, 1), else_=0)), 0).label("confirmed_count"),
+                func.coalesce(func.sum(case((Order.status == OrderStatus.PENDING.value, 1), else_=0)), 0).label("pending_count")
+            ).filter(
+                Order.order_date == today,
+                Order.status != OrderStatus.CANCELLED.value
+            ).first()
+
+            if today_orders_query and today_orders_query.total_orders and int(today_orders_query.total_orders) > 0:
+                today_order_fulfillment = {
+                    "total_orders": int(today_orders_query.total_orders or 0),
+                    "dispatched_count": int(today_orders_query.dispatched_count or 0),
+                    "delivered_count": int(today_orders_query.delivered_count or 0),
+                    "confirmed_count": int(today_orders_query.confirmed_count or 0),
+                    "pending_count": int(today_orders_query.pending_count or 0)
+                }
+        except Exception:
+            today_order_fulfillment = None
 
         kpis = DashboardKPIs(
             total_revenue_month=total_revenue_month,
@@ -405,7 +435,8 @@ class ReportingService:
             today_comparison=today_comparison,
             daily_trend_7d=daily_trend_7d,
             margin_leakage_alerts=margin_leakage_alerts,
-            low_stock_alerts=low_stock_alerts
+            low_stock_alerts=low_stock_alerts,
+            today_order_fulfillment=today_order_fulfillment
         )
 
         _DASHBOARD_CACHE["timestamp"] = now_ts
