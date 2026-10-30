@@ -169,8 +169,7 @@ export const CustomersPage = ({
   const handleSendWhatsApp = (cust) => {
     if (!cust) return;
     shareCustomerStatementOnWhatsApp({
-      customer: cust,
-      ledger: Array.isArray(ledgerData) ? ledgerData : []
+      customer: cust
     });
   };
 

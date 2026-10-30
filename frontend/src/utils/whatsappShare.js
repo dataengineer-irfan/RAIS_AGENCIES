@@ -531,8 +531,7 @@ export const sharePaymentImageFile = async (params) => {
 };
 
 export const shareCustomerStatementOnWhatsApp = ({
-  customer,
-  ledger = []
+  customer
 }) => {
   const bName = customer?.business_name || customer?.name || 'Valued Customer';
   const cPerson = customer?.contact_person;
@@ -540,17 +539,6 @@ export const shareCustomerStatementOnWhatsApp = ({
   const custPhone = customer?.phone || '';
   const bal = parseFloat(customer?.outstanding_balance || 0);
   const balFormatted = bal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-
-  let recentTxns = '';
-  if (ledger && ledger.length > 0) {
-    const last3 = ledger.slice(-3).reverse();
-    const rows = last3.map(e => {
-      const dStr = e.date ? String(e.date).split('T')[0] : '';
-      const amt = e.debit > 0 ? `+₹${parseFloat(e.debit).toLocaleString('en-IN')}` : `-₹${parseFloat(e.credit).toLocaleString('en-IN')}`;
-      return `▫️ ${dStr} • ${e.type} #${e.reference || '-'} (${amt})`;
-    }).join('\n');
-    recentTxns = `📋 *Recent Ledger Activity:*\n${rows}\n`;
-  }
 
   let statusLine = '';
   if (bal > 0) {
@@ -566,7 +554,7 @@ export const shareCustomerStatementOnWhatsApp = ({
 🏪 *Customer:* *${custName}*
 ━━━━━━━━━━━━━━━━━━━━
 ${statusLine}
-${recentTxns}━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━
 📲 *Pay via UPI:* \`9347453135@ybl\` (RAIS AGENCIES)
 ${getCompactQuickLinks(cleanStmtUrl, 'Download Statement')}`;
 
