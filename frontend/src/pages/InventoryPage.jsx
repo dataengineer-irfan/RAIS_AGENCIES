@@ -148,6 +148,7 @@ export const InventoryPage = () => {
       tax_rate: recSku.tax_rate || 18.00,
       hsn_code: recSku.hsn_code || '4819',
       description: recSku.description || '',
+      image_url: recSku.image_url || '',
       current_stock: 0,
       min_stock_alert: 10
     });
@@ -1935,27 +1936,42 @@ export const InventoryPage = () => {
                               </div>
 
                               {/* 3. Recommended SKU Box & 1-Click Action */}
-                              <div className="p-2.5 sm:p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-black rounded">
-                                      {rec.sku}
-                                    </span>
-                                    <span className="text-xs font-bold text-white">
-                                      {rec.name}
-                                    </span>
+                              <div className="p-2.5 sm:p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  {/* High-Resolution SKU Product Thumbnail */}
+                                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-950 border border-slate-700/80 p-1 shrink-0 overflow-hidden flex items-center justify-center shadow-md group relative">
+                                    <img
+                                      src={rec.image_url || 'assets/products/kfc_bucket.jpg'}
+                                      alt={rec.name}
+                                      className="w-full h-full object-contain rounded-lg transition-transform group-hover:scale-110"
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = 'assets/products/boxes_display_pizza_burger.jpg';
+                                      }}
+                                    />
                                   </div>
 
-                                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 font-mono">
-                                    <span>Pack: <strong className="text-slate-200">{rec.packaging_unit}</strong></span>
-                                    <span className="text-slate-600">|</span>
-                                    <span>Rate: <strong className="text-emerald-400 font-bold">₹{parseFloat(rec.base_price).toFixed(2)}</strong></span>
-                                    <span className="text-slate-600">|</span>
-                                    <span>HSN: <strong className="text-slate-300">{rec.hsn_code}</strong></span>
-                                    <span className="text-slate-600">|</span>
-                                    <span>GST: <strong className="text-slate-300">{rec.tax_rate}%</strong></span>
-                                    <span className="text-slate-600">|</span>
-                                    <span>Est. Turnover: <strong className="text-amber-400">₹{format.estimated_monthly_revenue?.toLocaleString('en-IN')}</strong> ({format.estimated_monthly_packs} packs/mo)</span>
+                                  <div className="space-y-1 min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-black rounded shrink-0">
+                                        {rec.sku}
+                                      </span>
+                                      <span className="text-xs sm:text-sm font-bold text-white truncate" title={rec.name}>
+                                        {rec.name}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-400 font-mono">
+                                      <span>Pack: <strong className="text-slate-200">{rec.packaging_unit}</strong></span>
+                                      <span className="text-slate-600">|</span>
+                                      <span>Rate: <strong className="text-emerald-400 font-bold">₹{parseFloat(rec.base_price).toFixed(2)}</strong></span>
+                                      <span className="text-slate-600">|</span>
+                                      <span>HSN: <strong className="text-slate-300">{rec.hsn_code}</strong></span>
+                                      <span className="text-slate-600">|</span>
+                                      <span>GST: <strong className="text-slate-300">{rec.tax_rate}%</strong></span>
+                                      <span className="text-slate-600">|</span>
+                                      <span>Est. Turnover: <strong className="text-amber-400">₹{format.estimated_monthly_revenue?.toLocaleString('en-IN')}</strong> ({format.estimated_monthly_packs} packs/mo)</span>
+                                    </div>
                                   </div>
                                 </div>
 

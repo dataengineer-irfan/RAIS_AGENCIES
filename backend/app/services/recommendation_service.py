@@ -276,6 +276,7 @@ class RecommendationService:
                         "base_price": 850.00,
                         "tax_rate": 18.00,
                         "hsn_code": "4819",
+                        "image_url": "assets/products/kfc_bucket.jpg",
                         "description": "Food-grade leak-proof kraft paper fried chicken bucket 1000ml with ventilated steam-release lid for AFC style broasted chicken outlets.",
                         "min_stock_alert": 10
                     },
@@ -311,6 +312,7 @@ class RecommendationService:
                         "base_price": 480.00,
                         "tax_rate": 18.00,
                         "hsn_code": "4819",
+                        "image_url": "assets/products/butter_paper_pack.jpg",
                         "description": "Food-grade greaseproof wrapping paper 10\"x12\" for Arabian shawarma rolls, roll wraps, and mandi takeaways.",
                         "min_stock_alert": 10
                     },
@@ -346,6 +348,7 @@ class RecommendationService:
                         "base_price": 220.00,
                         "tax_rate": 18.00,
                         "hsn_code": "3924",
+                        "image_url": "assets/products/mayo_portion_cups.jpg",
                         "description": "Ultra-clear food grade PET disposable beverage cups 350ml with leak-proof dome lids for mojitos, iced teas, and thick shakes.",
                         "min_stock_alert": 10
                     },
@@ -381,6 +384,7 @@ class RecommendationService:
                         "base_price": 420.00,
                         "tax_rate": 18.00,
                         "hsn_code": "4819",
+                        "image_url": "assets/products/burger_boxes.jpg",
                         "description": "Vintage newspaper print greaseproof burger wrapping paper 10\"x10\" for gourmet smash burgers and snack baskets.",
                         "min_stock_alert": 10
                     },
@@ -416,6 +420,7 @@ class RecommendationService:
                         "base_price": 820.00,
                         "tax_rate": 18.00,
                         "hsn_code": "4819",
+                        "image_url": "assets/products/pizza_boxes_assortment.jpg",
                         "description": "Heavy duty corrugated 10 inch pizza delivery box (E-flute) with steam vents to retain crust crispness.",
                         "min_stock_alert": 10
                     },
@@ -548,7 +553,8 @@ class RecommendationService:
                     "min_stock_alert": rec_meta["min_stock_alert"],
                     "current_stock": current_stock,
                     "is_in_catalog": is_in_catalog,
-                    "existing_product_id": existing_product_id
+                    "existing_product_id": existing_product_id,
+                    "image_url": rec_meta.get("image_url", "")
                 }
 
                 calculated_formats.append({
