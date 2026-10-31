@@ -10,7 +10,7 @@ export const FUTURE_DROPS = [
     landingDate: "Arriving Tuesday",
     unit: "100g Dispenser Bottle",
     target: "Countertop Retail & Fries Dusting",
-    image: "assets/products/breading_powder.jpg"
+    image: "/assets/products/vkl_peri_peri_sprinkler.jpg"
   },
   {
     id: "drop-2",
@@ -19,7 +19,7 @@ export const FUTURE_DROPS = [
     landingDate: "Arriving Next Week",
     unit: "100 Pcs Case Pack",
     target: "Gourmet Burgers & Sandwich Outlets",
-    image: "assets/products/burger_boxes.jpg"
+    image: "/assets/products/burger_boxes.jpg"
   }
 ];
 

@@ -1,9 +1,9 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { FALLBACK_CATEGORIES } from '../services/api';
+import { SWIGGY_CATEGORIES } from '../services/catalogData';
 import { motion } from 'framer-motion';
 
-export const CategoryBar = ({ categories = FALLBACK_CATEGORIES }) => {
+export const CategoryBar = ({ categories = SWIGGY_CATEGORIES }) => {
   const { activeCategory, setActiveCategory, language } = useStore();
 
   return (

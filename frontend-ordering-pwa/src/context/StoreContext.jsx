@@ -101,7 +101,7 @@ export const StoreProvider = ({ children }) => {
           sku: "RAIS-BRD-03",
           price: 340.00,
           unit: "1 KG PKT",
-          image: "assets/products/breading_powder.jpg"
+          image: "/assets/products/vkl_peri_peri_sprinkler.jpg"
         });
       } else if (sku.includes('BRD') || name.includes('BREADING') || name.includes('CHICKEN')) {
         // Breading added -> suggest 1000ml chicken bucket
@@ -111,7 +111,7 @@ export const StoreProvider = ({ children }) => {
           sku: "RAIS-BOX-08",
           price: 850.00,
           unit: "100 NOS",
-          image: "assets/products/kfc_bucket.jpg"
+          image: "/assets/products/kfc_bucket.jpg"
         });
       }
     }
