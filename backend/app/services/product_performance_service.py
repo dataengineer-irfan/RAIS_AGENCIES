@@ -1,69 +1,161 @@
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
+
 from app.models.catalogue import Product, Category
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.inventory import StockMovement
 
-_MATRIX_CACHE = {"timestamp": 0, "data": None}
+_MATRIX_CACHE: Dict[str, Any] = {}
 CACHE_TTL_SECONDS = 60
 
 class ProductPerformanceService:
     @staticmethod
-    def get_product_matrix(db: Session, force_refresh: bool = False) -> Dict[str, Any]:
+    def get_product_matrix(
+        db: Session, 
+        force_refresh: bool = False,
+        period: Optional[str] = "30d",
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
+    ) -> Dict[str, Any]:
         """
         High-Performance Product Performance Intelligence:
-        Uses joinedload to eliminate N+1 category lookups + 60s in-memory caching.
-        Includes 30-day Revenue, COGS, Profit, Margin % and Freezer Dead Stock.
+        Dynamically analyzes sales by date period (Today, Yesterday, Week, Month, 7d, 30d, 60d, 90d, All Time, Custom).
+        Includes Revenue, Units Sold, COGS, Profit, Margin % and Freezer Dead Stock.
         """
-        now = datetime.now(timezone.utc)
-        now_ts = now.timestamp()
-        if not force_refresh and _MATRIX_CACHE["data"] and (now_ts - _MATRIX_CACHE["timestamp"] < CACHE_TTL_SECONDS):
-            return _MATRIX_CACHE["data"]
-
         from app.core.datetime_utils import get_ist_today
         today = get_ist_today()
-        current_period = today.strftime("%Y-%m")
-        thirty_days_ago = today - timedelta(days=30)
-        sixty_days_ago = today - timedelta(days=60)
+        now = datetime.now(timezone.utc)
+        now_ts = now.timestamp()
+
+        # Parse period and calculate start/end + prior comparison dates
+        p_clean = (period or "30d").strip().lower()
+        if start_date and end_date and p_clean in ("custom", "30d"):
+            calc_start = start_date
+            calc_end = end_date
+            duration = max(1, (calc_end - calc_start).days + 1)
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=duration - 1)
+            period_label = f"{calc_start.strftime('%d %b')} - {calc_end.strftime('%d %b')}"
+            p_clean = "custom"
+        elif p_clean in ("today",):
+            calc_start = today
+            calc_end = today
+            prior_end = today - timedelta(days=1)
+            prior_start = prior_end
+            period_label = "Today"
+        elif p_clean in ("yesterday",):
+            calc_start = today - timedelta(days=1)
+            calc_end = today - timedelta(days=1)
+            prior_end = today - timedelta(days=2)
+            prior_start = prior_end
+            period_label = "Yesterday"
+        elif p_clean in ("this_week", "week"):
+            calc_start = today - timedelta(days=today.weekday())
+            calc_end = today
+            duration = max(1, (calc_end - calc_start).days + 1)
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=duration - 1)
+            period_label = "This Week"
+        elif p_clean in ("past_week", "last_week"):
+            this_monday = today - timedelta(days=today.weekday())
+            calc_start = this_monday - timedelta(days=7)
+            calc_end = this_monday - timedelta(days=1)
+            duration = 7
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=duration - 1)
+            period_label = "Past Week"
+        elif p_clean in ("this_month", "month"):
+            calc_start = today.replace(day=1)
+            calc_end = today
+            duration = max(1, (calc_end - calc_start).days + 1)
+            prior_end = today.replace(day=1) - timedelta(days=1)
+            prior_start = prior_end.replace(day=1)
+            period_label = "This Month"
+        elif p_clean in ("past_month", "last_month"):
+            first_of_this_month = today.replace(day=1)
+            calc_end = first_of_this_month - timedelta(days=1)
+            calc_start = calc_end.replace(day=1)
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end.replace(day=1)
+            period_label = "Past Month"
+        elif p_clean in ("7d", "last_7d"):
+            calc_start = today - timedelta(days=7)
+            calc_end = today
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=6)
+            period_label = "Last 7 Days"
+        elif p_clean in ("60d", "last_60d"):
+            calc_start = today - timedelta(days=60)
+            calc_end = today
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=59)
+            period_label = "Last 60 Days"
+        elif p_clean in ("90d", "last_90d"):
+            calc_start = today - timedelta(days=90)
+            calc_end = today
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=89)
+            period_label = "Last 90 Days"
+        elif p_clean in ("all_time", "all"):
+            calc_start = date(2020, 1, 1)
+            calc_end = today
+            prior_start = None
+            prior_end = None
+            period_label = "All Time"
+        else:
+            p_clean = "30d"
+            calc_start = today - timedelta(days=30)
+            calc_end = today
+            prior_end = calc_start - timedelta(days=1)
+            prior_start = prior_end - timedelta(days=29)
+            period_label = "Last 30 Days"
+
+        cache_key = f"{p_clean}_{calc_start}_{calc_end}"
+        if not force_refresh and cache_key in _MATRIX_CACHE:
+            cached = _MATRIX_CACHE[cache_key]
+            if now_ts - cached["timestamp"] < CACHE_TTL_SECONDS:
+                return cached["data"]
 
         # 1. Fetch all active products with category eagerly loaded in 1 query
         products = db.query(Product).options(joinedload(Product.category)).filter(Product.is_active == True).all()
 
-        # 2. Query trailing 30-day and 30-to-60-day sales per product from issued/paid invoices
+        # 2. Query period sales per product from issued/paid invoices
         recent_sales = db.query(
             InvoiceItem.product_id,
-            func.sum(InvoiceItem.quantity).label("units_30d"),
-            func.sum(InvoiceItem.line_total).label("revenue_30d"),
-            func.count(func.distinct(Invoice.id)).label("orders_30d")
+            func.sum(InvoiceItem.quantity).label("units_period"),
+            func.sum(InvoiceItem.line_total).label("revenue_period"),
+            func.count(func.distinct(Invoice.id)).label("orders_period")
         ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
          .filter(
              Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
-             Invoice.invoice_date >= thirty_days_ago
+             Invoice.invoice_date >= calc_start,
+             Invoice.invoice_date <= calc_end
          ).group_by(InvoiceItem.product_id).all()
 
         recent_sales_map = {
             r.product_id: {
-                "units": float(r.units_30d or 0),
-                "revenue": float(r.revenue_30d or 0),
-                "orders": int(r.orders_30d or 0)
+                "units": float(r.units_period or 0),
+                "revenue": float(r.revenue_period or 0),
+                "orders": int(r.orders_period or 0)
             } for r in recent_sales
         }
 
-        # Prior 30-to-60 day sales for MoM Trend calculation
-        prior_sales = db.query(
-            InvoiceItem.product_id,
-            func.sum(InvoiceItem.line_total).label("revenue_prior")
-        ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
-         .filter(
-             Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
-             Invoice.invoice_date >= sixty_days_ago,
-             Invoice.invoice_date < thirty_days_ago
-         ).group_by(InvoiceItem.product_id).all()
-
-        prior_sales_map = {r.product_id: float(r.revenue_prior or 0) for r in prior_sales}
+        # Prior period sales for Trend calculation
+        prior_sales_map = {}
+        if prior_start and prior_end:
+            prior_sales = db.query(
+                InvoiceItem.product_id,
+                func.sum(InvoiceItem.line_total).label("revenue_prior")
+            ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+             .filter(
+                 Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
+                 Invoice.invoice_date >= prior_start,
+                 Invoice.invoice_date <= prior_end
+             ).group_by(InvoiceItem.product_id).all()
+            prior_sales_map = {r.product_id: float(r.revenue_prior or 0) for r in prior_sales}
 
         # 3. Fetch latest purchase costs from StockMovement
         cost_rows = db.query(
@@ -192,12 +284,17 @@ class ProductPerformanceService:
                 "category_name": p.category.name if p.category else "General",
                 "packaging_unit": p.packaging_unit,
                 "units_sold_30d": units,
+                "units_sold": units,
                 "revenue_30d": round(revenue, 2),
+                "revenue": round(revenue, 2),
                 "cost_30d": round(cost_30d, 2),
+                "cost": round(cost_30d, 2),
                 "profit_30d": round(profit_30d, 2),
+                "profit": round(profit_30d, 2),
                 "margin_pct": round(margin_pct, 1),
                 "unit_cost": round(unit_cost, 2),
                 "orders_count_30d": orders,
+                "orders_count": orders,
                 "stock_holding_units": current_stock,
                 "stock_holding_value": round(stock_value, 2),
                 "trend_pct": round(trend_pct, 1),
@@ -212,14 +309,17 @@ class ProductPerformanceService:
                 f"Consider bundling {zero_movers[0] if zero_movers else 'dead stock'} with high-velocity winners."
             )
         else:
-            insight_summary = "All stocked catalogue products have moved actively in the trailing 30 days! Zero cold-room dead stock."
+            insight_summary = f"All stocked catalogue products have moved actively in {period_label.lower()}! Zero cold-room dead stock."
 
-        total_profit_30d = sum(i["profit_30d"] for i in items)
-        total_revenue_30d = sum(i["revenue_30d"] for i in items)
-        overall_margin_pct = round((total_profit_30d / total_revenue_30d * 100), 1) if total_revenue_30d > 0 else 0.0
+        total_profit_period = sum(i["profit_30d"] for i in items)
+        total_revenue_period = sum(i["revenue_30d"] for i in items)
+        overall_margin_pct = round((total_profit_period / total_revenue_period * 100), 1) if total_revenue_period > 0 else 0.0
 
         response_data = {
-            "period": current_period,
+            "period": p_clean,
+            "period_label": period_label,
+            "start_date": str(calc_start),
+            "end_date": str(calc_end),
             "total_skus": len(items),
             "winners_count": len(winners),
             "steady_count": len(steady),
@@ -228,12 +328,13 @@ class ProductPerformanceService:
             "out_of_stock_count": len(out_of_stock),
             "total_dead_stock_value": float(total_dead_stock_value),
             "total_catalogue_stock_value": float(total_catalogue_stock_value),
-            "total_profit_30d": round(total_profit_30d, 2),
+            "total_profit_30d": round(total_profit_period, 2),
+            "total_profit": round(total_profit_period, 2),
+            "total_revenue": round(total_revenue_period, 2),
             "overall_margin_pct": overall_margin_pct,
             "insight_summary": insight_summary,
             "items": sorted(items, key=lambda x: x["revenue_30d"], reverse=True)
         }
 
-        _MATRIX_CACHE["timestamp"] = now_ts
-        _MATRIX_CACHE["data"] = response_data
+        _MATRIX_CACHE[cache_key] = {"timestamp": now_ts, "data": response_data}
         return response_data

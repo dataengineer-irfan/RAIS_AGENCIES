@@ -521,8 +521,8 @@ export const auditApi = {
 };
 
 export const analyticsApi = {
-  getProductMatrix: async () => {
-    return cachedGet('/analytics/product-matrix');
+  getProductMatrix: async (params = {}) => {
+    return cachedGet('/analytics/product-matrix', { params });
   },
   getCustomerHealth: async () => {
     return cachedGet('/analytics/customer-health');

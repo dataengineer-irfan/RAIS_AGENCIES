@@ -1973,7 +1973,11 @@ export const DashboardPage = ({
            ═══════════════════════════════════════════════════════════════════════ */}
         {activePage === 'products' && (
           <div className="h-full overflow-hidden animate-fadeIn">
-            <ProductPerformanceMatrix onSelectProduct={() => handleDashboardNavigate('catalogue')} />
+            <ProductPerformanceMatrix 
+              dateRange={filters.dateRange} 
+              onDateRangeChange={(r) => handleFilterChange('dateRange', r)}
+              onSelectProduct={() => handleDashboardNavigate('catalogue')} 
+            />
           </div>
         )}
 

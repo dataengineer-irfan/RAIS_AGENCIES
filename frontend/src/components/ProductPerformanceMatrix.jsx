@@ -15,38 +15,67 @@ import {
   ArrowUp,
   ArrowDown,
   X,
-  Filter
+  Filter,
+  Calendar
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { getProductVisualIcon, ProductVisualBadge } from '../utils/productIcons';
 
-export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
+export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', onDateRangeChange }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL'); // ALL, WINNER, STEADY, DECLINING, ZERO_MOVER, OUT_OF_STOCK
   const [selectedCategory, setSelectedCategory] = useState('ALL'); // ALL, or specific category name
+  const [selectedPeriod, setSelectedPeriod] = useState(dateRange || '30d');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [viewMode, setViewMode] = useState(() => 
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'MATRIX' : 'TABLE'
   ); // Responsive default: MATRIX for mobile/tablet, TABLE for desktop
   const [searchTerm, setSearchTerm] = useState('');
   
   // Interactive Column Sorting State
-  const [sortColumn, setSortColumn] = useState('revenue_30d'); // Default: Highest 30d Revenue
+  const [sortColumn, setSortColumn] = useState('revenue_30d'); // Default: Highest Revenue
   const [sortDirection, setSortDirection] = useState('desc'); // 'desc' | 'asc'
 
+  // Sync with incoming parent dateRange prop
   useEffect(() => {
-    fetchMatrix();
-  }, []);
+    if (dateRange) {
+      let normalized = dateRange.toLowerCase();
+      if (normalized === 'last_week') normalized = 'past_week';
+      if (normalized === 'last_month') normalized = 'past_month';
+      if (normalized !== selectedPeriod.toLowerCase()) {
+        setSelectedPeriod(normalized);
+      }
+    }
+  }, [dateRange]);
 
-  const fetchMatrix = async () => {
+  const fetchMatrix = async (periodToUse = selectedPeriod, startDate = customStartDate, endDate = customEndDate) => {
     setLoading(true);
     try {
-      const res = await analyticsApi.getProductMatrix();
+      const params = { period: periodToUse };
+      if (periodToUse === 'custom' && startDate && endDate) {
+        params.start_date = startDate;
+        params.end_date = endDate;
+      }
+      const res = await analyticsApi.getProductMatrix(params);
       setData(res);
     } catch (err) {
       console.error('Failed to load product performance matrix:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMatrix(selectedPeriod, customStartDate, customEndDate);
+  }, [selectedPeriod]);
+
+  const handlePeriodChange = (newPeriod) => {
+    setSelectedPeriod(newPeriod);
+    if (onDateRangeChange) {
+      const parentPeriod = newPeriod === 'past_week' ? 'last_week' : (newPeriod === 'past_month' ? 'last_month' : newPeriod);
+      onDateRangeChange(parentPeriod);
     }
   };
 
@@ -123,6 +152,29 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
       return revB - revA;
     });
   }, [data, activeTab, selectedCategory, searchTerm, sortColumn, sortDirection]);
+
+  const periodDisplayLabel = useMemo(() => {
+    if (data?.period_label) return data.period_label;
+    const map = {
+      today: 'Today',
+      yesterday: "Y'day",
+      this_week: 'This Week',
+      past_week: 'Past Week',
+      this_month: 'This Month',
+      past_month: 'Past Month',
+      last_7d: '7d',
+      '7d': '7d',
+      last_30d: '30d',
+      '30d': '30d',
+      last_60d: '60d',
+      '60d': '60d',
+      last_90d: '90d',
+      '90d': '90d',
+      all_time: 'All Time',
+      all: 'All Time'
+    };
+    return map[selectedPeriod?.toLowerCase()] || '30d';
+  }, [data?.period_label, selectedPeriod]);
 
   const renderSortHeader = (label, columnKey, alignRight = false) => {
     const isCurrent = sortColumn === columnKey;
@@ -267,11 +319,11 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
           </div>
         </div>
 
-        {/* Tier 2: Category Filter + Quick Sort + Search + View Switcher */}
+        {/* Tier 2: Category Filter + Quick Sort + Date Filter + Search + View Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-slate-800/60">
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 flex-1 min-w-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 flex-1 min-w-0">
             {/* Category Filter Dropdown */}
-            <div className={`flex items-center gap-1 border rounded-lg px-2 py-1 transition-colors min-w-0 sm:max-w-[210px] ${
+            <div className={`flex items-center gap-1 border rounded-lg px-2 py-1 transition-colors min-w-0 sm:max-w-[190px] ${
               selectedCategory !== 'ALL' 
                 ? 'bg-amber-500/15 border-amber-500/50 text-amber-300' 
                 : 'bg-slate-950 border-slate-800 text-slate-400'
@@ -307,7 +359,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
             </div>
 
             {/* Quick Sort Dropdown */}
-            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-400 min-w-0 sm:max-w-[190px]">
+            <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-400 min-w-0 sm:max-w-[170px]">
               <ArrowUpDown className="w-3 h-3 text-amber-400 shrink-0" />
               <select
                 value={`${sortColumn}-${sortDirection}`}
@@ -335,6 +387,62 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                 <option value="category_name-asc" className="bg-slate-900 text-white">🏷️ Category (A-Z)</option>
               </select>
             </div>
+
+            {/* 📅 Date / Period Filter Dropdown (PURPLE CIRCLED LOCATION) */}
+            <div className={`flex items-center gap-1 border rounded-lg px-2 py-1 transition-colors min-w-0 sm:max-w-[170px] ${
+              selectedPeriod !== '30d' && selectedPeriod !== 'last_30d'
+                ? 'bg-amber-500/15 border-amber-500/50 text-amber-300' 
+                : 'bg-slate-950 border-slate-800 text-slate-400'
+            }`}>
+              <Calendar className={`w-3 h-3 shrink-0 ${selectedPeriod !== '30d' && selectedPeriod !== 'last_30d' ? 'text-amber-400' : 'text-slate-400'}`} />
+              <select
+                value={selectedPeriod}
+                onChange={(e) => handlePeriodChange(e.target.value)}
+                className="bg-transparent text-slate-300 text-[11px] font-bold focus:outline-none cursor-pointer py-0.5 truncate w-full"
+                title="Filter by Date Period"
+              >
+                <option value="today" className="bg-slate-900 text-white">📅 Today</option>
+                <option value="yesterday" className="bg-slate-900 text-white">📅 Yesterday</option>
+                <option value="this_week" className="bg-slate-900 text-white">📅 This Week</option>
+                <option value="past_week" className="bg-slate-900 text-white">📅 Past Week</option>
+                <option value="this_month" className="bg-slate-900 text-white">📅 This Month</option>
+                <option value="past_month" className="bg-slate-900 text-white">📅 Past Month</option>
+                <option value="last_7d" className="bg-slate-900 text-white">📅 Last 7 Days</option>
+                <option value="30d" className="bg-slate-900 text-white">📅 Last 30 Days</option>
+                <option value="last_60d" className="bg-slate-900 text-white">📅 Last 60 Days</option>
+                <option value="last_90d" className="bg-slate-900 text-white">📅 Last 90 Days</option>
+                <option value="all_time" className="bg-slate-900 text-white">📅 All Time</option>
+                <option value="custom" className="bg-slate-900 text-white">📅 Custom Dates...</option>
+              </select>
+            </div>
+
+            {/* Custom Date Range Inline Controls (visible when 'custom' is selected) */}
+            {selectedPeriod === 'custom' && (
+              <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 text-slate-300 text-xs shrink-0">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-transparent text-slate-200 text-[10px] font-mono focus:outline-none"
+                  title="Start Date"
+                />
+                <span className="text-slate-500 text-[10px]">-</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-transparent text-slate-200 text-[10px] font-mono focus:outline-none"
+                  title="End Date"
+                />
+                <button
+                  type="button"
+                  onClick={() => fetchMatrix('custom', customStartDate, customEndDate)}
+                  className="px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-[10px] transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
@@ -426,11 +534,11 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                   {renderSortHeader('SKU & Item', 'name')}
                   {renderSortHeader('Category', 'category_name')}
                   {renderSortHeader('Status', 'classification')}
-                  {renderSortHeader('30d Sold', 'units_sold_30d', true)}
-                  {renderSortHeader('30d Revenue', 'revenue_30d', true)}
-                  {renderSortHeader('30d Profit (₹)', 'profit_30d', true)}
+                  {renderSortHeader(`${periodDisplayLabel} Sold`, 'units_sold_30d', true)}
+                  {renderSortHeader(`${periodDisplayLabel} Revenue`, 'revenue_30d', true)}
+                  {renderSortHeader(`${periodDisplayLabel} Profit (₹)`, 'profit_30d', true)}
                   {renderSortHeader('Margin %', 'margin_pct', true)}
-                  {renderSortHeader('MoM Trend', 'trend_pct', true)}
+                  {renderSortHeader(selectedPeriod === 'today' ? 'vs Y\'day' : (selectedPeriod === 'this_month' ? 'MoM Trend' : 'Trend'), 'trend_pct', true)}
                   {renderSortHeader('Current Stock', 'stock_holding_units', true)}
                   {renderSortHeader('Holding Val', 'stock_holding_value', true)}
                 </tr>
@@ -583,7 +691,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
 
                   <div className="grid grid-cols-4 gap-1.5 mt-2 pt-2 border-t border-slate-900 text-[10px]">
                     <div>
-                      <span className="text-slate-500 block truncate">30d Sold:</span>
+                      <span className="text-slate-500 block truncate">{periodDisplayLabel} Sold:</span>
                       <div className="font-mono font-bold text-white truncate">{item.units_sold_30d}</div>
                     </div>
                     <div>
@@ -593,7 +701,7 @@ export const ProductPerformanceMatrix = ({ onSelectProduct }) => {
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-500 block truncate">30d Profit:</span>
+                      <span className="text-slate-500 block truncate">{periodDisplayLabel} Profit:</span>
                       <div className={`font-mono font-bold truncate ${
                         (item.profit_30d || 0) > 0 ? 'text-emerald-400' : (item.profit_30d || 0) < 0 ? 'text-rose-400' : 'text-slate-400'
                       }`}>

@@ -12,19 +12,31 @@ from app.services.product_performance_service import ProductPerformanceService
 from app.services.customer_health_service import CustomerHealthService
 from app.services.forecasting_service import ForecastingService
 from app.services.thermal_print_service import ThermalPrintService
+from datetime import date
 from app.core.datetime_utils import get_ist_today
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & Intelligence"])
 
 @router.get("/product-matrix")
 def get_product_performance_matrix(
+    period: Optional[str] = Query("30d"),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    force_refresh: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):
     """
     Returns Product Performance Intelligence: Winner, Steady, Declining, Zero-Mover matrix and freezer dead stock value.
+    Supports filtering by period (today, yesterday, this_week, past_week, this_month, past_month, 7d, 30d, 60d, 90d, all_time, custom).
     """
-    return ProductPerformanceService.get_product_matrix(db)
+    return ProductPerformanceService.get_product_matrix(
+        db=db,
+        force_refresh=force_refresh,
+        period=period,
+        start_date=start_date,
+        end_date=end_date
+    )
 
 @router.get("/customer-health")
 def get_customer_health(
