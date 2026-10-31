@@ -19,7 +19,8 @@ import {
   Calendar,
   AlertCircle,
   ArrowLeft,
-  Share2
+  Share2,
+  XCircle
 } from 'lucide-react';
 import { orderApi, billingApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -43,6 +44,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedCardOrderId, setCopiedCardOrderId] = useState(null);
   const [convertingId, setConvertingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
   const [convertedInvoiceModal, setConvertedInvoiceModal] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
@@ -116,6 +118,24 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
     }
   };
 
+  const handleCancelOrder = async (ord) => {
+    if (!ord) return;
+    const confirmCancel = window.confirm(`Cancel order booking ${ord.order_number}? Allocated stock will be restored to warehouse inventory.`);
+    if (!confirmCancel) return;
+
+    setCancellingId(ord.id);
+    try {
+      await orderApi.cancel(ord.id, 'Cancelled via Orders Hub');
+      showToast(`Order ${ord.order_number} cancelled. Warehouse stock restored.`, 'success');
+      await loadOrders(ord.id);
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Failed to cancel order.';
+      showToast(msg, 'error');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const handleCopyCode = async (code) => {
     await copyToClipboard(code);
     setCopiedCode(true);
@@ -170,7 +190,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
       );
       if (matchHeader) return true;
       if (Array.isArray(o.items)) {
-        return o.items.some(it => (it.item_description || it.product_name || '').toLowerCase().includes(term));
+        return o.items.some(it => (it.item_name || it.item_description || it.product_name || '').toLowerCase().includes(term));
       }
       return false;
     });
@@ -413,7 +433,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                 const isCopied = copiedCardOrderId === ord.id;
 
                 const itemsList = Array.isArray(ord.items) ? ord.items : [];
-                const firstItemName = itemsList.length > 0 ? (itemsList[0].item_description || itemsList[0].product_name) : null;
+                const firstItemName = itemsList.length > 0 ? (itemsList[0].item_name || itemsList[0].item_description || itemsList[0].product_name) : null;
                 const remainingItemsCount = itemsList.length > 1 ? itemsList.length - 1 : 0;
 
                 return (
@@ -465,7 +485,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                         </p>
                       ) : (
                         <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {ord.order_date} • {ord.items_count || 0} line items
+                          {ord.order_date} • {ord.items?.length || ord.items_count || 0} line items
                         </p>
                       )}
                     </div>
@@ -476,7 +496,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                           ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                         <span className="text-[9px] text-slate-500 block">
-                          {ord.delivery_date ? `Due ${ord.delivery_date}` : 'Standard'}
+                          {(ord.expected_delivery_date || ord.delivery_date) ? `Due ${ord.expected_delivery_date || ord.delivery_date}` : 'Standard'}
                         </span>
                       </div>
 
@@ -699,7 +719,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                         </div>
                         <div>
                           <span className="text-slate-500 text-[10px] block">Target Delivery Date:</span>
-                          <span className="font-mono font-bold">{selectedOrder.delivery_date || 'Same Day / Immediate'}</span>
+                          <span className="font-mono font-bold">{selectedOrder.expected_delivery_date || selectedOrder.delivery_date || 'Same Day / Immediate'}</span>
                         </div>
                         <div className="col-span-2">
                           <span className="text-slate-500 text-[10px] block">Delivery Instructions / Notes:</span>
@@ -753,6 +773,20 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                           <span className="text-[10px] text-slate-400">Dispatch booking confirmation slip</span>
                         </div>
                       </button>
+
+                      {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && hasRole(['ADMIN', 'OPERATOR']) && (
+                        <button
+                          onClick={() => handleCancelOrder(selectedOrder)}
+                          disabled={cancellingId === selectedOrder.id}
+                          className="p-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl flex items-center gap-2.5 text-left text-rose-400 transition-all hover:scale-[1.02] disabled:opacity-50"
+                        >
+                          <XCircle className="w-5 h-5 text-rose-400" />
+                          <div>
+                            <div className="font-bold text-xs text-white">Cancel Booking</div>
+                            <span className="text-[10px] text-slate-400">Void order & restore warehouse inventory</span>
+                          </div>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

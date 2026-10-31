@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import List, Optional
 from datetime import date
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from app.models.order import Order, OrderItem
 from app.models.customer import Customer
@@ -118,7 +119,7 @@ class OrderService:
         order = db.query(Order).options(
             joinedload(Order.customer),
             joinedload(Order.items).joinedload(OrderItem.product)
-        ).filter(Order.id == order_id).first()
+        ).filter(or_(Order.id == order_id, Order.order_number == order_id)).first()
 
         if not order:
             raise EntityNotFoundException("Order", order_id)
@@ -141,7 +142,7 @@ class OrderService:
                 "quantity": float(itm.quantity),
                 "unit_price": float(itm.unit_price),
                 "discount_rate": 0.0,
-                "tax_rate": 0.0
+                "tax_rate": float(product.tax_rate) if (product and product.tax_rate is not None) else 0.0
             })
             # Stock was already deducted when the order was placed. No duplicate deduction here.
 

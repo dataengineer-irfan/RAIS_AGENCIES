@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAIS Agencies — End-User Instagram Automation Setup Manual (Visual Flow & Code)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #070d17;
+      color: #f1f5f9;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f1c3f 0%, #080c16 100%);
+      border: 2px solid #d4af37;
+      border-radius: 20px;
+      padding: 35px;
+      margin-bottom: 40px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.6), 0 0 30px rgba(212,175,55,0.15);
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      background: rgba(212,175,55,0.15);
+      border: 1px solid #d4af37;
+      color: #f5da7a;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      color: #f5da7a;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #cbd5e1;
+      max-width: 700px;
+      margin: 0 auto 18px;
+    }
+
+    .quick-links {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .btn-link {
+      background: #101a30;
+      border: 1px solid #d4af37;
+      color: #f5da7a;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-link:hover {
+      background: #d4af37;
+      color: #080c16;
+    }
+
+    .step-card {
+      background: #0d1527;
+      border: 1px solid #1e293b;
+      border-left: 6px solid #d4af37;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 35px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .step-number {
+      font-size: 12px;
+      font-weight: 800;
+      color: #d4af37;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .step-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 15px;
+    }
+
+    .ui-mockup {
+      background: #030712;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      margin: 18px 0;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.4;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+    }
+
+    .code-block {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #a5f3fc;
+      margin: 15px 0;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .code-tag {
+      position: absolute;
+      top: 8px; right: 12px;
+      font-size: 10px;
+      color: #94a3b8;
+      background: #0f172a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+    }
+
+    .checklist {
+      list-style: none;
+      margin: 15px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .checklist li {
+      font-size: 14px;
+      position: relative;
+      padding-left: 26px;
+      color: #cbd5e1;
+    }
+
+    .checklist li::before {
+      content: "✔";
+      position: absolute;
+      left: 0;
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .pill {
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .warning-box {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid #ef4444;
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #fca5a5;
+      font-size: 13px;
+      margin: 15px 0;
+    }
+
+    .success-box {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid #22c55e;
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #86efac;
+      font-size: 13px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <header>
+      <div class="badge">Non-Technical End-User Runbook</div>
+      <h1>RAIS Instagram Automation Setup Guide</h1>
+      <p class="subtitle">Complete visual process flows, Meta UI click-paths, and copy-paste code snippets so ANY user can configure, authenticate, and publish reels from scratch in under 15 minutes.</p>
+      <div class="quick-links">
+        <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#admin" target="_blank" class="btn-link">🔗 Open Admin Portal (#admin)</a>
+        <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/catalogue.html" target="_blank" class="btn-link">📖 66-SKU Digital Catalogue</a>
+        <a href="https://instagram.com/raisfrozenfoods" target="_blank" class="btn-link">📸 Live Instagram @raisfrozenfoods</a>
+      </div>
+    </header>
+
+    <!-- STEP 1 -->
+    <div class="step-card">
+      <div class="step-number">STEP 1 OF 7</div>
+      <h2 class="step-title">1. Instagram Mobile App: Switch to Professional Business Profile</h2>
+      <p>Meta strictly blocks third-party developer APIs from posting on personal Instagram profiles. You must switch to a <b>Business Profile</b> on your phone.</p>
+      
+      <div class="ui-mockup">
+┌──────────────────────────────────────────────────────────────────┐
+│                   INSTAGRAM APP (ON YOUR PHONE)                  │
+├──────────────────────────────────────────────────────────────────┤
+│ 1. Open Profile tab (bottom right) ➔ Tap Hamburger Menu (≡)      │
+│ 2. Scroll to "For professionals" ➔ Tap "Account type and tools"  │
+│ 3. Tap "Switch to professional account"                          │
+│ 4. Select Category: "Wholesale & Supply Store" or "Food & Drink" │
+│ 5. Select Account Type: [●] Business  (NOT Creator)              │
+│ 6. Contact Details:                                              │
+│      • Email: rais.frozenfoods@gmail.com                         │
+│      • Phone: +91 9347453135                                     │
+│      • Address: Near Reddies Colony, Rayachoty (516269)          │
+│ 7. Tap "Done".                                                   │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+      <div class="warning-box">
+        <b>Important on Pronouns:</b> The "Pronouns" field is strictly for personal accounts. Business brand profiles leave it completely blank.
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-card">
+      <div class="step-number">STEP 2 OF 7</div>
+      <h2 class="step-title">2. Facebook: Create & Link the Business Page</h2>
+      <p>Meta owns both Facebook and Instagram. The Meta Developer API manages Instagram permissions <b>strictly through Facebook Business Pages</b>.</p>
+
+      <div class="ui-mockup">
+┌──────────────────────────────────────────────────────────────────┐
+│                FACEBOOK PAGE CREATION & LINKING                  │
+├──────────────────────────────────────────────────────────────────┤
+│ 1. On Facebook (facebook.com/pages/create):                      │
+│    • Page Name: "RAIS Agencies"                                  │
+│    • Category: "Wholesale Food Distributor"                      │
+│ 2. Connect Instagram Account to the Page:                        │
+│    • On Facebook: Page Settings ➔ Linked Accounts ➔ Instagram   │
+│    • Tap "Connect Account" ➔ Log into @raisfrozenfoods          │
+│    • Toggle ON: "Allow access to Instagram messages in Inbox"    │
+│    • Tap "Confirm".                                              │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+      <div class="success-box">
+        <b>Verification:</b> You should now see <code>Connected: @raisfrozenfoods</code> under your Facebook Page's Linked Accounts.
+      </div>
+    </div>
+
+    <!-- STEP 3 & 4 -->
+    <div class="step-card">
+      <div class="step-number">STEPS 3 & 4 OF 7</div>
+      <h2 class="step-title">3 & 4. Meta for Developers: Create App & Enable Use Cases</h2>
+      <p>This is where Meta provides the secret application bridge that allows our Python scripts to communicate with Instagram.</p>
+
+      <div class="ui-mockup">
+┌──────────────────────────────────────────────────────────────────┐
+│              developers.facebook.com (DEVELOPER PORTAL)          │
+├──────────────────────────────────────────────────────────────────┤
+│ 1. Visit: https://developers.facebook.com ➔ Log in with Facebook │
+│ 2. Click "My Apps" (top right) ➔ Click "Create App"              │
+│ 3. Select App Type:                                              │
+│    [●] Business ("Connect with your customers...") ➔ Next        │
+│ 4. App Details:                                                  │
+│    • App Name: "RAIS Automation Hub"                             │
+│    • App Contact Email: rais.frozenfoods@gmail.com               │
+│    • Click "Create App".                                         │
+│                                                                  │
+│ 5. ADDING THE USE CASE (Left Sidebar):                           │
+│    • Click "Use Cases" in the sidebar                            │
+│    • Find: "Instagram Content Publishing" ➔ Click "Set Up"       │
+│    • Verify these 4 permissions are active:                      │
+│      [✔] instagram_content_publish                               │
+│      [✔] instagram_basic                                         │
+│      [✔] pages_show_list                                         │
+│      [✔] pages_read_engagement                                   │
+└──────────────────────────────────────────────────────────────────┘</div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step-card">
+      <div class="step-number">STEP 5 OF 7</div>
+      <h2 class="step-title">5. Graph API Explorer: Generate Token & Find Account ID</h2>
+      <p>Now extract the two secret keys required by the automation: the <b>Long-Lived Access Token</b> and the <b>Instagram Business Account ID</b>.</p>
+
+      <div class="ui-mockup">
+┌──────────────────────────────────────────────────────────────────┐
+│              developers.facebook.com/tools/explorer              │
+├──────────────────────────────────────────────────────────────────┤
+│ 1. Meta App: Select "RAIS Automation Hub"                        │
+│ 2. User or Page: Select "User Token"                             │
+│ 3. Permissions Checklist:                                        │
+│    Add: instagram_content_publish, instagram_basic, pages_show_list│
+│ 4. Click "Generate Access Token" ➔ Authorize permissions.         │
+│                                                                  │
+│ 5. QUERY YOUR INSTAGRAM ACCOUNT ID:                              │
+│    In the URL box, type:                                         │
+│    GET ➔ me/accounts?fields=instagram_business_account           │
+│    Click "Submit".                                               │
+│                                                                  │
+│ 6. RESPONSE OUTPUT:                                              │
+│    {                                                             │
+│      "data": [                                                   │
+│        {                                                         │
+│          "instagram_business_account": {                         │
+│            "id": "29157923917158606"  <-- YOUR INSTAGRAM ID!     │
+│          },                                                      │
+│          "name": "RAIS Agencies"                                 │
+│        }                                                         │
+│      ]                                                           │
+│    }                                                             │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+      <p><b>Exchange for Long-Lived Token (lasts 60 days / permanent):</b></p>
+      <div class="code-block">
+        <span class="code-tag">BASH / TERMINAL</span>
+# Replace SHORT_LIVED_TOKEN, APP_ID, and APP_SECRET
+curl -i -X GET "https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=APP_ID&client_secret=APP_SECRET&fb_exchange_token=SHORT_LIVED_TOKEN"
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step-card">
+      <div class="step-number">STEP 6 OF 7</div>
+      <h2 class="step-title">6. Configure Local Environment & Secrets (.env)</h2>
+      <p>Store your credentials in the <span class="pill">.env</span> file in your project folder. The system uses these secrets automatically.</p>
+
+      <div class="code-block">
+        <span class="code-tag">.env FILE</span>
+# Instagram & Meta Graph API Credentials
+VITE_INSTAGRAM_ACCESS_TOKEN=EAAV... (Your 60-day Long-Lived Token)
+VITE_INSTAGRAM_ACCOUNT_ID=29157923917158606
+VITE_INSTAGRAM_USERNAME=raisfrozenfoods
+
+# Official Business WhatsApp & Location
+VITE_WHATSAPP_NUMBER=919347453135
+VITE_DEPOT_PINCODE=516269
+      </div>
+
+      <p><b>Test the connection instantly:</b></p>
+      <div class="code-block">
+        <span class="code-tag">TERMINAL</span>
+python scripts/test_instagram_token.py
+      </div>
+
+      <div class="success-box">
+        <b>Expected Output:</b><br>
+        <code>SUCCESS [Basic Display / Instagram API response]: {'id': '29157923917158606', 'username': 'raisfrozenfoods'}</code>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step-card">
+      <div class="step-number">STEP 7 OF 7</div>
+      <h2 class="step-title">7. Publishing Videos: How The Automated Code Works</h2>
+      <p>Here is the exact Python command and API sequence that takes any video and publishes it live to Instagram:</p>
+
+      <div class="code-block">
+        <span class="code-tag">COMMAND TO PUBLISH ANY REEL</span>
+# Format: python scripts/publish_single_reel.py <scenario_number> <language>
+python scripts/publish_single_reel.py 1 te   # Scenario 01 in Telugu
+python scripts/publish_single_reel.py 1 hi   # Scenario 01 in Hindi
+      </div>
+
+      <p><b>The 4-Step Behind-The-Scenes API Flow:</b></p>
+      <div class="ui-mockup">
+1. [UPLOAD CDN]
+   Python uploads 7.6MB MP4 to direct stream CDN (uguu.se)
+   ➔ Received URL: https://n.uguu.se/fVlburvw.mp4
+
+2. [CREATE CONTAINER]
+   POST https://graph.instagram.com/29157923917158606/media
+   data = { "media_type": "REELS", "video_url": "...", "caption": "..." }
+   ➔ Received: Meta Container ID: 18151316185524862
+
+3. [POLL TRANSCODING]
+   GET https://graph.instagram.com/18151316185524862?fields=status_code
+   ➔ Polling attempt 1: IN_PROGRESS
+   ➔ Polling attempt 5: FINISHED
+
+4. [LIVE PUBLISH & TOP COMMENT]
+   POST https://graph.instagram.com/29157923917158606/media_publish
+   ➔ POST LIVE! Live URL: https://www.instagram.com/reel/De_prsIDBRA/
+   POST https://graph.instagram.com/18129191809865321/comments
+   ➔ Added Pinned Comment with WhatsApp wa.me/919347453135 & Catalogue URL!
+      </div>
+    </div>
+
+    <!-- ADMIN PORTAL -->
+    <div class="step-card" style="border-left-color: #22c55e;">
+      <div class="step-number" style="color: #22c55e;">ADMIN PORTAL VERIFICATION</div>
+      <h2 class="step-title">8. How to Verify the Wholesale Admin Portal</h2>
+      <p>You can verify and manage campaigns, orders, and automation directly inside the live web app dashboard.</p>
+
+      <div class="ui-mockup">
+┌──────────────────────────────────────────────────────────────────┐
+│                   WHOLESALE ADMIN PORTAL ACCESS                  │
+├──────────────────────────────────────────────────────────────────┤
+│ Direct Live Link:                                                │
+│ https://dataengineer-irfan.github.io/RAIS-AGENCIES/#admin        │
+│                                                                  │
+│ Login Credentials:                                               │
+│ • Username: admin  (or rais or rais.frozenfoods@gmail.com)       │
+│ • Password / PIN: RAIS@516269                                    │
+│                                                                  │
+│ Features Inside Admin Portal:                                    │
+│ 1. Reels Calendar Tab: Preview all 30 videos with active players │
+│ 2. Wholesale Inquiries: Review incoming quote requests           │
+│ 3. Category Manager: View all 66 commercial SKUs                 │
+│ 4. Security Settings: Change your master admin passkey           │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+      <div class="quick-links" style="justify-content: flex-start;">
+        <a href="https://dataengineer-irfan.github.io/RAIS-AGENCIES/#admin" target="_blank" class="btn-link" style="background: #22c55e; color: #020617; border-color: #22c55e;">🚀 Click Here to Open Live Admin Portal Now</a>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -191,7 +191,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
         items: (items || []).map(i => ({
           product_id: i?.product_id,
           quantity: parseFloat(i?.quantity || 1),
-          unit_price: parseFloat(i?.unit_price || 0)
+          unit_price: parseFloat(i?.unit_price) > 0 ? parseFloat(i.unit_price) : undefined
         }))
       };
 

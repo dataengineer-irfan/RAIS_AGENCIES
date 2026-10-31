@@ -313,7 +313,7 @@ export const shareOrderOnWhatsApp = ({
 
   let lines = displayedItems.map((itm) => {
     const p = products.find(prod => prod.id === itm.product_id);
-    const name = p?.name || itm.product_name || 'Item';
+    const name = p?.name || itm.item_name || itm.item_description || itm.product_name || 'Item';
     const qty = itm.quantity || 1;
     const unit = itm.packaging_unit || p?.packaging_unit || 'PKT';
     return `▫️ ${name} (${unit}) × ${qty}`;

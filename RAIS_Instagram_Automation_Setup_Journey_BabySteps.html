@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How We Built The RAIS Instagram Automation — Baby Steps Setup Journey</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #060910;
+      color: #f8fafc;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .slide-viewport {
+      width: 90vw;
+      max-width: 1360px;
+      height: 82vh;
+      max-height: 780px;
+      position: relative;
+      background: #080c16;
+      border: 2px solid #d4af37;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(212,175,55,0.15);
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      padding: 45px 55px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      transform: translateX(30px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .slide-step {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      color: #d4af37;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .slide-title {
+      font-size: 27px;
+      font-weight: 800;
+      color: #f5da7a;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #d4af37;
+      padding-bottom: 12px;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      gap: 25px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: #101a30;
+      border: 1px solid rgba(212,175,55,0.4);
+      border-radius: 12px;
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #f5da7a;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .card-list li {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #e2e8f0;
+      position: relative;
+      padding-left: 22px;
+    }
+
+    .card-list li::before {
+      content: "✔";
+      position: absolute;
+      left: 0;
+      color: #25d366;
+      font-weight: bold;
+    }
+
+    .code-pill {
+      background: #030712;
+      color: #38bdf8;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 13px;
+      border: 1px solid #1e293b;
+    }
+
+    /* Title Slide Center Layout */
+    .title-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .gold-diamond-logo {
+      width: 100px;
+      height: 100px;
+      background: #101a30;
+      border: 3px solid #d4af37;
+      transform: rotate(45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 35px;
+      box-shadow: 0 0 30px rgba(212,175,55,0.3);
+    }
+
+    .gold-diamond-logo span {
+      transform: rotate(-45deg);
+      font-size: 54px;
+      font-weight: 900;
+      color: #f5da7a;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      background: #101a30;
+      border: 1px solid #d4af37;
+      color: #f5da7a;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #d4af37;
+      color: #080c16;
+    }
+
+    .counter {
+      font-size: 14px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .footer-bar {
+      position: absolute;
+      bottom: 12px;
+      left: 0; width: 100%;
+      text-align: center;
+      font-size: 11px;
+      color: #d4af37;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="slide-viewport">
+    
+    <!-- SLIDE 1: Title -->
+    <div class="slide title-slide active" data-slide="1">
+      <div class="gold-diamond-logo"><span>R</span></div>
+      <h1 style="font-size: 38px; font-weight: 900; color: #f5da7a; margin-bottom: 12px;">HOW WE BUILT THE RAIS INSTAGRAM AUTOMATION</h1>
+      <h2 style="font-size: 19px; font-weight: 700; color: #ffffff; margin-bottom: 20px;">The Complete Step-by-Step Technical Journey in Baby Steps</h2>
+      <p style="font-size: 14px; color: #d4af37; margin-bottom: 30px;">Instagram Business ➔ Facebook Page ➔ Meta Developers App ➔ Website Dashboard ➔ Automated API</p>
+      <p style="font-size: 12px; color: #94a3b8;">📍 RAIS Agencies, Rayachoty | Account: @raisfrozenfoods | WhatsApp: 9347453135</p>
+    </div>
+
+    <!-- SLIDE 2: Step 1 -->
+    <div class="slide" data-slide="2">
+      <div class="slide-step">STEP 1 OF 7</div>
+      <h2 class="slide-title">Step 1: Setting Up the Instagram Business Profile</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">📱 Why a Personal Account Can't Be Automated</div>
+          <ul class="card-list">
+            <li>Meta strictly blocks developer APIs from accessing personal Instagram accounts for security and privacy.</li>
+            <li>You went to <b>Settings &gt; Account Type &gt; Switch to Professional / Business Account</b>.</li>
+            <li>Selected the handle <span class="code-pill">@raisfrozenfoods</span> to build an authentic brand presence in Rayachoty.</li>
+            <li><b>Why Pronouns were skipped:</b> Pronoun fields are strictly for individual personal profiles; business brand profiles leave them empty.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔑 What This Unlocked</div>
+          <ul class="card-list">
+            <li>Enabled Instagram Graph API backend access.</li>
+            <li>Allowed placing our external 66-SKU digital catalogue link in the bio.</li>
+            <li>Enabled direct WhatsApp, Call, and Email action buttons on the profile.</li>
+            <li>Prepared the profile to connect to a Facebook Page in Step 2.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 3: Step 2 -->
+    <div class="slide" data-slide="3">
+      <div class="slide-step">STEP 2 OF 7</div>
+      <h2 class="slide-title">Step 2: Creating & Linking the Facebook Business Page</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">🔗 Why Meta Requires a Facebook Page</div>
+          <ul class="card-list">
+            <li><b>The Meta Rule:</b> Meta manages Instagram developer permissions through Facebook Business Manager. An Instagram account cannot exist in the developer API alone.</li>
+            <li><b>Creating the Page:</b> We created the official <b>RAIS Agencies</b> Facebook Business Page.</li>
+            <li><b>Connecting the Accounts:</b> Inside Instagram (<i>Edit Profile &gt; Page &gt; Connect Facebook Page</i>) and Facebook Page Settings (<i>Linked Accounts &gt; Instagram</i>), we linked <span class="code-pill">@raisfrozenfoods</span>.</li>
+            <li><b>The Result:</b> Any API command sent to the Facebook Page now has full authority to upload and publish Reels to your Instagram account!</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 4: Steps 3 & 4 -->
+    <div class="slide" data-slide="4">
+      <div class="slide-step">STEPS 3 & 4 OF 7</div>
+      <h2 class="slide-title">Steps 3 & 4: Meta for Developers App & Use Cases</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">🛠 Step 3: Meta for Developers</div>
+          <ul class="card-list">
+            <li>Navigated to Meta's official portal: <span class="code-pill">developers.facebook.com</span>.</li>
+            <li>Created a developer application named <b>RAIS Automation Hub</b>.</li>
+            <li>Selected App Type: <b>Business</b>.</li>
+            <li>Connected your Facebook Page & Instagram account under this app.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔒 Step 4: Adding the Use Cases</div>
+          <ul class="card-list">
+            <li>Added the <b>Instagram Content Publishing</b> use case.</li>
+            <li>Unlocked <span class="code-pill">instagram_content_publish</span> (Upload and publish video Reels).</li>
+            <li>Unlocked <span class="code-pill">instagram_basic</span> (Read profile info & post statuses).</li>
+            <li>Unlocked <span class="code-pill">pages_show_list</span> (Link Facebook Page to automation).</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 5: Step 5 -->
+    <div class="slide" data-slide="5">
+      <div class="slide-step">STEP 5 OF 7</div>
+      <h2 class="slide-title">Step 5: Generating Access Tokens & Finding Account ID</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">🔑 Extracting the Secret API Keys</div>
+          <ul class="card-list">
+            <li><b>Graph API Explorer:</b> Opened Meta's developer console (<code>developers.facebook.com/tools/explorer</code>).</li>
+            <li><b>Short-Lived User Token:</b> Generated an initial access token and authorized your account.</li>
+            <li><b>Long-Lived Token Exchange:</b> Because short-lived tokens expire in 1 hour, we exchanged it for a <b>60-day / permanent Long-Lived Token</b> so code runs unattended.</li>
+            <li><b>Finding the Instagram Account ID:</b> Queried <code>GET /me/accounts?fields=instagram_business_account</code>.</li>
+            <li><b>The Output:</b> Meta returned your permanent Instagram Business Account ID: <span class="code-pill">29157923917158606</span>.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 6: Step 6 -->
+    <div class="slide" data-slide="6">
+      <div class="slide-step">STEP 6 OF 7</div>
+      <h2 class="slide-title">Step 6: Website Integration (.env & Reels Calendar Tab)</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">🔐 Secret Storage in .env</div>
+          <ul class="card-list">
+            <li>Stored keys securely in <span class="code-pill">.env</span> (never uploaded to public GitHub):</li>
+            <li><span class="code-pill">VITE_INSTAGRAM_ACCESS_TOKEN</span> = [Secret Long-Lived Token]</li>
+            <li><span class="code-pill">VITE_INSTAGRAM_ACCOUNT_ID</span> = 29157923917158606</li>
+            <li><span class="code-pill">VITE_INSTAGRAM_USERNAME</span> = raisfrozenfoods</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">💻 The New Website Features</div>
+          <ul class="card-list">
+            <li><b>Reels Calendar Tab:</b> Built into the website (<span class="code-pill">src/data/reelsCalendar.ts</span>) showing all 30 reels with live video previews.</li>
+            <li><b>Digital 66-SKU Catalogue:</b> Created <span class="code-pill">catalogue.html</span> with live search, filtering, and instant WhatsApp ordering.</li>
+            <li><b>Navigation & Footer:</b> Added direct buttons for Instagram DM and WhatsApp 9347453135.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 7: Step 7 -->
+    <div class="slide" data-slide="7">
+      <div class="slide-step">STEP 7 OF 7</div>
+      <h2 class="slide-title">Step 7: How Our Python Code Publishes to Instagram</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">⚡ The 4-Step Automated Publishing Protocol</div>
+          <ul class="card-list">
+            <li><b>1. Video Upload to CDN:</b> Meta API cannot read local C: drive files. The script uploads the 7.6MB MP4 to a public CDN (<span class="code-pill">uguu.se</span>) to get a direct HTTPS stream URL.</li>
+            <li><b>2. Container Creation:</b> Python sends a POST request to <code>https://graph.instagram.com/29157923917158606/media</code> with <code>media_type='REELS'</code>, the video URL, and clean Telugu/Hindi caption.</li>
+            <li><b>3. Transcode Polling:</b> Meta servers transcode the video. Python polls Meta every 4 seconds until status reaches <code>FINISHED</code>.</li>
+            <li><b>4. Live Broadcast:</b> Python calls <code>/media_publish</code>. The video instantly appears live on your profile grid! Python then posts a pinned top comment with clickable WhatsApp links.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 8: Summary -->
+    <div class="slide" data-slide="8">
+      <div class="slide-step">COMPLETE BLUEPRINT</div>
+      <h2 class="slide-title">Summary: The Full Automation Pipeline at a Glance</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">1. Accounts</div>
+          <p style="font-size: 13px; color: #cbd5e1;">@raisfrozenfoods Instagram Business linked to RAIS Agencies Facebook Page.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">2. Meta App</div>
+          <p style="font-size: 13px; color: #cbd5e1;">RAIS Automation Hub with Instagram Content Publishing permissions.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">3. Tokens</div>
+          <p style="font-size: 13px; color: #cbd5e1;">Long-Lived Access Token + Account ID 29157923917158606 stored in .env.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">4. Live Code</div>
+          <p style="font-size: 13px; color: #cbd5e1;">Python script posts videos directly to Instagram with verified top comments!</p>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="prevSlide()">◀ Previous</button>
+    <span class="counter" id="slideCounter">Slide 1 of 8</span>
+    <button class="btn" onclick="nextSlide()">Next ▶</button>
+  </div>
+
+  <script>
+    let current = 1;
+    const total = 8;
+
+    function showSlide(n) {
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      const active = document.querySelector(`.slide[data-slide="${n}"]`);
+      if (active) active.classList.add('active');
+      document.getElementById('slideCounter').innerText = `Slide ${n} of ${total}`;
+    }
+
+    function nextSlide() {
+      if (current < total) current++;
+      else current = 1;
+      showSlide(current);
+    }
+
+    function prevSlide() {
+      if (current > 1) current--;
+      else current = total;
+      showSlide(current);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+  </script>
+</body>
+</html>

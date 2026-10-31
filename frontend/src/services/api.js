@@ -399,6 +399,10 @@ export const orderApi = {
     const res = await api.post(`/orders/${id}/convert-to-invoice`);
     return res.data;
   },
+  cancel: async (id, reason) => {
+    const res = await api.post(`/orders/${id}/cancel`, null, { params: reason ? { reason } : {} });
+    return res.data;
+  },
   getPrintHtmlUrl: (id) => `${API_BASE_URL}/orders/${id}/print-html`
 };
 

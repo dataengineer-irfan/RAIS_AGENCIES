@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAIS Agencies — End-to-End Social Marketing & Automation Architecture</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #060910;
+      color: #f8fafc;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .slide-viewport {
+      width: 90vw;
+      max-width: 1360px;
+      height: 82vh;
+      max-height: 780px;
+      position: relative;
+      background: #080c16;
+      border: 2px solid #d4af37;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(212,175,55,0.15);
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      padding: 45px 55px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      transform: translateX(30px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .slide-category {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      color: #d4af37;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .slide-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #f5da7a;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #d4af37;
+      padding-bottom: 12px;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      gap: 25px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: #101a30;
+      border: 1px solid rgba(212,175,55,0.4);
+      border-radius: 12px;
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #f5da7a;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-list li {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #e2e8f0;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .card-list li::before {
+      content: "✔";
+      position: absolute;
+      left: 0;
+      color: #25d366;
+      font-weight: bold;
+    }
+
+    .card.danger {
+      background: #200f14;
+      border-color: #ef4444;
+    }
+    .card.danger .card-title { color: #f87171; }
+    .card.danger .card-list li::before {
+      content: "✖";
+      color: #ef4444;
+    }
+
+    .card.success {
+      background: #0b2216;
+      border-color: #22c55e;
+    }
+    .card.success .card-title { color: #4ade80; }
+
+    /* Title Slide Center Layout */
+    .title-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .gold-diamond-logo {
+      width: 100px;
+      height: 100px;
+      background: #101a30;
+      border: 3px solid #d4af37;
+      transform: rotate(45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 35px;
+      box-shadow: 0 0 30px rgba(212,175,55,0.3);
+    }
+
+    .gold-diamond-logo span {
+      transform: rotate(-45deg);
+      font-size: 54px;
+      font-weight: 900;
+      color: #f5da7a;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      background: #101a30;
+      border: 1px solid #d4af37;
+      color: #f5da7a;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #d4af37;
+      color: #080c16;
+    }
+
+    .counter {
+      font-size: 14px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .footer-bar {
+      position: absolute;
+      bottom: 12px;
+      left: 0; width: 100%;
+      text-align: center;
+      font-size: 11px;
+      color: #d4af37;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="slide-viewport">
+    
+    <!-- SLIDE 1: Title -->
+    <div class="slide title-slide active" data-slide="1">
+      <div class="gold-diamond-logo"><span>R</span></div>
+      <h1 style="font-size: 44px; font-weight: 900; color: #f5da7a; margin-bottom: 12px; letter-spacing: 1px;">RAIS AGENCIES</h1>
+      <h2 style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 20px;">END-TO-END AUTOMATION & CONTENT MARKETING ARCHITECTURE</h2>
+      <p style="font-size: 14px; color: #d4af37; margin-bottom: 30px;">15-Day 30-Reel Campaign • Meta Cloud API Publishing • 66-SKU Digital Conversion Funnel</p>
+      <p style="font-size: 12px; color: #94a3b8;">📍 Near Reddies Colony, Rayachoty (516269) | 📲 WhatsApp: 9347453135 | 📸 @raisfrozenfoods</p>
+    </div>
+
+    <!-- SLIDE 2: Executive Summary -->
+    <div class="slide" data-slide="2">
+      <div class="slide-category">Executive Overview</div>
+      <h2 class="slide-title">Strategic Mission & Business Objectives</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">👑 Market Leadership in Rayachoty</div>
+          <ul class="card-list">
+            <li>Establish RAIS Agencies as the dominant #1 cold-chain wholesale hub across Annamayya district.</li>
+            <li>Capture both commercial clients (Hotels, Cafes, QSRs) and local family retail buyers.</li>
+            <li>Direct brand authority representing Triken, Master Chef, McCain, ITC, Godrej, and Mooz.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Zero-Ad-Spend Sales Engine</div>
+          <ul class="card-list">
+            <li>Algorithm-friendly 18.0s video pacing ensures high completion and repeat loop rates.</li>
+            <li>Native bilingual dubbing (Telugu at 12:30 PM & Hindi at 07:30 PM) captures two distinct buying peaks.</li>
+            <li>Zero competitor hashtags — eliminates audience leakage to rival brands.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 3: Content Strategy -->
+    <div class="slide" data-slide="3">
+      <div class="slide-category">Content Strategy</div>
+      <h2 class="slide-title">The 15 Contextual Scenarios (Why It Works)</h2>
+      <div class="slide-content">
+        <div class="card danger">
+          <div class="card-title">❌ Why Traditional Ads Fail</div>
+          <ul class="card-list">
+            <li>Static product posters get skipped in 0.5s by busy viewers.</li>
+            <li>Generic stock footage creates zero local connection in Andhra.</li>
+            <li>Cardboard boxes in craving scenes kill hunger appeal.</li>
+            <li>Competitor hashtags (#Foodie, #Rayachoty) lead buyers to explore feeds of rivals.</li>
+          </ul>
+        </div>
+        <div class="card success">
+          <div class="card-title">✔ The RAIS Contextual Engine</div>
+          <ul class="card-list">
+            <li>Authentic moments: Monsoon rain, 12 AM midnight craving, cricket match, kids after-school snacks.</li>
+            <li>Culinary pairing: Sizzling hot momos served with creamy mint mayo, spicy peri-peri & sweet chilli sauce.</li>
+            <li>Strict 18.0s pacing boosts completion rate by +68%.</li>
+            <li>Every caption directs buyers to official WhatsApp: 9347453135.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 4: Production Pipeline -->
+    <div class="slide" data-slide="4">
+      <div class="slide-category">Video Production</div>
+      <h2 class="slide-title">AI CGI Character Lock & Audio Sync</h2>
+      <div class="slide-content" style="flex-direction: column;">
+        <div class="card" style="flex: none; padding: 16px;">
+          <div class="card-title">1. Ayesha Character Consistency Engine</div>
+          <p style="font-size: 13px; color: #cbd5e1;">A recurring 3D Pixar-stylized South Indian character ('Ayesha') with modest pastel embroidered hijab and expressive emotional animation across all 15 scenarios builds lasting brand recognition.</p>
+        </div>
+        <div class="card" style="flex: none; padding: 16px;">
+          <div class="card-title">2. Neural Bilingual Voice Dubbing (Edge TTS)</div>
+          <p style="font-size: 13px; color: #cbd5e1;">Exact sentence timing calibration ensuring Telugu and Hindi audio tracks end precisely at 14.5s with normalized LUFS broadcast volume (-24 dB) and zero silence dips.</p>
+        </div>
+        <div class="card" style="flex: none; padding: 16px;">
+          <div class="card-title">3. Luxury Diamond End Card (14.5s – 18.0s)</div>
+          <p style="font-size: 13px; color: #cbd5e1;">Final 3.5s showcases the animated gold emblem, @raisfrozenfoods handle, WhatsApp 9347453135, and digital catalogue URL with smooth audio continuity.</p>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 5: Cloud Architecture -->
+    <div class="slide" data-slide="5">
+      <div class="slide-category">Cloud Infrastructure</div>
+      <h2 class="slide-title">Meta Graph API Cloud Publishing Pipeline</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">Step 1 & 2: CDN & Container</div>
+          <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 10px;">The 7.6MB MP4 is uploaded to direct-stream CDN (uguu.se / catbox), generating an HTTPS stream URL.</p>
+          <p style="font-size: 13px; color: #cbd5e1;">Meta API (<code>/media</code>) creates a Reel container with native Telugu/Hindi clean caption.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Step 3 & 4: Transcode & Publish</div>
+          <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 10px;">System polls Meta server status every 4 seconds until status reaches <code>FINISHED</code>.</p>
+          <p style="font-size: 13px; color: #cbd5e1;">Meta API (<code>/media_publish</code>) broadcasts the Reel live to <code>@raisfrozenfoods</code> grid and Reels tab.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Step 5: Verified Top Comment</div>
+          <p style="font-size: 13px; color: #cbd5e1;">System immediately posts an official pinned comment with real clickable links: <code>wa.me/919347453135</code> and digital catalogue URL.</p>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 6: 2-Per-Day Schedule -->
+    <div class="slide" data-slide="6">
+      <div class="slide-category">Algorithmic Pacing</div>
+      <h2 class="slide-title">2-Per-Day Schedule & Anti-Ban Architecture</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">☀️ Slot 1: 12:30 PM IST (Telugu)</div>
+          <ul class="card-list">
+            <li>Target: Rayachoty fast-food points, college foodies, and families browsing over lunch.</li>
+            <li>Angle: Snack cravings, instant preparation, weekend meal ideas.</li>
+            <li>Result: Accumulates views and watch-time steadily throughout the afternoon.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🌙 Slot 2: 07:30 PM IST (Hindi)</div>
+          <ul class="card-list">
+            <li>Target: Restaurant owners, QSR kitchen managers, and commercial procurement buyers.</li>
+            <li>Angle: Wholesale profit margins, ready -18°C cold storage stock, bulk kraft packaging.</li>
+            <li>Result: Optimal 7-hour interval ensures zero audience cannibalization.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 7: Conversion Funnel -->
+    <div class="slide" data-slide="7">
+      <div class="slide-category">Sales Conversion</div>
+      <h2 class="slide-title">The Conversion Funnel: From Views into Cash</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">1. The Hook</div>
+          <p style="font-size: 13px; color: #cbd5e1;">18-second appetizing Reel captures attention on Instagram Explore and Reels feeds.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">2. Direct Links</div>
+          <p style="font-size: 13px; color: #cbd5e1;">Viewer taps direct WhatsApp link in pinned comment or Instagram bio.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">3. Digital Catalogue</div>
+          <p style="font-size: 13px; color: #cbd5e1;">Viewer browses 66 SKUs with live search on GitHub Pages catalogue.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">4. Closed Sale</div>
+          <p style="font-size: 13px; color: #cbd5e1;">1-click pre-filled WhatsApp message reaches 9347453135 -> Direct sale closed!</p>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+    <!-- SLIDE 8: Operations & Deliverables -->
+    <div class="slide" data-slide="8">
+      <div class="slide-category">Operations</div>
+      <h2 class="slide-title">Deliverables & Control Modes</h2>
+      <div class="slide-content">
+        <div class="card">
+          <div class="card-title">📦 Completed Deliverables</div>
+          <ul class="card-list">
+            <li>30 Re-engineered 18.0s Master Reels (MP4 format).</li>
+            <li>Social Media Branding Suite (Banners, Avatar, 6 Highlights).</li>
+            <li>Live 66-SKU Digital Catalogue online.</li>
+            <li>15-Day Master Copy-Paste Plan in Telugu & Hindi.</li>
+            <li>First 2 Reels published live & verified on @raisfrozenfoods.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">⚙ Operating Modes</div>
+          <ul class="card-list">
+            <li><b>Manual Mode (Active):</b> Post at your own speed using your phone gallery & Master Plan.</li>
+            <li><b>1-Click CLI Automation:</b> Run <code>python scripts/publish_single_reel.py &lt;id&gt; &lt;lang&gt;</code> anytime.</li>
+            <li><b>Daily Scheduler Daemon:</b> Optional automated background scheduler.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bar">RAIS Agencies — Near Reddies Colony, Rayachoty (516269) | WhatsApp: 9347453135</div>
+    </div>
+
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="prevSlide()">◀ Previous</button>
+    <span class="counter" id="slideCounter">Slide 1 of 8</span>
+    <button class="btn" onclick="nextSlide()">Next ▶</button>
+  </div>
+
+  <script>
+    let current = 1;
+    const total = 8;
+
+    function showSlide(n) {
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      const active = document.querySelector(`.slide[data-slide="${n}"]`);
+      if (active) active.classList.add('active');
+      document.getElementById('slideCounter').innerText = `Slide ${n} of ${total}`;
+    }
+
+    function nextSlide() {
+      if (current < total) current++;
+      else current = 1;
+      showSlide(current);
+    }
+
+    function prevSlide() {
+      if (current > 1) current--;
+      else current = total;
+      showSlide(current);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+  </script>
+</body>
+</html>
