@@ -283,6 +283,15 @@ class RecommendationService:
                     "pack_size": 100,
                     "default_packs": 5,
                     "margin_estimate": "28% - 32%",
+                    "client_need": "Chicken outlets buy breading from RAIS, but source takeaway buckets from external retailers.",
+                    "client_benefits": [
+                        "1-Stop Van Delivery: Delivered directly with their chicken breading order on the same invoice.",
+                        "Stops Soggy Crusts: Ventilated steam-release lids keep fried chicken crispy during delivery.",
+                        "15% Price Advantage: Bulk wholesale case pricing vs local retail packaging markups.",
+                        "Zero Peak Stockouts: Guaranteed stock prevents emergency runs during busy weekend rushes."
+                    ],
+                    "rais_benefit": "Immediate cross-sell to active chicken accounts. Generates ₹20,400/mo extra turnover at ~30% wholesale profit (+₹6,120 net margin).",
+                    "pitch_line": "Offer 1 trial pack of 100 buckets with their next 10 KG VKL Breading order.",
                     "strategic_rationale": "High volume of VKL Breading & chicken cuts sold in Rayachoty & Madanapalle. Outlets currently buy generic buckets from external vendors, causing packaging supply friction."
                 },
                 {
@@ -309,6 +318,15 @@ class RecommendationService:
                     "pack_size": 1000,
                     "default_packs": 4,
                     "margin_estimate": "30% - 35%",
+                    "client_need": "Shawarma counters buy Tortillas & Tandoori Mayo from RAIS, but wrap rolls in cheap newspaper that leaks oil.",
+                    "client_benefits": [
+                        "Food-Grade Greaseproof Barrier: Prevents oil and mayonnaise from leaking through into customer hands.",
+                        "Heat Retention: Retains roll warmth during parcel takeaways and two-wheeler delivery.",
+                        "1-Stop Ordering: Single delivery van for tortillas, sauces, and wrapping paper.",
+                        "Wholesale Cost: 1000 sheets for ₹480 (less than 48 paise per roll wrap)."
+                    ],
+                    "rais_benefit": "High-turnover consumable item. Adds ₹19,200/mo extra turnover at 32% margin (+₹6,144 profit/mo).",
+                    "pitch_line": "Bundle 1 pack of 1000 greaseproof wrap sheets with every 10 packets of Signature Tortillas.",
                     "strategic_rationale": "Consistent demand for Signature Tortillas & Tandoori Mayo across Rayalaseema shawarma counters. Greaseproof wrapping paper completes their order basket."
                 },
                 {
@@ -335,6 +353,15 @@ class RecommendationService:
                     "pack_size": 50,
                     "default_packs": 8,
                     "margin_estimate": "32% - 38%",
+                    "client_need": "Cafes buy syrups and frozen fries from RAIS, but buy low-grade cups from local plastic merchants.",
+                    "client_benefits": [
+                        "Ultra-Clear Presentation: Heavy-gauge crystal PET shows beverage gradient colors and fresh mint leaves.",
+                        "Snap-Lock Dome Lids: Completely leak-proof for takeaway mocktails and thick shakes.",
+                        "Doorstep Delivery: Eliminates café owner trips to wholesale packaging markets.",
+                        "Case Discount: ₹220 per 50 units (saves ₹30/pack compared to retail plastic shops)."
+                    ],
+                    "rais_benefit": "Steady reorder cycle. Captures ₹17,600/mo extra turnover at 35% margin (+₹6,160 profit/mo).",
+                    "pitch_line": "Order cold cups on the same invoice as syrups to get free doorstep delivery.",
                     "strategic_rationale": "Cafes purchasing Lime & Mint and Bluecurco syrups require heavy gauge 350ml cold cups with dome lids. Adding this SKU captures beverage takeout packaging margins."
                 },
                 {
@@ -348,7 +375,8 @@ class RecommendationService:
                         "sku": "RAIS-PKG-03",
                         "name": "FOOD-GRADE NEWSPAPER-PRINT BURGER BUTTER PAPER (1000 SHEETS)",
                         "brand": "Packaging Solutions",
-                        "category_code": "PACKAGING",
+                        "category_id": pkg_cat_id,
+                        "category_name": pkg_cat_name,
                         "packaging_unit": "1000 SHEETS",
                         "base_price": 420.00,
                         "tax_rate": 18.00,
@@ -360,6 +388,15 @@ class RecommendationService:
                     "pack_size": 1000,
                     "default_packs": 4,
                     "margin_estimate": "25% - 30%",
+                    "client_need": "Burger outlets buy patties and cheese slices from RAIS, but serve burgers in plain paper bags.",
+                    "client_benefits": [
+                        "Gourmet Presentation: Vintage newspaper print gives modern QSR cafe branding to burgers and fries baskets.",
+                        "Non-Stick Grease Resistance: Melted cheese and sauces do not stick to the wrapper.",
+                        "Economical Packaging: 1000 sheets for ₹420 (less than 42 paise per burger wrap).",
+                        "Bundled Supply: Reorder alongside frozen patties and cheese slices."
+                    ],
+                    "rais_benefit": "Consistently consumed with every patty sold. Adds ₹16,800/mo revenue at 28% margin (+₹4,704 profit/mo).",
+                    "pitch_line": "Upgrade their burger presentation for less than 42 paise per burger.",
                     "strategic_rationale": "Outlets purchasing Nutrich/Chilli Fill burger patties and cheese slices currently use generic packaging. Custom newspaper print greaseproof sheets provide upscale QSR presentation."
                 },
                 {
@@ -373,7 +410,8 @@ class RecommendationService:
                         "sku": "RAIS-BOX-06",
                         "name": "PIZZA BOX 10\"x10\" CORRUGATED (100 NOS)",
                         "brand": "Packaging Solutions",
-                        "category_code": "PACKAGING",
+                        "category_id": pkg_cat_id,
+                        "category_name": pkg_cat_name,
                         "packaging_unit": "100 NOS",
                         "base_price": 820.00,
                         "tax_rate": 18.00,
@@ -385,6 +423,15 @@ class RecommendationService:
                     "pack_size": 100,
                     "default_packs": 5,
                     "margin_estimate": "26% - 30%",
+                    "client_need": "Pizzerias buy Mozzarella and sauces from RAIS, but catalogue only has 8\" boxes while 10\" is the top seller.",
+                    "client_benefits": [
+                        "Heavy-Duty E-Flute Corrugation: Rigid structure prevents crushed boxes during bike deliveries.",
+                        "Crust Crispness Vents: Built-in steam escape holes stop pizza crust from getting soggy.",
+                        "Standard 10\" Size: Fits 80% of regional QSR medium pizza delivery orders.",
+                        "Delivered With Cheese: Shipped in the same cold van as Milky Mist Mozzarella."
+                    ],
+                    "rais_benefit": "Largest volume opportunity. Adds ₹32,800/mo extra turnover at 28% margin (+₹9,184 profit/mo).",
+                    "pitch_line": "Stock 10-inch boxes directly alongside their Milky Mist Mozzarella cheese delivery.",
                     "strategic_rationale": "Master catalogue currently only stocks 8\"x8\" pizza boxes (RAIS-BOX-01/03). High cheese consumption indicates significant demand for medium 10\" delivery boxes."
                 }
             ]
@@ -512,6 +559,10 @@ class RecommendationService:
                     "ratio_desc": blueprint["ratio_desc"],
                     "margin_estimate": blueprint["margin_estimate"],
                     "strategic_rationale": blueprint["strategic_rationale"],
+                    "client_need": blueprint.get("client_need", ""),
+                    "client_benefits": blueprint.get("client_benefits", []),
+                    "rais_benefit": blueprint.get("rais_benefit", ""),
+                    "pitch_line": blueprint.get("pitch_line", ""),
                     "active_accounts_count": len(format_customer_ids),
                     "sample_customers": sample_customers_list[:4],
                     "cities_served": sorted(list(cities_set)) if cities_set else ["Rayachoty"],

@@ -44,7 +44,9 @@ import {
   RefreshCw,
   Store,
   MapPin,
-  Layers
+  Layers,
+  Award,
+  ShoppingBag
 } from 'lucide-react';
 import { inventoryApi, catalogueApi, billingApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -1139,55 +1141,55 @@ export const InventoryPage = () => {
                 </div>
 
                 {/* 4 Inspector Tabs */}
-                <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-800/80 overflow-x-auto no-scrollbar shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-3 pt-2 border-t border-slate-800/80 overflow-x-auto custom-scrollbar shrink-0 pb-1 pr-6">
                   <button
                     onClick={() => setActiveInspectorTab('dossier')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'dossier'
-                        ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <Boxes className="w-3.5 h-3.5" />
-                    <span>360° Stock Dossier</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveInspectorTab('lineage')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
-                      activeInspectorTab === 'lineage'
-                        ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <History className="w-3.5 h-3.5" />
-                    <span>Live Stock Lineage ({movementsData.length})</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveInspectorTab('velocity')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
-                      activeInspectorTab === 'velocity'
-                        ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>Sales Velocity & Run-Rate</span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveInspectorTab('radar')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
-                      activeInspectorTab === 'radar'
                         ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
+                    <Boxes className="w-3.5 h-3.5" />
+                    <span>Stock Dossier</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveInspectorTab('lineage')}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
+                      activeInspectorTab === 'lineage'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span>Stock Lineage ({movementsData.length})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveInspectorTab('velocity')}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
+                      activeInspectorTab === 'velocity'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>Sales Run-Rate</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveInspectorTab('radar')}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
+                      activeInspectorTab === 'radar'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm font-black ring-1 ring-amber-400/50'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
                     <Target className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Regional Demand Radar</span>
+                    <span>Demand Radar</span>
                     {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
-                      <span className="px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded-full text-[9px] font-black">
+                      <span className="px-1.5 py-0.5 bg-slate-950 text-amber-400 rounded-full text-[9px] font-black border border-amber-400/30">
                         {demandRadarData.summary.identified_procurement_gaps}
                       </span>
                     )}
@@ -1721,7 +1723,7 @@ export const InventoryPage = () => {
                   </div>
                 )}
 
-                {/* ─── TAB 4: REGIONAL DEMAND GAP & PROCUREMENT RADAR ─── */}
+                {/* ─── TAB 4: REGIONAL DEMAND & CROSS-SELL RADAR ─── */}
                 {activeInspectorTab === 'radar' && (
                   <div className="space-y-3">
                     {/* Executive KPI Territory Ribbon */}
@@ -1737,11 +1739,12 @@ export const InventoryPage = () => {
                               Trailing 60 Days Live SQL Audit
                             </span>
                           </div>
-                          <h4 className="text-xs sm:text-sm font-black text-white mt-1">
-                            Rayalaseema QSR Supply Corridor: Food Format Auxiliary Radar
+                          <h4 className="text-xs sm:text-sm font-black text-white mt-1 flex items-center gap-1.5">
+                            <Target className="w-4 h-4 text-amber-400" />
+                            <span>Regional Demand & Cross-Sell Radar</span>
                           </h4>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            Detects commercial packaging & auxiliary gaps correlated with active food ingredient purchases across Rayachoty, Madanapalle & Kadapa routes.
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                            <strong className="text-amber-300">Packaging Gaps for Active Food Clients:</strong> Your food clients buy ingredients from RAIS, but purchase packaging elsewhere. Bundle packaging to increase turnover and prevent client stockouts.
                           </p>
                         </div>
 
@@ -1758,35 +1761,35 @@ export const InventoryPage = () => {
                       {/* 4 Territory Summary Metrics */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Food Accounts</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Food Outlets</span>
                           <span className="text-base font-black text-white font-mono mt-0.5 block">
                             {demandRadarData?.summary?.total_active_accounts || 0} Accounts
                           </span>
-                          <span className="text-[9px] text-slate-500">Trailing 60 days</span>
+                          <span className="text-[9px] text-slate-500">Buying food ingredients</span>
                         </div>
 
                         <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Identified Catalog Gaps</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Missing Catalog SKUs</span>
                           <span className={`text-base font-black font-mono mt-0.5 block ${
                             (demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 ? 'text-amber-400' : 'text-emerald-400'
                           }`}>
                             {demandRadarData?.summary?.identified_procurement_gaps ?? 0} Missing SKUs
                           </span>
-                          <span className="text-[9px] text-slate-500">Immediate demand</span>
+                          <span className="text-[9px] text-slate-500">Immediate demand gap</span>
                         </div>
 
                         <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Est. Revenue Gap</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Monthly Revenue Upside</span>
                           <span className="text-base font-black text-emerald-400 font-mono mt-0.5 block">
                             ₹{(demandRadarData?.summary?.total_monthly_revenue_opportunity || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })} / mo
                           </span>
-                          <span className="text-[9px] text-slate-500">Packaging turnover</span>
+                          <span className="text-[9px] text-slate-500">Cross-sell packaging</span>
                         </div>
 
                         <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Avg. Gross Margin</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Avg. Gross Profit</span>
                           <span className="text-base font-black text-cyan-400 font-mono mt-0.5 block">
-                            {demandRadarData?.summary?.avg_gross_margin_pct || 31}%
+                            {demandRadarData?.summary?.avg_gross_margin_pct || 31}% Margin
                           </span>
                           <span className="text-[9px] text-slate-500">Direct wholesale margin</span>
                         </div>
@@ -1814,11 +1817,11 @@ export const InventoryPage = () => {
                                   : 'bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/20 border-amber-500/40 shadow-lg shadow-amber-500/5'
                               }`}
                             >
-                              {/* Card Header */}
+                              {/* 1. Card Header: Client Target & Active Food Orders */}
                               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-2.5 border-b border-slate-800/80">
                                 <div>
                                   <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-xs font-black text-white">
+                                    <span className="text-xs sm:text-sm font-black text-white">
                                       {format.format_title}
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-400 bg-slate-800/90 px-2 py-0.5 rounded">
@@ -1829,9 +1832,10 @@ export const InventoryPage = () => {
                                     </span>
                                   </div>
 
-                                  {/* Associated Ingredients & Active Accounts */}
+                                  {/* Client Footprint: Accounts & What They Currently Buy from RAIS */}
                                   <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-400">
-                                    <span className="text-amber-400 font-mono font-bold">
+                                    <span className="text-amber-400 font-mono font-bold flex items-center gap-1">
+                                      <ShoppingBag className="w-3 h-3 text-amber-400" />
                                       {format.historical_consumption_label}
                                     </span>
                                     <span className="text-slate-600">•</span>
@@ -1868,31 +1872,70 @@ export const InventoryPage = () => {
                                 </div>
                               </div>
 
-                              {/* Rationale & Consumption Ratio */}
-                              <div className="py-2.5 text-xs text-slate-300 space-y-1.5">
-                                <p className="text-[11px] text-slate-400 leading-relaxed">
-                                  <strong className="text-slate-300 font-semibold">Strategic Rationale: </strong>
-                                  {format.strategic_rationale}
-                                </p>
-
-                                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px]">
-                                  <div className="bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-800">
-                                    <span className="text-slate-500">Conversion Ratio: </span>
-                                    <strong className="text-slate-200 font-mono">{format.ratio_desc}</strong>
-                                  </div>
-                                  <div className="bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-800">
-                                    <span className="text-slate-500">Corridor Run-Rate: </span>
-                                    <strong className="text-amber-400 font-mono">{format.derived_packaging_demand}</strong>
-                                  </div>
-                                  <div className="bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-800">
-                                    <span className="text-slate-500">Gross Margin: </span>
-                                    <strong className="text-emerald-400 font-mono">{format.margin_estimate}</strong>
+                              {/* 2. Structured Value Proposition: Client Benefit vs Commercial Upside */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 my-2.5">
+                                
+                                {/* Box A: Direct Client Benefits (Why do your hotel/QSR clients want this?) */}
+                                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300 mb-2">
+                                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>Direct Client Benefits</span>
+                                    </div>
+                                    <ul className="space-y-1.5 text-[11px] text-slate-300">
+                                      {(format.client_benefits || [
+                                        "1-Stop Van Delivery directly with food ingredient orders on the same invoice.",
+                                        "Prevents soggy food during delivery with steam-release food packaging.",
+                                        "15% wholesale price savings vs local retail packaging vendors.",
+                                        "Zero weekend stockouts during peak parcel and takeaway rushes."
+                                      ]).map((benefit, bIdx) => (
+                                        <li key={bIdx} className="flex items-start gap-1.5">
+                                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
+                                          <span className="leading-snug">{benefit}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
                                   </div>
                                 </div>
+
+                                {/* Box B: RAIS Revenue & Profit Upside (Commercial Benefit) */}
+                                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 mb-2">
+                                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span>RAIS Revenue & Profit Upside</span>
+                                    </div>
+                                    <div className="space-y-2 text-[11px]">
+                                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                                        <span className="text-slate-400">Monthly Revenue Upside:</span>
+                                        <span className="font-mono font-black text-white text-xs">
+                                          +₹{(format.estimated_monthly_revenue || 0).toLocaleString('en-IN')} / mo
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                                        <span className="text-slate-400">Wholesale Gross Margin:</span>
+                                        <span className="font-mono font-bold text-emerald-400">
+                                          {format.margin_estimate}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                                        <span className="text-slate-400">Client Packaging Demand:</span>
+                                        <span className="font-mono text-amber-300 font-bold">
+                                          {format.derived_packaging_demand}
+                                        </span>
+                                      </div>
+                                      <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 text-[10px] text-amber-200 flex items-start gap-1">
+                                        <Sparkles className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
+                                        <span><strong>Sales Pitch:</strong> {format.pitch_line || `Bundle packaging with their active ingredient order for 1-stop delivery.`}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
                               </div>
 
-                              {/* Recommended SKU Box & Action */}
-                              <div className="mt-2 p-2.5 sm:p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              {/* 3. Recommended SKU Box & 1-Click Action */}
+                              <div className="p-2.5 sm:p-3 bg-slate-900 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2">
                                     <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-black rounded">
@@ -1912,11 +1955,11 @@ export const InventoryPage = () => {
                                     <span className="text-slate-600">|</span>
                                     <span>GST: <strong className="text-slate-300">{rec.tax_rate}%</strong></span>
                                     <span className="text-slate-600">|</span>
-                                    <span>Est. Monthly: <strong className="text-amber-400">₹{format.estimated_monthly_revenue?.toLocaleString('en-IN')}</strong> ({format.estimated_monthly_packs} packs)</span>
+                                    <span>Est. Turnover: <strong className="text-amber-400">₹{format.estimated_monthly_revenue?.toLocaleString('en-IN')}</strong> ({format.estimated_monthly_packs} packs/mo)</span>
                                   </div>
                                 </div>
 
-                                {/* 1-Click Button */}
+                                {/* 1-Click Action */}
                                 <div className="shrink-0">
                                   {isInCatalog ? (
                                     <button
