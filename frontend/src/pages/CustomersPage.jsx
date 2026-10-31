@@ -59,7 +59,7 @@ export const CustomersPage = ({
     return items.length === 0;
   });
   
-  // Slicers & Filter State (Power BI Style)
+  // Slicers & Filter State (Analytics Slicers)
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, ACTIVE, INACTIVE
   const [areaFilter, setAreaFilter] = useState('ALL'); // ALL, Rayachoty, Madanapalle, Kadapa, Chinnamandem
@@ -200,7 +200,7 @@ export const CustomersPage = ({
     setSortBy('BALANCE_DESC');
   };
 
-  // ─── POWER BI REACTIVE SLICING & FILTERING ───
+  // ─── RAIS REACTIVE SLICING & FILTERING ───
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => {
       // 1. Omni-Search Query: Matches Outlet name, contact person, customer code, phone, area, and purchased products/SKUs!
@@ -536,7 +536,7 @@ export const CustomersPage = ({
         </button>
       </div>
 
-      {/* ─── ROW 3: POWER BI MASTER-DETAIL SPLIT CANVAS ─── */}
+      {/* ─── ROW 3: RAIS MASTER-DETAIL SPLIT CANVAS ─── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
         
         {/* ─── LEFT MASTER PANE (38% Width = 5 cols) ─── */}

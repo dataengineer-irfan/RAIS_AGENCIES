@@ -14,6 +14,7 @@ from app.services.forecasting_service import ForecastingService
 from app.services.thermal_print_service import ThermalPrintService
 from datetime import date
 from app.core.datetime_utils import get_ist_today
+from app.core.weight_utils import extract_unit_weight_kg
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & Intelligence"])
 
@@ -182,7 +183,7 @@ def get_metric_drilldown(
         prods_query = prods_query.filter(Product.category_id == category_id)
     all_prods = prods_query.all()
 
-    # Precompute product-level metrics in memory (<1ms)
+    # Precompute product-level commercial metrics in memory (<1ms)
     prod_metrics = {}
     for p in all_prods:
         p_units, p_rev = sales_map.get(p.id, (Decimal("0"), Decimal("0")))
@@ -196,10 +197,15 @@ def get_metric_drilldown(
 
         p_profit = p_rev - p_cost
         margin_pct = (p_profit / p_rev * 100) if p_rev > Decimal("0") else Decimal("0")
+        
+        unit_weight = Decimal(str(extract_unit_weight_kg(p.packaging_unit, p.name)))
+        p_kg = p_units * unit_weight
 
         prod_metrics[p.id] = {
             "product": p,
             "units_sold": p_units,
+            "unit_weight_kg": unit_weight,
+            "kg_sold": p_kg,
             "revenue": p_rev,
             "unit_cost": unit_cost,
             "cost": p_cost,
@@ -207,169 +213,125 @@ def get_metric_drilldown(
             "margin_pct": margin_pct
         }
 
-    # Handle PROFIT metric
-    if metric == "profit":
-        if level == "category":
-            cats = db.query(Category).filter(Category.is_active == True).all()
-            cat_list = []
-            tot_revenue = Decimal("0")
-            tot_cost = Decimal("0")
+    # LEVEL: CATEGORY
+    if level == "category":
+        cats = db.query(Category).filter(Category.is_active == True).all()
+        cat_list = []
+        tot_revenue = Decimal("0")
+        tot_cost = Decimal("0")
+        tot_units = Decimal("0")
+        tot_kg = Decimal("0")
 
-            # Map products by category
-            prods_by_cat = defaultdict(list)
-            for p_id, p_data in prod_metrics.items():
-                prods_by_cat[p_data["product"].category_id].append(p_data)
+        prods_by_cat = defaultdict(list)
+        for p_id, p_data in prod_metrics.items():
+            prods_by_cat[p_data["product"].category_id].append(p_data)
 
-            for c in cats:
-                cat_p_data = prods_by_cat.get(c.id, [])
-                cat_rev = sum((m["revenue"] for m in cat_p_data), Decimal("0"))
-                cat_cost = sum((m["cost"] for m in cat_p_data), Decimal("0"))
-                cat_units = sum((m["units_sold"] for m in cat_p_data), Decimal("0"))
-                cat_profit = cat_rev - cat_cost
-                margin_pct = (cat_profit / cat_rev * 100) if cat_rev > Decimal("0") else Decimal("0")
+        for c in cats:
+            cat_p_data = prods_by_cat.get(c.id, [])
+            cat_rev = sum((m["revenue"] for m in cat_p_data), Decimal("0"))
+            cat_cost = sum((m["cost"] for m in cat_p_data), Decimal("0"))
+            cat_units = sum((m["units_sold"] for m in cat_p_data), Decimal("0"))
+            cat_kg = sum((m["kg_sold"] for m in cat_p_data), Decimal("0"))
+            cat_profit = cat_rev - cat_cost
+            margin_pct = (cat_profit / cat_rev * 100) if cat_rev > Decimal("0") else Decimal("0")
 
-                tot_revenue += cat_rev
-                tot_cost += cat_cost
+            tot_revenue += cat_rev
+            tot_cost += cat_cost
+            tot_units += cat_units
+            tot_kg += cat_kg
 
-                cat_list.append({
-                    "id": c.id,
-                    "code": c.code,
-                    "name": c.name,
-                    "products_count": len(cat_p_data),
-                    "units_sold": float(cat_units),
-                    "revenue": round(float(cat_rev), 2),
-                    "cost": round(float(cat_cost), 2),
-                    "profit": round(float(cat_profit), 2),
-                    "value": round(float(cat_profit), 2),
-                    "margin_pct": round(float(margin_pct), 1)
-                })
+            cat_list.append({
+                "id": c.id,
+                "code": c.code,
+                "name": c.name,
+                "products_count": len(cat_p_data),
+                "units_sold": float(cat_units),
+                "kg_sold": round(float(cat_kg), 1),
+                "revenue": round(float(cat_rev), 2),
+                "cost": round(float(cat_cost), 2),
+                "profit": round(float(cat_profit), 2),
+                "value": round(float(cat_profit if metric == "profit" else cat_rev), 2),
+                "margin_pct": round(float(margin_pct), 1)
+            })
 
-            tot_profit = tot_revenue - tot_cost
-            overall_margin = (tot_profit / tot_revenue * 100) if tot_revenue > Decimal("0") else Decimal("0")
-            result = {
-                "metric": metric,
-                "level": level,
-                "summary": {
-                    "total_revenue": round(float(tot_revenue), 2),
-                    "total_cost": round(float(tot_cost), 2),
-                    "total_profit": round(float(tot_profit), 2),
-                    "margin_pct": round(float(overall_margin), 1)
-                },
-                "items": sorted(cat_list, key=lambda x: x["profit"], reverse=True)
-            }
-            _DRILLDOWN_CACHE[cache_key] = (now, result)
-            return result
+        tot_profit = tot_revenue - tot_cost
+        overall_margin = (tot_profit / tot_revenue * 100) if tot_revenue > Decimal("0") else Decimal("0")
+        sort_key = "profit" if metric == "profit" else "revenue"
+        
+        result = {
+            "metric": metric,
+            "level": level,
+            "summary": {
+                "total_revenue": round(float(tot_revenue), 2),
+                "total_cost": round(float(tot_cost), 2),
+                "total_profit": round(float(tot_profit), 2),
+                "margin_pct": round(float(overall_margin), 1),
+                "total_units_sold": float(tot_units),
+                "total_kg_sold": round(float(tot_kg), 1),
+                "total_categories": len(cats)
+            },
+            "items": sorted(cat_list, key=lambda x: x[sort_key], reverse=True)
+        }
+        _DRILLDOWN_CACHE[cache_key] = (now, result)
+        return result
 
-        elif level == "product":
-            prod_list = []
-            tot_revenue = Decimal("0")
-            tot_cost = Decimal("0")
+    # LEVEL: PRODUCT
+    elif level == "product":
+        prod_list = []
+        tot_revenue = Decimal("0")
+        tot_cost = Decimal("0")
+        tot_units = Decimal("0")
+        tot_kg = Decimal("0")
 
-            for p_id, m in prod_metrics.items():
-                p = m["product"]
-                tot_revenue += m["revenue"]
-                tot_cost += m["cost"]
-                prod_list.append({
-                    "id": p.id,
-                    "sku": p.sku,
-                    "name": p.name,
-                    "brand": p.brand,
-                    "base_price": float(p.base_price),
-                    "unit_cost": round(float(m["unit_cost"]), 2),
-                    "current_stock": float(p.current_stock or 0),
-                    "units_sold": float(m["units_sold"]),
-                    "revenue": round(float(m["revenue"]), 2),
-                    "cost": round(float(m["cost"]), 2),
-                    "profit": round(float(m["profit"]), 2),
-                    "value": round(float(m["profit"]), 2),
-                    "margin_pct": round(float(m["margin_pct"]), 1)
-                })
+        for p_id, m in prod_metrics.items():
+            p = m["product"]
+            tot_revenue += m["revenue"]
+            tot_cost += m["cost"]
+            tot_units += m["units_sold"]
+            tot_kg += m["kg_sold"]
+            current_stock = float(p.current_stock or 0)
+            stock_holding_kg = round(current_stock * float(m["unit_weight_kg"]), 1)
 
-            tot_profit = tot_revenue - tot_cost
-            overall_margin = (tot_profit / tot_revenue * 100) if tot_revenue > Decimal("0") else Decimal("0")
-            result = {
-                "metric": metric,
-                "level": level,
-                "summary": {
-                    "total_revenue": round(float(tot_revenue), 2),
-                    "total_cost": round(float(tot_cost), 2),
-                    "total_profit": round(float(tot_profit), 2),
-                    "margin_pct": round(float(overall_margin), 1)
-                },
-                "items": sorted(prod_list, key=lambda x: x["profit"], reverse=True)
-            }
-            _DRILLDOWN_CACHE[cache_key] = (now, result)
-            return result
+            prod_list.append({
+                "id": p.id,
+                "sku": p.sku,
+                "name": p.name,
+                "brand": p.brand,
+                "packaging_unit": p.packaging_unit,
+                "unit_weight_kg": float(m["unit_weight_kg"]),
+                "base_price": float(p.base_price),
+                "unit_cost": round(float(m["unit_cost"]), 2),
+                "current_stock": current_stock,
+                "stock_holding_kg": stock_holding_kg,
+                "units_sold": float(m["units_sold"]),
+                "kg_sold": round(float(m["kg_sold"]), 1),
+                "revenue": round(float(m["revenue"]), 2),
+                "cost": round(float(m["cost"]), 2),
+                "profit": round(float(m["profit"]), 2),
+                "value": round(float(m["profit"] if metric == "profit" else m["revenue"]), 2),
+                "margin_pct": round(float(m["margin_pct"]), 1)
+            })
 
-    # Handle REVENUE metric
-    elif metric == "revenue":
-        if level == "category":
-            cats = db.query(Category).filter(Category.is_active == True).all()
-            cat_list = []
-            tot_revenue = Decimal("0")
+        tot_profit = tot_revenue - tot_cost
+        overall_margin = (tot_profit / tot_revenue * 100) if tot_revenue > Decimal("0") else Decimal("0")
+        sort_key = "profit" if metric == "profit" else "revenue"
 
-            prods_by_cat = defaultdict(list)
-            for p_id, p_data in prod_metrics.items():
-                prods_by_cat[p_data["product"].category_id].append(p_data)
-
-            for c in cats:
-                cat_p_data = prods_by_cat.get(c.id, [])
-                cat_rev = sum((m["revenue"] for m in cat_p_data), Decimal("0"))
-                cat_units = sum((m["units_sold"] for m in cat_p_data), Decimal("0"))
-                tot_revenue += cat_rev
-
-                cat_list.append({
-                    "id": c.id,
-                    "code": c.code,
-                    "name": c.name,
-                    "products_count": len(cat_p_data),
-                    "units_sold": float(cat_units),
-                    "revenue": round(float(cat_rev), 2),
-                    "value": round(float(cat_rev), 2)
-                })
-
-            result = {
-                "metric": metric,
-                "level": level,
-                "summary": {
-                    "total_revenue": round(float(tot_revenue), 2),
-                    "total_categories": len(cats)
-                },
-                "items": sorted(cat_list, key=lambda x: x["value"], reverse=True)
-            }
-            _DRILLDOWN_CACHE[cache_key] = (now, result)
-            return result
-
-        elif level == "product":
-            prod_list = []
-            tot_revenue = Decimal("0")
-
-            for p_id, m in prod_metrics.items():
-                p = m["product"]
-                tot_revenue += m["revenue"]
-                prod_list.append({
-                    "id": p.id,
-                    "sku": p.sku,
-                    "name": p.name,
-                    "brand": p.brand,
-                    "base_price": float(p.base_price),
-                    "current_stock": float(p.current_stock or 0),
-                    "units_sold": float(m["units_sold"]),
-                    "revenue": round(float(m["revenue"]), 2),
-                    "value": round(float(m["revenue"]), 2)
-                })
-
-            result = {
-                "metric": metric,
-                "level": level,
-                "summary": {
-                    "total_revenue": round(float(tot_revenue), 2),
-                    "total_products": len(prod_list)
-                },
-                "items": sorted(prod_list, key=lambda x: x["value"], reverse=True)
-            }
-            _DRILLDOWN_CACHE[cache_key] = (now, result)
-            return result
+        result = {
+            "metric": metric,
+            "level": level,
+            "summary": {
+                "total_revenue": round(float(tot_revenue), 2),
+                "total_cost": round(float(tot_cost), 2),
+                "total_profit": round(float(tot_profit), 2),
+                "margin_pct": round(float(overall_margin), 1),
+                "total_units_sold": float(tot_units),
+                "total_kg_sold": round(float(tot_kg), 1),
+                "total_products": len(prod_list)
+            },
+            "items": sorted(prod_list, key=lambda x: x[sort_key], reverse=True)
+        }
+        _DRILLDOWN_CACHE[cache_key] = (now, result)
+        return result
 
     # Default fallback
     return {"metric": metric, "level": level, "summary": {}, "items": []}

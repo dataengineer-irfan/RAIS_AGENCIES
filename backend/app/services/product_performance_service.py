@@ -7,6 +7,7 @@ from sqlalchemy import func
 from app.models.catalogue import Product, Category
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.inventory import StockMovement
+from app.core.weight_utils import extract_unit_weight_kg
 
 _MATRIX_CACHE: Dict[str, Any] = {}
 CACHE_TTL_SECONDS = 60
@@ -276,6 +277,10 @@ class ProductPerformanceService:
                     classification = "STEADY"
                     steady.append(p.name)
 
+            unit_weight_kg = extract_unit_weight_kg(p.packaging_unit, p.name)
+            kg_sold = round(units * unit_weight_kg, 1)
+            stock_holding_kg = round(current_stock * unit_weight_kg, 1)
+
             item_data = {
                 "product_id": p.id,
                 "sku": p.sku,
@@ -283,8 +288,10 @@ class ProductPerformanceService:
                 "brand": p.brand,
                 "category_name": p.category.name if p.category else "General",
                 "packaging_unit": p.packaging_unit,
+                "unit_weight_kg": unit_weight_kg,
                 "units_sold_30d": units,
                 "units_sold": units,
+                "kg_sold": kg_sold,
                 "revenue_30d": round(revenue, 2),
                 "revenue": round(revenue, 2),
                 "cost_30d": round(cost_30d, 2),
@@ -296,6 +303,7 @@ class ProductPerformanceService:
                 "orders_count_30d": orders,
                 "orders_count": orders,
                 "stock_holding_units": current_stock,
+                "stock_holding_kg": stock_holding_kg,
                 "stock_holding_value": round(stock_value, 2),
                 "trend_pct": round(trend_pct, 1),
                 "classification": classification
@@ -313,6 +321,8 @@ class ProductPerformanceService:
 
         total_profit_period = sum(i["profit_30d"] for i in items)
         total_revenue_period = sum(i["revenue_30d"] for i in items)
+        total_kg_period = round(sum(i.get("kg_sold", 0) for i in items), 1)
+        total_stock_kg = round(sum(i.get("stock_holding_kg", 0) for i in items), 1)
         overall_margin_pct = round((total_profit_period / total_revenue_period * 100), 1) if total_revenue_period > 0 else 0.0
 
         response_data = {
@@ -331,6 +341,8 @@ class ProductPerformanceService:
             "total_profit_30d": round(total_profit_period, 2),
             "total_profit": round(total_profit_period, 2),
             "total_revenue": round(total_revenue_period, 2),
+            "total_kg_sold": total_kg_period,
+            "total_stock_kg": total_stock_kg,
             "overall_margin_pct": overall_margin_pct,
             "insight_summary": insight_summary,
             "items": sorted(items, key=lambda x: x["revenue_30d"], reverse=True)

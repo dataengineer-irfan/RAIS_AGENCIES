@@ -746,7 +746,15 @@ export const ReportsPage = () => {
                 <div className="overflow-hidden pr-2">
                   <span className="font-mono text-[10px] text-amber-400 font-bold bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">{prod.sku}</span>
                   <h5 className="font-bold text-white text-xs truncate mt-0.5">{prod.name || prod.product_name}</h5>
-                  <p className="text-[10px] text-slate-400">{prod.units_sold ?? prod.total_quantity_sold ?? 0} packs sold</p>
+                  <p className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
+                    <span>{prod.units_sold ?? prod.total_quantity_sold ?? 0} packs</span>
+                    {prod.kg_sold > 0 && (
+                      <>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-amber-300 font-semibold">⚖️ {prod.kg_sold} KG</span>
+                      </>
+                    )}
+                  </p>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">

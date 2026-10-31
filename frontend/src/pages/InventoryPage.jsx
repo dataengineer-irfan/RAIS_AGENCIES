@@ -72,7 +72,7 @@ export const InventoryPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ─── POWER BI EXECUTIVE SLICERS STATE ───
+  // ─── RAIS EXECUTIVE SLICERS STATE ───
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, IN_STOCK, LOW_STOCK, OUT_OF_STOCK
@@ -303,7 +303,7 @@ export const InventoryPage = () => {
     return { id: 'DRY_AMBIENT', label: 'Dry Ambient (18-25°C)', icon: Box, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
   };
 
-  // ─── POWER BI REACTIVE FILTERING & SLICING ───
+  // ─── RAIS REACTIVE FILTERING & SLICING ───
   const filteredItems = useMemo(() => {
     return stockItems.filter(item => {
       // 1. Search filter (smart multi-word + typo-tolerant)
@@ -541,7 +541,7 @@ export const InventoryPage = () => {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
       
-      {/* ─── ROW 1: POWER BI PERSISTENT SLICER & CONTROL RIBBON ─── */}
+      {/* ─── ROW 1: RAIS PERSISTENT SLICER & CONTROL RIBBON ─── */}
       {/* ─── MOBILE CONTROLS (< md) ─── */}
       <div className={`${mobileView === 'detail' ? 'hidden' : 'flex'} md:hidden flex-col gap-1.5 shrink-0`}>
         {/* Mobile Search, Quick Sort & Actions Bar */}

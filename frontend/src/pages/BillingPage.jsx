@@ -372,6 +372,21 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
   const selectedInvoice = selectedInvoiceDetails || invoices.find(i => i.id === selectedInvoiceId);
 
+  const selectedInvoiceTotalKg = useMemo(() => {
+    if (!selectedInvoice?.items) return 0;
+    return selectedInvoice.items.reduce((acc, it) => {
+      const raw = `${it.packaging_unit || ''} ${it.item_description || it.product_name || ''}`.toUpperCase();
+      let mult = 1.0;
+      const kg = raw.match(/(\d+(?:\.\d+)?)\s*(?:KG|KGS)/);
+      if (kg) mult = parseFloat(kg[1]);
+      else {
+        const gm = raw.match(/(\d+(?:\.\d+)?)\s*(?:GM|GMS|G)\b/);
+        if (gm) mult = parseFloat(gm[1]) / 1000.0;
+      }
+      return acc + (Number(it.quantity) || 0) * mult;
+    }, 0);
+  }, [selectedInvoice]);
+
   useEffect(() => {
     if (filteredInvoices.length > 0) {
       const isStillPresent = selectedInvoiceId && filteredInvoices.some(i => i.id === selectedInvoiceId);
@@ -1017,12 +1032,19 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                           ))}
                         </div>
 
-                        {/* Invoice Pricing Summary Banner (Explicit Total, Paid, and Balance Due) */}
-                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs shadow-inner">
+                        {/* Invoice Pricing Summary Banner (Explicit Total, Weight, Paid, and Balance Due) */}
+                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs shadow-inner">
                           <div>
                             <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Invoiced</span>
                             <span className="text-sm sm:text-base font-black text-amber-400 font-mono">
                               ₹{parseFloat(selectedInvoice.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-[10px] text-slate-500 uppercase font-bold block">Dispatch Weight</span>
+                            <span className="text-sm sm:text-base font-bold text-amber-300 font-mono">
+                              ⚖️ {selectedInvoiceTotalKg > 0 ? `${selectedInvoiceTotalKg.toFixed(1)} KG` : '—'}
                             </span>
                           </div>
 

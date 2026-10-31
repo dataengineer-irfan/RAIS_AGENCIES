@@ -413,10 +413,12 @@ export const InvoiceBuilderModal = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
-  // Live Calculations (Direct Wholesale Price - No GST)
+  // Live Calculations (Direct Wholesale Price - No GST + Weight & Margin)
   const calculateTotals = () => {
     let subtotal = 0;
     let itemDiscounts = 0;
+    let totalWeightKg = 0;
+    let totalEstimatedCost = 0;
 
     items.forEach(itm => {
       const qty = parseFloat(itm.quantity) || 0;
@@ -428,16 +430,36 @@ export const InvoiceBuilderModal = ({
 
       subtotal += gross;
       itemDiscounts += discAmt;
+
+      // Dynamic unit weight calculation in KG
+      const prod = products.find(p => p.id === itm.product_id);
+      const raw = `${prod?.packaging_unit || itm.packaging_unit || ''} ${prod?.name || itm.item_description || ''}`.toUpperCase();
+      let mult = 1.0;
+      const kg = raw.match(/(\d+(?:\.\d+)?)\s*(?:KG|KGS)/);
+      if (kg) mult = parseFloat(kg[1]);
+      else {
+        const gm = raw.match(/(\d+(?:\.\d+)?)\s*(?:GM|GMS|G)\b/);
+        if (gm) mult = parseFloat(gm[1]) / 1000.0;
+      }
+      totalWeightKg += qty * mult;
+
+      // Estimated landing cost
+      const cost = parseFloat(itm.purchase_cost || prod?.purchase_cost || 0) || (rate * 0.80);
+      totalEstimatedCost += qty * cost;
     });
 
     const invDisc = parseFloat(invoiceDiscount) || 0;
     const totalDiscount = itemDiscounts + invDisc;
     const grandTotal = Math.max(0, subtotal - totalDiscount);
+    const estProfit = Math.max(0, grandTotal - totalEstimatedCost);
+    const estMarginPct = grandTotal > 0 ? (estProfit / grandTotal) * 100 : 0;
 
     return {
       subtotal: parseFloat(subtotal || 0).toFixed(2),
       discount: parseFloat(totalDiscount || 0).toFixed(2),
-      total: parseFloat(grandTotal || 0).toFixed(2)
+      total: parseFloat(grandTotal || 0).toFixed(2),
+      weightKg: totalWeightKg.toFixed(1),
+      estMarginPct: estMarginPct.toFixed(1)
     };
   };
 
@@ -1952,7 +1974,17 @@ export const InvoiceBuilderModal = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 sm:gap-6 font-mono text-xs">
+                <div className="flex items-center gap-3 sm:gap-5 font-mono text-xs flex-wrap justify-end">
+                  <div>
+                    <span className="text-slate-500 block text-[9px] uppercase font-sans">Dispatch Weight</span>
+                    <span className="text-amber-300 font-bold text-xs sm:text-sm">⚖️ {totals.weightKg} KG</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[9px] uppercase font-sans">Est. Margin</span>
+                    <span className={`font-bold text-xs sm:text-sm ${parseFloat(totals.estMarginPct) >= 15 ? 'text-emerald-400' : parseFloat(totals.estMarginPct) >= 8 ? 'text-amber-400' : 'text-rose-400'}`}>
+                      {totals.estMarginPct}%
+                    </span>
+                  </div>
                   <div>
                     <span className="text-slate-500 block text-[9px] uppercase font-sans">Subtotal</span>
                     <span className="text-slate-300 font-bold text-xs sm:text-sm">₹{totals.subtotal}</span>

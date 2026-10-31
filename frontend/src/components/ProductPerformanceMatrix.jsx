@@ -283,6 +283,16 @@ export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', o
                   ? `${data.total_skus} SKUs` 
                   : `${filteredItems.length} of ${data.total_skus} SKUs`}
               </span>
+              {data.total_kg_sold > 0 && (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 shrink-0">
+                  ⚖️ {data.total_kg_sold} KG
+                </span>
+              )}
+              {data.total_profit > 0 && (
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shrink-0">
+                  +₹{Math.round(data.total_profit).toLocaleString('en-IN')} ({data.overall_margin_pct}%)
+                </span>
+              )}
             </div>
           </div>
 
@@ -375,6 +385,8 @@ export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', o
                 <option value="margin_pct-asc" className="bg-slate-900 text-white">📊 Lowest Margin %</option>
                 <option value="profit_30d-desc" className="bg-slate-900 text-white">💎 Highest Profit (₹)</option>
                 <option value="profit_30d-asc" className="bg-slate-900 text-white">💎 Lowest Profit (₹)</option>
+                <option value="kg_sold-desc" className="bg-slate-900 text-white">⚖️ Highest Weight (KG)</option>
+                <option value="kg_sold-asc" className="bg-slate-900 text-white">⚖️ Lowest Weight (KG)</option>
                 <option value="revenue_30d-desc" className="bg-slate-900 text-white">₹ Highest Revenue</option>
                 <option value="revenue_30d-asc" className="bg-slate-900 text-white">₹ Lowest Revenue</option>
                 <option value="units_sold_30d-desc" className="bg-slate-900 text-white">📦 Highest Units Sold</option>
@@ -590,8 +602,15 @@ export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', o
                       <td className="py-2 px-2.5 whitespace-nowrap">
                         {renderStatusBadge(item.classification)}
                       </td>
-                      <td className="py-2 px-2.5 text-right font-mono font-bold text-white whitespace-nowrap">
-                        {item.units_sold_30d} {item.packaging_unit || 'packs'}
+                      <td className="py-2 px-2.5 text-right font-mono font-bold whitespace-nowrap">
+                        <div className="text-white text-xs">
+                          {item.units_sold_30d} {item.packaging_unit || 'packs'}
+                        </div>
+                        {item.kg_sold > 0 && (
+                          <div className="text-[10px] text-amber-300/90 font-medium">
+                            ⚖️ {item.kg_sold} KG
+                          </div>
+                        )}
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-amber-400 whitespace-nowrap">
                         ₹{parseFloat(item.revenue_30d || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -637,8 +656,15 @@ export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', o
                           {item.trend_pct > 0 ? '+' : ''}{item.trend_pct}%
                         </span>
                       </td>
-                      <td className="py-2 px-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                        {item.stock_holding_units}
+                      <td className="py-2 px-2.5 text-right font-mono whitespace-nowrap">
+                        <div className="text-slate-200 text-xs font-semibold">
+                          {item.stock_holding_units}
+                        </div>
+                        {item.stock_holding_kg > 0 && (
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            {item.stock_holding_kg} KG
+                          </div>
+                        )}
                       </td>
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-white whitespace-nowrap">
                         ₹{parseFloat(item.stock_holding_value || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
@@ -692,7 +718,10 @@ export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', o
                   <div className="grid grid-cols-4 gap-1.5 mt-2 pt-2 border-t border-slate-900 text-[10px]">
                     <div>
                       <span className="text-slate-500 block truncate">{periodDisplayLabel} Sold:</span>
-                      <div className="font-mono font-bold text-white truncate">{item.units_sold_30d}</div>
+                      <div className="font-mono font-bold text-white truncate">{item.units_sold_30d} pkts</div>
+                      {item.kg_sold > 0 && (
+                        <div className="font-mono text-[9px] text-amber-300 font-semibold truncate">⚖️ {item.kg_sold} KG</div>
+                      )}
                     </div>
                     <div>
                       <span className="text-slate-500 block truncate">Revenue:</span>

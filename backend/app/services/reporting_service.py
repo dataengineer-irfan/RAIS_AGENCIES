@@ -14,6 +14,7 @@ from app.schemas.reports import (
     CustomerAgingReportItem, ProductPerformanceItem
 )
 from app.domain.enums import InvoiceStatus, CustomerStatus, PaymentMethod, OrderStatus
+from app.core.weight_utils import extract_unit_weight_kg
 
 from app.core.datetime_utils import get_ist_today, get_ist_now
 
@@ -111,15 +112,16 @@ class ReportingService:
             Product.current_stock,
             Product.min_stock_alert,
             Product.category_id,
-            func.max(InvoiceItem.item_description).label("desc_fallback")
+            func.max(InvoiceItem.item_description).label("desc_fallback"),
+            Product.packaging_unit
         ).join(InvoiceItem, Product.id == InvoiceItem.product_id)\
          .join(Invoice, InvoiceItem.invoice_id == Invoice.id)\
          .filter(
             Invoice.invoice_date >= first_day_month,
             Invoice.status.in_(valid_statuses)
-         ).group_by(Product.id, Product.name, Product.sku, Product.current_stock, Product.min_stock_alert, Product.category_id)\
+         ).group_by(Product.id, Product.name, Product.sku, Product.current_stock, Product.min_stock_alert, Product.category_id, Product.packaging_unit)\
           .order_by(desc("total_rev"))\
-          .limit(8).all()
+          .limit(12).all()
 
         top_products = [
             {
@@ -127,7 +129,12 @@ class ReportingService:
                 "product_name": (p[1] or "").strip() or (p[8] or "").strip() or "Wholesale SKU",
                 "sku": p[2] or "PROD",
                 "quantity_sold": float(p[3] or 0),
+                "total_quantity_sold": float(p[3] or 0),
+                "units_sold": float(p[3] or 0),
+                "packaging_unit": p[9] or "PACKET",
+                "kg_sold": round(float(p[3] or 0) * extract_unit_weight_kg(p[9], p[1]), 1),
                 "total_revenue": float(p[4] or 0),
+                "revenue": float(p[4] or 0),
                 "current_stock": float(p[5] if p[5] is not None else 0),
                 "min_stock_alert": float(p[6] if p[6] is not None else 10),
                 "category_id": p[7]

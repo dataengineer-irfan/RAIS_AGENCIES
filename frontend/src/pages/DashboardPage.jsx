@@ -585,7 +585,7 @@ export const DashboardPage = ({
   });
   const [isColdBooting, setIsColdBooting] = useState(false);
 
-  // Active Power BI Page Tab
+  // Active Dashboard Subpage Tab
   const [activePage, setActivePage] = useState(initialPage);
 
   // Inactive accounts count for badge (from props or direct query fallback)
