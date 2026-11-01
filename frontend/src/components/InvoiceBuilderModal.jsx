@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic, Share2 } from 'lucide-react';
-import { customerApi, catalogueApi, billingApi, paymentApi } from '../services/api';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic, Share2, Zap, RefreshCw } from 'lucide-react';
+import { customerApi, catalogueApi, billingApi, paymentApi, inventoryApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
+import { QuickStockInwardModal } from './QuickStockInwardModal';
 import { shareInvoiceOnWhatsApp, shareInvoiceImageFile } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -34,6 +35,11 @@ export const InvoiceBuilderModal = ({
   const [voiceConflictPrompt, setVoiceConflictPrompt] = useState(null);
   const [priceWarningModalOpen, setPriceWarningModalOpen] = useState(false);
   const [belowCostWarningItems, setBelowCostWarningItems] = useState([]);
+
+  // Quick Stock Inward & Shortfall Recovery State
+  const [quickStockTarget, setQuickStockTarget] = useState(null);
+  const [autoInwardShortfallItems, setAutoInwardShortfallItems] = useState(null);
+  const [autoInwardSubmitting, setAutoInwardSubmitting] = useState(false);
 
   // Form State - Cash business default: invoiceDate and dueDate are identical today
   const todayStr = getLocalDateString();
@@ -500,6 +506,64 @@ export const InvoiceBuilderModal = ({
     }
   };
 
+  const handleOpenQuickStockModal = (product, billedQty, index) => {
+    if (!product) return;
+    const curStock = parseFloat(product.current_stock ?? 0);
+    const needed = Math.max(1, (billedQty || 1) - Math.max(0, curStock));
+    setQuickStockTarget({
+      product,
+      neededQty: billedQty || 1,
+      shortfall: needed,
+      currentStock: curStock,
+      itemIndex: index
+    });
+  };
+
+  const handleStockUpdated = (updatedProduct, newStock) => {
+    setProducts(prev => prev.map(p => {
+      if (p.id === updatedProduct.id) {
+        return { ...p, current_stock: newStock };
+      }
+      return p;
+    }));
+  };
+
+  const handleAutoInwardAllAndIssue = async () => {
+    if (!autoInwardShortfallItems || autoInwardShortfallItems.length === 0) return;
+    setAutoInwardSubmitting(true);
+    try {
+      const updatedMap = {};
+      for (const item of autoInwardShortfallItems) {
+        const defaultCost = item.product.landed_cost || item.product.purchase_cost || Math.round(parseFloat(item.product.base_price || 0) * 0.8);
+        const res = await inventoryApi.receiveStock({
+          product_id: item.product.id,
+          quantity: item.shortfall,
+          purchase_cost: defaultCost ? parseFloat(defaultCost) : null,
+          supplier: 'Counter Delivery / Direct Inward',
+          notes: 'Auto-Inward shortfall during invoice creation'
+        });
+        const newStock = res?.new_stock !== undefined ? parseFloat(res.new_stock) : (item.currentStock + item.shortfall);
+        updatedMap[item.product.id] = newStock;
+      }
+
+      setProducts(prev => prev.map(p => {
+        if (updatedMap[p.id] !== undefined) {
+          return { ...p, current_stock: updatedMap[p.id] };
+        }
+        return p;
+      }));
+
+      setAutoInwardShortfallItems(null);
+      // Auto-retrigger submit now that all stock shortfalls have been received!
+      await handleSubmit(null, false, true);
+    } catch (err) {
+      console.error('Auto inward failed:', err);
+      setError(err.response?.data?.detail || err.message || 'Auto inward failed. Please check stock manually.');
+    } finally {
+      setAutoInwardSubmitting(false);
+    }
+  };
+
   const handleConfirmBelowCostSubmit = () => {
     setPriceWarningModalOpen(false);
     handleSubmit(null, true);
@@ -509,11 +573,35 @@ export const InvoiceBuilderModal = ({
     setPriceWarningModalOpen(false);
   };
 
-  const handleSubmit = async (e, bypassPriceWarning = false) => {
+  const handleSubmit = async (e, bypassPriceWarning = false, bypassStockWarning = false) => {
     if (e) e.preventDefault();
     setError('');
 
     if (!validateForm()) return;
+
+    // Check for exceeding warehouse stock items (Forgot inward stock protection)
+    if (!bypassStockWarning && !isEditMode) {
+      const exceeding = (items || []).map((itm, idx) => {
+        const prod = (products || []).find(p => p.id === itm.product_id);
+        const curStock = parseFloat(prod?.current_stock ?? 0);
+        const qtyVal = parseFloat(itm.quantity || 0);
+        if (prod && qtyVal > curStock) {
+          return {
+            index: idx,
+            product: prod,
+            billedQty: qtyVal,
+            currentStock: curStock,
+            shortfall: qtyVal - Math.max(0, curStock)
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      if (exceeding.length > 0) {
+        setAutoInwardShortfallItems(exceeding);
+        return;
+      }
+    }
 
     // Check for below-cost / severe pricing outliers
     if (!bypassPriceWarning) {
@@ -1246,6 +1334,7 @@ export const InvoiceBuilderModal = ({
                     categories={categories}
                     onSelectProduct={handleQuickAddProduct}
                     onDecrementProduct={handleDecrementProduct}
+                    onQuickStock={(prod) => handleOpenQuickStockModal(prod, 1, -1)}
                     quantitiesByProductId={quantitiesByProductId}
                   />
                 </div>
@@ -1372,6 +1461,17 @@ export const InvoiceBuilderModal = ({
                                     In Stock: {curStock} {selProd.packaging_unit}
                                   </span>
                                 )}
+                                {(isZeroStock || isLowStock || isExceedingStock) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenQuickStockModal(selProd, qtyVal, index)}
+                                    className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 flex items-center gap-1 transition-colors active:scale-95 cursor-pointer shadow-2xs"
+                                    title="Quick Inward Stock without losing this bill"
+                                  >
+                                    <Zap className="w-2.5 h-2.5 fill-current" />
+                                    <span>+Stock</span>
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1410,10 +1510,19 @@ export const InvoiceBuilderModal = ({
                               </button>
                             </div>
                             {isExceedingStock && (
-                              <div className="mt-0.5 px-1 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[9px] font-black text-center flex items-center justify-center gap-1">
-                                <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                                <span>Exceeds Stock ({curStock} avail)</span>
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenQuickStockModal(selProd, qtyVal, index)}
+                                className="mt-0.5 w-full px-1.5 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 hover:text-white text-[9px] font-black text-center flex items-center justify-center gap-1 transition-all active:scale-95 group shadow-xs cursor-pointer"
+                                title="Forgot stock inward? Click to quickly inward stock now"
+                              >
+                                <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0 group-hover:animate-bounce" />
+                                <span>Exceeds ({curStock} avail)</span>
+                                <span className="px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-black ml-0.5 flex items-center gap-0.5">
+                                  <Zap className="w-2 h-2 fill-current" />
+                                  +Stock
+                                </span>
+                              </button>
                             )}
                           </div>
 
@@ -1600,10 +1709,21 @@ export const InvoiceBuilderModal = ({
                           </div>
 
                           {isExceedingStock && (
-                            <div className="px-2 py-1 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[10px] font-bold flex items-center gap-1.5">
-                              <AlertTriangle className="w-3 h-3 shrink-0" />
-                              <span>Exceeds stock ({curStock} {selProd?.packaging_unit || 'PKT'} avail)</span>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenQuickStockModal(selProd, qtyVal, index)}
+                              className="w-full px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-[10px] font-bold flex items-center justify-between gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                              title="Forgot stock inward? Click to quickly inward stock now"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                                <span>Exceeds stock ({curStock} {selProd?.packaging_unit || 'PKT'} avail)</span>
+                              </div>
+                              <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[9px] font-black flex items-center gap-1 shadow-2xs">
+                                <Zap className="w-2.5 h-2.5 fill-current" />
+                                Quick Inward
+                              </span>
+                            </button>
                           )}
                         </div>
 
@@ -2201,6 +2321,109 @@ export const InvoiceBuilderModal = ({
                 className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
               >
                 Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── QUICK STOCK INWARD MODAL (COUNTER ENTRY) ─── */}
+      <QuickStockInwardModal
+        isOpen={Boolean(quickStockTarget)}
+        target={quickStockTarget}
+        onClose={() => setQuickStockTarget(null)}
+        onStockUpdated={handleStockUpdated}
+      />
+
+      {/* ─── AUTO-INWARD SHORTFALL CONFIRMATION MODAL ─── */}
+      {autoInwardShortfallItems && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-5 max-w-lg w-full shadow-2xl space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 fill-amber-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Insufficient Stock Detected</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                    {autoInwardShortfallItems.length} ITEM(S)
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Forgot to inward stock before starting this bill?
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 space-y-2 max-h-52 overflow-y-auto no-scrollbar">
+              {autoInwardShortfallItems.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-xs border-b border-slate-800/60 pb-2 last:border-b-0 last:pb-0">
+                  <div className="min-w-0 pr-2">
+                    <p className="font-bold text-white truncate">{item.product.name}</p>
+                    <p className="text-[10px] font-mono text-slate-400">
+                      SKU: {item.product.sku} • System Stock: <span className="text-rose-400 font-bold">{item.currentStock} {item.product.packaging_unit || 'PKT'}</span>
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 block font-mono">
+                      Bill Qty: <strong className="text-white">{item.billedQty}</strong>
+                    </span>
+                    <span className="text-[11px] font-mono font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">
+                      +{item.shortfall} Needed
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Did you receive this stock at the depot but haven't entered the supplier purchase yet? You can auto-inward the shortfall right now and issue the invoice immediately.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleAutoInwardAllAndIssue}
+                disabled={autoInwardSubmitting}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {autoInwardSubmitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Inwarding Stock & Issuing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 fill-current" />
+                    <span>⚡ Auto-Inward & Issue Invoice</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const firstItem = autoInwardShortfallItems[0];
+                  setAutoInwardShortfallItems(null);
+                  if (firstItem) {
+                    handleOpenQuickStockModal(firstItem.product, firstItem.billedQty, firstItem.index);
+                  }
+                }}
+                disabled={autoInwardSubmitting}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
+                Inward Manually
+              </button>
+            </div>
+
+            <div className="text-center pt-0.5">
+              <button
+                type="button"
+                onClick={() => setAutoInwardShortfallItems(null)}
+                className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                Back to Invoice Review
               </button>
             </div>
           </div>

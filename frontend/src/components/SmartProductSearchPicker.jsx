@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, Plus, Minus, Check, Package, Sparkles } from 'lucide-react';
+import { Search, X, Plus, Minus, Check, Package, Sparkles, Zap } from 'lucide-react';
 import { cleanProductName, formatProductDisplay, smartProductMatch, sortProductsByCleanName } from '../utils/productHelpers';
 import { ProductVisualBadge } from '../utils/productIcons';
 
@@ -8,6 +8,7 @@ export const SmartProductSearchPicker = ({
   categories = [],
   onSelectProduct,
   onDecrementProduct,
+  onQuickStock,
   quantitiesByProductId = {},
   compact = false
 }) => {
@@ -157,7 +158,7 @@ export const SmartProductSearchPicker = ({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 flex-wrap">
                     <span className="font-mono text-slate-500">{prod?.sku || ''}</span>
                     <span>•</span>
                     <span className="font-medium text-slate-300">{prod?.packaging_unit || 'PKT'}</span>
@@ -165,6 +166,20 @@ export const SmartProductSearchPicker = ({
                     <span className={stock > 10 ? 'text-emerald-400 font-medium' : stock > 0 ? 'text-amber-400 font-medium' : 'text-rose-400 font-medium'}>
                       {stock > 0 ? `${stock} in stock` : 'Low / 0 Stock'}
                     </span>
+                    {stock <= 5 && onQuickStock && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuickStock(prod);
+                        }}
+                        className="px-1.5 py-0.2 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[9px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                        title="Quickly inward stock for this product"
+                      >
+                        <Zap className="w-2 h-2 fill-current" />
+                        <span>+Stock</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

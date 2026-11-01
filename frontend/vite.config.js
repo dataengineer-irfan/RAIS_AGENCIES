@@ -10,8 +10,9 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8001',
+        target: process.env.VITE_BACKEND_TARGET || 'https://rais-backend.onrender.com',
         changeOrigin: true,
+        secure: false,
       }
     }
   }
