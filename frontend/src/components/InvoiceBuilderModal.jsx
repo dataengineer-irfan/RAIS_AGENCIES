@@ -676,6 +676,12 @@ export const InvoiceBuilderModal = ({
           ? splitTotal
           : (numCollected > 0 ? numCollected : (willMarkAsPaid ? parseFloat(totals.total) : 0));
 
+        const billTotalVal = parseFloat(totals.total) || 0;
+        const surplusAmt = Math.max(0, effectiveAmountPaid - billTotalVal);
+        const custLedgerDueVal = Math.max(0, parseFloat(selectedCustomerObj?.outstanding_balance || 0));
+        const closingLedgerVal = Math.max(0, custLedgerDueVal + billTotalVal - effectiveAmountPaid);
+        const methodVal = isSplit ? 'CASH & UPI' : ((paymentTerms || '').toUpperCase().includes('UPI') ? 'UPI' : 'CASH');
+
         const payload = {
           customer_id: customerId,
           invoice_date: invoiceDate,
@@ -691,6 +697,16 @@ export const InvoiceBuilderModal = ({
           items: itemsPayload
         };
         res = await billingApi.createInvoice(payload);
+
+        // Decorate created invoice response with immediate settlement values for slip & WhatsApp
+        if (res && (effectiveAmountPaid > 0 || willMarkAsPaid)) {
+          res.received_amount = effectiveAmountPaid > 0 ? effectiveAmountPaid : billTotalVal;
+          res.applied_to_invoice = Math.min(parseFloat(res.total_amount), res.received_amount);
+          res.applied_to_previous = surplusAmt;
+          res.payment_method = methodVal;
+          res.closing_balance = closingLedgerVal;
+          res.customer_outstanding_balance = closingLedgerVal;
+        }
 
         // Fallback immediate cash settlement if marked as paid/collected and backend hasn't already auto-settled
         if (!isSplit && effectiveAmountPaid > 0 && res?.id && res?.status !== 'PAID' && res?.status !== 'PARTIALLY_PAID') {
@@ -843,12 +859,66 @@ export const InvoiceBuilderModal = ({
               Date: {successInvoice.invoice_date} • Terms: {successInvoice.payment_terms || 'Cash on Delivery'}
             </p>
 
+            {/* Payment Settlement Breakdown Card */}
+            {(successInvoice.received_amount > 0 || successInvoice.status === 'PAID') && (
+              <div className="w-full max-w-xl p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-left space-y-1.5 shadow-md">
+                <div className="flex items-center justify-between pb-1.5 border-b border-emerald-500/30">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wide">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Payment Settlement Confirmed</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                    {successInvoice.payment_method || 'CASH'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1">
+                  <div>
+                    <span className="text-slate-400 text-[11px] block">Total Received</span>
+                    <strong className="text-white font-mono text-sm">
+                      ₹{parseFloat(successInvoice.received_amount || successInvoice.total_amount).toFixed(2)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[11px] block">Settled This Bill</span>
+                    <strong className="text-emerald-400 font-mono text-sm">
+                      ₹{parseFloat(successInvoice.paid_amount || Math.min(parseFloat(successInvoice.total_amount), parseFloat(successInvoice.received_amount || successInvoice.total_amount))).toFixed(2)}
+                    </strong>
+                  </div>
+                  {parseFloat(successInvoice.applied_to_previous || 0) > 0 ? (
+                    <div>
+                      <span className="text-amber-400 text-[11px] block">Adjusted to Past Dues</span>
+                      <strong className="text-amber-300 font-mono text-sm">
+                        ₹{parseFloat(successInvoice.applied_to_previous).toFixed(2)}
+                      </strong>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-slate-400 text-[11px] block">Closing Ledger</span>
+                      <strong className="text-emerald-300 font-mono text-sm">
+                        {parseFloat(successInvoice.closing_balance ?? successInvoice.customer_outstanding_balance ?? 0) <= 0.01 ? '✓ Dues Cleared' : `₹${parseFloat(successInvoice.closing_balance ?? successInvoice.customer_outstanding_balance).toFixed(2)}`}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+                {parseFloat(successInvoice.applied_to_previous || 0) > 0 && (
+                  <div className="pt-1.5 border-t border-emerald-500/20 flex items-center justify-between text-xs">
+                    <span className="text-slate-300">Customer Account Status:</span>
+                    <strong className="text-emerald-400 font-bold">
+                      {parseFloat(successInvoice.closing_balance ?? successInvoice.customer_outstanding_balance ?? 0) <= 0.01 ? '✓ All Dues Fully Cleared (₹0.00)' : `Remaining Due: ₹${parseFloat(successInvoice.closing_balance ?? successInvoice.customer_outstanding_balance).toFixed(2)}`}
+                    </strong>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Action Buttons: Fast Direct Customer WhatsApp + Dedicated Image Card + Print */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-4 w-full max-w-xl flex-wrap">
               {(() => {
-                const overallBal = (successInvoice?.customer_outstanding_balance !== undefined && successInvoice?.customer_outstanding_balance !== null)
-                  ? successInvoice.customer_outstanding_balance
-                  : (parseFloat(selectedCustomerObj?.outstanding_balance || 0) + parseFloat(successInvoice?.total_amount || 0));
+                const overallBal = (successInvoice?.closing_balance !== undefined && successInvoice?.closing_balance !== null)
+                  ? successInvoice.closing_balance
+                  : ((successInvoice?.customer_outstanding_balance !== undefined && successInvoice?.customer_outstanding_balance !== null)
+                      ? successInvoice.customer_outstanding_balance
+                      : Math.max(0, parseFloat(selectedCustomerObj?.outstanding_balance || 0) + parseFloat(successInvoice?.total_amount || 0) - parseFloat(successInvoice?.received_amount || 0)));
 
                 const customerData = {
                   id: successInvoice.customer_id || selectedCustomerObj?.id,
@@ -862,6 +932,10 @@ export const InvoiceBuilderModal = ({
 
                 const invoicePayload = {
                   ...successInvoice,
+                  received_amount: successInvoice.received_amount || (successInvoice.status === 'PAID' ? parseFloat(successInvoice.total_amount) : 0),
+                  applied_to_previous: successInvoice.applied_to_previous || 0,
+                  payment_method: successInvoice.payment_method || ((paymentTerms || '').toUpperCase().includes('UPI') ? 'UPI' : 'CASH'),
+                  closing_balance: overallBal,
                   customer_outstanding_balance: overallBal
                 };
 
@@ -1055,12 +1129,37 @@ export const InvoiceBuilderModal = ({
                 {/* Summary & Bank Info */}
                 <div className="grid grid-cols-12 gap-4 pt-3 border-t-2 border-gray-300">
                   <div className="col-span-7 text-[11px] text-gray-600 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-bold text-gray-800 uppercase tracking-wider text-[10px] mb-1">Bank & UPI Settlement:</h4>
-                      <p>UPI ID: <strong className="font-mono text-gray-900">9347453135@ybl</strong> (RAIS Agencies)</p>
-                      <p className="mt-0.5">Order Support Hotline: <strong className="text-gray-900">9347453135 / 9573261696</strong></p>
-                      <p className="mt-1.5 italic text-gray-500">Thank you for partnering with RAIS Agencies!</p>
-                    </div>
+                    {effectivePaid > 0 ? (
+                      <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-lg space-y-1">
+                        <div className="flex items-center justify-between pb-1 border-b border-emerald-200">
+                          <span className="font-bold text-emerald-800 uppercase tracking-wider text-[10px]">
+                            ✓ Counter Settlement ({isSplitPayment ? 'CASH & UPI' : (paymentTerms.includes('UPI') ? 'UPI' : 'CASH')})
+                          </span>
+                          <span className="px-1.5 py-0.2 bg-emerald-200 text-emerald-900 rounded font-bold text-[9px]">PAID</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span>Collected at Counter:</span>
+                          <strong className="font-mono text-gray-900">₹{effectivePaid.toFixed(2)}</strong>
+                        </div>
+                        <div className="flex justify-between text-[11px] text-emerald-700">
+                          <span>Settled this Bill:</span>
+                          <strong className="font-mono">₹{billSettledAmount.toFixed(2)}</strong>
+                        </div>
+                        {surplusAmount > 0 && (
+                          <div className="flex justify-between text-[11px] text-amber-800 font-semibold">
+                            <span>Adjusted to Past Dues:</span>
+                            <strong className="font-mono">₹{surplusAmount.toFixed(2)}</strong>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <h4 className="font-bold text-gray-800 uppercase tracking-wider text-[10px] mb-1">Bank & UPI Settlement:</h4>
+                        <p>UPI ID: <strong className="font-mono text-gray-900">9347453135@ybl</strong> (RAIS Agencies)</p>
+                        <p className="mt-0.5">Order Support Hotline: <strong className="text-gray-900">9347453135 / 9573261696</strong></p>
+                        <p className="mt-1.5 italic text-gray-500">Thank you for partnering with RAIS Agencies!</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="col-span-5 text-xs space-y-1.5 font-mono">
@@ -1075,9 +1174,27 @@ export const InvoiceBuilderModal = ({
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-b border-gray-400 py-1.5 font-sans">
-                      <span>Grand Total Due:</span>
+                      <span>Grand Total:</span>
                       <span className="font-mono text-base text-gray-900 font-black">₹{totals.total}</span>
                     </div>
+                    {effectivePaid > 0 && (
+                      <>
+                        <div className="flex justify-between text-xs text-emerald-700 pt-1 font-semibold">
+                          <span>Amount Received:</span>
+                          <span className="font-bold">₹{effectivePaid.toFixed(2)}</span>
+                        </div>
+                        {surplusAmount > 0 && (
+                          <div className="flex justify-between text-xs text-sky-700 font-semibold">
+                            <span>Past Dues Cleared:</span>
+                            <span className="font-bold">₹{surplusAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-xs text-emerald-800 font-bold">
+                          <span>Projected Ledger:</span>
+                          <span>{projectedLedgerDue <= 0.01 ? '₹0.00 (Cleared)' : `₹${projectedLedgerDue.toFixed(2)}`}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -1402,184 +1519,197 @@ export const InvoiceBuilderModal = ({
                   {/* Line Items Section */}
                   <div>
                     {/* Table Header (Desktop Only) */}
-                    <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                  <div className="col-span-5">Catalogue Product SKU</div>
-                  <div className="col-span-2 text-center">Quantity</div>
-                  <div className="col-span-2 text-right">Unit Price (₹)</div>
-                  <div className="col-span-2 text-center">Disc %</div>
-                  <div className="col-span-1 text-right">Action</div>
-                </div>
+                    <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 items-center">
+                      <div className="col-span-4">Catalogue Product SKU</div>
+                      <div className="col-span-2 text-center">Quantity</div>
+                      <div className="col-span-2 text-right">Unit Price (₹)</div>
+                      <div className="col-span-1 text-center">Disc %</div>
+                      <div className="col-span-2 text-right text-emerald-400 font-black">Total (₹)</div>
+                      <div className="col-span-1 text-right">Action</div>
+                    </div>
 
-                <div className="space-y-2.5">
-                  {(items || []).map((item, index) => {
-                    const selProd = (products || []).find(p => p?.id === item?.product_id);
-                    const curStock = parseFloat(selProd?.current_stock ?? 0);
-                    const qtyVal = parseFloat(item.quantity) || 0;
-                    const isExceedingStock = selProd && qtyVal > curStock;
-                    const isZeroStock = selProd && curStock <= 0;
-                    const isLowStock = selProd && curStock > 0 && curStock <= parseFloat(selProd.min_stock_alert || 10);
-                    const lineTotal = (qtyVal * parseFloat(item.unit_price || 0) * (1 - (parseFloat(item.discount_rate || 0) / 100))).toFixed(2);
-                    const landedCost = selProd ? parseFloat(selProd.landed_cost || (selProd.base_price * 0.8) || 0) : 0;
-                    const unitPriceVal = parseFloat(item.unit_price || 0);
-                    const isBelowCost = selProd && unitPriceVal > 0 && landedCost > 0 && unitPriceVal < landedCost;
+                    <div className="space-y-2.5">
+                      {(items || []).map((item, index) => {
+                        const selProd = (products || []).find(p => p?.id === item?.product_id);
+                        const curStock = parseFloat(selProd?.current_stock ?? 0);
+                        const qtyVal = parseFloat(item.quantity) || 0;
+                        const isExceedingStock = selProd && qtyVal > curStock;
+                        const isZeroStock = selProd && curStock <= 0;
+                        const isLowStock = selProd && curStock > 0 && curStock <= parseFloat(selProd.min_stock_alert || 10);
+                        const lineTotal = (qtyVal * parseFloat(item.unit_price || 0) * (1 - (parseFloat(item.discount_rate || 0) / 100))).toFixed(2);
+                        const landedCost = selProd ? parseFloat(selProd.landed_cost || (selProd.base_price * 0.8) || 0) : 0;
+                        const unitPriceVal = parseFloat(item.unit_price || 0);
+                        const isBelowCost = selProd && unitPriceVal > 0 && landedCost > 0 && unitPriceVal < landedCost;
 
-                    return (
-                      <React.Fragment key={index}>
-                        {/* ─── DESKTOP TABLE ROW (sm and up) ─── */}
-                        <div className="hidden sm:grid grid-cols-12 gap-2 bg-slate-950/70 p-1.5 sm:p-2 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">
-                          <div className="col-span-5">
-                            <select
-                              value={item.product_id}
-                              onChange={(e) => handleProductChange(index, e.target.value)}
-                              required
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
-                            >
-                              <option value="" className="bg-slate-900 text-slate-400">-- Choose Catalogue SKU --</option>
-                              {sortProductsByCleanName(products).map((p) => {
-                                const { cleanName, brandName } = formatProductDisplay(p);
-                                return (
-                                  <option key={p.id} value={p.id} className="bg-slate-900 text-white py-1">
-                                    {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                            {selProd && (
-                              <div className="flex items-center gap-1.5 mt-0.5 px-1 text-[10px] flex-wrap">
-                                <span className="font-mono text-slate-500">SKU: {selProd.sku}</span>
-                                <span className="text-slate-600">•</span>
-                                {isZeroStock ? (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                                    Out of Stock (0 {selProd.packaging_unit})
-                                  </span>
-                                ) : isLowStock ? (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                    Low Stock: {curStock} {selProd.packaging_unit}
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                                    In Stock: {curStock} {selProd.packaging_unit}
-                                  </span>
+                        return (
+                          <React.Fragment key={index}>
+                            {/* ─── DESKTOP TABLE ROW (sm and up) ─── */}
+                            <div className="hidden sm:grid grid-cols-12 gap-2 bg-slate-950/70 p-1.5 sm:p-2 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors items-center">
+                              <div className="col-span-4">
+                                <select
+                                  value={item.product_id}
+                                  onChange={(e) => handleProductChange(index, e.target.value)}
+                                  required
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
+                                >
+                                  <option value="" className="bg-slate-900 text-slate-400">-- Choose Catalogue SKU --</option>
+                                  {sortProductsByCleanName(products).map((p) => {
+                                    const { cleanName, brandName } = formatProductDisplay(p);
+                                    return (
+                                      <option key={p.id} value={p.id} className="bg-slate-900 text-white py-1">
+                                        {cleanName}{brandName ? ` (${brandName})` : ''} • {p.packaging_unit || 'PKT'} — ₹{parseFloat(p.base_price).toFixed(2)}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                                {selProd && (
+                                  <div className="flex items-center gap-1.5 mt-0.5 px-1 text-[10px] flex-wrap">
+                                    <span className="font-mono text-slate-500">SKU: {selProd.sku}</span>
+                                    <span className="text-slate-600">•</span>
+                                    {isZeroStock ? (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                        Out of Stock (0 {selProd.packaging_unit})
+                                      </span>
+                                    ) : isLowStock ? (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                        Low Stock: {curStock} {selProd.packaging_unit}
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                                        In Stock: {curStock} {selProd.packaging_unit}
+                                      </span>
+                                    )}
+                                    {(isZeroStock || isLowStock || isExceedingStock) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenQuickStockModal(selProd, qtyVal, index)}
+                                        className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 flex items-center gap-1 transition-colors active:scale-95 cursor-pointer shadow-2xs"
+                                        title="Quick Inward Stock without losing this bill"
+                                      >
+                                        <Zap className="w-2.5 h-2.5 fill-current" />
+                                        <span>+Stock</span>
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
-                                {(isZeroStock || isLowStock || isExceedingStock) && (
+                              </div>
+
+                              <div className="col-span-2">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAdjustQuantity(index, -1)}
+                                    className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                                    title="Decrease quantity"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="0.1"
+                                    step="any"
+                                    value={item.quantity}
+                                    onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
+                                    placeholder="Qty"
+                                    required
+                                    className={`w-full min-w-[32px] bg-slate-900 border rounded-md py-1 text-xs text-center font-bold font-mono focus:outline-none ${
+                                      isExceedingStock
+                                        ? 'border-rose-500/80 text-rose-400 focus:border-rose-400'
+                                        : 'border-slate-800 text-amber-400 focus:border-amber-500'
+                                    }`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAdjustQuantity(index, 1)}
+                                    className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
+                                    title="Increase quantity"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                {isExceedingStock && (
                                   <button
                                     type="button"
                                     onClick={() => handleOpenQuickStockModal(selProd, qtyVal, index)}
-                                    className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 flex items-center gap-1 transition-colors active:scale-95 cursor-pointer shadow-2xs"
-                                    title="Quick Inward Stock without losing this bill"
+                                    className="mt-0.5 w-full px-1.5 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 hover:text-white text-[9px] font-black text-center flex items-center justify-center gap-1 transition-all active:scale-95 group shadow-xs cursor-pointer"
+                                    title="Forgot stock inward? Click to quickly inward stock now"
                                   >
-                                    <Zap className="w-2.5 h-2.5 fill-current" />
-                                    <span>+Stock</span>
+                                    <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0 group-hover:animate-bounce" />
+                                    <span>Exceeds ({curStock} avail)</span>
+                                    <span className="px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-black ml-0.5 flex items-center gap-0.5">
+                                      <Zap className="w-2 h-2 fill-current" />
+                                      +Stock
+                                    </span>
                                   </button>
                                 )}
                               </div>
-                            )}
-                          </div>
 
-                          <div className="col-span-2">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleAdjustQuantity(index, -1)}
-                                className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
-                                title="Decrease quantity"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <input
-                                type="number"
-                                min="0.1"
-                                step="any"
-                                value={item.quantity}
-                                onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
-                                placeholder="Qty"
-                                required
-                                className={`w-full min-w-[32px] bg-slate-900 border rounded-md py-1 text-xs text-center font-bold font-mono focus:outline-none ${
-                                  isExceedingStock
-                                    ? 'border-rose-500/80 text-rose-400 focus:border-rose-400'
-                                    : 'border-slate-800 text-amber-400 focus:border-amber-500'
-                                }`}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleAdjustQuantity(index, 1)}
-                                className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0 active:scale-95 border border-slate-700"
-                                title="Increase quantity"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            </div>
-                            {isExceedingStock && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenQuickStockModal(selProd, qtyVal, index)}
-                                className="mt-0.5 w-full px-1.5 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 hover:text-white text-[9px] font-black text-center flex items-center justify-center gap-1 transition-all active:scale-95 group shadow-xs cursor-pointer"
-                                title="Forgot stock inward? Click to quickly inward stock now"
-                              >
-                                <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0 group-hover:animate-bounce" />
-                                <span>Exceeds ({curStock} avail)</span>
-                                <span className="px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-black ml-0.5 flex items-center gap-0.5">
-                                  <Zap className="w-2 h-2 fill-current" />
-                                  +Stock
-                                </span>
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="col-span-2">
-                            <div className="relative">
-                              <span className="absolute left-2 top-1.5 text-xs text-slate-500 font-mono">₹</span>
-                              <input
-                                type="number"
-                                step="1"
-                                min="0"
-                                value={item.unit_price}
-                                onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
-                                placeholder="0"
-                                required
-                                className={`w-full bg-slate-900 border rounded-lg pl-5 pr-2 py-1.5 text-xs text-right font-mono font-bold focus:outline-none transition-colors ${
-                                  isBelowCost
-                                    ? 'border-rose-500 text-rose-300 focus:border-rose-400 bg-rose-950/20'
-                                    : 'border-slate-800 text-slate-200 focus:border-amber-500'
-                                }`}
-                              />
-                            </div>
-                            {isBelowCost && (
-                              <div className="text-[9px] text-rose-400 font-bold flex items-center justify-end gap-1 mt-0.5" title={`Landed cost is ₹${landedCost.toFixed(2)}`}>
-                                <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                                <span>Cost: ₹{Math.round(landedCost)}</span>
+                              <div className="col-span-2">
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1.5 text-xs text-slate-500 font-mono">₹</span>
+                                  <input
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    value={item.unit_price}
+                                    onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
+                                    placeholder="0"
+                                    required
+                                    className={`w-full bg-slate-900 border rounded-lg pl-5 pr-2 py-1.5 text-xs text-right font-mono font-bold focus:outline-none transition-colors ${
+                                      isBelowCost
+                                        ? 'border-rose-500 text-rose-300 focus:border-rose-400 bg-rose-950/20'
+                                        : 'border-slate-800 text-slate-200 focus:border-amber-500'
+                                    }`}
+                                  />
+                                </div>
+                                {isBelowCost && (
+                                  <div className="text-[9px] text-rose-400 font-bold flex items-center justify-end gap-1 mt-0.5" title={`Landed cost is ₹${landedCost.toFixed(2)}`}>
+                                    <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                                    <span>Cost: ₹{Math.round(landedCost)}</span>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
 
-                          <div className="col-span-2">
-                            <div className="relative">
-                              <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="100"
-                                value={item.discount_rate}
-                                onChange={(e) => handleItemFieldChange(index, 'discount_rate', e.target.value)}
-                                placeholder="0"
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-center font-mono text-slate-200 focus:outline-none focus:border-amber-500"
-                              />
-                              <span className="absolute right-2 top-1.5 text-[10px] text-slate-500 pointer-events-none">%</span>
+                              <div className="col-span-1">
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="100"
+                                    value={item.discount_rate}
+                                    onChange={(e) => handleItemFieldChange(index, 'discount_rate', e.target.value)}
+                                    placeholder="0"
+                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-1.5 py-1.5 text-xs text-center font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+                                  />
+                                  <span className="absolute right-1 top-1.5 text-[9px] text-slate-500 pointer-events-none">%</span>
+                                </div>
+                              </div>
+
+                              {/* Col 5: Total Amount (₹) Beside Product */}
+                              <div className="col-span-2 text-right flex flex-col justify-center pr-1">
+                                <span className="font-mono font-black text-xs sm:text-sm text-emerald-400">
+                                  ₹{parseFloat(lineTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                                {parseFloat(item.discount_rate || 0) > 0 && (
+                                  <span className="text-[9px] font-mono text-slate-500 line-through">
+                                    ₹{(qtyVal * unitPriceVal).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="col-span-1 flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => removeItemRow(index)}
+                                  disabled={items.length === 1}
+                                  className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                                  title="Delete Line Item"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="col-span-1 flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => removeItemRow(index)}
-                              disabled={items.length === 1}
-                              className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                              title="Delete Line Item"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
 
                         {/* ─── MOBILE CARD ROW (< sm) ─── */}
                         <div className="sm:hidden bg-slate-950/85 p-3 rounded-xl border border-slate-800 space-y-2.5 shadow-sm">

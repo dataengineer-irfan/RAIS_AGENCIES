@@ -953,19 +953,46 @@ class BillingService:
         ]
 
         allocs_resp = []
-        if not is_list and inv.allocations:
+        settled_received_amount = None
+        settled_applied_to_previous = None
+        settled_payment_method = None
+        settled_payment_number = None
+
+        if inv.allocations:
             for alloc in inv.allocations:
                 if alloc.payment:
-                    allocs_resp.append(
-                        InvoiceAllocationItem(
-                            payment_id=alloc.payment.id,
-                            payment_number=alloc.payment.payment_number,
-                            payment_date=alloc.payment.payment_date,
-                            payment_method=alloc.payment.payment_method,
-                            allocated_amount=alloc.allocated_amount,
-                            reference_number=alloc.payment.reference_number
+                    if not is_list:
+                        allocs_resp.append(
+                            InvoiceAllocationItem(
+                                payment_id=alloc.payment.id,
+                                payment_number=alloc.payment.payment_number,
+                                payment_date=alloc.payment.payment_date,
+                                payment_method=alloc.payment.payment_method,
+                                allocated_amount=alloc.allocated_amount,
+                                reference_number=alloc.payment.reference_number
+                            )
                         )
-                    )
+                    p_amt = alloc.payment.amount
+                    this_alloc = alloc.allocated_amount
+                    surplus = max(Decimal("0.00"), p_amt - this_alloc)
+                    if settled_received_amount is None or p_amt > settled_received_amount:
+                        settled_received_amount = p_amt
+                        settled_applied_to_previous = surplus
+                        settled_payment_method = alloc.payment.payment_method
+                        settled_payment_number = alloc.payment.payment_number
+
+        if not settled_payment_method:
+            terms_up = (inv.payment_terms or "").upper()
+            notes_up = (inv.notes or "").upper()
+            settled_payment_method = "UPI" if ("UPI" in terms_up or "UPI" in notes_up) else "CASH"
+
+        if inv.status == InvoiceStatus.PAID.value and settled_received_amount is None:
+            settled_received_amount = inv.paid_amount or inv.total_amount
+            settled_applied_to_previous = Decimal("0.00")
+
+        settled_closing_balance = cust_balance if cust_balance is not None else (
+            Decimal("0.00") if inv.status == InvoiceStatus.PAID.value and (cust_balance is None or cust_balance <= Decimal("0.00")) else None
+        )
 
         return InvoiceResponse(
             id=inv.id,
@@ -991,6 +1018,11 @@ class BillingService:
             paid_amount=inv.paid_amount,
             outstanding_amount=inv.outstanding_amount,
             customer_outstanding_balance=cust_balance,
+            received_amount=settled_received_amount,
+            applied_to_previous=settled_applied_to_previous,
+            payment_method=settled_payment_method,
+            settled_payment_number=settled_payment_number,
+            closing_balance=settled_closing_balance,
             payment_terms=inv.payment_terms,
             notes=inv.notes,
             qr_payload=inv.qr_payload,

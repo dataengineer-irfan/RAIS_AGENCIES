@@ -204,15 +204,21 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
                   <span>NET TOTAL:</span>
                   <span>Rs. {parseFloat(receipt?.financials?.grand_total || 0).toFixed(2)}</span>
                 </div>
-                {parseFloat(receipt?.financials?.paid_amount || 0) > 0 && (
-                  <div className="flex justify-between text-[11px]">
-                    <span>Paid:</span>
-                    <span>Rs. {parseFloat(receipt?.financials?.paid_amount || 0).toFixed(2)}</span>
+                {parseFloat(receipt?.financials?.received_amount || receipt?.financials?.paid_amount || 0) > 0 && (
+                  <div className="flex justify-between text-[11px] font-semibold">
+                    <span>Received ({receipt?.financials?.payment_method || 'CASH'}):</span>
+                    <span>Rs. {parseFloat(receipt?.financials?.received_amount || receipt?.financials?.paid_amount || 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {parseFloat(receipt?.financials?.applied_to_previous || 0) > 0 && (
+                  <div className="flex justify-between text-[11px] text-gray-700">
+                    <span>Past Dues Cleared:</span>
+                    <span>Rs. {parseFloat(receipt?.financials?.applied_to_previous).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-xs text-black">
-                  <span>BALANCE DUE:</span>
-                  <span>Rs. {parseFloat(receipt?.financials?.outstanding_balance || 0).toFixed(2)}</span>
+                  <span>{parseFloat(receipt?.financials?.outstanding_balance || 0) <= 0.01 ? 'CLOSING DUE:' : 'BALANCE DUE:'}</span>
+                  <span>{parseFloat(receipt?.financials?.outstanding_balance || 0) <= 0.01 ? 'Rs. 0.00 (CLEARED)' : `Rs. ${parseFloat(receipt?.financials?.outstanding_balance || 0).toFixed(2)}`}</span>
                 </div>
               </div>
 

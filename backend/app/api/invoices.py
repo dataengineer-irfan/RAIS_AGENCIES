@@ -276,15 +276,28 @@ def get_printable_invoice(
                 </tbody>
             </table>
 
-            <!-- Summary & QR -->
+            <!-- Summary & Settlement / QR -->
             <div class="grid grid-cols-12 gap-6 pt-4 border-t-2 border-gray-300">
                 <div class="col-span-7 text-xs text-gray-600 flex flex-col justify-between">
-                    <div>
-                        <h4 class="font-bold text-gray-800 uppercase tracking-wider mb-1">Bank & UPI Settlement:</h4>
-                        <p>UPI ID: <span class="font-mono font-bold text-gray-900">9347453135@ybl</span> (RAIS Agencies)</p>
-                        <p class="mt-1">For direct orders & accounts support: <span class="font-bold">9347453135 / 9573261696</span></p>
-                        <p class="mt-2 italic text-gray-500">Thank you for partnering with RAIS Agencies! Quality frozen food products delivered fresh.</p>
-                    </div>
+                    {'<div class="p-3 bg-emerald-50 border border-emerald-300 rounded-lg space-y-1">'
+                     '<div class="flex items-center justify-between pb-1 border-b border-emerald-200">'
+                     '  <span class="font-bold text-emerald-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">'
+                     '    ✓ PAYMENT SETTLEMENT CONFIRMED'
+                     '  </span>'
+                     f'  <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded font-bold font-mono text-[10px] uppercase">{inv.payment_method or "CASH"}</span>'
+                     '</div>'
+                     f'<div class="flex justify-between pt-1"><span class="text-gray-700">Total Received / Settled:</span><span class="font-bold font-mono text-gray-900">₹{getattr(inv, "received_amount", None) or inv.paid_amount:.2f}</span></div>'
+                     f'<div class="flex justify-between"><span class="text-gray-700">Applied to This Bill:</span><span class="font-bold font-mono text-emerald-700">₹{inv.paid_amount:.2f}</span></div>'
+                     + (f'<div class="flex justify-between text-amber-800 font-semibold"><span>Adjusted to Past Dues / Bills:</span><span class="font-bold font-mono">₹{inv.applied_to_previous:.2f}</span></div>' if getattr(inv, 'applied_to_previous', None) and inv.applied_to_previous > 0 else '')
+                     + (f'<div class="mt-1 pt-1 border-t border-emerald-200 text-[11px] font-bold text-emerald-800">✓ ALL DUES FULLY CLEARED (Current Ledger: ₹0.00)</div>' if (getattr(inv, 'closing_balance', None) is not None and inv.closing_balance <= 0.01) or (inv.status == 'PAID' and getattr(inv, 'closing_balance', 0) == 0) else f'<div class="mt-1 pt-1 border-t border-amber-200 text-[11px] font-bold text-amber-800">Remaining Ledger Balance: ₹{inv.closing_balance:.2f}</div>' if getattr(inv, 'closing_balance', None) is not None else '')
+                     + '</div>'
+                     if (inv.status == 'PAID' or (getattr(inv, 'received_amount', None) and inv.received_amount > 0)) else
+                     '<div>'
+                     '<h4 class="font-bold text-gray-800 uppercase tracking-wider mb-1">Bank & UPI Settlement:</h4>'
+                     '<p>UPI ID: <span class="font-mono font-bold text-gray-900">9347453135@ybl</span> (RAIS Agencies)</p>'
+                     '<p class="mt-1">For direct orders & accounts support: <span class="font-bold">9347453135 / 9573261696</span></p>'
+                     '<p class="mt-2 italic text-gray-500">Thank you for partnering with RAIS Agencies! Quality frozen food products delivered fresh.</p>'
+                     '</div>'}
                 </div>
 
                 <div class="col-span-5 text-sm space-y-1.5 font-mono">
@@ -297,14 +310,9 @@ def get_printable_invoice(
                         <span>Grand Total:</span>
                         <span class="font-mono">₹{inv.total_amount:.2f}</span>
                     </div>
-                    <div class="flex justify-between text-xs text-emerald-700 pt-1">
-                        <span>Paid to Date:</span>
-                        <span>₹{inv.paid_amount:.2f}</span>
-                    </div>
-                    <div class="flex justify-between text-base font-black text-rose-700 bg-rose-50 p-1.5 rounded font-sans">
-                        <span>Balance Due:</span>
-                        <span class="font-mono">₹{inv.outstanding_amount:.2f}</span>
-                    </div>
+                    {f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Amount Received:</span><span>₹{inv.received_amount:.2f}</span></div>' if getattr(inv, 'received_amount', None) and inv.received_amount > 0 else f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Paid to Date:</span><span>₹{inv.paid_amount:.2f}</span></div>' if inv.paid_amount > 0 else ''}
+                    {f'<div class="flex justify-between text-xs text-sky-700 font-semibold"><span>Past Dues Cleared:</span><span>₹{inv.applied_to_previous:.2f}</span></div>' if getattr(inv, 'applied_to_previous', None) and inv.applied_to_previous > 0 else ''}
+                    {f'<div class="flex justify-between text-xs text-emerald-700 font-bold"><span>Closing Balance:</span><span>₹0.00 (Cleared)</span></div>' if (getattr(inv, 'closing_balance', None) is not None and inv.closing_balance <= 0.01) else f'<div class="flex justify-between text-base font-black text-rose-700 bg-rose-50 p-1.5 rounded font-sans"><span>Balance Due:</span><span class="font-mono">₹{inv.outstanding_amount:.2f}</span></div>' if inv.outstanding_amount > 0 else ''}
                 </div>
             </div>
 

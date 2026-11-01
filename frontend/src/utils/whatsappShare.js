@@ -106,6 +106,47 @@ export const shareInvoiceOnWhatsApp = async ({
     overallDue = parseFloat(customer.outstanding_balance);
   }
 
+  const status = (invoice?.status || 'ISSUED').toUpperCase();
+  const isPaid = status === 'PAID';
+
+  let receivedAmount = parseFloat(invoice?.received_amount ?? 0);
+  let appliedToPrev = parseFloat(invoice?.applied_to_previous ?? 0);
+  let paymentMethod = (invoice?.payment_method || '').toUpperCase();
+  let closingBalance = (invoice?.closing_balance !== undefined && invoice?.closing_balance !== null)
+    ? parseFloat(invoice.closing_balance)
+    : (overallDue !== null ? overallDue : null);
+
+  // Check allocations if present
+  if (invoice?.allocations && invoice.allocations.length > 0) {
+    let totalAlloc = 0;
+    invoice.allocations.forEach(a => {
+      totalAlloc += parseFloat(a.allocated_amount || 0);
+      if (!paymentMethod && a.payment_method) paymentMethod = a.payment_method.toUpperCase();
+      if (!paymentMethod && a.reference_number) {
+        paymentMethod = a.reference_number.toUpperCase().includes('UPI') ? 'UPI' : 'CASH';
+      }
+      if (a.payment?.amount && (!receivedAmount || parseFloat(a.payment.amount) > receivedAmount)) {
+        receivedAmount = parseFloat(a.payment.amount);
+      }
+    });
+    if (receivedAmount > totalAlloc && !appliedToPrev) {
+      appliedToPrev = receivedAmount - totalAlloc;
+    }
+    if (!receivedAmount) {
+      receivedAmount = totalAlloc;
+    }
+  }
+
+  if (isPaid && !receivedAmount) {
+    receivedAmount = parseFloat(invoice?.paid_amount || billAmt);
+  }
+  if (!paymentMethod) {
+    paymentMethod = (terms.toUpperCase().includes('UPI') || (invoice?.notes || '').toUpperCase().includes('UPI')) ? 'UPI' : 'CASH';
+  }
+
+  const isSettled = isPaid || receivedAmount > 0;
+  const appliedToCurrent = Math.min(billAmt, receivedAmount > 0 ? receivedAmount : (isPaid ? billAmt : 0));
+
   // Date + Short Time format (e.g., "29 Oct 2026 • 03:55 PM")
   const { fullText: invoiceDateTimeStr } = formatInvoiceDateTime(invoice?.invoice_date, invoice?.created_at);
 
@@ -133,11 +174,30 @@ export const shareInvoiceOnWhatsApp = async ({
     itemLines = '▫️ Wholesale frozen food supplies';
   }
 
-  let dueSection = '';
-  if (overallDue !== null && overallDue > 0) {
-    dueSection = `⚠️ *Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
-  } else if (invOutstanding > 0 && invOutstanding !== billAmt) {
-    dueSection = `⚠️ *Balance Due on Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+  let settlementSection = '';
+  if (isSettled) {
+    settlementSection = `✅ *Status:* *PAID IN FULL*\n💵 *Settlement Received:* *₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (${paymentMethod || 'CASH'})\n🔹 *Applied to Current Bill:* ₹${appliedToCurrent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+    if (appliedToPrev > 0) {
+      settlementSection += `🔹 *Adjusted to Past Dues:* ₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+    }
+    if (closingBalance !== null && closingBalance <= 0.01) {
+      settlementSection += `🎉 *Ledger Status:* *ALL DUES FULLY CLEARED (₹0.00)*\n`;
+    } else if (closingBalance !== null && closingBalance > 0.01) {
+      settlementSection += `⚠️ *Remaining Account Balance:* *₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+    }
+  } else {
+    if (overallDue !== null && overallDue > 0) {
+      settlementSection = `⚠️ *Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+    } else if (invOutstanding > 0 && invOutstanding !== billAmt) {
+      settlementSection = `⚠️ *Balance Due on Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+    }
+  }
+
+  // Only show UPI payment instructions if the bill is not fully paid OR if there is an active ledger due
+  let upiSection = '';
+  const isCompletelyCleared = isSettled && (closingBalance === null || closingBalance <= 0.01);
+  if (!isCompletelyCleared) {
+    upiSection = `📲 *Pay via UPI:* \`9347453135@ybl\` (RAIS AGENCIES)\nGPay / PhonePe: 9347453135\n`;
   }
 
   const billIdentifier = invoice?.invoice_number || invoice?.id || '';
@@ -161,10 +221,7 @@ export const shareInvoiceOnWhatsApp = async ({
 ${itemLines}
 ━━━━━━━━━━━━━━━━━━━━
 💰 *Bill Total:* *₹${totalAmtFormatted}*
-${dueSection}${restockSection}
-📲 *Pay via UPI:* \`9347453135@ybl\` (RAIS AGENCIES)
-GPay / PhonePe: 9347453135
-${getCompactQuickLinks(cleanBillUrl, 'Download Bill')}`;
+${settlementSection}${restockSection}${upiSection}${getCompactQuickLinks(cleanBillUrl, 'Download Bill')}`;
 
   const cleanPhone = (custPhone || '').toString().replace(/[^0-9]/g, '');
   const hasDirectCustomer = cleanPhone.length >= 10;

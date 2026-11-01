@@ -90,6 +90,11 @@ class InvoiceResponse(BaseModel):
     paid_amount: Decimal
     outstanding_amount: Decimal
     customer_outstanding_balance: Optional[Decimal] = None  # Live customer total account due balance
+    received_amount: Optional[Decimal] = None               # Total cash/UPI received during settlement
+    applied_to_previous: Optional[Decimal] = None           # Surplus amount adjusted to previous dues
+    payment_method: Optional[str] = None                    # CASH / UPI / SPLIT
+    settled_payment_number: Optional[str] = None            # Payment voucher ref (e.g. PAY-202611-00002)
+    closing_balance: Optional[Decimal] = None               # Final ledger balance after settlement
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
     qr_payload: Optional[str] = None

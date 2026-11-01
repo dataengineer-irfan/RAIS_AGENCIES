@@ -57,16 +57,35 @@ class ThermalPrintService:
         paid_amount = float(invoice.paid_amount or 0.0)
         outstanding = float(invoice.outstanding_amount or 0.0)
 
-        upi_qr_data = ThermalPrintService.generate_upi_qr_string(invoice.invoice_number, outstanding if outstanding > 0 else grand_total)
+        received_amount = None
+        applied_to_previous = None
+        payment_method = None
+        if invoice.allocations:
+            for alloc in invoice.allocations:
+                if alloc.payment:
+                    p_amt = float(alloc.payment.amount)
+                    this_alloc = float(alloc.allocated_amount)
+                    surplus = max(0.0, p_amt - this_alloc)
+                    if received_amount is None or p_amt > received_amount:
+                        received_amount = p_amt
+                        applied_to_previous = surplus
+                        payment_method = alloc.payment.payment_method
+        if not payment_method:
+            payment_method = "UPI" if "UPI" in (invoice.payment_terms or "").upper() else "CASH"
+
+        # Only generate UPI QR code if the invoice is unpaid / has outstanding due
+        upi_qr_data = None
         upi_qr_base64 = None
-        try:
-            import io, base64, qrcode
-            qr_img = qrcode.make(upi_qr_data)
-            buf = io.BytesIO()
-            qr_img.save(buf, format="PNG")
-            upi_qr_base64 = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
-        except Exception:
-            upi_qr_base64 = None
+        if outstanding > 0.01:
+            upi_qr_data = ThermalPrintService.generate_upi_qr_string(invoice.invoice_number, outstanding)
+            try:
+                import io, base64, qrcode
+                qr_img = qrcode.make(upi_qr_data)
+                buf = io.BytesIO()
+                qr_img.save(buf, format="PNG")
+                upi_qr_base64 = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
+            except Exception:
+                upi_qr_base64 = None
 
         cust_name = invoice.customer.business_name if invoice.customer else "Counter Sale"
         if invoice.customer and invoice.customer.contact_person and invoice.customer.contact_person.strip() and invoice.customer.contact_person.strip().lower() != cust_name.strip().lower():
@@ -100,7 +119,10 @@ class ThermalPrintService:
                 "tax_total": 0.0,
                 "grand_total": round(grand_total, 2),
                 "paid_amount": round(paid_amount, 2),
-                "outstanding_balance": round(outstanding, 2)
+                "outstanding_balance": round(outstanding, 2),
+                "received_amount": round(received_amount, 2) if received_amount is not None else None,
+                "applied_to_previous": round(applied_to_previous, 2) if applied_to_previous is not None else None,
+                "payment_method": payment_method
             },
             "upi": {
                 "upi_id": ThermalPrintService.UPI_ID,
