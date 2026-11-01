@@ -7,6 +7,22 @@ export default {
   theme: {
     extend: {
       colors: {
+        swiggy: {
+          orange: '#FC8019',
+          orangeHover: '#E06A0B',
+          orangeLight: '#FFF4EB',
+          dark: '#1C1C1C',
+        },
+        zepto: {
+          purple: '#7C3AED',
+          purpleLight: '#F3E8FF',
+          violet: '#6D28D9',
+        },
+        instamart: {
+          green: '#0C831F',
+          greenLight: '#E8F5E9',
+          emerald: '#10B981',
+        },
         rais: {
           50: '#fffbeb',
           100: '#fef3c7',
@@ -18,16 +34,15 @@ export default {
           700: '#b45309',
           800: '#92400e',
           900: '#78350f',
-          950: '#451a03',
-        },
-        navy: {
-          800: '#0f172a',
-          900: '#0a0f1d',
-          950: '#050811',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
+      boxShadow: {
+        'swiggy': '0 4px 20px rgba(40, 44, 63, 0.08)',
+        'swiggy-hover': '0 8px 28px rgba(40, 44, 63, 0.14)',
+        'card': '0 2px 12px rgba(0, 0, 0, 0.06)',
       }
     },
   },

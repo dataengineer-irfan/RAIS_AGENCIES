@@ -3,12 +3,60 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 const StoreContext = createContext(null);
 
 export const SAMPLE_PILOT_OUTLETS = [
-  { id: 'CUST-0001', name: 'CHICKEN EMPIRE ALEEM', contact: 'Aleem Bhai', phone: '9848011223', type: 'QSR Fried Chicken', route: 'Rayachoty Main Road' },
-  { id: 'CUST-0002', name: 'PARADAISE PIZZA', contact: 'Riyaz', phone: '9573211445', type: 'Pizzeria & Cafe', route: 'Madanapalle Bypass' },
-  { id: 'CUST-0003', name: 'PIZZA TIME', contact: 'Sharif', phone: '9440122334', type: 'Pizza & Fast Food', route: 'Rayachoty Clock Tower' },
-  { id: 'CUST-0004', name: 'KIM CAFE & SNACKS', contact: 'Imran', phone: '9398144556', type: 'Bakery & Snacks', route: 'Kadapa Road' },
-  { id: 'CUST-0005', name: 'BITE N SIP FAST FOOD', contact: 'Fayaz', phone: '9123455678', type: 'Burgers & Wraps', route: 'Sundupalli Road' },
-  { id: 'CUST-RETAIL-01', name: 'NEW ROYAL KIRANA & MART', contact: 'Mahesh', phone: '9849099887', type: 'Retail Store', route: 'Old Bazaar Rayachoty' },
+  { 
+    id: 'CUST-0001', 
+    name: 'CHICKEN EMPIRE ALEEM', 
+    contact: 'Aleem Bhai', 
+    phone: '9848011223', 
+    type: 'QSR Fried Chicken', 
+    route: 'Rayachoty Main Road',
+    distance: '0.8 km'
+  },
+  { 
+    id: 'CUST-0002', 
+    name: 'PARADAISE PIZZA', 
+    contact: 'Riyaz', 
+    phone: '9573211445', 
+    type: 'Pizzeria & Cafe', 
+    route: 'Madanapalle Bypass',
+    distance: '1.4 km'
+  },
+  { 
+    id: 'CUST-0003', 
+    name: 'PIZZA TIME', 
+    contact: 'Sharif', 
+    phone: '9440122334', 
+    type: 'Pizza & Fast Food', 
+    route: 'Rayachoty Clock Tower',
+    distance: '0.5 km'
+  },
+  { 
+    id: 'CUST-0004', 
+    name: 'KIM CAFE & SNACKS', 
+    contact: 'Imran', 
+    phone: '9398144556', 
+    type: 'Bakery & Snacks', 
+    route: 'Kadapa Road',
+    distance: '1.2 km'
+  },
+  { 
+    id: 'CUST-0005', 
+    name: 'BITE N SIP FAST FOOD', 
+    contact: 'Fayaz', 
+    phone: '9123455678', 
+    type: 'Burgers & Wraps', 
+    route: 'Sundupalli Road',
+    distance: '2.1 km'
+  },
+  { 
+    id: 'CUST-RETAIL-01', 
+    name: 'NEW ROYAL KIRANA & MART', 
+    contact: 'Mahesh', 
+    phone: '9849099887', 
+    type: 'Retail Store', 
+    route: 'Old Bazaar Rayachoty',
+    distance: '0.3 km'
+  },
 ];
 
 export const StoreProvider = ({ children }) => {
@@ -26,7 +74,6 @@ export const StoreProvider = ({ children }) => {
   });
 
   const [selectedOutlet, setSelectedOutlet] = useState(() => {
-    // Check URL parameters for ?shop=...
     const params = new URLSearchParams(window.location.search);
     const shopParam = params.get('shop') || params.get('outlet');
     if (shopParam) {
@@ -44,6 +91,7 @@ export const StoreProvider = ({ children }) => {
   const [upsellProduct, setUpsellProduct] = useState(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [lastBookedOrder, setLastBookedOrder] = useState(null);
+  const [flyingParticles, setFlyingParticles] = useState([]);
 
   // Sync cart to localStorage
   useEffect(() => {
@@ -69,8 +117,20 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
-  const addToCart = (product, delta = 1, triggerUpsell = true) => {
+  const triggerFlyEffect = (clientX, clientY) => {
+    const id = Date.now() + Math.random();
+    setFlyingParticles(prev => [...prev, { id, x: clientX, y: clientY }]);
+    setTimeout(() => {
+      setFlyingParticles(prev => prev.filter(p => p.id !== id));
+    }, 800);
+  };
+
+  const addToCart = (product, delta = 1, triggerUpsell = true, event = null) => {
     triggerHaptic();
+    if (event && event.clientX && event.clientY) {
+      triggerFlyEffect(event.clientX, event.clientY);
+    }
+
     setCart(prev => {
       const existing = prev[product.id];
       const newQty = Math.max(0, (existing ? existing.quantity : 0) + delta);
@@ -88,13 +148,12 @@ export const StoreProvider = ({ children }) => {
       };
     });
 
-    // Smart Upsell Trigger: Suggest High-Affinity Auxiliary SKUs
+    // Smart Upsell Trigger: Suggest High-Affinity SKUs
     if (triggerUpsell && delta > 0) {
       const sku = (product.sku || '').toUpperCase();
       const name = (product.name || '').toUpperCase();
 
       if (sku.includes('VEG') || name.includes('FRIES')) {
-        // Fries added -> suggest Peri-Peri / Mayo
         setUpsellProduct({
           name: "VKL CHEF'S ART PERI-PERI SHAKER (1 KG)",
           reason: "Customers love Peri-Peri dusting with fries! Adds ₹15 margin per serve.",
@@ -104,7 +163,6 @@ export const StoreProvider = ({ children }) => {
           image: "/assets/products/vkl_peri_peri_sprinkler.jpg"
         });
       } else if (sku.includes('BRD') || name.includes('BREADING') || name.includes('CHICKEN')) {
-        // Breading added -> suggest 1000ml chicken bucket
         setUpsellProduct({
           name: "BROASTED CHICKEN BUCKET 1000ML WITH LID (100 NOS)",
           reason: "Deliver crispy fried chicken without soggy crusts using steam-vent lids.",
@@ -161,7 +219,10 @@ export const StoreProvider = ({ children }) => {
   }, [cartItemsArray]);
 
   const cartTotal = useMemo(() => {
-    return cartItemsArray.reduce((sum, itm) => sum + (itm.quantity * (itm.product.base_price || 0)), 0);
+    return cartItemsArray.reduce((sum, itm) => {
+      const price = parseFloat(itm.product.base_price || 0);
+      return sum + (price * itm.quantity);
+    }, 0);
   }, [cartItemsArray]);
 
   return (
@@ -170,12 +231,6 @@ export const StoreProvider = ({ children }) => {
       cartItemsArray,
       cartCount,
       cartTotal,
-      addToCart,
-      updateQuantity,
-      removeFromCart,
-      clearCart,
-      language,
-      toggleLanguage,
       selectedOutlet,
       setSelectedOutlet,
       activeCategory,
@@ -187,7 +242,15 @@ export const StoreProvider = ({ children }) => {
       isCheckoutOpen,
       setIsCheckoutOpen,
       lastBookedOrder,
-      setLastBookedOrder
+      setLastBookedOrder,
+      language,
+      toggleLanguage,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      flyingParticles,
+      triggerFlyEffect
     }}>
       {children}
     </StoreContext.Provider>

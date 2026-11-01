@@ -7,25 +7,26 @@ export const CategoryBar = ({ categories = SWIGGY_CATEGORIES }) => {
   const { activeCategory, setActiveCategory, language } = useStore();
 
   return (
-    <div className="sticky top-[58px] z-30 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-3.5 py-2">
-      <div className="max-w-xl mx-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+    <div className="sticky top-[58px] z-25 bg-white/95 backdrop-blur-md border-b border-slate-100 px-3.5 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+      <div className="max-w-md mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
         {categories.map((cat) => {
           const isActive = activeCategory === cat.id;
           const label = language === 'te' ? (cat.name_te || cat.name) : cat.name;
 
           return (
-            <button
+            <motion.button
               key={cat.id}
+              whileTap={{ scale: 0.94 }}
               onClick={() => setActiveCategory(cat.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap active:scale-95 shrink-0 ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400 font-black'
-                  : 'bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800/80 hover:bg-slate-850'
+                  ? 'bg-[#FC8019] text-white shadow-md shadow-orange-500/25 font-black ring-2 ring-[#FC8019]/20'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-slate-200/80'
               }`}
             >
               <span className="text-sm">{cat.icon}</span>
               <span>{label}</span>
-            </button>
+            </motion.button>
           );
         })}
       </div>
