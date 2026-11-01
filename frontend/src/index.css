@@ -47,13 +47,16 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   LIGHT THEME (EXECUTIVE HIGH-CLARITY WHITE & SLATE)
-   Activated when html has class .theme-light
+   DATABRICKS & SWIGGY EXECUTIVE LIGHT THEME DESIGN SYSTEM
+   Activated strictly when html has class .theme-light
    Transforms the UI into a clean, bright, glare-resistant daytime palette
+   with Databricks/Swiggy crisp card surfaces, high-contrast typography,
+   and refined brand accents. ZERO IMPACT ON DARK THEME.
    ═══════════════════════════════════════════════════════════════════════ */
 html.theme-light body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #f8fafc; /* Crisp cool slate-50 canvas */
+  color: #0f172a;            /* Deep obsidian slate-900 */
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Modal & Drawer Overlays MUST remain a dark translucent scrim in Light Mode */
@@ -77,22 +80,8 @@ html.theme-light ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Surfaces & Containers */
-html.theme-light .bg-slate-950,
-html.theme-light .bg-slate-950\/95,
-html.theme-light .bg-slate-950\/90,
-html.theme-light .bg-slate-950\/85,
-html.theme-light .bg-slate-950\/80,
-html.theme-light .bg-slate-950\/75,
-html.theme-light .bg-slate-950\/70,
-html.theme-light .bg-slate-950\/60,
-html.theme-light .bg-slate-950\/50,
-html.theme-light .bg-slate-950\/40,
-html.theme-light .bg-slate-950\/30 {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-}
-
+/* ─── PRIMARY CONTAINER SURFACES (.bg-slate-900) ─── */
+/* Pure white cards with crisp borders and Databricks ambient micro-elevation */
 html.theme-light .bg-slate-900,
 html.theme-light .bg-slate-900\/95,
 html.theme-light .bg-slate-900\/90,
@@ -104,9 +93,32 @@ html.theme-light .bg-slate-900\/40,
 html.theme-light .bg-slate-900\/30 {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03) !important;
 }
 
+/* ─── EMBEDDED SUB-SURFACES & ROW CARDS (.bg-slate-950/70, .bg-slate-950/80, etc.) ─── */
+/* In Databricks & Swiggy, list rows inside white cards are clean white cards with crisp borders, NOT dirty grey washes! */
+html.theme-light .bg-slate-950\/90,
+html.theme-light .bg-slate-950\/85,
+html.theme-light .bg-slate-950\/80,
+html.theme-light .bg-slate-950\/75,
+html.theme-light .bg-slate-950\/70,
+html.theme-light .bg-slate-950\/60,
+html.theme-light .bg-slate-950\/50,
+html.theme-light .bg-slate-950\/40,
+html.theme-light .bg-slate-950\/30 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03) !important;
+}
+
+/* Deep Canvas / Backdrops */
+html.theme-light .bg-slate-950 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Secondary Panels & Strip Tracks (.bg-slate-800) */
 html.theme-light .bg-slate-800,
 html.theme-light .bg-slate-800\/90,
 html.theme-light .bg-slate-800\/80,
@@ -115,8 +127,8 @@ html.theme-light .bg-slate-800\/60,
 html.theme-light .bg-slate-800\/50,
 html.theme-light .bg-slate-800\/40,
 html.theme-light .bg-slate-800\/30 {
-  background-color: #e2e8f0 !important;
-  border-color: #cbd5e1 !important;
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
   color: #1e293b !important;
 }
 
@@ -130,25 +142,22 @@ html.theme-light [class*="from-slate-900"],
 html.theme-light [class*="to-slate-950"],
 html.theme-light [class*="to-slate-900"] {
   background-image: none !important;
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
 }
 
+/* Clean Row Hover (Databricks subtle highlight) */
+html.theme-light .hover\:bg-slate-950:hover,
 html.theme-light .hover\:bg-slate-950\/90:hover,
 html.theme-light .hover\:bg-slate-950\/80:hover,
 html.theme-light .hover\:bg-slate-950\/70:hover,
 html.theme-light .hover\:bg-slate-950\/60:hover,
-html.theme-light .hover\:bg-slate-950\/50:hover,
-html.theme-light .hover\:bg-slate-950\/40:hover,
-html.theme-light .hover\:bg-slate-950:hover {
-  background-color: #f1f5f9 !important;
-}
-
+html.theme-light .hover\:bg-slate-800:hover,
+html.theme-light .hover\:bg-slate-800\/80:hover,
 html.theme-light .hover\:bg-slate-800\/70:hover,
-html.theme-light .hover\:bg-slate-800\/60:hover,
-html.theme-light .hover\:bg-slate-800\/40:hover,
-html.theme-light .hover\:bg-slate-800:hover {
-  background-color: #cbd5e1 !important;
+html.theme-light .hover\:bg-slate-800\/60:hover {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Borders */
@@ -169,117 +178,182 @@ html.theme-light .border-slate-700\/50 {
   border-color: #cbd5e1 !important;
 }
 
-/* Typography Overrides for High Contrast Legibility */
+/* ─── SIDEBAR NAVIGATION (Databricks & Swiggy Clean SaaS Theme) ─── */
+html.theme-light nav button.bg-amber-500\/10,
+html.theme-light nav .bg-amber-500\/10 {
+  background-color: #fff7ed !important; /* Soft warm orange-50 */
+  border-color: #fed7aa !important;     /* Soft warm orange-200 */
+  color: #c2410c !important;            /* Warm Orange-700 text */
+  box-shadow: 0 1px 2px 0 rgba(234, 88, 12, 0.08) !important;
+}
+html.theme-light nav button.bg-amber-500\/10 svg,
+html.theme-light nav .bg-amber-500\/10 svg {
+  color: #ea580c !important;            /* Signature vibrant orange-600 */
+}
+html.theme-light nav button.text-slate-400 {
+  color: #475569 !important;            /* Slate-600 */
+}
+html.theme-light nav button.text-slate-400:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ─── TOP HEADER & LIVE MARQUEE TICKER ─── */
+html.theme-light header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03) !important;
+}
+html.theme-light [class*="ContinuousLiveTicker"] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ─── TYPOGRAPHY OVERRIDES FOR HIGH CONTRAST LEGIBILITY ─── */
 html.theme-light .text-white {
   color: #0f172a !important; /* Deep black-slate */
 }
-
 html.theme-light .text-slate-100,
 html.theme-light .text-slate-200 {
   color: #1e293b !important; /* Slate-800 */
 }
-
 html.theme-light .text-slate-300 {
   color: #334155 !important; /* Slate-700 */
 }
-
 html.theme-light .text-slate-400 {
   color: #475569 !important; /* Slate-600: strong contrast on white */
 }
-
 html.theme-light .text-slate-500 {
-  color: #475569 !important; /* Slate-600 */
+  color: #64748b !important; /* Slate-500 */
 }
-
 html.theme-light .text-slate-600 {
-  color: #334155 !important; /* Slate-700 */
+  color: #64748b !important;
 }
 
-/* Gold / Amber Brand Palette in Light Mode (Crisp Amber-800 #92400e) */
-html.theme-light .text-amber-100,
-html.theme-light .text-amber-200,
-html.theme-light .text-amber-300,
+/* ─── GOLD / AMBER BRAND PALETTE (Crisp Warm Amber #d97706, NEVER muddy brown #92400e!) ─── */
 html.theme-light .text-amber-400,
-html.theme-light .text-amber-500,
-html.theme-light [class*="text-amber-200"],
-html.theme-light [class*="text-amber-300"],
-html.theme-light [class*="text-amber-400"] {
-  color: #92400e !important;
+html.theme-light .text-amber-500 {
+  color: #d97706 !important; /* Vibrant Amber-600 */
+}
+html.theme-light .text-amber-300 {
+  color: #b45309 !important; /* Warm Amber-700 */
+}
+html.theme-light .text-amber-200,
+html.theme-light .text-amber-100 {
+  color: #b45309 !important;
 }
 
 html.theme-light .bg-amber-500\/10,
 html.theme-light .bg-amber-500\/15,
 html.theme-light .bg-amber-500\/20,
-html.theme-light .bg-amber-500\/25 {
-  background-color: #fef3c7 !important;
-  border-color: #fde68a !important;
-  color: #92400e !important;
+html.theme-light .bg-amber-500\/25,
+html.theme-light .bg-amber-950\/40,
+html.theme-light .bg-amber-950\/70,
+html.theme-light [class*="bg-amber-950"] {
+  background-color: #fffbeb !important; /* Amber-50 */
+  border-color: #fde68a !important;     /* Amber-200 */
+  color: #b45309 !important;            /* Amber-700 */
 }
 
-html.theme-light .bg-amber-950\/40 {
-  background-color: #fffbeb !important;
-  border-color: #fde68a !important;
-  color: #b45309 !important;
-}
-
-/* Emerald / Green Palette in Light Mode (Emerald-700 #15803d) */
-html.theme-light .text-emerald-200,
-html.theme-light .text-emerald-300,
+/* ─── EMERALD / GREEN PALETTE (Emerald-600 #16a34a / Emerald-700 #15803d) ─── */
 html.theme-light .text-emerald-400,
-html.theme-light .text-emerald-500,
-html.theme-light [class*="text-emerald-300"],
-html.theme-light [class*="text-emerald-400"] {
-  color: #15803d !important;
+html.theme-light .text-emerald-500 {
+  color: #16a34a !important; /* Emerald-600 */
+}
+html.theme-light .text-emerald-300,
+html.theme-light .text-emerald-200 {
+  color: #15803d !important; /* Emerald-700 */
 }
 
 html.theme-light .bg-emerald-500\/10,
 html.theme-light .bg-emerald-500\/15,
 html.theme-light .bg-emerald-500\/20,
 html.theme-light .bg-emerald-500\/25,
-html.theme-light .bg-emerald-600\/20 {
-  background-color: #dcfce7 !important;
-  border-color: #bbf7d0 !important;
-  color: #15803d !important;
+html.theme-light .bg-emerald-600\/20,
+html.theme-light .bg-emerald-950\/40,
+html.theme-light .bg-emerald-950\/70,
+html.theme-light [class*="bg-emerald-950"] {
+  background-color: #f0fdf4 !important; /* Emerald-50 */
+  border-color: #bbf7d0 !important;     /* Emerald-200 */
+  color: #15803d !important;            /* Emerald-700 */
 }
 
-html.theme-light .bg-emerald-950\/40 {
-  background-color: #ecfdf5 !important;
-  border-color: #a7f3d0 !important;
-  color: #047857 !important;
-}
-
-/* Rose / Red Palette in Light Mode (Rose-700 #be123c) */
-html.theme-light .text-rose-200,
-html.theme-light .text-rose-300,
+/* ─── ROSE / RED PALETTE (Rose-600 #e11d48 / Rose-700 #be123c) ─── */
 html.theme-light .text-rose-400,
-html.theme-light [class*="text-rose-300"],
-html.theme-light [class*="text-rose-400"] {
-  color: #be123c !important;
+html.theme-light .text-rose-500 {
+  color: #e11d48 !important; /* Rose-600 */
+}
+html.theme-light .text-rose-300,
+html.theme-light .text-rose-200 {
+  color: #be123c !important; /* Rose-700 */
 }
 
 html.theme-light .bg-rose-500\/10,
 html.theme-light .bg-rose-500\/15,
-html.theme-light .bg-rose-500\/20 {
-  background-color: #fee2e2 !important;
-  border-color: #fecaca !important;
+html.theme-light .bg-rose-500\/20,
+html.theme-light .bg-rose-950\/40,
+html.theme-light .bg-rose-950\/70,
+html.theme-light [class*="bg-rose-950"] {
+  background-color: #fef2f2 !important; /* Rose-50 */
+  border-color: #fecaca !important;     /* Rose-200 */
+  color: #be123c !important;            /* Rose-700 */
 }
 
-/* Blue / Info Palette in Light Mode (Blue-700 #1d4ed8) */
-html.theme-light .text-blue-200,
-html.theme-light .text-blue-300,
+/* ─── BLUE / INFO PALETTE & BUTTONS (Slip, Badges) ─── */
 html.theme-light .text-blue-400,
-html.theme-light [class*="text-blue-300"],
-html.theme-light [class*="text-blue-400"] {
-  color: #1d4ed8 !important;
+html.theme-light .text-blue-500 {
+  color: #0284c7 !important; /* Sky-600 */
+}
+html.theme-light .text-blue-300,
+html.theme-light .text-blue-200 {
+  color: #0369a1 !important; /* Sky-700 */
 }
 
 html.theme-light .bg-blue-500\/10,
-html.theme-light .bg-blue-600\/20 {
-  background-color: #dbeafe !important;
-  border-color: #bfdbfe !important;
+html.theme-light .bg-blue-600\/20,
+html.theme-light .bg-blue-950\/40,
+html.theme-light .bg-blue-950\/70,
+html.theme-light [class*="bg-blue-950"] {
+  background-color: #f0f9ff !important; /* Sky-50 */
+  border-color: #bae6fd !important;     /* Sky-200 */
+  color: #0369a1 !important;            /* Sky-700 */
 }
 
-/* Purple Palette in Light Mode (Purple-700 #6b21a8) */
+/* Slip Print Action Button */
+html.theme-light button.bg-blue-600\/20 {
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0284c7 !important;
+}
+html.theme-light button.bg-blue-600\/20:hover {
+  background-color: #e0f2fe !important;
+}
+
+/* Pay Settlement Action Button */
+html.theme-light button.bg-emerald-600\/20 {
+  background-color: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: #15803d !important;
+}
+html.theme-light button.bg-emerald-600\/20:hover {
+  background-color: #dcfce7 !important;
+}
+
+/* Copy Invoice # Chip */
+html.theme-light span.cursor-pointer.bg-slate-900 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Rank Badges in Fast-Moving SKUs */
+html.theme-light .bg-slate-700\/50 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* ─── PURPLE PALETTE ─── */
 html.theme-light .text-purple-400,
 html.theme-light .text-purple-300 {
   color: #6b21a8 !important;
@@ -290,36 +364,7 @@ html.theme-light .bg-purple-500\/20 {
   border-color: #e9d5ff !important;
 }
 
-/* Status Badges in Light Mode */
-html.theme-light [class*="bg-blue-950"],
-html.theme-light .bg-blue-950\/70 {
-  background-color: #dbeafe !important;
-  border-color: #93c5fd !important;
-  color: #1d4ed8 !important;
-}
-
-html.theme-light [class*="bg-emerald-950"],
-html.theme-light .bg-emerald-950\/70 {
-  background-color: #dcfce7 !important;
-  border-color: #86efac !important;
-  color: #15803d !important;
-}
-
-html.theme-light [class*="bg-amber-950"],
-html.theme-light .bg-amber-950\/70 {
-  background-color: #fef3c7 !important;
-  border-color: #fde68a !important;
-  color: #92400e !important;
-}
-
-html.theme-light [class*="bg-rose-950"],
-html.theme-light .bg-rose-950\/70 {
-  background-color: #fee2e2 !important;
-  border-color: #fca5a5 !important;
-  color: #be123c !important;
-}
-
-/* Form Controls in Light Mode */
+/* ─── FORM CONTROLS IN LIGHT MODE ─── */
 html.theme-light input,
 html.theme-light select,
 html.theme-light textarea {
@@ -331,16 +376,16 @@ html.theme-light textarea {
 html.theme-light input:focus,
 html.theme-light select:focus,
 html.theme-light textarea:focus {
-  border-color: #d97706 !important;
-  box-shadow: 0 0 0 1px #d97706 !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
 }
 
 html.theme-light input::placeholder,
 html.theme-light textarea::placeholder {
-  color: #64748b !important;
+  color: #94a3b8 !important;
 }
 
-/* Tables in Light Mode */
+/* ─── TABLES IN LIGHT MODE ─── */
 html.theme-light thead.bg-slate-950,
 html.theme-light thead {
   background-color: #f8fafc !important;
@@ -350,7 +395,7 @@ html.theme-light thead th {
   color: #334155 !important;
 }
 html.theme-light table tr:hover {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
