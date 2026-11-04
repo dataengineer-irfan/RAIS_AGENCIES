@@ -293,6 +293,7 @@ export const InvoiceBuilderModal = ({
         ...newItems[index],
         product_id: prod.id,
         unit_price: parseFloat(prod.base_price || 0),
+        purchase_cost: parseFloat(prod.landed_cost || prod.purchase_cost || 0),
         packaging_unit: prod.packaging_unit || 'PKT',
         isAmbiguous: false,
         alternatives: []
@@ -302,6 +303,7 @@ export const InvoiceBuilderModal = ({
         ...newItems[index],
         product_id: '',
         unit_price: 0,
+        purchase_cost: 0,
         isAmbiguous: false,
         alternatives: []
       };
@@ -334,6 +336,7 @@ export const InvoiceBuilderModal = ({
             product_id: prod.id,
             quantity: 1,
             unit_price: parseFloat(prod.base_price || 0),
+            purchase_cost: parseFloat(prod.landed_cost || prod.purchase_cost || 0),
             discount_rate: 0,
             packaging_unit: prod.packaging_unit || 'PKT'
           }
@@ -345,6 +348,7 @@ export const InvoiceBuilderModal = ({
             product_id: prod.id,
             quantity: 1,
             unit_price: parseFloat(prod.base_price || 0),
+            purchase_cost: parseFloat(prod.landed_cost || prod.purchase_cost || 0),
             discount_rate: 0,
             packaging_unit: prod.packaging_unit || 'PKT'
           }
