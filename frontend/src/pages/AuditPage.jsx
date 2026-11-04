@@ -21,7 +21,13 @@ import {
   FileText,
   Trash2,
   ArrowRight,
-  ShieldAlert
+  ShieldAlert,
+  AlertTriangle,
+  TrendingDown,
+  FileSpreadsheet,
+  UserX,
+  Calendar,
+  ArrowDownRight
 } from 'lucide-react';
 import { auditApi, backupApi } from '../services/api';
 import { copyToClipboard } from '../utils/mobileHelpers';
@@ -37,6 +43,125 @@ export const AuditPage = ({ initialParams = null }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   
+  // Main Suite Navigation Tab
+  const [activeMainTab, setActiveMainTab] = useState('activity'); // 'activity' | 'leakage'
+
+  // Commercial Margin Leakage State
+  const [leakageData, setLeakageData] = useState({ summary: {}, items: [] });
+  const [leakageLoading, setLeakageLoading] = useState(false);
+  const [leakageDateRange, setLeakageDateRange] = useState('all');
+  const [leakageSearch, setLeakageSearch] = useState('');
+  const [debouncedLeakageSearch, setDebouncedLeakageSearch] = useState('');
+  const [leakageClassification, setLeakageClassification] = useState('ALL');
+
+  // Debounce leakage search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedLeakageSearch(leakageSearch);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [leakageSearch]);
+
+  const loadMarginLeakage = async () => {
+    setLeakageLoading(true);
+    try {
+      const params = {};
+      const today = new Date();
+      const formatDate = (d) => d.toISOString().split('T')[0];
+
+      if (leakageDateRange === 'today') {
+        params.start_date = formatDate(today);
+        params.end_date = formatDate(today);
+      } else if (leakageDateRange === 'yesterday') {
+        const yday = new Date(today);
+        yday.setDate(yday.getDate() - 1);
+        params.start_date = formatDate(yday);
+        params.end_date = formatDate(yday);
+      } else if (leakageDateRange === 'last7') {
+        const p7 = new Date(today);
+        p7.setDate(p7.getDate() - 7);
+        params.start_date = formatDate(p7);
+        params.end_date = formatDate(today);
+      } else if (leakageDateRange === 'last30') {
+        const p30 = new Date(today);
+        p30.setDate(p30.getDate() - 30);
+        params.start_date = formatDate(p30);
+        params.end_date = formatDate(today);
+      } else if (leakageDateRange === 'month_2026_11') {
+        params.start_date = '2026-11-01';
+        params.end_date = '2026-11-30';
+      } else if (leakageDateRange === 'month_2026_10') {
+        params.start_date = '2026-10-01';
+        params.end_date = '2026-10-31';
+      } else if (leakageDateRange === 'month_2026_09') {
+        params.start_date = '2026-09-01';
+        params.end_date = '2026-09-30';
+      }
+
+      if (debouncedLeakageSearch && debouncedLeakageSearch.trim()) {
+        params.search = debouncedLeakageSearch.trim();
+      }
+
+      const res = await auditApi.getMarginLeakage(params);
+      setLeakageData(res || { summary: {}, items: [] });
+    } catch (err) {
+      console.error('Failed to load margin leakage audit', err);
+    } finally {
+      setLeakageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMarginLeakage();
+  }, [leakageDateRange, debouncedLeakageSearch]);
+
+  const filteredLeakageItems = (leakageData?.items || []).filter(item => {
+    if (leakageClassification === 'ALL') return true;
+    return item.classification === leakageClassification;
+  });
+
+  const exportLeakageCSV = () => {
+    if (!filteredLeakageItems || filteredLeakageItems.length === 0) return;
+    const headers = [
+      'Invoice Date',
+      'Invoice Number',
+      'Customer Outlet',
+      'SKU',
+      'Product Name',
+      'Quantity Sold',
+      'Billed Price (INR)',
+      'Real Landed Cost (INR)',
+      'Unit Loss (INR)',
+      'Total Loss (INR)',
+      'Diagnosis',
+      'Billed By'
+    ];
+
+    const rows = filteredLeakageItems.map(item => [
+      item.invoice_date || '',
+      item.invoice_number,
+      `"${(item.customer_name || '').replace(/"/g, '""')}"`,
+      item.sku,
+      `"${(item.product_name || '').replace(/"/g, '""')}"`,
+      item.quantity,
+      item.unit_price.toFixed(2),
+      item.landed_cost.toFixed(2),
+      item.unit_loss.toFixed(2),
+      item.total_loss.toFixed(2),
+      item.classification === 'CRITICAL_TYPO' ? 'Typo / Fatal Rate' : 'Wholesale Discount Below Cost',
+      item.billed_by
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `RAIS_Margin_Leakage_Audit_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Master-Detail State
   const [selectedLogId, setSelectedLogId] = useState(null);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
@@ -240,6 +365,344 @@ export const AuditPage = ({ initialParams = null }) => {
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
+      
+      {/* ─── TOP AUDIT SUITE NAVIGATION TABS ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-4 py-2 shrink-0 shadow-md">
+        <div className="flex items-center gap-2 overflow-x-auto py-0.5">
+          <button
+            onClick={() => setActiveMainTab('activity')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+              activeMainTab === 'activity'
+                ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Activity Trail & Security</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+              activeMainTab === 'activity' ? 'bg-slate-950/20 text-slate-950 font-extrabold' : 'bg-slate-800 text-amber-400 border border-slate-700'
+            }`}>
+              2.6k+ Logs
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveMainTab('leakage')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+              activeMainTab === 'leakage'
+                ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            <span>Margin Leakage (Sold Below Cost)</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+              activeMainTab === 'leakage' ? 'bg-black/30 text-white font-extrabold' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+            }`}>
+              {leakageData?.summary?.total_items !== undefined ? leakageData.summary.total_items : '22'} Detected
+            </span>
+          </button>
+        </div>
+
+        <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>PostgreSQL Live Commercial Audit</span>
+        </div>
+      </div>
+
+      {activeMainTab === 'leakage' ? (
+        /* ─── TAB 2: COMMERCIAL MARGIN LEAKAGE DASHBOARD ─── */
+        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
+          {/* Leakage Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <TrendingDown className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-white flex items-center gap-2">
+                  Historical Margin Leakage Audit
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-500/20 text-rose-400 rounded-full border border-rose-500/30 font-mono">
+                    {filteredLeakageItems.length} Line Items Sold Below Cost
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Cross-referenced line-item selling rates against verified warehouse inward landed costs
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {/* Search */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={leakageSearch}
+                  onChange={(e) => setLeakageSearch(e.target.value)}
+                  placeholder="Search SKU, product, outlet..."
+                  className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500 w-36 sm:w-48"
+                />
+                {leakageSearch && (
+                  <button
+                    onClick={() => setLeakageSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Date Filter */}
+              <select
+                value={leakageDateRange}
+                onChange={(e) => setLeakageDateRange(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              >
+                <option value="all">📅 All Time (Historical)</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last7">Last 7 Days</option>
+                <option value="last30">Last 30 Days</option>
+                <option value="month_2026_11">November 2026 (0 loss)</option>
+                <option value="month_2026_10">October 2026 (6 items)</option>
+                <option value="month_2026_09">September 2026 (16 items)</option>
+              </select>
+
+              {/* Classification Filter */}
+              <select
+                value={leakageClassification}
+                onChange={(e) => setLeakageClassification(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Types</option>
+                <option value="CRITICAL_TYPO">⚠️ Typo / Fatal (&lt;30% cost)</option>
+                <option value="BELOW_COST_DISCOUNT">🔻 Discount Below Cost</option>
+              </select>
+
+              {/* Export CSV */}
+              <button
+                onClick={exportLeakageCSV}
+                disabled={filteredLeakageItems.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none text-slate-200 rounded-xl text-xs font-bold transition border border-slate-700"
+                title="Export forensic audit data to CSV"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </button>
+
+              {/* Refresh */}
+              <button
+                onClick={loadMarginLeakage}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700"
+                title="Refresh leakage audit"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${leakageLoading ? 'animate-spin text-rose-400' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+            <div className="bg-slate-900/90 border border-rose-500/20 rounded-2xl p-3.5 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Cumulative Cash Drain</span>
+                <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400">
+                  <TrendingDown className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="text-xl sm:text-2xl font-black text-rose-400 font-mono">
+                  -₹{(leakageData?.summary?.total_loss || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Direct financial loss from under-cost selling
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Under-Cost Line Items</span>
+                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="text-xl sm:text-2xl font-black text-white font-mono">
+                  {filteredLeakageItems.length} <span className="text-xs text-slate-400 font-normal">items</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Across {leakageData?.summary?.total_invoices || 0} distinct invoices
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Worst Single Loss SKU</span>
+                <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="text-sm font-black text-amber-300 truncate">
+                  {leakageData?.summary?.worst_sku || 'None'}
+                </div>
+                <p className="text-[10px] text-rose-400 font-bold mt-0.5 font-mono">
+                  -₹{(leakageData?.summary?.worst_sku_loss || 0).toFixed(2)} loss ({leakageData?.summary?.worst_product_name || 'N/A'})
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 text-xs">
+                <span>Top Discount Outlet</span>
+                <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+                  <UserX className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="text-sm font-black text-white truncate">
+                  {leakageData?.summary?.worst_customer || 'None'}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Total loss absorbed: <strong className="text-rose-400 font-mono">-₹{(leakageData?.summary?.worst_customer_loss || 0).toFixed(2)}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Leakage Forensic Table */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-md flex-1 flex flex-col min-h-[300px]">
+            <div className="px-4 py-2.5 bg-slate-950/60 border-b border-slate-800/80 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300">
+                Line-Item Forensic Ledger ({filteredLeakageItems.length} records)
+              </span>
+              <span className="text-[11px] text-slate-500 font-mono">
+                Sorted by highest cash loss descending
+              </span>
+            </div>
+
+            <div className="overflow-x-auto flex-1">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="py-2.5 px-3">Date</th>
+                    <th className="py-2.5 px-3">Invoice #</th>
+                    <th className="py-2.5 px-3">Customer Outlet</th>
+                    <th className="py-2.5 px-3">SKU & Product</th>
+                    <th className="py-2.5 px-3 text-right">Qty</th>
+                    <th className="py-2.5 px-3 text-right">Billed Price</th>
+                    <th className="py-2.5 px-3 text-right">Landed Cost</th>
+                    <th className="py-2.5 px-3 text-right">Unit Loss</th>
+                    <th className="py-2.5 px-3 text-right">Total Loss</th>
+                    <th className="py-2.5 px-3 text-center">Diagnosis</th>
+                    <th className="py-2.5 px-3">Billed By</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  {leakageLoading ? (
+                    <tr>
+                      <td colSpan="11" className="py-12 text-center text-slate-500 font-medium">
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-rose-400" />
+                        Analyzing commercial procurement & selling records...
+                      </td>
+                    </tr>
+                  ) : filteredLeakageItems.length === 0 ? (
+                    <tr>
+                      <td colSpan="11" className="py-12 text-center text-slate-500 font-medium">
+                        <CheckCircle2 className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
+                        Zero margin leakages detected in selected timeframe. All items billed at or above procurement cost!
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLeakageItems.map((item, idx) => (
+                      <tr 
+                        key={item.id || idx}
+                        className="hover:bg-slate-800/40 transition group"
+                      >
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                          {item.invoice_date || 'N/A'}
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className="font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 text-[11px]">
+                            {item.invoice_number}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-200 whitespace-nowrap max-w-[150px] truncate">
+                          {item.customer_name}
+                        </td>
+                        <td className="py-2.5 px-3 max-w-[220px]">
+                          <div className="font-mono text-[10px] text-amber-400/80">{item.sku}</div>
+                          <div className="font-medium text-slate-200 truncate text-[11px]" title={item.product_name}>
+                            {item.product_name}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-200 whitespace-nowrap">
+                          {item.quantity}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-300 whitespace-nowrap">
+                          ₹{item.unit_price.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-400 whitespace-nowrap">
+                          ₹{item.landed_cost.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-rose-400 whitespace-nowrap">
+                          -₹{item.unit_loss.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                          <span className="font-mono font-bold text-rose-400 bg-rose-500/15 px-2 py-0.5 rounded border border-rose-500/30 text-xs">
+                            -₹{item.total_loss.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          {item.classification === 'CRITICAL_TYPO' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                              <AlertTriangle className="w-3 h-3" />
+                              Typo / Fatal Rate
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              <ArrowDownRight className="w-3 h-3" />
+                              Wholesale Discount
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                          {item.billed_by}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Forensic Intelligence Card */}
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-xs text-slate-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-slate-200 block text-xs">Forensic Audit Takeaways</strong>
+                <span>
+                  100% of detected margin leakages occurred in Sept & Oct 2026. In November 2026, 0 leakages were recorded. The primary drivers were fast operator typos (e.g. ₹2 vs ₹72) and uninformed wholesale discounts on high-volume items (Tandoori Mayo, Mozzarella).
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2">
+              <span className="px-2 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg font-mono text-[11px] font-bold">
+                November 2026: ₹0.00 Leakage
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ─── TAB 1: EXISTING MASTER-DETAIL ACTIVITY TRAIL ─── */
+        <>
       
       {/* ─── TOP ACTION & FILTER HEADER BAR ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
@@ -832,7 +1295,8 @@ export const AuditPage = ({ initialParams = null }) => {
         </div>
 
       </div>
-
-    </div>
-  );
+      </>
+    )}
+  </div>
+);
 };

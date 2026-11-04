@@ -273,4 +273,52 @@ def test_customer_statement_print_html(test_db):
     assert cust.customer_code in html_content
     assert "CUSTOMER ACCOUNT STATEMENT" in html_content
 
+def test_margin_leakage_endpoint(test_db):
+    """Verifies that get_margin_leakage accurately detects items sold below purchase cost."""
+    from app.models.inventory import StockMovement
+    from app.api.audit import get_margin_leakage
+
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+
+    # 1. Record an inward procurement movement with true landed cost = Rs. 280.00
+    sm = StockMovement(
+        product_id=prod.id,
+        movement_type="RECEIPT",
+        quantity_change=Decimal("100.00"),
+        previous_stock=Decimal("0.00"),
+        new_stock=Decimal("100.00"),
+        unit="1 KG",
+        purchase_cost=Decimal("280.00"),
+        reference_number="PO-TEST-001"
+    )
+    test_db.add(sm)
+    test_db.flush()
+
+    # 2. Bill the item below landed cost: unit_price = Rs. 200.00 (loss = Rs. 80.00 / unit)
+    invoice = BillingService.create_invoice(
+        test_db,
+        InvoiceCreate(
+            customer_id=cust.id,
+            items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("2.00"), unit_price=Decimal("200.00"))]
+        )
+    )
+    BillingService.issue_invoice(test_db, invoice.id)
+
+    # 3. Call the margin leakage audit API
+    result = get_margin_leakage(db=test_db)
+
+    assert result["summary"]["total_items"] == 1
+    assert result["summary"]["total_loss"] == 160.00
+    assert result["summary"]["worst_sku"] == prod.sku
+    assert len(result["items"]) == 1
+    item = result["items"][0]
+    assert item["sku"] == prod.sku
+    assert item["unit_price"] == 200.00
+    assert item["landed_cost"] == 280.00
+    assert item["unit_loss"] == 80.00
+    assert item["total_loss"] == 160.00
+    assert item["classification"] == "BELOW_COST_DISCOUNT"
+
+
 

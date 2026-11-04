@@ -522,6 +522,10 @@ export const auditApi = {
   list: async (params = {}) => {
     const res = await api.get('/audit/logs', { params });
     return res.data;
+  },
+  getMarginLeakage: async (params = {}) => {
+    const res = await api.get('/audit/margin-leakage', { params });
+    return res.data;
   }
 };
 
