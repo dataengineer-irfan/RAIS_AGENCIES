@@ -32,6 +32,10 @@ export const AuditPage = ({ initialParams = null }) => {
   const [entityFilter, setEntityFilter] = useState(() => initialParams?.entity || initialParams?.entity_name || '');
   const [actionFilter, setActionFilter] = useState(() => initialParams?.action || '');
   const [searchTerm, setSearchTerm] = useState(() => initialParams?.search || initialParams?.searchTerm || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => initialParams?.search || initialParams?.searchTerm || '');
+  const [dateRange, setDateRange] = useState('all');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   
   // Master-Detail State
   const [selectedLogId, setSelectedLogId] = useState(null);
@@ -44,6 +48,15 @@ export const AuditPage = ({ initialParams = null }) => {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupBannerMsg, setBackupBannerMsg] = useState(null);
   const [showVaultInfo, setShowVaultInfo] = useState(false);
+
+  // Debounce search input by 400ms to eliminate unnecessary DB queries
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Sync initialParams whenever caller updates it (e.g. 1-click navigate from Invoices Hub)
   useEffect(() => {
@@ -61,8 +74,8 @@ export const AuditPage = ({ initialParams = null }) => {
   }, [initialParams]);
 
   useEffect(() => {
-    loadAuditLogs();
-  }, [entityFilter, actionFilter]);
+    loadAuditLogs(page);
+  }, [entityFilter, actionFilter, dateRange, debouncedSearch, page]);
 
   useEffect(() => {
     loadVaultStatus();
@@ -77,15 +90,54 @@ export const AuditPage = ({ initialParams = null }) => {
     }
   };
 
-  const loadAuditLogs = async (selectId = null) => {
+  const loadAuditLogs = async (pageNum = page, selectId = null) => {
     setLoading(true);
     try {
-      const params = {};
+      const params = {
+        skip: (pageNum - 1) * 50,
+        limit: 50
+      };
       if (entityFilter) params.entity_name = entityFilter;
       if (actionFilter) params.action = actionFilter;
+      if (debouncedSearch && debouncedSearch.trim().length >= 2) {
+        params.search = debouncedSearch.trim();
+      }
+
+      // Date Range Bounding
+      if (dateRange !== 'all') {
+        const today = new Date();
+        const formatDate = (d) => {
+          const yr = d.getFullYear();
+          const mo = String(d.getMonth() + 1).padStart(2, '0');
+          const da = String(d.getDate()).padStart(2, '0');
+          return `${yr}-${mo}-${da}`;
+        };
+
+        if (dateRange === 'today') {
+          params.start_date = formatDate(today);
+          params.end_date = formatDate(today);
+        } else if (dateRange === 'yesterday') {
+          const yest = new Date(today);
+          yest.setDate(yest.getDate() - 1);
+          params.start_date = formatDate(yest);
+          params.end_date = formatDate(yest);
+        } else if (dateRange === 'last7') {
+          const past7 = new Date(today);
+          past7.setDate(past7.getDate() - 7);
+          params.start_date = formatDate(past7);
+          params.end_date = formatDate(today);
+        } else if (dateRange === 'last30') {
+          const past30 = new Date(today);
+          past30.setDate(past30.getDate() - 30);
+          params.start_date = formatDate(past30);
+          params.end_date = formatDate(today);
+        }
+      }
+
       const data = await auditApi.list(params);
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       setLogs(items);
+      setHasMore(items.length === 50);
       if (items.length > 0) {
         setSelectedLogId(selectId || items[0].id);
       } else {
@@ -157,22 +209,7 @@ export const AuditPage = ({ initialParams = null }) => {
     }
   };
 
-  const filteredLogs = logs.filter(l => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    const beforeStr = typeof l.before_state === 'string' ? l.before_state.toLowerCase() : JSON.stringify(l.before_state || '').toLowerCase();
-    const afterStr = typeof l.after_state === 'string' ? l.after_state.toLowerCase() : JSON.stringify(l.after_state || '').toLowerCase();
-    
-    return (
-      (l.username || l.user_username || '').toLowerCase().includes(term) ||
-      (l.user_role || '').toLowerCase().includes(term) ||
-      (l.action || '').toLowerCase().includes(term) ||
-      (l.entity_name || '').toLowerCase().includes(term) ||
-      (l.entity_id || '').toLowerCase().includes(term) ||
-      beforeStr.includes(term) ||
-      afterStr.includes(term)
-    );
-  });
+  const filteredLogs = logs;
 
   const selectedLog = logs.find(l => l.id === selectedLogId) || logs[0];
 
@@ -216,7 +253,7 @@ export const AuditPage = ({ initialParams = null }) => {
                 System Audit & Security Trail
               </h1>
               <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-                {logs.length} Immutable Logs
+                {debouncedSearch ? `Search: ${logs.length} found` : `Page ${page} (${logs.length} logs)`}
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
@@ -245,6 +282,19 @@ export const AuditPage = ({ initialParams = null }) => {
               </button>
             )}
           </div>
+
+          <select
+            value={dateRange}
+            onChange={(e) => { setDateRange(e.target.value); setPage(1); }}
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+            title="Filter by Timeline"
+          >
+            <option value="all">📅 All Time (2.6k+)</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="last7">Last 7 Days</option>
+            <option value="last30">Last 30 Days</option>
+          </select>
 
           <select
             value={entityFilter}
@@ -469,6 +519,27 @@ export const AuditPage = ({ initialParams = null }) => {
                 );
               })
             )}
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-800/80 text-xs text-slate-400 shrink-0">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || loading}
+              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none rounded-lg font-bold text-slate-200 transition text-[11px]"
+            >
+              ← Prev
+            </button>
+            <span className="font-mono text-[11px] text-slate-400">
+              Page <strong className="text-amber-400 font-bold">{page}</strong> {logs.length > 0 ? `(${logs.length} logs)` : ''}
+            </span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={!hasMore || loading}
+              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none rounded-lg font-bold text-slate-200 transition text-[11px]"
+            >
+              Next →
+            </button>
           </div>
         </div>
 

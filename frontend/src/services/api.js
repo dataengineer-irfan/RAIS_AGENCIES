@@ -520,7 +520,8 @@ export const aiApi = {
 
 export const auditApi = {
   list: async (params = {}) => {
-    return cachedGet('/audit/logs', { params });
+    const res = await api.get('/audit/logs', { params });
+    return res.data;
   }
 };
 

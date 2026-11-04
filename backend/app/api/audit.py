@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List, Optional
+from datetime import date, datetime, time
 from app.core.database import get_db
 from app.models.user import User
 from app.models.system import AuditLog
@@ -11,20 +13,47 @@ router = APIRouter(prefix="/audit", tags=["Audit & Governance"])
 
 @router.get("/logs", response_model=List[AuditLogResponse], dependencies=[Depends(require_admin)])
 def list_audit_logs(
+    search: Optional[str] = Query(None, min_length=1, max_length=100),
     entity_name: Optional[str] = None,
     action: Optional[str] = None,
     username: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db)
 ):
     query = db.query(AuditLog)
+
+    # 1. Date Range Bounding (Indexed via created_at B-tree index for high performance)
+    if start_date:
+        query = query.filter(AuditLog.created_at >= datetime.combine(start_date, time.min))
+    if end_date:
+        query = query.filter(AuditLog.created_at <= datetime.combine(end_date, time.max))
+
+    # 2. Indexed Exact Filters
     if entity_name:
         query = query.filter(AuditLog.entity_name == entity_name)
     if action:
         query = query.filter(AuditLog.action == action)
     if username:
         query = query.filter(AuditLog.username == username)
+
+    # 3. Server-Side Full-Database Search across entity_id, actors, and JSON before/after snapshots
+    if search:
+        s = search.strip()
+        if s:
+            term = f"%{s}%"
+            query = query.filter(
+                or_(
+                    AuditLog.entity_id.ilike(term),
+                    AuditLog.username.ilike(term),
+                    AuditLog.entity_name.ilike(term),
+                    AuditLog.action.ilike(term),
+                    AuditLog.before_state.ilike(term),
+                    AuditLog.after_state.ilike(term)
+                )
+            )
 
     return query.order_by(AuditLog.created_at.desc()).offset(skip).limit(limit).all()
 
