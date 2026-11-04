@@ -425,6 +425,8 @@ export const InvoiceBuilderModal = ({
     let itemDiscounts = 0;
     let totalWeightKg = 0;
     let totalEstimatedCost = 0;
+    let hasMissingCost = false;
+    let activeItemCount = 0;
 
     items.forEach(itm => {
       const qty = parseFloat(itm.quantity) || 0;
@@ -449,23 +451,40 @@ export const InvoiceBuilderModal = ({
       }
       totalWeightKg += qty * mult;
 
-      // Estimated landing cost
-      const cost = parseFloat(itm.purchase_cost || prod?.purchase_cost || 0) || (rate * 0.80);
-      totalEstimatedCost += qty * cost;
+      // Genuine landed cost resolution from catalogue
+      if (itm.product_id && qty > 0) {
+        activeItemCount++;
+        const cost = parseFloat(itm.purchase_cost || prod?.landed_cost || prod?.purchase_cost || 0);
+        if (cost > 0) {
+          totalEstimatedCost += qty * cost;
+        } else {
+          hasMissingCost = true;
+        }
+      }
     });
 
     const invDisc = parseFloat(invoiceDiscount) || 0;
     const totalDiscount = itemDiscounts + invDisc;
     const grandTotal = Math.max(0, subtotal - totalDiscount);
-    const estProfit = Math.max(0, grandTotal - totalEstimatedCost);
-    const estMarginPct = grandTotal > 0 ? (estProfit / grandTotal) * 100 : 0;
+    
+    // Calculate margin only if all active items have recorded landed costs
+    let estMarginPct = '--';
+    let estProfit = 0;
+    if (activeItemCount > 0 && grandTotal > 0 && !hasMissingCost) {
+      estProfit = grandTotal - totalEstimatedCost;
+      estMarginPct = ((estProfit / grandTotal) * 100).toFixed(1);
+    } else if (activeItemCount === 0 || grandTotal === 0) {
+      estMarginPct = '0.0';
+    }
 
     return {
       subtotal: parseFloat(subtotal || 0).toFixed(2),
       discount: parseFloat(totalDiscount || 0).toFixed(2),
       total: parseFloat(grandTotal || 0).toFixed(2),
       weightKg: totalWeightKg.toFixed(1),
-      estMarginPct: estMarginPct.toFixed(1)
+      estMarginPct,
+      hasMissingCost: activeItemCount > 0 && hasMissingCost,
+      estProfit: estProfit.toFixed(2)
     };
   };
 
@@ -608,7 +627,7 @@ export const InvoiceBuilderModal = ({
       const outliers = [];
       (items || []).forEach((itm, idx) => {
         const prod = (products || []).find(p => p.id === itm.product_id);
-        const cost = prod ? parseFloat(prod.landed_cost || (prod.base_price * 0.8) || 0) : 0;
+        const cost = prod ? parseFloat(prod.landed_cost || prod.purchase_cost || 0) : 0;
         const price = parseFloat(itm.unit_price || 0);
         const qty = parseFloat(itm.quantity || 1);
         if (prod && price > 0 && cost > 0 && price < cost) {
@@ -1537,9 +1556,10 @@ export const InvoiceBuilderModal = ({
                         const isZeroStock = selProd && curStock <= 0;
                         const isLowStock = selProd && curStock > 0 && curStock <= parseFloat(selProd.min_stock_alert || 10);
                         const lineTotal = (qtyVal * parseFloat(item.unit_price || 0) * (1 - (parseFloat(item.discount_rate || 0) / 100))).toFixed(2);
-                        const landedCost = selProd ? parseFloat(selProd.landed_cost || (selProd.base_price * 0.8) || 0) : 0;
+                        const landedCost = selProd ? parseFloat(selProd.landed_cost || selProd.purchase_cost || 0) : 0;
                         const unitPriceVal = parseFloat(item.unit_price || 0);
                         const isBelowCost = selProd && unitPriceVal > 0 && landedCost > 0 && unitPriceVal < landedCost;
+                        const isCostMissing = selProd && landedCost <= 0;
 
                         return (
                           <React.Fragment key={index}>
@@ -1577,6 +1597,17 @@ export const InvoiceBuilderModal = ({
                                     ) : (
                                       <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                                         In Stock: {curStock} {selProd.packaging_unit}
+                                      </span>
+                                    )}
+                                    {isBelowCost && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 flex items-center gap-1 shadow-xs" title={`Landed cost is ₹${landedCost.toFixed(2)}. Selling at ₹${unitPriceVal.toFixed(2)}`}>
+                                        <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                                        <span>Below Cost (-₹{(landedCost - unitPriceVal).toFixed(1)}/unit)</span>
+                                      </span>
+                                    )}
+                                    {isCostMissing && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-normal bg-slate-800/80 text-slate-400 border border-slate-700/60" title="No purchase cost recorded in catalogue">
+                                        Cost: N/A
                                       </span>
                                     )}
                                     {(isZeroStock || isLowStock || isExceedingStock) && (
@@ -1663,9 +1694,14 @@ export const InvoiceBuilderModal = ({
                                   />
                                 </div>
                                 {isBelowCost && (
-                                  <div className="text-[9px] text-rose-400 font-bold flex items-center justify-end gap-1 mt-0.5" title={`Landed cost is ₹${landedCost.toFixed(2)}`}>
+                                  <div className="text-[9px] text-rose-400 font-bold flex items-center justify-end gap-1 mt-0.5" title={`Landed cost is ₹${landedCost.toFixed(2)}. Loss of ₹${(landedCost - unitPriceVal).toFixed(2)} per unit.`}>
                                     <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                                    <span>Cost: ₹{Math.round(landedCost)}</span>
+                                    <span>Cost: ₹{Math.round(landedCost)} (-₹{(landedCost - unitPriceVal).toFixed(0)} loss)</span>
+                                  </div>
+                                )}
+                                {isCostMissing && unitPriceVal > 0 && (
+                                  <div className="text-[9px] text-slate-500 font-normal flex items-center justify-end gap-1 mt-0.5" title="No purchase cost recorded in catalogue">
+                                    <span>Cost: --</span>
                                   </div>
                                 )}
                               </div>
@@ -1744,21 +1780,34 @@ export const InvoiceBuilderModal = ({
 
                           {/* Row 2: SKU & Stock Info */}
                           {selProd && (
-                            <div className="flex items-center justify-between text-[10px] px-1">
-                              <span className="font-mono text-slate-400 truncate max-w-[160px]">SKU: {selProd.sku}</span>
-                              {isZeroStock ? (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                                  Out of Stock (0 {selProd.packaging_unit})
-                                </span>
-                              ) : isLowStock ? (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                  Low Stock: {curStock} {selProd.packaging_unit}
-                                </span>
-                              ) : (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                                  In Stock: {curStock} {selProd.packaging_unit}
-                                </span>
-                              )}
+                            <div className="flex items-center justify-between text-[10px] px-1 flex-wrap gap-1">
+                              <span className="font-mono text-slate-400 truncate max-w-[150px]">SKU: {selProd.sku}</span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {isZeroStock ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                    Out of Stock (0 {selProd.packaging_unit})
+                                  </span>
+                                ) : isLowStock ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                    Low Stock: {curStock} {selProd.packaging_unit}
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                                    In Stock: {curStock} {selProd.packaging_unit}
+                                  </span>
+                                )}
+                                {isBelowCost && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40 flex items-center gap-0.5">
+                                    <AlertTriangle className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                                    <span>Below Cost (-₹{(landedCost - unitPriceVal).toFixed(0)})</span>
+                                  </span>
+                                )}
+                                {isCostMissing && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-normal bg-slate-800 text-slate-400 border border-slate-700">
+                                    Cost: N/A
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           )}
 
@@ -1812,7 +1861,12 @@ export const InvoiceBuilderModal = ({
                               {isBelowCost && (
                                 <span className="text-[9px] text-rose-400 font-bold mt-0.5 flex items-center gap-0.5">
                                   <AlertTriangle className="w-2 h-2 shrink-0" />
-                                  Cost: ₹{Math.round(landedCost)}
+                                  Cost: ₹{Math.round(landedCost)} (-₹{(landedCost - unitPriceVal).toFixed(0)})
+                                </span>
+                              )}
+                              {isCostMissing && unitPriceVal > 0 && (
+                                <span className="text-[9px] text-slate-500 font-normal mt-0.5">
+                                  Cost: N/A
                                 </span>
                               )}
                             </div>
@@ -2231,9 +2285,26 @@ export const InvoiceBuilderModal = ({
                   </div>
                   <div>
                     <span className="text-slate-500 block text-[9px] uppercase font-sans">Est. Margin</span>
-                    <span className={`font-bold text-xs sm:text-sm ${parseFloat(totals.estMarginPct) >= 15 ? 'text-emerald-400' : parseFloat(totals.estMarginPct) >= 8 ? 'text-amber-400' : 'text-rose-400'}`}>
-                      {totals.estMarginPct}%
-                    </span>
+                    {totals.hasMissingCost ? (
+                      <span className="font-bold text-xs sm:text-sm text-slate-400 flex items-center gap-1" title="Landed cost missing for 1 or more items in catalogue">
+                        <span>--</span>
+                        <span className="text-[9px] font-normal text-amber-400/90 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">Cost Missing</span>
+                      </span>
+                    ) : totals.estMarginPct === '--' ? (
+                      <span className="font-bold text-xs sm:text-sm text-slate-400">--</span>
+                    ) : (
+                      <span className={`font-bold text-xs sm:text-sm ${
+                        parseFloat(totals.estMarginPct) >= 15
+                          ? 'text-emerald-400'
+                          : parseFloat(totals.estMarginPct) >= 8
+                            ? 'text-amber-400'
+                            : parseFloat(totals.estMarginPct) >= 0
+                              ? 'text-rose-400'
+                              : 'text-rose-300 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/50'
+                      }`}>
+                        {totals.estMarginPct}%
+                      </span>
+                    )}
                   </div>
                   <div>
                     <span className="text-slate-500 block text-[9px] uppercase font-sans">Subtotal</span>
