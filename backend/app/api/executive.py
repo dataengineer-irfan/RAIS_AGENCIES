@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Query, Body, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, case
+from sqlalchemy import func, desc, case, or_
 
 from app.core.database import get_db
 from app.models.user import User
@@ -479,12 +479,17 @@ def get_executive_briefing(
 
     found_gap = False
     for pbb in pizza_box_buyers:
-        # Check if they bought cheese
+        # Check if they bought ANY cheese (Mozzarella, Mozzerolla, Diced, Slice, Sauce, Paneer, etc.)
         cheese_bought = db.query(func.count(InvoiceItem.id)).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
             .filter(
                 Invoice.customer_id == pbb.customer_id,
                 Invoice.status.in_(valid_statuses),
-                InvoiceItem.item_description.ilike("%MOZ%ELLA%")
+                or_(
+                    InvoiceItem.item_description.ilike("%CHEESE%"),
+                    InvoiceItem.item_description.ilike("%MOZ%"),
+                    InvoiceItem.item_description.ilike("%PANEER%"),
+                    InvoiceItem.item_description.ilike("%DAIRY%")
+                )
             ).scalar() or 0
 
         if cheese_bought == 0:
