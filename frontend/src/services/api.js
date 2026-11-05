@@ -257,6 +257,10 @@ export const customerApi = {
   getLedger: async (id) => {
     return cachedGet(`/customers/${id}/ledger`);
   },
+  getPricingHistory: async (customerId) => {
+    const res = await api.get(`/customers/${customerId}/pricing-history`);
+    return res.data;
+  },
   getStatementPrintUrl: (id) => `${API_BASE_URL}/customers/${id}/statement/print-html`,
   getReorderAlerts: async (daysThreshold = 5) => {
     try {

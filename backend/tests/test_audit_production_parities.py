@@ -320,5 +320,29 @@ def test_margin_leakage_endpoint(test_db):
     assert item["total_loss"] == 160.00
     assert item["classification"] == "BELOW_COST_DISCOUNT"
 
+def test_customer_pricing_history_endpoint(test_db):
+    """Verifies that get_customer_pricing_history retrieves the most recent billed price per product for a customer."""
+    from app.api.customers import get_customer_pricing_history
+
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+
+    # Bill the customer at a special negotiated rate: Rs. 280.00
+    inv = BillingService.create_invoice(
+        test_db,
+        InvoiceCreate(
+            customer_id=cust.id,
+            items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("1.00"), unit_price=Decimal("280.00"))]
+        )
+    )
+    BillingService.issue_invoice(test_db, inv.id)
+
+    # Call customer pricing history API
+    history = get_customer_pricing_history(customer_id=cust.id, db=test_db)
+    assert prod.id in history
+    assert history[prod.id]["last_price"] == 280.00
+    assert history[prod.id]["invoice_number"] == inv.invoice_number
+
+
 
 

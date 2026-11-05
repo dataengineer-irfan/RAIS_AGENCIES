@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic, Share2, Zap, RefreshCw } from 'lucide-react';
+import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles, Package, Eye, ArrowLeft, Building2, User, Calendar, CreditCard, ShieldCheck, MessageSquare, Minus, AlertTriangle, Mic, Share2, Zap, RefreshCw, Check } from 'lucide-react';
 import { customerApi, catalogueApi, billingApi, paymentApi, inventoryApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { QuickStockInwardModal } from './QuickStockInwardModal';
@@ -35,6 +35,7 @@ export const InvoiceBuilderModal = ({
   const [voiceConflictPrompt, setVoiceConflictPrompt] = useState(null);
   const [priceWarningModalOpen, setPriceWarningModalOpen] = useState(false);
   const [belowCostWarningItems, setBelowCostWarningItems] = useState([]);
+  const [customerPricingHistory, setCustomerPricingHistory] = useState({});
 
   // Quick Stock Inward & Shortfall Recovery State
   const [quickStockTarget, setQuickStockTarget] = useState(null);
@@ -66,6 +67,20 @@ export const InvoiceBuilderModal = ({
       loadDependencies();
     }
   }, [isOpen, preselectedCustomer, preselectedProduct]);
+
+  // Load customer-specific pricing history whenever customerId changes
+  useEffect(() => {
+    if (customerId) {
+      customerApi.getPricingHistory(customerId)
+        .then(data => setCustomerPricingHistory(data || {}))
+        .catch(err => {
+          console.error('Failed to load customer pricing history', err);
+          setCustomerPricingHistory({});
+        });
+    } else {
+      setCustomerPricingHistory({});
+    }
+  }, [customerId]);
 
   const loadDependencies = async () => {
     setLoading(true);
@@ -1476,6 +1491,7 @@ export const InvoiceBuilderModal = ({
                     onDecrementProduct={handleDecrementProduct}
                     onQuickStock={(prod) => handleOpenQuickStockModal(prod, 1, -1)}
                     quantitiesByProductId={quantitiesByProductId}
+                    customerPricingHistory={customerPricingHistory}
                   />
                 </div>
 
@@ -1708,6 +1724,41 @@ export const InvoiceBuilderModal = ({
                                     <span>Cost: --</span>
                                   </div>
                                 )}
+                                {/* Customer Previous Invoiced Rate - 1-Click Pill */}
+                                {selProd && customerPricingHistory && customerPricingHistory[item.product_id] && (
+                                  <div className="flex items-center justify-end mt-1">
+                                    {Math.abs(parseFloat(item.unit_price || 0) - customerPricingHistory[item.product_id].last_price) < 0.01 ? (
+                                      <span 
+                                        className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-default shadow-xs"
+                                        title={`Matches customer's last invoice ${customerPricingHistory[item.product_id].invoice_number} on ${customerPricingHistory[item.product_id].invoice_date} by ${customerPricingHistory[item.product_id].billed_by}`}
+                                      >
+                                        <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                        <span>Last Rate (₹{customerPricingHistory[item.product_id].last_price})</span>
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleItemFieldChange(index, 'unit_price', customerPricingHistory[item.product_id].last_price)}
+                                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs ${
+                                          landedCost > 0 && customerPricingHistory[item.product_id].last_price < landedCost
+                                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30'
+                                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30'
+                                        }`}
+                                        title={`Previous rate for this customer: ₹${customerPricingHistory[item.product_id].last_price} on ${customerPricingHistory[item.product_id].invoice_date} (${customerPricingHistory[item.product_id].invoice_number} by ${customerPricingHistory[item.product_id].billed_by}). Click to apply.`}
+                                      >
+                                        <span>🏷️ Last: ₹{customerPricingHistory[item.product_id].last_price}</span>
+                                        <span className="underline font-normal text-[8px]">Use</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                {selProd && (!customerPricingHistory || !customerPricingHistory[item.product_id]) && customerId && (
+                                  <div className="flex items-center justify-end mt-1">
+                                    <span className="text-[9px] text-slate-500 font-sans cursor-default" title="This customer has never purchased this SKU previously">
+                                      ⭐ First time item
+                                    </span>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="col-span-1">
@@ -1872,6 +1923,31 @@ export const InvoiceBuilderModal = ({
                                 <span className="text-[9px] text-slate-500 font-normal mt-0.5">
                                   Cost: N/A
                                 </span>
+                              )}
+                              {/* Customer Previous Invoiced Rate - 1-Click Pill (Mobile) */}
+                              {selProd && customerPricingHistory && customerPricingHistory[item.product_id] && (
+                                <div className="mt-1">
+                                  {Math.abs(parseFloat(item.unit_price || 0) - customerPricingHistory[item.product_id].last_price) < 0.01 ? (
+                                    <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-0.5" title={`Matches last invoice ${customerPricingHistory[item.product_id].invoice_number}`}>
+                                      <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                      <span>Last Billed</span>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleItemFieldChange(index, 'unit_price', customerPricingHistory[item.product_id].last_price)}
+                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 active:scale-95 transition shadow-xs ${
+                                        landedCost > 0 && customerPricingHistory[item.product_id].last_price < landedCost
+                                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                          : 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                                      }`}
+                                      title={`Customer's last rate: ₹${customerPricingHistory[item.product_id].last_price} on ${customerPricingHistory[item.product_id].invoice_date}. Tap to apply.`}
+                                    >
+                                      <span>🏷️ ₹{customerPricingHistory[item.product_id].last_price}</span>
+                                      <span className="underline text-[8px]">Use</span>
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
 

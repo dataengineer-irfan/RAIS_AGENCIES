@@ -10,7 +10,8 @@ export const SmartProductSearchPicker = ({
   onDecrementProduct,
   onQuickStock,
   quantitiesByProductId = {},
-  compact = false
+  compact = false,
+  customerPricingHistory = {}
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -190,6 +191,14 @@ export const SmartProductSearchPicker = ({
                     <div className="text-xs font-black font-mono text-white">
                       ₹{parseFloat(price || 0).toFixed(2)}
                     </div>
+                    {customerPricingHistory && customerPricingHistory[prod?.id] && (
+                      <div 
+                        className="text-[9px] font-bold font-mono text-blue-400" 
+                        title={`Last billed rate: ₹${customerPricingHistory[prod.id].last_price} on ${customerPricingHistory[prod.id].invoice_date}`}
+                      >
+                        Last: ₹{customerPricingHistory[prod.id].last_price}
+                      </div>
+                    )}
                     {isAdded && currentQty > 0 && (
                       <div className="text-[10px] font-black font-mono text-emerald-400">
                         = ₹{(currentQty * parseFloat(price || 0)).toFixed(2)}

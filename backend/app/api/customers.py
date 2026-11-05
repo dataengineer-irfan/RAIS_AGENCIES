@@ -67,6 +67,41 @@ def get_customer_ledger(
 ):
     return CustomerService.get_customer_ledger(db, customer_id)
 
+@router.get("/{customer_id}/pricing-history")
+def get_customer_pricing_history(
+    customer_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    from app.models.invoice import Invoice, InvoiceItem
+    from app.models.user import User as UserModel
+
+    valid_statuses = ['ISSUED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE']
+    items = db.query(
+        InvoiceItem.product_id,
+        InvoiceItem.unit_price,
+        Invoice.invoice_number,
+        Invoice.invoice_date,
+        UserModel.username
+    ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+     .outerjoin(UserModel, UserModel.id == Invoice.created_by_id)\
+     .filter(
+         Invoice.customer_id == customer_id,
+         Invoice.status.in_(valid_statuses)
+     )\
+     .order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).all()
+
+    pricing_map = {}
+    for pid, price, inv_no, inv_date, user in items:
+        if pid not in pricing_map:
+            pricing_map[pid] = {
+                "last_price": float(price),
+                "invoice_number": inv_no,
+                "invoice_date": inv_date.isoformat() if inv_date else None,
+                "billed_by": user or "admin"
+            }
+    return pricing_map
+
 @router.get("/{customer_id}/statement/print-html", response_class=HTMLResponse)
 def get_printable_statement(
     customer_id: str,
