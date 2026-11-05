@@ -644,4 +644,24 @@ export const backupApi = {
 };
 
 
+export const executiveApi = {
+  getBriefing: async (forceRefresh = false) => {
+    const response = await api.get('/api/executive/briefing', {
+      params: { force_refresh: forceRefresh }
+    });
+    return response.data;
+  },
+  getMemo: async () => {
+    const response = await api.get('/api/executive/memo');
+    return response.data;
+  },
+  updateMemo: async (memo, updatedBy = null) => {
+    const response = await api.post('/api/executive/memo', {
+      memo,
+      updated_by: updatedBy
+    });
+    return response.data;
+  }
+};
+
 export default api;

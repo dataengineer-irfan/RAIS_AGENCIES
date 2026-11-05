@@ -1,5 +1,6 @@
 import React from 'react';
 import { 
+  Home,
   LayoutDashboard, 
   FileText, 
   Users, 
@@ -36,6 +37,7 @@ export const Sidebar = ({
   const { theme, toggleTheme } = useTheme();
 
   const menuItems = [
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'catalogue', label: 'Catalogue', icon: Package },

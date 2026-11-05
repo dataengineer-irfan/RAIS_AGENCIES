@@ -343,6 +343,87 @@ def test_customer_pricing_history_endpoint(test_db):
     assert history[prod.id]["last_price"] == 280.00
     assert history[prod.id]["invoice_number"] == inv.invoice_number
 
+def test_executive_briefing_and_dynamic_stockout(test_db):
+    """Verifies that GET /api/executive/briefing returns 100% dynamic metrics, bilingual text, and handles dynamic stockouts."""
+    from app.api.executive import get_executive_briefing
+    from app.models.user import User
+
+    fake_user = User(id="user-vp-1", username="vp_owner", email="vp@rais.com", role="ADMIN", is_active=True)
+
+    # 1. Create a out-of-stock product (e.g. Delmonte Ketchup)
+    cat = test_db.query(Category).first()
+    delmonte = Product(
+        sku="RAIS-SAU-03",
+        category_id=cat.id,
+        name="DELMONTE KETCHUP (8 GRAM PKT)",
+        brand="Delmonte",
+        packaging_unit="1 PACKET",
+        base_price=Decimal("150.00"),
+        tax_rate=Decimal("12.00"),
+        current_stock=Decimal("0.00"),  # Out of stock!
+        min_stock_alert=Decimal("10.00"),
+        is_active=True
+    )
+    test_db.add(delmonte)
+    test_db.flush()
+
+    # Call briefing when Delmonte is out of stock
+    briefing1 = get_executive_briefing(db=test_db, current_user=fake_user)
+    assert "vital_signs" in briefing1
+    assert "traffic_lights" in briefing1
+    assert "priorities" in briefing1
+    assert "market_intelligence" in briefing1
+    assert len(briefing1["priorities"]) == 3
+
+    # Priority 2 must be depot_stockouts and include Delmonte
+    p2 = briefing1["priorities"][1]
+    assert p2["id"] == "depot_stockouts"
+    assert p2["stockouts_count"] >= 1
+    assert p2["top_product_name"] == "DELMONTE KETCHUP (8 GRAM PKT)"
+    assert "summary_en" in p2 and "summary_te" in p2
+    assert "తెలుగు" not in p2["summary_te"] # authentic Telugu content
+    assert "డెల్‌మోంటే" in p2["summary_te"] or "సరుకు" in p2["summary_te"]
+
+    # 2. Now user inwards stock for Delmonte (e.g. current_stock becomes 50)
+    delmonte.current_stock = Decimal("50.00")
+    test_db.flush()
+
+    # Call briefing again - Delmonte should NOT show up as stockout!
+    briefing2 = get_executive_briefing(db=test_db, current_user=fake_user)
+    p2_updated = briefing2["priorities"][1]
+    if p2_updated["stockouts_count"] > 0:
+        assert p2_updated["top_product_sku"] != "RAIS-SAU-03"
+    else:
+        assert p2_updated["stockouts_count"] == 0
+        assert p2_updated["urgency"] == "HEALTHY"
+
+def test_executive_handover_memo(test_db):
+    """Verifies brother collaborative handover memo GET and POST."""
+    from app.api.executive import get_executive_memo, update_executive_memo
+    from app.models.user import User
+
+    fake_user = User(id="user-vp-1", username="vp_owner", full_name="Brother 1", role="ADMIN", is_active=True)
+
+    # Initial memo
+    memo1 = get_executive_memo(db=test_db, current_user=fake_user)
+    assert "memo" in memo1
+
+    # Update memo
+    updated = update_executive_memo(
+        memo="Deposited ₹15,000 cash in bank. Sundupalli van delivery at 3 PM.",
+        updated_by="Brother 1",
+        db=test_db,
+        current_user=fake_user
+    )
+    assert updated["memo"] == "Deposited ₹15,000 cash in bank. Sundupalli van delivery at 3 PM."
+    assert updated["updated_by"] == "Brother 1"
+
+    # Read back memo
+    memo2 = get_executive_memo(db=test_db, current_user=fake_user)
+    assert memo2["memo"] == "Deposited ₹15,000 cash in bank. Sundupalli van delivery at 3 PM."
+    assert memo2["updated_by"] == "Brother 1"
+
+
 
 
 

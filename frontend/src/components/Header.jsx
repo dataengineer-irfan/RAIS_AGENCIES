@@ -12,6 +12,7 @@ import {
   X, 
   ShieldCheck,
   Menu,
+  Home,
   LayoutDashboard,
   Users,
   Package,
@@ -471,7 +472,8 @@ export const Header = ({
               {/* Menu Items */}
               <div className="flex-1 overflow-y-auto py-3 space-y-1">
                 {[
-                  { id: 'dashboard', label: 'Home Dashboard', icon: LayoutDashboard },
+                  { id: 'home', label: 'Executive Home', icon: Home },
+                  { id: 'dashboard', label: 'Operations Dashboard', icon: LayoutDashboard },
                   { id: 'customers', label: 'Outlets & Customers', icon: Users },
                   { id: 'catalogue', label: 'Product Catalogue', icon: Package },
                   { id: 'inventory', label: 'Inventory & Stock', icon: Boxes },

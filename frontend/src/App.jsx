@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { CataloguePage } from './pages/CataloguePage';
@@ -25,7 +26,7 @@ import { customerApi, API_BASE_URL } from './services/api';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('home');
   const [dashboardSubPage, setDashboardSubPage] = useState('overview');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
 
@@ -241,6 +242,14 @@ export const App = () => {
         />
 
         <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
+          {activeTab === 'home' && (
+            <HomePage
+              onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
+              onOpenPaymentModal={() => handleOpenPayment()}
+              onNavigate={handleNavigate}
+            />
+          )}
+
           {activeTab === 'dashboard' && (
             <DashboardPage
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}

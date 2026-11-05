@@ -1,5 +1,6 @@
 import React from 'react';
 import { 
+  Home,
   LayoutDashboard, 
   Users, 
   Package, 
@@ -11,9 +12,9 @@ import {
 
 export const MobileBottomNav = ({ activeTab, setActiveTab }) => {
   const items = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Outlets', icon: Users },
-    { id: 'catalogue', label: 'Catalogue', icon: Package },
     { id: 'inventory', label: 'Inventory', icon: Boxes },
     { id: 'billing', label: 'Billing', icon: FileText },
   ];
