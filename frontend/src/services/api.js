@@ -646,17 +646,17 @@ export const backupApi = {
 
 export const executiveApi = {
   getBriefing: async (forceRefresh = false) => {
-    const response = await api.get('/api/executive/briefing', {
+    const response = await api.get('/executive/briefing', {
       params: { force_refresh: forceRefresh }
     });
     return response.data;
   },
   getMemo: async () => {
-    const response = await api.get('/api/executive/memo');
+    const response = await api.get('/executive/memo');
     return response.data;
   },
   updateMemo: async (memo, updatedBy = null) => {
-    const response = await api.post('/api/executive/memo', {
+    const response = await api.post('/executive/memo', {
       memo,
       updated_by: updatedBy
     });
