@@ -108,6 +108,22 @@ class PaymentService:
                     if inv.outstanding_amount <= Decimal("0.00"):
                         inv.status = InvoiceStatus.PAID.value
                     inv.qr_payload = BillingService.generate_upi_qr_payload(inv.invoice_number, inv.outstanding_amount)
+
+                    # Apportion settlement discount across invoice items so gross margin & product profit reflect the concession
+                    if inv.items:
+                        tot_items_val = sum((Decimal(str(it.line_total or "0.00")) for it in inv.items), Decimal("0.00"))
+                        if tot_items_val > Decimal("0.00"):
+                            allocated_so_far = Decimal("0.00")
+                            for idx, it in enumerate(inv.items):
+                                if idx == len(inv.items) - 1:
+                                    it_disc = eff - allocated_so_far
+                                else:
+                                    it_disc = (eff * (Decimal(str(it.line_total or "0.00")) / tot_items_val)).quantize(Decimal("0.01"))
+                                    allocated_so_far += it_disc
+                                it.discount_amount = (it.discount_amount or Decimal("0.00")) + it_disc
+                                it.line_total = max(Decimal("0.00"), it.line_total - it_disc)
+                                it.taxable_amount = it.line_total
+
                     rem_discount -= eff
                     total_disc_applied += eff
 

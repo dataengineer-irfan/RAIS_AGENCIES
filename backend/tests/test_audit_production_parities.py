@@ -468,6 +468,11 @@ def test_payment_with_settlement_cash_discount(test_db):
     assert issued_inv.status == InvoiceStatus.PAID.value
     assert issued_inv.discount_amount >= Decimal("20.00")
 
+    # The line item must reflect the discount in discount_amount and line_total
+    item = issued_inv.items[0]
+    assert item.discount_amount >= Decimal("20.00")
+    assert item.line_total == Decimal(str(due_before)) - Decimal("20.00")
+
     # Customer ledger outstanding must be 0.00
     _, _, net_balance = CustomerService.get_customer_balances(test_db, cust.id)
     assert net_balance == Decimal("0.00")
@@ -520,6 +525,10 @@ def test_payment_with_settlement_cash_discount_fifo(test_db):
     assert issued_inv.outstanding_amount == Decimal("0.00")
     assert issued_inv.status == InvoiceStatus.PAID.value
     assert issued_inv.discount_amount >= Decimal("20.00")
+
+    item = issued_inv.items[0]
+    assert item.discount_amount >= Decimal("20.00")
+    assert item.line_total == Decimal(str(due_before)) - Decimal("20.00")
 
     _, _, net_balance = CustomerService.get_customer_balances(test_db, cust.id)
     assert net_balance == Decimal("0.00")

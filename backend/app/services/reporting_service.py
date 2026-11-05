@@ -332,6 +332,16 @@ class ReportingService:
             else:
                 total_cost += rev * Decimal("0.80")
 
+        # Guarantee overall net profit reflects any unapportioned invoice discounts / round-offs
+        total_invoice_discounts = db.query(func.coalesce(func.sum(Invoice.discount_amount), 0)).filter(
+            Invoice.status.in_(valid_statuses)
+        ).scalar() or Decimal("0.00")
+        total_item_discounts = db.query(func.coalesce(func.sum(InvoiceItem.discount_amount), 0)).join(
+            Invoice, Invoice.id == InvoiceItem.invoice_id
+        ).filter(Invoice.status.in_(valid_statuses)).scalar() or Decimal("0.00")
+        unapportioned_discounts = max(Decimal("0.00"), Decimal(str(total_invoice_discounts)) - Decimal(str(total_item_discounts)))
+        total_rev = max(Decimal("0.00"), total_rev - unapportioned_discounts)
+
         net_profit_loss = total_rev - total_cost
         if net_profit_loss >= Decimal("0.00"):
             overall_profit = net_profit_loss.quantize(Decimal("0.01"))

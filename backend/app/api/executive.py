@@ -156,6 +156,21 @@ def get_executive_briefing(
             c_tot = line_rev * 0.80
         mtd_profit += (line_rev - c_tot)
     mtd_profit = round(mtd_profit, 2)
+    # Ensure MTD net profit accounts for any unapportioned invoice discounts / round-offs
+    mtd_inv_discounts = float(db.query(func.coalesce(func.sum(Invoice.discount_amount), 0)).filter(
+        Invoice.invoice_date >= first_day_month,
+        Invoice.invoice_date <= today,
+        Invoice.status.in_(valid_statuses)
+    ).scalar() or 0)
+    mtd_item_discounts = float(db.query(func.coalesce(func.sum(InvoiceItem.discount_amount), 0)).join(
+        Invoice, Invoice.id == InvoiceItem.invoice_id
+    ).filter(
+        Invoice.invoice_date >= first_day_month,
+        Invoice.invoice_date <= today,
+        Invoice.status.in_(valid_statuses)
+    ).scalar() or 0)
+    unapportioned_mtd = max(0.0, mtd_inv_discounts - mtd_item_discounts)
+    mtd_profit = max(0.0, round(mtd_profit - unapportioned_mtd, 2))
     mtd_margin_pct = round((mtd_profit / mtd_revenue * 100), 1) if mtd_revenue > 0 else 0.0
 
     # Count of active products at or below min_stock_alert
