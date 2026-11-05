@@ -107,9 +107,9 @@ export const HomePage = ({
   }
 
   const vitals = briefing?.vital_signs || {};
-  const trafficLights = briefing?.traffic_lights || [];
   const priorities = briefing?.priorities || [];
   const marketIntel = briefing?.market_intelligence || [];
+  const execStory = briefing?.executive_story || {};
 
   const p1 = priorities.find(p => p.id === 'debt_recovery') || priorities[0];
   const p2 = priorities.find(p => p.id === 'depot_stockouts') || priorities[1];
@@ -189,122 +189,51 @@ export const HomePage = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. EXECUTIVE TRAFFIC LIGHTS (Vital Signs Status)
+          2. VP EXECUTIVE OPERATIONAL STORY & GAME PLAN (No Bookkeeping Clutter)
       ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {trafficLights.map((tl) => {
-          const isGreen = tl.status === 'GREEN';
-          const isAmber = tl.status === 'AMBER';
-          const bgBadge = isGreen 
-            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-            : isAmber 
-              ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' 
-              : 'bg-rose-500/15 border-rose-500/30 text-rose-400';
-          const dotColor = isGreen ? 'bg-emerald-400' : isAmber ? 'bg-amber-400' : 'bg-rose-400';
-
-          return (
-            <div 
-              key={tl.key}
-              className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between hover:border-slate-700 transition-all shadow-md"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-slate-400 tracking-wide">
-                  {isTe ? tl.label_te : tl.label_en}
-                </span>
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-black border flex items-center gap-1.5 ${bgBadge}`}>
-                  <span className={`w-2 h-2 rounded-full ${dotColor} animate-pulse`} />
-                  {tl.metric}
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-2 font-medium leading-relaxed">
-                {isTe ? tl.desc_te : tl.desc_en}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. KEY COMMERCIAL VITAL NUMBERS (Live Pulse)
-      ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        
-        {/* Today's Revenue */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {isTe ? "ఈ రోజు బిల్లింగ్" : "Today's Billing"}
-          </span>
-          <div className="mt-1">
-            <p className="text-lg font-black text-white">{formatINR(vitals.today_revenue)}</p>
-            <span className="text-[10px] text-amber-400/90 font-medium">
-              {vitals.today_invoices_count} {isTe ? 'బిల్లులు' : 'bills issued'}
-            </span>
+      <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+            <h2 className="text-xs font-black uppercase tracking-wider text-amber-300">
+              {isTe ? "నేటి వ్యాపార కార్యాచరణ ప్రణాళిక (VP సారాంశం)" : "Today's Operational Game Plan (VP Executive Synopsis)"}
+            </h2>
           </div>
+          <span className="text-[11px] font-semibold text-slate-400 font-mono">
+            {isTe ? "ప్రత్యక్ష డేటా ఆధారితం" : "Inferred from Live DB Telemetry"}
+          </span>
         </div>
 
-        {/* Today's Collections */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {isTe ? "ఈ రోజు వసూళ్లు" : "Today Collected"}
-          </span>
-          <div className="mt-1">
-            <p className="text-lg font-black text-emerald-400">{formatINR(vitals.today_collections)}</p>
-            <span className="text-[10px] text-slate-400 font-mono">
-              Cash: {formatINR(vitals.today_cash)} • UPI: {formatINR(vitals.today_upi)}
+        <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed mt-1">
+          {isTe 
+            ? (execStory.summary_te || "ఈ రోజు రాయచోటి డిపో ప్రధాన కార్యచరణలు: పాత బకాయిలు వసూలు చేయడం, ఖాళీ అయిన ముఖ్యమైన సరుకులు రీఆర్డర్ చేయడం, మరియు ఆర్డర్లు ఆపిన రెగ్యులర్ కేఫ్‌లను తిరిగి సంప్రదించడం.")
+            : (execStory.summary_en || "Today's primary operational focus for Rayachoty depot: 1) Follow up on top overdue debt to protect liquidity. 2) Replenish high-velocity stockouts before the weekend rush. 3) Re-engage regular cafe accounts past their ordering cadence.")}
+        </p>
+
+        {/* Quick Decision Status Strip */}
+        <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-300">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${p1?.amount > 0 ? 'bg-rose-400' : 'bg-emerald-400'}`} />
+            <span>{isTe ? "నగదు రికవరీ: " : "Cash Recovery: "}</span>
+            <span className={p1?.amount > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+              {p1?.amount > 0 ? `${p1.customer_name} (${formatINR(p1.amount)})` : (isTe ? "సక్రమం" : "Healthy")}
             </span>
           </div>
-        </div>
 
-        {/* Market Overdue */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {isTe ? "మార్కెట్ బకాయిలు" : "Total Overdue"}
-          </span>
-          <div className="mt-1">
-            <p className="text-lg font-black text-rose-400">{formatINR(vitals.total_overdue)}</p>
-            <span className="text-[10px] text-slate-400">
-              {isTe ? 'మొత్తం బ్యాలెన్స్: ' : 'Net Dues: '}{formatINR(vitals.total_receivables)}
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${p2?.stockouts_count > 0 ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+            <span>{isTe ? "డిపో స్టాక్: " : "Depot Stock: "}</span>
+            <span className={p2?.stockouts_count > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+              {p2?.stockouts_count > 0 ? `${p2.stockouts_count} ${isTe ? 'సరుకులు లోటు' : 'SKUs Depleted'}` : (isTe ? "సమృద్ధిగా ఉంది" : "Fully Stocked")}
             </span>
           </div>
-        </div>
 
-        {/* MTD Profit */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {isTe ? "ఈ నెల లాభం" : "MTD Profit"}
-          </span>
-          <div className="mt-1">
-            <p className="text-lg font-black text-emerald-300">{formatINR(vitals.mtd_profit)}</p>
-            <span className="text-[10px] text-amber-400 font-bold">
-              {vitals.mtd_margin_pct}% {isTe ? 'సగటు మార్జిన్' : 'Margin'}
-            </span>
-          </div>
-        </div>
-
-        {/* Depot Stockouts */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {isTe ? "డిపో స్టాక్ లోటు" : "Low Stock SKUs"}
-          </span>
-          <div className="mt-1">
-            <p className={`text-lg font-black ${vitals.depot_stockouts_count > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-              {vitals.depot_stockouts_count}
-            </p>
-            <span className="text-[10px] text-slate-400">
-              {vitals.depot_stockouts_count > 0 ? (isTe ? 'రీఆర్డర్ అవసరం' : 'Needs reorder') : (isTe ? 'సమృద్ధిగా ఉంది' : 'Stock healthy')}
-            </span>
-          </div>
-        </div>
-
-        {/* Active Outlets */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            {isTe ? "క్రియాశీల షాపులు" : "Active Outlets"}
-          </span>
-          <div className="mt-1">
-            <p className="text-lg font-black text-white">{vitals.active_outlets_count}</p>
-            <span className="text-[10px] text-slate-400">
-              {vitals.open_invoices_count} {isTe ? 'ఓపెన్ బిల్లులు' : 'open invoices'}
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${p3?.inactive_count > 0 ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+            <span>{isTe ? "కస్టమర్ రిటెన్షన్: " : "Customer Retention: "}</span>
+            <span className={p3?.inactive_count > 0 ? 'text-blue-400 font-bold' : 'text-emerald-400 font-bold'}>
+              {p3?.inactive_count > 0 ? `${p3.inactive_count} ${isTe ? 'కేఫ్‌లు సంప్రదించాలి' : 'Cafes Inactive'}` : (isTe ? "అందరూ యాక్టివ్" : "All Active")}
             </span>
           </div>
         </div>

@@ -647,8 +647,55 @@ def get_executive_briefing(
     ]
 
     # ─────────────────────────────────────────────────────────────
-    # 7. BROTHER COLLABORATIVE HANDOVER MEMO
+    # 7. EXECUTIVE STORY & BROTHER COLLABORATIVE HANDOVER MEMO
     # ─────────────────────────────────────────────────────────────
+    # Dynamic Executive Story (English & Telugu)
+    story_parts_en = []
+    story_parts_te = []
+
+    if priority_debt_recovery and priority_debt_recovery.get("amount", 0) > 0:
+        c_name = priority_debt_recovery.get("customer_name")
+        c_amt = priority_debt_recovery.get("amount")
+        c_days = priority_debt_recovery.get("days_overdue")
+        story_parts_en.append(
+            f"1) Recover ₹{c_amt:,.0f} from {c_name} ({c_days} days overdue) to unfreeze working capital."
+        )
+        story_parts_te.append(
+            f"1) నగదు ప్రవాహం కోసం {c_days} రోజులుగా పెండింగ్‌లో ఉన్న {c_name} నుండి ₹{c_amt:,.0f} బకాయిని తక్షణమే వసూలు చేయండి."
+        )
+    else:
+        story_parts_en.append("1) All outlet balances are healthy with zero critical debt bottlenecks.")
+        story_parts_te.append("1) అన్ని కస్టమర్ల ఖాతాలు సక్రమంగా ఉన్నాయి, బకాయిల సమస్య లేదు.")
+
+    if sorted_stockouts:
+        top_p = sorted_stockouts[0]
+        story_parts_en.append(
+            f"2) Inward {top_p.name} (stock: {float(top_p.current_stock):g}) and {len(sorted_stockouts)} low SKUs before the Rayachoty weekend rush."
+        )
+        story_parts_te.append(
+            f"2) వారాంతపు రద్దీకి ముందే డిపోలో అయిపోయిన {top_p.name} మరియు ఇతర {len(sorted_stockouts)} సరుకులను డిపోకు తెప్పించండి."
+        )
+    else:
+        story_parts_en.append("2) Depot stock is completely healthy across all food catalog items.")
+        story_parts_te.append("2) డిపోలో అన్ని రకాల సరుకులు తగినంతగా అందుబాటులో ఉన్నాయి.")
+
+    if inactive_cafes:
+        top_c = inactive_cafes[0]
+        story_parts_en.append(
+            f"3) Follow up with {top_c['business_name']} ({top_c['days_inactive']} days inactive) to secure regular demand."
+        )
+        story_parts_te.append(
+            f"3) గత {top_c['days_inactive']} రోజులుగా ఆర్డర్ ఇవ్వని {top_c['business_name']} ను సంప్రదించి ఆర్డర్ నిర్ధారించండి."
+        )
+    else:
+        story_parts_en.append("3) 100% of regular food accounts ordered within safe weekly cadence.")
+        story_parts_te.append("3) అన్ని రెగ్యులర్ కేఫ్‌ల నుండి సమయానికి ఆర్డర్లు వచ్చాయి.")
+
+    executive_story = {
+        "summary_en": " ".join(story_parts_en),
+        "summary_te": " ".join(story_parts_te)
+    }
+
     memo_setting = db.query(SystemSetting).filter(SystemSetting.key == "executive_handover_memo").first()
     memo_data = {
         "memo": "",
@@ -665,6 +712,7 @@ def get_executive_briefing(
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "today_date": str(today),
+        "executive_story": executive_story,
         "vital_signs": {
             "today_revenue": today_revenue,
             "today_invoices_count": today_invoices_count,
