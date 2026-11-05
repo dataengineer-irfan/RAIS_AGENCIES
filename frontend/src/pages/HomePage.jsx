@@ -34,12 +34,14 @@ import { useAuth } from '../context/AuthContext';
 export const HomePage = ({
   onOpenInvoiceBuilder,
   onOpenPaymentModal,
-  onNavigate
+  onNavigate,
+  dataRefreshKey
 }) => {
   const { user } = useAuth();
   const [lang, setLang] = useState('en'); // 'en' | 'te'
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
   const [briefing, setBriefing] = useState(null);
   const [error, setError] = useState(null);
 
@@ -51,11 +53,18 @@ export const HomePage = ({
   const [savingMemo, setSavingMemo] = useState(false);
   const [memoSaveSuccess, setMemoSaveSuccess] = useState(false);
 
-  const fetchBriefingData = async (force = false) => {
+  const fetchBriefingData = async (isManual = false, isBackground = false) => {
     try {
-      if (force) setRefreshing(true);
-      const res = await executiveApi.getBriefing(force);
+      if (isManual || isBackground) {
+        setRefreshing(true);
+      }
+      if (!briefing && !isBackground) {
+        setLoading(true);
+      }
+
+      const res = await executiveApi.getBriefing(isManual);
       setBriefing(res);
+      setLastSyncTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
       if (res?.handover_memo) {
         setMemoText(res.handover_memo.memo || '');
         setMemoAuthor(res.handover_memo.updated_by || 'Operator');
@@ -64,16 +73,52 @@ export const HomePage = ({
       setError(null);
     } catch (err) {
       console.error('Error fetching executive briefing:', err);
-      setError('Unable to fetch live briefing. Retrying...');
+      if (!briefing) {
+        setError('Unable to fetch live briefing. Retrying...');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  // Initial mount + real-time 25s polling + tab visibility / focus sync
   useEffect(() => {
     fetchBriefingData();
+
+    // 25-second live telemetry polling heartbeat
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchBriefingData(false, true);
+      }
+    }, 25000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBriefingData(false, true);
+      }
+    };
+
+    const handleWindowFocus = () => {
+      fetchBriefingData(false, true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, []);
+
+  // React immediately to global invoices/payments/orders events
+  useEffect(() => {
+    if (dataRefreshKey && dataRefreshKey > 0) {
+      fetchBriefingData(true, true);
+    }
+  }, [dataRefreshKey]);
 
   const handleSaveMemo = async () => {
     try {
@@ -129,7 +174,7 @@ export const HomePage = ({
       ───────────────────────────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-amber-400" />
               {isTe ? 'కార్యాచరణ ఉదయపు సమీక్ష' : 'Operations Command Cockpit'}
@@ -137,6 +182,15 @@ export const HomePage = ({
             <span className="text-xs text-slate-400 font-mono">
               {briefing?.today_date} • Rayachoty Depot
             </span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+              <span className={`w-1.5 h-1.5 rounded-full bg-emerald-400 ${refreshing ? 'animate-ping' : 'animate-pulse'}`} />
+              <span>LIVE</span>
+              {lastSyncTime && (
+                <span className="text-slate-400 font-mono text-[9px] hidden sm:inline">
+                  • {lastSyncTime}
+                </span>
+              )}
+            </div>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
             {isTe ? 'వ్యాపార స్థితిగతులు & తక్షణ నిర్ణయాలు' : 'Operational Situational Awareness'}

@@ -123,7 +123,6 @@ const getPersistentKeyForUrl = (url, params) => {
   if (url === '/reports/aging/customers') return 'reports_customer_aging';
   if (url === '/invoices' && params?.limit === 500) return 'invoices_list';
   if (url === '/invoices' && (!params || Object.keys(params).length === 0 || params.limit <= 100)) return 'invoices_list_recent';
-  if (url === '/executive/briefing') return 'executive_briefing';
   if (url === '/payments' && (!params || Object.keys(params).length === 0 || params.limit <= 100)) return 'payments_list';
   return null;
 };
@@ -649,12 +648,18 @@ export const backupApi = {
 
 export const executiveApi = {
   getBriefing: async (forceRefresh = false) => {
-    if (forceRefresh) {
-      clearApiCache();
-    }
-    return cachedGet('/executive/briefing', {
-      params: { force_refresh: forceRefresh }
+    // Operations briefing always fetches 100% live PostgreSQL telemetry
+    const response = await api.get('/executive/briefing', {
+      params: { 
+        force_refresh: forceRefresh,
+        _t: Date.now() // cache-busting timestamp
+      },
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
+    return response.data;
   },
   getMemo: async () => {
     const response = await api.get('/executive/memo');

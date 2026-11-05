@@ -244,6 +244,8 @@ export const App = () => {
         <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
           {activeTab === 'home' && (
             <HomePage
+              key={dataRefreshKey}
+              dataRefreshKey={dataRefreshKey}
               onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
               onOpenPaymentModal={() => handleOpenPayment()}
               onNavigate={handleNavigate}
