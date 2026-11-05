@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, CheckCircle2, Tag, Sparkles, RotateCcw } from 'lucide-react';
+import { X, CreditCard, CheckCircle2, Tag, RotateCcw } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 
@@ -116,24 +116,6 @@ export const PaymentModal = ({
   const remainingDue = Math.max(0, activeDue - totalSettled);
   const excessToAdvance = Math.max(0, totalSettled - activeDue);
 
-  // Difference between target due and entered cash payment
-  const unpaidDiff = Math.max(0, activeDue - amtNum);
-  const paise = activeDue > 0 ? +(activeDue - Math.floor(activeDue)).toFixed(2) : 0;
-
-  const applyQuickDiscount = (val) => {
-    const num = parseFloat(val) || 0;
-    if (num <= 0) {
-      setDiscountAmount('');
-      if (activeDue > 0) setAmount(activeDue.toFixed(2));
-      return;
-    }
-    setDiscountAmount(String(num));
-    if (activeDue > 0) {
-      const remainingCash = Math.max(0, activeDue - num);
-      setAmount(remainingCash.toFixed(2));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -187,8 +169,6 @@ export const PaymentModal = ({
       setSubmitting(false);
     }
   };
-
-  const allocatedToInvoice = selectedInvoice ? Math.min(amtNum, invOutstanding) : 0;
 
   if (!isOpen) return null;
 
@@ -306,9 +286,10 @@ export const PaymentModal = ({
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                  <Tag className="w-3 h-3" />
-                  Discount / Round-off (₹)
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-slate-500" />
+                  <span>Discount / Round-off (₹)</span>
+                  <span className="text-[10px] font-normal text-slate-500 lowercase">(optional)</span>
                 </label>
                 {discNum > 0 && (
                   <button
@@ -326,60 +307,11 @@ export const PaymentModal = ({
                 min="0"
                 value={discountAmount}
                 onChange={(e) => setDiscountAmount(e.target.value)}
-                placeholder="0.00 (e.g. 20)"
-                className="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-400 placeholder:text-slate-600"
+                placeholder="0.00 (Optional)"
+                className="w-full bg-slate-900 border border-slate-700/80 focus:border-amber-500 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono focus:outline-none placeholder:text-slate-600"
               />
             </div>
           </div>
-
-          {/* Quick Concession / Round-off Chips */}
-          {activeDue > 0 && (
-            <div className="p-2 bg-slate-950/60 border border-slate-800/80 rounded-lg flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">Quick Concession:</span>
-              {paise > 0 && (
-                <button
-                  type="button"
-                  onClick={() => applyQuickDiscount(paise)}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-[11px] font-mono font-medium transition-colors"
-                >
-                  Round paise (-₹{paise.toFixed(2)})
-                </button>
-              )}
-              {[10, 20, 50, 100].map(val => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => applyQuickDiscount(val)}
-                  className={`px-2 py-0.5 rounded border text-[11px] font-mono font-bold transition-colors ${
-                    discNum === val
-                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                  }`}
-                >
-                  -₹{val}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Customer Paid Less Difference Action Banner */}
-          {activeDue > 0 && unpaidDiff > 0.009 && discNum === 0 && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 animate-in fade-in duration-150">
-              <div className="flex items-center gap-2 min-w-0">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <div className="text-xs text-amber-200 truncate">
-                  Customer paid <span className="font-black text-amber-300">₹{unpaidDiff.toFixed(2)} less</span> than due (₹{activeDue.toFixed(2)})
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDiscountAmount(unpaidDiff.toFixed(2))}
-                className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] rounded-lg uppercase tracking-wider shrink-0 transition-colors shadow-sm flex items-center gap-1"
-              >
-                <span>⚡ Apply ₹{unpaidDiff.toFixed(2)} as Discount</span>
-              </button>
-            </div>
-          )}
 
           {/* Payment Method and Reference Number */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
