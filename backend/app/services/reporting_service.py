@@ -34,6 +34,11 @@ def invalidate_reporting_caches():
     _CUSTOMER_AGING_CACHE["data"] = None
     _PRODUCT_SALES_CACHE["timestamp"] = 0
     _PRODUCT_SALES_CACHE["data"] = None
+    try:
+        from app.api.executive import invalidate_executive_cache
+        invalidate_executive_cache()
+    except Exception:
+        pass
 
 class ReportingService:
     @staticmethod

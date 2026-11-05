@@ -358,9 +358,7 @@ class PaymentService:
         if cust_ids:
             try:
                 from app.services.customer_service import CustomerService
-                for cid in cust_ids:
-                    _, _, b = CustomerService.get_customer_balances(db, cid)
-                    cust_balance_map[cid] = b
+                cust_balance_map = CustomerService.get_customer_balances_map(db, cust_ids)
             except Exception:
                 pass
 

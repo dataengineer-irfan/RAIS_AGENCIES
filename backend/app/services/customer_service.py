@@ -54,6 +54,51 @@ class CustomerService:
         return total_invoiced, total_paid, outstanding_balance
 
     @staticmethod
+    def get_customer_balances_map(db: Session, customer_ids: List[str]) -> Dict[str, Decimal]:
+        """
+        High-performance batched balance computation:
+        Eliminates N+1 query bottlenecks by batching opening balances, invoices, and payments in 3 grouped queries.
+        """
+        if not customer_ids:
+            return {}
+
+        valid_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+
+        cust_rows = db.query(Customer.id, Customer.opening_balance).filter(Customer.id.in_(customer_ids)).all()
+        ob_map = {cid: Decimal(str(ob or "0.00")) for cid, ob in cust_rows}
+
+        inv_rows = db.query(
+            Invoice.customer_id,
+            func.coalesce(func.sum(Invoice.total_amount), 0)
+        ).filter(
+            Invoice.customer_id.in_(customer_ids),
+            Invoice.status.in_(valid_statuses)
+        ).group_by(Invoice.customer_id).all()
+        inv_map = {cid: Decimal(str(tot)) for cid, tot in inv_rows}
+
+        pay_rows = db.query(
+            Payment.customer_id,
+            func.coalesce(func.sum(Payment.amount), 0)
+        ).filter(
+            Payment.customer_id.in_(customer_ids)
+        ).group_by(Payment.customer_id).all()
+        pay_map = {cid: Decimal(str(tot)) for cid, tot in pay_rows}
+
+        balance_map = {}
+        for cid in customer_ids:
+            ob = ob_map.get(cid, Decimal("0.00"))
+            inv_tot = inv_map.get(cid, Decimal("0.00"))
+            pay_tot = pay_map.get(cid, Decimal("0.00"))
+            balance_map[cid] = ob + inv_tot - pay_tot
+
+        return balance_map
+
+    @staticmethod
     def get_customer_profit(db: Session, customer_id: str) -> Decimal:
         """
         Calculates live cumulative gross profit for a single customer:

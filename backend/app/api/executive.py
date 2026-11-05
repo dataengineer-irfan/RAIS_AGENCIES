@@ -27,6 +27,15 @@ def format_inr(val: float) -> str:
     """Format a float as Indian Rupee string e.g. 17,067.00"""
     return f"{val:,.2f}"
 
+import time
+
+_EXECUTIVE_CACHE = {"timestamp": 0, "data": None}
+_EXECUTIVE_CACHE_TTL = 45  # 45-second high-speed RAM cache for executive briefing
+
+def invalidate_executive_cache():
+    _EXECUTIVE_CACHE["timestamp"] = 0
+    _EXECUTIVE_CACHE["data"] = None
+
 def format_inr_short(val: float) -> str:
     """Format short currency string e.g. ₹17k or ₹1.2L"""
     if val >= 100000:
@@ -46,6 +55,9 @@ def get_executive_briefing(
     Computes situational metrics, prioritized action cards, Rayachoty market intelligence,
     and bilingual (English & Telugu) translations with 100% dynamic PostgreSQL data.
     """
+    now_ts = time.time()
+    if not force_refresh and _EXECUTIVE_CACHE["data"] and (now_ts - _EXECUTIVE_CACHE["timestamp"] < _EXECUTIVE_CACHE_TTL):
+        return _EXECUTIVE_CACHE["data"]
     today = get_ist_today()
     first_day_month = date(today.year, today.month, 1)
 
@@ -724,7 +736,7 @@ def get_executive_briefing(
             memo_data["memo"] = memo_setting.value
 
     # Build final executive briefing payload
-    return {
+    briefing_payload = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "today_date": str(today),
         "executive_story": executive_story,
@@ -753,6 +765,9 @@ def get_executive_briefing(
         "market_intelligence": market_intelligence,
         "handover_memo": memo_data
     }
+    _EXECUTIVE_CACHE["timestamp"] = now_ts
+    _EXECUTIVE_CACHE["data"] = briefing_payload
+    return briefing_payload
 
 @router.get("/memo")
 def get_executive_memo(
@@ -805,4 +820,5 @@ def update_executive_memo(
         )
         db.add(setting)
     db.commit()
+    invalidate_executive_cache()
     return payload
