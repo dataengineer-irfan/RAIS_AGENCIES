@@ -156,17 +156,35 @@ def get_printable_invoice(
             ctx_note = suggestion.get("context_note", "In Stock at Depot")
             p_name = suggestion.get("name", "Product")
             p_unit = suggestion.get("packaging_unit", "PACKET")
+            p_img = suggestion.get("image_url", "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg")
+            te_note = suggestion.get("telugu_note", "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది")
+            import urllib.parse
+            encoded_pname = urllib.parse.quote(p_name)
             restock_banner = f"""
-            <div class="mt-5 p-3.5 bg-amber-50/70 border border-amber-200/90 rounded-lg text-xs flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <span class="text-lg">📦</span>
+            <div class="mt-5 p-3.5 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/90 border border-amber-300 rounded-xl text-xs flex items-center justify-between gap-4 shadow-sm">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-16 h-16 rounded-lg bg-white border border-amber-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                        <img src="{p_img}" alt="{p_name}" class="w-full h-full object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                        <span class="text-2xl hidden">📦</span>
+                    </div>
                     <div>
-                        <span class="font-bold uppercase tracking-wider text-[10px] text-amber-800 block">{ctx_note}:</span>
-                        <span class="font-bold text-gray-900">{p_name}</span>
-                        <span class="text-gray-600 font-mono text-[11px]">({p_unit})</span>
+                        <div class="flex items-center gap-1.5 mb-0.5">
+                            <span class="px-2 py-0.5 bg-amber-200/90 text-amber-900 rounded font-black text-[9px] uppercase tracking-wider">🔥 Popular Companion</span>
+                            <span class="text-[10px] font-bold text-amber-800">{ctx_note}</span>
+                        </div>
+                        <div class="font-black text-sm text-gray-900">{p_name}</div>
+                        <div class="text-gray-600 text-[11px] font-medium flex items-center gap-2 mt-0.5">
+                            <span>Pack: <strong class="text-gray-800">{p_unit}</strong></span>
+                            <span>•</span>
+                            <span class="text-emerald-700 font-bold">100% In Depot Stock</span>
+                        </div>
+                        <div class="text-[10px] text-amber-800/80 font-medium mt-0.5 italic">{te_note}</div>
                     </div>
                 </div>
-                <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold rounded uppercase shrink-0">In Stock at Depot</span>
+                <div class="text-right shrink-0">
+                    <span class="px-3 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded uppercase tracking-wider shadow-sm block text-center">Ready to Dispatch</span>
+                    <a href="https://wa.me/919347453135?text=Hi%20RAIS%20Agencies%2C%20please%20add%20{encoded_pname}%20to%20our%20next%20delivery" target="_blank" rel="noopener noreferrer" class="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold underline mt-1.5 inline-block">1-Tap WhatsApp Order</a>
+                </div>
             </div>
             """
     except Exception:

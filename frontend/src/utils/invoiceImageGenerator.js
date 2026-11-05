@@ -4,6 +4,8 @@
  * with zero external dependencies for direct WhatsApp image sharing.
  */
 
+import { getProductImageUrl, preloadImage, getTeluguCompanionPhrase } from './productMediaMap.js';
+
 export const formatInvoiceDateTime = (invoiceDate, createdAt) => {
   let datePart = invoiceDate || '';
   let timePart = '';
@@ -54,8 +56,28 @@ export const formatCustomerDisplayName = (businessName, contactPerson) => {
 };
 
 export const deriveRestockSuggestion = (items = [], products = [], explicitSuggestion = null) => {
-  if (explicitSuggestion) return explicitSuggestion;
-  if (!products || !products.length) return null;
+  if (explicitSuggestion) {
+    const s = { ...explicitSuggestion };
+    if (!s.image_url) s.image_url = getProductImageUrl(s);
+    if (!s.telugu_note) s.telugu_note = getTeluguCompanionPhrase(s.name);
+    return s;
+  }
+
+  if (!products || !products.length) {
+    // Default fast-moving depot companion if product list isn't provided (e.g. direct receipt downloads)
+    const defaultName = 'VKL PERI PERI SPRINKLER';
+    const defaultUnit = '1 PACKET';
+    const defaultContext = 'In Stock for your Kitchen';
+    return {
+      sku: 'RAIS-BRD-03',
+      name: defaultName,
+      packaging_unit: defaultUnit,
+      context_note: defaultContext,
+      image_url: getProductImageUrl('RAIS-BRD-03', defaultName),
+      telugu_note: getTeluguCompanionPhrase(defaultName),
+      display_text: `📦 *${defaultContext.toUpperCase()}:* ${defaultName} (${defaultUnit}) — _Ready for immediate delivery_`
+    };
+  }
 
   const currentProductIds = new Set((items || []).map(i => i.product_id));
 
@@ -107,10 +129,16 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   if (!candidate) return null;
 
   const unit = candidate.packaging_unit || 'PACKET';
+  const imgUrl = getProductImageUrl(candidate);
+  const teluguNote = getTeluguCompanionPhrase(candidate.name);
   return {
+    id: candidate.id,
+    sku: candidate.sku,
     name: candidate.name,
     packaging_unit: unit,
     context_note: contextNote,
+    image_url: imgUrl,
+    telugu_note: teluguNote,
     display_text: `📦 *${contextNote.toUpperCase()}:* ${candidate.name} (${unit}) — _Ready for immediate delivery_`
   };
 };
@@ -121,7 +149,8 @@ export const generateInvoiceCanvas = ({
   items = [],
   products = [],
   restockSuggestion = null,
-  includeRestockSuggestion = true
+  includeRestockSuggestion = true,
+  preloadedSuggestionImage = null
 }) => {
   const invNumber = invoice?.invoice_number || 'INV-DRAFT';
   const bName = customer?.business_name || invoice?.customer_name || 'Valued Customer';
@@ -195,7 +224,7 @@ export const generateInvoiceCanvas = ({
   const suggestion = includeRestockSuggestion !== false
     ? deriveRestockSuggestion(processedItems, products, restockSuggestion || invoice?.restock_suggestion)
     : null;
-  const restockStripHeight = suggestion ? 44 : 0;
+  const restockStripHeight = suggestion ? 84 : 0;
 
   // Canvas Sizing
   const scale = 2; // 2x for Retina / Mobile High-DPI
@@ -380,51 +409,109 @@ export const generateInvoiceCanvas = ({
     curY += rowHeight;
   });
 
-  // 3b. In-Stock Restock Pill Strip on Image Card (strictly NO PRICES)
+  // 3b. High-Impact Visual Companion Spotlight Card (strictly NO PRICES)
   if (suggestion) {
-    curY += 10;
-    const stripH = 34;
+    curY += 12;
+    const stripH = 72;
     const pillX = 30;
     const pillW = width - 60;
 
-    ctx.fillStyle = '#fef3c7';
+    // Card background: warm gradient style with gold border
+    ctx.fillStyle = '#fffbeb';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(pillX, curY, pillW, stripH, 6);
+      ctx.roundRect(pillX, curY, pillW, stripH, 8);
       ctx.fill();
       ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
     } else {
       ctx.fillRect(pillX, curY, pillW, stripH);
     }
 
+    // Thumbnail container: white rounded frame
+    const thumbSize = 58;
+    const thumbX = pillX + 7;
+    const thumbY = curY + 7;
+
+    ctx.fillStyle = '#ffffff';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else {
+      ctx.fillRect(thumbX, thumbY, thumbSize, thumbSize);
+    }
+
+    if (preloadedSuggestionImage && preloadedSuggestionImage.complete && preloadedSuggestionImage.naturalWidth > 0) {
+      // Draw image inside thumbnail box maintaining aspect ratio
+      const imgW = preloadedSuggestionImage.naturalWidth;
+      const imgH = preloadedSuggestionImage.naturalHeight;
+      const scaleFit = Math.min((thumbSize - 6) / imgW, (thumbSize - 6) / imgH);
+      const drawW = imgW * scaleFit;
+      const drawH = imgH * scaleFit;
+      const drawX = thumbX + (thumbSize - drawW) / 2;
+      const drawY = thumbY + (thumbSize - drawH) / 2;
+
+      ctx.save();
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(thumbX + 2, thumbY + 2, thumbSize - 4, thumbSize - 4, 4);
+        ctx.clip();
+      }
+      ctx.drawImage(preloadedSuggestionImage, drawX, drawY, drawW, drawH);
+      ctx.restore();
+    } else {
+      // Clean fallback icon
+      ctx.font = '26px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 9);
+      ctx.textAlign = 'start';
+    }
+
+    // Text content next to image
+    const textX = thumbX + thumbSize + 14;
     const ctxTag = (suggestion.context_note || 'In Stock at Depot').toUpperCase();
     const pName = suggestion.name || 'Packaging Solutions';
     const pUnit = suggestion.packaging_unit || 'PACKET';
-    const labelText = `📦 ${ctxTag}: ${pName} (${pUnit})`;
-    const truncatedLabel = labelText.length > 55 ? labelText.substring(0, 52) + '...' : labelText;
+    const teNote = suggestion.telugu_note || 'రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది';
 
-    ctx.fillStyle = '#92400e';
-    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(truncatedLabel, pillX + 14, curY + 21);
+    // Tag line
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(`🔥 POPULAR COMPANION • ${ctxTag}`, textX, curY + 18);
 
-    // Green In Stock badge on right
-    const badgeW = 140;
-    const badgeH = 22;
-    const badgeX = pillX + pillW - badgeW - 6;
-    const badgeY = curY + 6;
+    // Product title
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const truncName = pName.length > 40 ? pName.substring(0, 38) + '...' : pName;
+    ctx.fillText(`${truncName} (${pUnit})`, textX, curY + 37);
+
+    // Telugu / English reassurance
+    ctx.fillStyle = '#047857';
+    ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(`✓ 100% In Depot Stock • ${teNote}`, textX, curY + 56);
+
+    // Right side: In Depot Stock Green Button
+    const badgeW = 145;
+    const badgeH = 26;
+    const badgeX = pillX + pillW - badgeW - 10;
+    const badgeY = curY + 23;
+
     ctx.fillStyle = '#059669';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
       ctx.fill();
     } else {
       ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
     }
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('IN STOCK AT DEPOT', badgeX + 12, badgeY + 15);
+    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('● IN DEPOT STOCK', badgeX + 16, badgeY + 17);
 
     curY += stripH;
   }
@@ -693,7 +780,25 @@ export const generateInvoiceCanvas = ({
 };
 
 export const generateInvoiceBlob = async (data) => {
-  const canvas = generateInvoiceCanvas(data);
+  let preloadedImg = null;
+  try {
+    const processedItems = (data?.items && data.items.length > 0) ? data.items : [];
+    const suggestion = data?.includeRestockSuggestion !== false
+      ? deriveRestockSuggestion(processedItems, data?.products || [], data?.restockSuggestion || data?.invoice?.restock_suggestion)
+      : null;
+    if (suggestion) {
+      const imgUrl = suggestion.image_url || getProductImageUrl(suggestion);
+      preloadedImg = await preloadImage(imgUrl, 1200);
+    }
+  } catch (err) {
+    console.warn('Suggestion image preload failed gracefully:', err);
+  }
+
+  const canvas = generateInvoiceCanvas({
+    ...data,
+    preloadedSuggestionImage: preloadedImg
+  });
+
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {

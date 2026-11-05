@@ -4,11 +4,16 @@
  * for direct WhatsApp image sharing and 1-click downloads.
  */
 
-import { formatInvoiceDateTime, formatCustomerDisplayName } from './invoiceImageGenerator.js';
+import { formatInvoiceDateTime, formatCustomerDisplayName, deriveRestockSuggestion } from './invoiceImageGenerator.js';
+import { getProductImageUrl, preloadImage, getTeluguCompanionPhrase } from './productMediaMap.js';
 
 export const generatePaymentCanvas = ({
   payment,
-  customer
+  customer,
+  products = [],
+  restockSuggestion = null,
+  includeRestockSuggestion = true,
+  preloadedSuggestionImage = null
 }) => {
   const pNumber = payment?.payment_number || 'PAY-RECEIPT';
   const bName = customer?.business_name || payment?.customer_name || 'Valued Customer';
@@ -35,6 +40,12 @@ export const generatePaymentCanvas = ({
 
   const allocations = payment?.allocations || [];
 
+  // Derive companion restock suggestion (strictly ZERO PRICES)
+  const suggestion = includeRestockSuggestion !== false
+    ? (restockSuggestion || (products && products.length > 0 ? deriveRestockSuggestion([], products) : null))
+    : null;
+  const restockStripHeight = suggestion ? 84 : 0;
+
   // Canvas Sizing
   const scale = 2; // 2x Retina / Mobile High-DPI
   const width = 800;
@@ -47,7 +58,7 @@ export const generatePaymentCanvas = ({
   const ledgerBoxHeight = 75;
   const linksBoxHeight = 72;
   const footerHeight = 100;
-  const height = headerHeight + 20 + custBoxHeight + 15 + heroBoxHeight + 15 + tableHeight + ledgerBoxHeight + linksBoxHeight + footerHeight;
+  const height = headerHeight + 20 + custBoxHeight + 15 + heroBoxHeight + 15 + tableHeight + ledgerBoxHeight + restockStripHeight + linksBoxHeight + footerHeight;
 
   const canvas = document.createElement('canvas');
   canvas.width = width * scale;
@@ -288,6 +299,107 @@ export const generatePaymentCanvas = ({
     curY += 55;
   }
 
+  // 5a. High-Impact Visual Companion Spotlight Card on Payment Receipt (strictly NO PRICES)
+  if (suggestion) {
+    const stripH = 72;
+    const pillX = 30;
+    const pillW = width - 60;
+
+    // Card background: warm emerald/amber tinted card
+    ctx.fillStyle = '#ecfdf5';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(pillX, curY, pillW, stripH, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      ctx.fillRect(pillX, curY, pillW, stripH);
+    }
+
+    // Thumbnail container: white rounded frame
+    const thumbSize = 58;
+    const thumbX = pillX + 7;
+    const thumbY = curY + 7;
+
+    ctx.fillStyle = '#ffffff';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#a7f3d0';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else {
+      ctx.fillRect(thumbX, thumbY, thumbSize, thumbSize);
+    }
+
+    if (preloadedSuggestionImage && preloadedSuggestionImage.complete && preloadedSuggestionImage.naturalWidth > 0) {
+      const imgW = preloadedSuggestionImage.naturalWidth;
+      const imgH = preloadedSuggestionImage.naturalHeight;
+      const scaleFit = Math.min((thumbSize - 6) / imgW, (thumbSize - 6) / imgH);
+      const drawW = imgW * scaleFit;
+      const drawH = imgH * scaleFit;
+      const drawX = thumbX + (thumbSize - drawW) / 2;
+      const drawY = thumbY + (thumbSize - drawH) / 2;
+
+      ctx.save();
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(thumbX + 2, thumbY + 2, thumbSize - 4, thumbSize - 4, 4);
+        ctx.clip();
+      }
+      ctx.drawImage(preloadedSuggestionImage, drawX, drawY, drawW, drawH);
+      ctx.restore();
+    } else {
+      ctx.font = '26px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 9);
+      ctx.textAlign = 'start';
+    }
+
+    // Text content next to image
+    const textX = thumbX + thumbSize + 14;
+    const ctxTag = (suggestion.context_note || 'Ready for Next Order').toUpperCase();
+    const pName = suggestion.name || 'Packaging & Food Solutions';
+    const pUnit = suggestion.packaging_unit || 'PACKET';
+    const teNote = suggestion.telugu_note || getTeluguCompanionPhrase(pName);
+
+    ctx.fillStyle = '#065f46';
+    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(`🔥 READY FOR YOUR NEXT ORDER • ${ctxTag}`, textX, curY + 18);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const truncName = pName.length > 40 ? pName.substring(0, 38) + '...' : pName;
+    ctx.fillText(`${truncName} (${pUnit})`, textX, curY + 37);
+
+    ctx.fillStyle = '#059669';
+    ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(`✓ 100% In Depot Stock • ${teNote}`, textX, curY + 56);
+
+    // Right side: In Depot Stock Green Button
+    const badgeW = 145;
+    const badgeH = 26;
+    const badgeX = pillX + pillW - badgeW - 10;
+    const badgeY = curY + 23;
+
+    ctx.fillStyle = '#059669';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
+      ctx.fill();
+    } else {
+      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('● IN DEPOT STOCK', badgeX + 16, badgeY + 17);
+
+    curY += stripH + 12;
+  }
+
   // 5b. Bold Green Quick Links Banner
   const linkBannerHeight = 58;
   ctx.fillStyle = '#ecfdf5';
@@ -337,7 +449,24 @@ export const generatePaymentCanvas = ({
 };
 
 export const generatePaymentBlob = async (data) => {
-  const canvas = generatePaymentCanvas(data);
+  let preloadedImg = null;
+  try {
+    const suggestion = data?.includeRestockSuggestion !== false
+      ? (data?.restockSuggestion || (data?.products && data.products.length > 0 ? deriveRestockSuggestion([], data.products) : null))
+      : null;
+    if (suggestion) {
+      const imgUrl = suggestion.image_url || getProductImageUrl(suggestion);
+      preloadedImg = await preloadImage(imgUrl, 1200);
+    }
+  } catch (err) {
+    console.warn('Payment suggestion image preload failed gracefully:', err);
+  }
+
+  const canvas = generatePaymentCanvas({
+    ...data,
+    preloadedSuggestionImage: preloadedImg
+  });
+
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {

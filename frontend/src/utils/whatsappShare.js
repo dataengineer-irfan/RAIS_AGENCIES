@@ -406,6 +406,7 @@ ${getCompactQuickLinks(cleanOrderUrl, 'Download Order Slip')}`;
 export const sharePaymentOnWhatsApp = async ({
   payment,
   customer,
+  products = [],
   restockSuggestion = null,
   showRestock = true,
   mode = 'direct'
@@ -461,8 +462,11 @@ export const sharePaymentOnWhatsApp = async ({
 
   // Optional in-stock restock note for next order (strictly NO PRICES)
   let restockSection = '';
-  if (showRestock && restockSuggestion && restockSuggestion.display_text) {
-    restockSection = `${restockSuggestion.display_text}\n`;
+  const finalSuggestion = showRestock
+    ? (restockSuggestion || (products && products.length > 0 ? deriveRestockSuggestion([], products) : null))
+    : null;
+  if (finalSuggestion && finalSuggestion.display_text) {
+    restockSection = `${finalSuggestion.display_text}\n`;
   }
 
   const payIdentifier = payment?.payment_number || payment?.id || '';
@@ -486,7 +490,10 @@ ${ledgerSection}${restockSection}${getCompactQuickLinks(cleanPayUrl, 'Download V
     try {
       paymentFile = await generatePaymentFile({
         payment,
-        customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
+        customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
+        products,
+        restockSuggestion: finalSuggestion,
+        includeRestockSuggestion: showRestock
       });
     } catch (imgErr) {
       console.warn('Payment canvas image generation skipped/failed:', imgErr);
@@ -517,7 +524,10 @@ ${ledgerSection}${restockSection}${getCompactQuickLinks(cleanPayUrl, 'Download V
         try {
           await downloadPaymentImage({
             payment,
-            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
+            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
+            products,
+            restockSuggestion: finalSuggestion,
+            includeRestockSuggestion: showRestock
           });
         } catch (dlErr) {
           console.warn('Payment image auto-download failed:', dlErr);

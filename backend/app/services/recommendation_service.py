@@ -174,6 +174,9 @@ class RecommendationService:
             context_note = "In Stock at Depot"
 
         display_text = f"📦 {context_note}: {clean_name} ({unit})"
+        img_file = cls.get_product_image_filename(product.sku, clean_name)
+        img_url = f"https://rais-frontend.onrender.com/assets/products/{img_file}"
+        te_note = cls.get_telugu_companion_note(clean_name)
 
         return {
             "product_id": str(product.id),
@@ -181,8 +184,85 @@ class RecommendationService:
             "name": clean_name,
             "packaging_unit": unit,
             "context_note": context_note,
-            "display_text": display_text
+            "display_text": display_text,
+            "image_filename": img_file,
+            "image_url": img_url,
+            "telugu_note": te_note
         }
+
+    @staticmethod
+    def get_product_image_filename(sku: str, name: str = "") -> str:
+        clean_sku = (sku or "").strip().upper()
+        clean_name = (name or "").strip().upper()
+
+        sku_map = {
+            "RAIS-BRD-03": "vkl_peri_peri_sprinkler.jpg",
+            "RAIS-SAU-06": "big_bell_oregano.jpg",
+            "RAIS-BRD-04": "vkl_crispy_cajun_breading.jpg",
+            "RAIS-BRD-05": "vkl_extra_hs_marinade.jpg",
+            "RAIS-BOX-01": "boxes_display_pizza_burger.jpg",
+            "RAIS-BOX-02": "burger_box_printed.jpg",
+            "RAIS-BOX-03": "pizza_boxes_assortment.jpg",
+            "RAIS-BOX-04": "burger_box_printed.jpg",
+            "RAIS-BOX-05": "burger_boxes.jpg",
+            "RAIS-BOX-06": "kfc_bucket.jpg",
+            "RAIS-SAU-01": "delmonte_ketchup_bottle.jpg",
+            "RAIS-SAU-04": "delmonte_tandoori_mayo.jpg",
+            "RAIS-CHS-01": "milky_mist_mozzarella_1kg.jpg",
+            "RAIS-VEG-01": "amul_french_fries_6mm.jpg",
+            "RAIS-MOM-01": "triken_chicken_momos.jpg"
+        }
+        if clean_sku in sku_map:
+            return sku_map[clean_sku]
+
+        combined = f"{clean_sku} {clean_name}"
+        if "PERI PERI" in combined:
+            return "vkl_peri_peri_sprinkler.jpg"
+        if "OREGANO" in combined:
+            return "big_bell_oregano.jpg"
+        if "PIZZA BOX" in combined:
+            return "boxes_display_pizza_burger.jpg"
+        if "BURGER BOX" in combined:
+            return "burger_box_printed.jpg"
+        if "TANDOORI MAYO" in combined or "MAYO" in combined:
+            return "delmonte_tandoori_mayo.jpg"
+        if "KETCHUP" in combined:
+            return "delmonte_ketchup_bottle.jpg"
+        if "MOZZARELLA" in combined or "CHEESE" in combined:
+            return "milky_mist_mozzarella_1kg.jpg"
+        if "FRIES" in combined:
+            return "amul_french_fries_6mm.jpg"
+        if "TORTILLA" in combined or "WRAP" in combined:
+            return "fresh2go_tortilla_10.jpg"
+        if "MOMO" in combined:
+            return "triken_chicken_momos.jpg"
+        if "NUGGET" in combined:
+            return "itc_crunchy_chicken_nuggets.jpg"
+        if "BREADING" in combined:
+            return "vkl_crispy_cajun_breading.jpg"
+
+        return "boxes_display_pizza_burger.jpg"
+
+    @staticmethod
+    def get_telugu_companion_note(name: str = "") -> str:
+        uname = (name or "").upper()
+        if "PERI PERI" in uname:
+            return "ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్"
+        if "OREGANO" in uname:
+            return "పిజ్జా కోసం ఒరేగానో తాజా స్టాక్"
+        if "PIZZA BOX" in uname:
+            return "పిజ్జా బాక్సులు డిపోలో సిద్ధంగా ఉన్నాయి"
+        if "BURGER BOX" in uname:
+            return "ప్రింటెడ్ బర్గర్ బాక్సులు డిపో స్టాక్"
+        if "MAYO" in uname:
+            return "రుచికరమైన మాయోనైస్ డిపో స్టాక్"
+        if "KETCHUP" in uname:
+            return "డెల్మోంటే కెచప్ బాటిల్స్ & పౌచ్‌లు"
+        if "CHEESE" in uname:
+            return "మిల్కీ మిస్ట్ మొజారెల్లా చీజ్"
+        if "FRIES" in uname:
+            return "అముల్ ఫ్రెంచ్ ఫ్రైస్ క్రిస్పీ స్టాక్"
+        return "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
 
     # ─── IN-MEMORY DEMAND RADAR CACHE (60s TTL) ───
     _DEMAND_RADAR_CACHE = {
