@@ -78,7 +78,7 @@ export const HomePage = ({
   const handleSaveMemo = async () => {
     try {
       setSavingMemo(true);
-      const author = user?.full_name || 'Brother / Operator';
+      const author = user?.full_name || 'Operator';
       const updated = await executiveApi.updateMemo(memoText, author);
       setMemoAuthor(updated.updated_by);
       setMemoTime(updated.updated_at);
@@ -132,7 +132,7 @@ export const HomePage = ({
           <div className="flex items-center gap-2.5">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-amber-400" />
-              {isTe ? 'VP / యజమాని ఉదయపు సమీక్ష' : 'VP / Owner Morning Cockpit'}
+              {isTe ? 'కార్యాచరణ ఉదయపు సమీక్ష' : 'Operations Command Cockpit'}
             </span>
             <span className="text-xs text-slate-400 font-mono">
               {briefing?.today_date} • Rayachoty Depot
@@ -189,7 +189,7 @@ export const HomePage = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. VP EXECUTIVE OPERATIONAL STORY & GAME PLAN (No Bookkeeping Clutter)
+          2. EXECUTIVE OPERATIONAL STORY & GAME PLAN (No Bookkeeping Clutter)
       ───────────────────────────────────────────────────────────── */}
       <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -197,7 +197,7 @@ export const HomePage = ({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
             <h2 className="text-xs font-black uppercase tracking-wider text-amber-300">
-              {isTe ? "నేటి వ్యాపార కార్యాచరణ ప్రణాళిక (VP సారాంశం)" : "Today's Operational Game Plan (VP Executive Synopsis)"}
+              {isTe ? "నేటి వ్యాపార కార్యాచరణ ప్రణాళిక" : "Today's Operational Game Plan"}
             </h2>
           </div>
           <span className="text-[11px] font-semibold text-slate-400 font-mono">
@@ -240,13 +240,13 @@ export const HomePage = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          4. VP ACTION PRIORITIES (1, 2, 3 QUEUE)
+          4. ACTION PRIORITIES (1, 2, 3 QUEUE)
       ───────────────────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-extrabold text-white flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-            {isTe ? "ఉదయపు అత్యవసర ప్రాధాన్యతలు (VP యాక్షన్ క్యూ)" : "Morning Operational Priorities (VP Action Queue)"}
+            {isTe ? "ఉదయపు అత్యవసర ప్రాధాన్యతలు" : "Daily Operational Priorities (Action Queue)"}
           </h2>
           <span className="text-xs text-slate-400">
             {isTe ? "ప్రాధాన్యతా క్రమం: రికవరీ • ఇన్వెంటరీ • కస్టమర్ రిటెన్షన్" : "Ranked: Cash • Stock • Retention"}
@@ -529,7 +529,7 @@ export const HomePage = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          6. BROTHER COLLABORATIVE HANDOVER MEMO (Live 2-Brothers Sync)
+          6. OPERATIONS SHIFT HANDOVER MEMO (Live Team Sync)
       ───────────────────────────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
         <div className="flex items-center justify-between gap-3 mb-3">
@@ -539,7 +539,7 @@ export const HomePage = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-white">
-                {isTe ? "సోదరుల సమన్వయ నోట్ (షిఫ్ట్ హ్యాండోవర్ మెమో)" : "Brother Operational Handover Memo"}
+                {isTe ? "కార్యాచరణ షిఫ్ట్ హ్యాండోవర్ మెమో" : "Operations Shift Handover Memo"}
               </h3>
               <p className="text-[11px] text-slate-400">
                 {isTe ? `చివరిగా అప్‌డేట్ చేసినవారు: ${memoAuthor} (${memoTime})` : `Last updated by: ${memoAuthor} (${memoTime})`}
@@ -599,8 +599,8 @@ export const HomePage = ({
             />
             <p className="text-[11px] text-slate-400">
               {isTe 
-                ? "ఈ నోట్‌ను మీ సోదరుడు వారి స్క్రీన్‌లో నేరుగా చూడగలరు."
-                : "Both brothers can read and update this shared live memo from their respective devices."}
+                ? "ఈ నోట్‌ను మీ సహ-ఆపరేటర్ వారి స్క్రీన్‌లో నేరుగా చూడగలరు."
+                : "All operations team members can view and update this live shared memo from their devices."}
             </p>
           </div>
         ) : (
@@ -609,7 +609,7 @@ export const HomePage = ({
               <p className="whitespace-pre-line">{memoText}</p>
             ) : (
               <span className="text-slate-500 italic">
-                {isTe ? "ఇంకా నోట్స్ రాయలేదు. ఇక్కడ క్లిక్ చేసి రాయండి." : "No handover notes yet. Click 'Edit Memo' to leave a reminder for your brother."}
+                {isTe ? "ఇంకా నోట్స్ నమోదు కాలేదు. ఇక్కడ క్లిక్ చేసి రాయండి." : "No handover notes yet. Click 'Edit Memo' to leave a reminder for the operations team."}
               </span>
             )}
           </div>

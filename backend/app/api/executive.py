@@ -744,7 +744,7 @@ def get_executive_memo(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):
-    """Get the current collaborative brother handover memo."""
+    """Get the current collaborative operations handover memo."""
     setting = db.query(SystemSetting).filter(SystemSetting.key == "executive_handover_memo").first()
     if not setting or not setting.value:
         return {
@@ -768,8 +768,8 @@ def update_executive_memo(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):
-    """Update the collaborative brother handover memo."""
-    author = updated_by or getattr(current_user, "full_name", None) or "Brother"
+    """Update the collaborative operations handover memo."""
+    author = updated_by or getattr(current_user, "full_name", None) or "Operator"
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %I:%M %p")
     payload = {
         "memo": memo.strip(),
