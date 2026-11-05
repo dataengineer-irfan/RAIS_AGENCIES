@@ -73,16 +73,88 @@ class PaymentService:
             }
         )
 
+        # Process settlement discount / concession / round-off if provided
+        discount = data.discount_amount or Decimal("0.00")
+        rem_discount = discount
+        if rem_discount > Decimal("0.00"):
+            target_invoices = []
+            if data.allocations:
+                target_inv_id = data.allocations[0].invoice_id
+                target_inv = db.query(Invoice).filter(Invoice.id == target_inv_id).with_for_update().first()
+                if target_inv and target_inv.outstanding_amount > Decimal("0.00"):
+                    target_invoices.append(target_inv)
+            
+            other_invs = db.query(Invoice).filter(
+                Invoice.customer_id == customer.id,
+                Invoice.status.in_([InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.OVERDUE.value]),
+                Invoice.outstanding_amount > Decimal("0.00")
+            ).order_by(Invoice.invoice_date.asc(), Invoice.created_at.asc()).with_for_update().all()
+
+            for oi in other_invs:
+                if oi not in target_invoices:
+                    target_invoices.append(oi)
+
+            total_disc_applied = Decimal("0.00")
+            from app.services.billing_service import BillingService
+
+            for inv in target_invoices:
+                if rem_discount <= Decimal("0.00"):
+                    break
+                eff = min(rem_discount, inv.outstanding_amount)
+                if eff > Decimal("0.00"):
+                    inv.discount_amount = (inv.discount_amount or Decimal("0.00")) + eff
+                    inv.total_amount = max(Decimal("0.00"), inv.total_amount - eff)
+                    inv.outstanding_amount = max(Decimal("0.00"), inv.outstanding_amount - eff)
+                    if inv.outstanding_amount <= Decimal("0.00"):
+                        inv.status = InvoiceStatus.PAID.value
+                    inv.qr_payload = BillingService.generate_upi_qr_payload(inv.invoice_number, inv.outstanding_amount)
+                    rem_discount -= eff
+                    total_disc_applied += eff
+
+                    AuditService.log(
+                        db=db,
+                        action=AuditAction.UPDATE,
+                        entity_name="Invoice",
+                        entity_id=inv.id,
+                        user_id=user_id,
+                        username=username,
+                        user_role=user_role,
+                        after_state={
+                            "event": "SETTLEMENT_CASH_DISCOUNT",
+                            "discount_applied": str(eff),
+                            "new_total": str(inv.total_amount),
+                            "new_outstanding": str(inv.outstanding_amount),
+                            "payment_number": pay_number
+                        }
+                    )
+
+            if rem_discount > Decimal("0.00") and customer.opening_balance > Decimal("0.00"):
+                eff = min(rem_discount, customer.opening_balance)
+                customer.opening_balance = max(Decimal("0.00"), customer.opening_balance - eff)
+                rem_discount -= eff
+                total_disc_applied += eff
+
+            if total_disc_applied > Decimal("0.00"):
+                disc_note = f"Settlement Cash Discount of ₹{total_disc_applied:.2f} applied"
+                payment.notes = f"{disc_note}. {payment.notes}" if payment.notes else f"{disc_note}."
+
         # Process initial allocations if passed
         if data.allocations:
             for alloc_item in data.allocations:
-                PaymentService.allocate_payment(
-                    db=db,
-                    payment_id=payment.id,
-                    invoice_id=alloc_item.invoice_id,
-                    amount=alloc_item.amount,
-                    user_id=user_id
-                )
+                if payment.unallocated_amount <= Decimal("0.00"):
+                    break
+                target_inv_check = db.query(Invoice).filter(Invoice.id == alloc_item.invoice_id).first()
+                if not target_inv_check or target_inv_check.outstanding_amount <= Decimal("0.00"):
+                    continue
+                safe_alloc_amount = min(alloc_item.amount, payment.unallocated_amount, target_inv_check.outstanding_amount)
+                if safe_alloc_amount > Decimal("0.00"):
+                    PaymentService.allocate_payment(
+                        db=db,
+                        payment_id=payment.id,
+                        invoice_id=alloc_item.invoice_id,
+                        amount=safe_alloc_amount,
+                        user_id=user_id
+                    )
         else:
             # Automatic FIFO settlement: customer recorded a general payment or collection voucher.
             # Settle opening balance and open invoices chronologically (FIFO).
@@ -194,6 +266,14 @@ class PaymentService:
                 parts.append(p.customer.city)
             cust_address = ", ".join([pt for pt in parts if pt])
 
+        disc_val = Decimal("0.00")
+        if p.notes and "Settlement Cash Discount of ₹" in p.notes:
+            try:
+                part = p.notes.split("Settlement Cash Discount of ₹")[1].split(" ")[0].replace(",", "")
+                disc_val = Decimal(part)
+            except Exception:
+                disc_val = Decimal("0.00")
+
         return PaymentResponse(
             id=p.id,
             payment_number=p.payment_number,
@@ -206,6 +286,7 @@ class PaymentService:
             customer_outstanding_balance=cust_balance,
             payment_date=p.payment_date,
             amount=p.amount,
+            discount_amount=disc_val,
             allocated_amount=p.allocated_amount,
             unallocated_amount=p.unallocated_amount,
             payment_method=p.payment_method,

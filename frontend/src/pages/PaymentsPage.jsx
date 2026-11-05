@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Zap,
   Printer,
-  Share2
+  Share2,
+  Tag
 } from 'lucide-react';
 import { paymentApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -830,6 +831,11 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                         <div className="font-mono font-black text-xs text-emerald-400">
                           +₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
+                        {parseFloat(p?.discount_amount || 0) > 0 && (
+                          <span className="text-[9px] text-amber-400 font-bold block font-mono">
+                            🏷️ -₹{parseFloat(p.discount_amount).toFixed(2)} disc
+                          </span>
+                        )}
                         {unallocated > 0.01 ? (
                           <span className="text-[9px] text-amber-400 font-bold block font-mono">
                             ⚠️ ₹{unallocated.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Unallocated
@@ -1087,6 +1093,21 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                         </div>
                       </div>
                     </div>
+
+                    {selectedPayment.discount_amount && parseFloat(selectedPayment.discount_amount) > 0 && (
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="text-xs font-bold text-amber-300 block">Settlement Cash Discount / Round-off</span>
+                            <span className="text-[11px] text-amber-200/80">Concession granted to customer</span>
+                          </div>
+                        </div>
+                        <span className="font-mono font-bold text-amber-400 text-sm">
+                          -₹{parseFloat(selectedPayment.discount_amount).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 text-xs">
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">

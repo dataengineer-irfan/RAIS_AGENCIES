@@ -106,6 +106,27 @@ def get_printable_payment(
         </tr>
         """
 
+    # Discount banner
+    discount_banner = ""
+    if p.discount_amount and float(p.discount_amount) > 0:
+        disc_f = float(p.discount_amount)
+        tot_settled_f = float(p.amount) + disc_f
+        discount_banner = f"""
+        <div class="mb-6 p-3.5 bg-amber-50 border border-amber-300 rounded-lg text-xs flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-base">🏷️</span>
+                <div>
+                    <span class="font-bold text-amber-900 block">Settlement Cash Discount / Round-off Applied</span>
+                    <span class="text-gray-600 text-[11px]">Bill settled with agreed customer concession</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="font-mono font-black text-amber-800 text-sm">-₹{disc_f:,.2f}</span>
+                <span class="block text-[10px] text-gray-500 font-medium">Total Bill Cleared: ₹{tot_settled_f:,.2f}</span>
+            </div>
+        </div>
+        """
+
     # Outstanding balance card
     balance_card = ""
     if p.customer_outstanding_balance is not None:
@@ -237,6 +258,8 @@ def get_printable_payment(
                     {f'<span class="text-amber-700 block text-[11px] font-medium mt-0.5">(₹{p.unallocated_amount:,.2f} unallocated advance)</span>' if p.unallocated_amount > 0 else ''}
                 </div>
             </div>
+
+            {discount_banner}
 
             <!-- Allocations Table -->
             <div class="my-6">

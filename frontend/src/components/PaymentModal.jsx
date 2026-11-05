@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, CheckCircle2 } from 'lucide-react';
+import { X, CreditCard, CheckCircle2, Tag, Sparkles, RotateCcw } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 
@@ -25,6 +25,7 @@ export const PaymentModal = ({
 
   const [customerId, setCustomerId] = useState('');
   const [amount, setAmount] = useState('');
+  const [discountAmount, setDiscountAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [notes, setNotes] = useState('');
@@ -40,6 +41,7 @@ export const PaymentModal = ({
     setLoading(true);
     setError('');
     setSuccessMsg('');
+    setDiscountAmount('');
     try {
       const custList = await customerApi.list();
       const safeCustomers = Array.isArray(custList) ? custList : (custList?.items || []);
@@ -49,10 +51,11 @@ export const PaymentModal = ({
       setCustomerId(targetCustId);
 
       if (targetCustId) {
-        await loadCustomerInvoices(targetCustId);
+        await loadCustomerInvoices(targetCustId, safeCustomers);
       } else {
         setOpenInvoices([]);
         setSelectedInvoiceId('');
+        setAmount('');
       }
 
       if (activeInvoice) {
@@ -66,17 +69,22 @@ export const PaymentModal = ({
     }
   };
 
-  const loadCustomerInvoices = async (cId) => {
+  const loadCustomerInvoices = async (cId, currentCustomers = customers) => {
     try {
       const invs = await billingApi.listInvoices({ customer_id: cId });
       const rawInvs = Array.isArray(invs) ? invs : (invs?.items || []);
       const open = rawInvs.filter(i => ['ISSUED', 'PARTIALLY_PAID', 'OVERDUE'].includes(i?.status) && parseFloat(i?.outstanding_amount || 0) > 0);
       setOpenInvoices(open);
+      
       if (open.length > 0 && !preselectedInvoice) {
         setSelectedInvoiceId(open[0]?.id || '');
         setAmount(String(open[0]?.outstanding_amount ?? '0'));
       } else if (open.length === 0) {
         setSelectedInvoiceId('');
+        const cust = (currentCustomers || []).find(c => String(c?.id) === String(cId));
+        if (cust && parseFloat(cust?.outstanding_balance || 0) > 0) {
+          setAmount(String(cust.outstanding_balance));
+        }
       }
     } catch (err) {
       console.error(err);
@@ -86,10 +94,43 @@ export const PaymentModal = ({
   const handleCustomerChange = async (cId) => {
     setCustomerId(cId);
     setSelectedInvoiceId('');
+    setDiscountAmount('');
     if (cId) {
       await loadCustomerInvoices(cId);
     } else {
       setOpenInvoices([]);
+      setAmount('');
+    }
+  };
+
+  // Determine active outstanding due balance for this transaction
+  const currentCustomer = (customers || []).find(c => String(c?.id) === String(customerId));
+  const custOutstanding = parseFloat(currentCustomer?.outstanding_balance || 0);
+  const selectedInvoice = (openInvoices || []).find(i => i?.id === selectedInvoiceId);
+  const invOutstanding = selectedInvoice ? parseFloat(selectedInvoice.outstanding_amount || 0) : 0;
+  const activeDue = selectedInvoice ? invOutstanding : custOutstanding;
+
+  const amtNum = parseFloat(amount) || 0;
+  const discNum = parseFloat(discountAmount) || 0;
+  const totalSettled = amtNum + discNum;
+  const remainingDue = Math.max(0, activeDue - totalSettled);
+  const excessToAdvance = Math.max(0, totalSettled - activeDue);
+
+  // Difference between target due and entered cash payment
+  const unpaidDiff = Math.max(0, activeDue - amtNum);
+  const paise = activeDue > 0 ? +(activeDue - Math.floor(activeDue)).toFixed(2) : 0;
+
+  const applyQuickDiscount = (val) => {
+    const num = parseFloat(val) || 0;
+    if (num <= 0) {
+      setDiscountAmount('');
+      if (activeDue > 0) setAmount(activeDue.toFixed(2));
+      return;
+    }
+    setDiscountAmount(String(num));
+    if (activeDue > 0) {
+      const remainingCash = Math.max(0, activeDue - num);
+      setAmount(remainingCash.toFixed(2));
     }
   };
 
@@ -100,7 +141,6 @@ export const PaymentModal = ({
       setError('Please select a customer to record payment.');
       return;
     }
-    const amtNum = parseFloat(amount);
     if (!amtNum || amtNum <= 0) {
       setError('Please enter a valid payment amount greater than zero.');
       return;
@@ -121,14 +161,16 @@ export const PaymentModal = ({
       const payload = {
         customer_id: customerId,
         amount: amtNum,
+        discount_amount: discNum > 0 ? discNum : 0,
         payment_method: paymentMethod,
-        reference_number: referenceNumber,
-        notes: notes,
+        reference_number: referenceNumber.trim() || undefined,
+        notes: notes.trim() || undefined,
         allocations: allocations
       };
 
       const result = await paymentApi.record(payload);
-      setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${parseFloat(amtNum || 0).toFixed(2)} recorded successfully!`);
+      const discText = discNum > 0 ? ` (with ₹${discNum.toFixed(2)} cash discount)` : '';
+      setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${amtNum.toFixed(2)}${discText} recorded successfully!`);
       if (onPaymentRecorded) {
         onPaymentRecorded(result);
       }
@@ -146,17 +188,13 @@ export const PaymentModal = ({
     }
   };
 
-  const selectedInvoice = (openInvoices || []).find(i => i?.id === selectedInvoiceId);
-  const invOutstanding = selectedInvoice ? parseFloat(selectedInvoice.outstanding_amount || 0) : 0;
-  const enteredAmt = parseFloat(amount) || 0;
-  const allocatedToInvoice = selectedInvoice ? Math.min(enteredAmt, invOutstanding) : 0;
-  const excessToAdvance = selectedInvoice ? Math.max(0, enteredAmt - invOutstanding) : 0;
+  const allocatedToInvoice = selectedInvoice ? Math.min(amtNum, invOutstanding) : 0;
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50 shrink-0">
@@ -192,6 +230,7 @@ export const PaymentModal = ({
             </div>
           )}
 
+          {/* Customer Selection */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
               Customer *
@@ -205,6 +244,7 @@ export const PaymentModal = ({
             />
           </div>
 
+          {/* Open Invoice Allocation Selection */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
               Allocate to Open Invoice (Optional)
@@ -213,8 +253,13 @@ export const PaymentModal = ({
               value={selectedInvoiceId}
               onChange={(e) => {
                 setSelectedInvoiceId(e.target.value);
+                setDiscountAmount('');
                 const inv = (openInvoices || []).find(i => i?.id === e.target.value);
-                if (inv) setAmount(String(inv?.outstanding_amount ?? '0'));
+                if (inv) {
+                  setAmount(String(inv?.outstanding_amount ?? '0'));
+                } else if (custOutstanding > 0) {
+                  setAmount(String(custOutstanding));
+                }
               }}
               className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-medium"
             >
@@ -227,19 +272,23 @@ export const PaymentModal = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Amount and Discount Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Amount (₹) *
+                  Amount Received (₹) *
                 </label>
-                {selectedInvoice && invOutstanding > 0 && (
+                {activeDue > 0 && (
                   <button
                     type="button"
-                    onClick={() => setAmount(String(invOutstanding))}
+                    onClick={() => {
+                      setAmount(activeDue.toFixed(2));
+                      setDiscountAmount('');
+                    }}
                     className="text-[10px] text-amber-400 hover:text-amber-300 font-bold underline"
                   >
-                    Fill Full Due (₹{invOutstanding.toFixed(2)})
+                    Full Due (₹{activeDue.toFixed(2)})
                   </button>
                 )}
               </div>
@@ -256,6 +305,85 @@ export const PaymentModal = ({
             </div>
 
             <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                  <Tag className="w-3 h-3" />
+                  Discount / Round-off (₹)
+                </label>
+                {discNum > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDiscountAmount('')}
+                    className="text-[10px] text-slate-400 hover:text-white underline flex items-center gap-0.5"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" /> Clear
+                  </button>
+                )}
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={discountAmount}
+                onChange={(e) => setDiscountAmount(e.target.value)}
+                placeholder="0.00 (e.g. 20)"
+                className="w-full bg-slate-900 border border-amber-500/50 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-400 placeholder:text-slate-600"
+              />
+            </div>
+          </div>
+
+          {/* Quick Concession / Round-off Chips */}
+          {activeDue > 0 && (
+            <div className="p-2 bg-slate-950/60 border border-slate-800/80 rounded-lg flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">Quick Concession:</span>
+              {paise > 0 && (
+                <button
+                  type="button"
+                  onClick={() => applyQuickDiscount(paise)}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-[11px] font-mono font-medium transition-colors"
+                >
+                  Round paise (-₹{paise.toFixed(2)})
+                </button>
+              )}
+              {[10, 20, 50, 100].map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => applyQuickDiscount(val)}
+                  className={`px-2 py-0.5 rounded border text-[11px] font-mono font-bold transition-colors ${
+                    discNum === val
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  }`}
+                >
+                  -₹{val}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Customer Paid Less Difference Action Banner */}
+          {activeDue > 0 && unpaidDiff > 0.009 && discNum === 0 && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="text-xs text-amber-200 truncate">
+                  Customer paid <span className="font-black text-amber-300">₹{unpaidDiff.toFixed(2)} less</span> than due (₹{activeDue.toFixed(2)})
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDiscountAmount(unpaidDiff.toFixed(2))}
+                className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] rounded-lg uppercase tracking-wider shrink-0 transition-colors shadow-sm flex items-center gap-1"
+              >
+                <span>⚡ Apply ₹{unpaidDiff.toFixed(2)} as Discount</span>
+              </button>
+            </div>
+          )}
+
+          {/* Payment Method and Reference Number */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                 Payment Method *
               </label>
@@ -268,70 +396,94 @@ export const PaymentModal = ({
                 <option value="CASH" className="bg-slate-900 text-white">Cash</option>
                 <option value="NEFT_RTGS" className="bg-slate-900 text-white">Bank Transfer (NEFT/RTGS)</option>
                 <option value="CHEQUE" className="bg-slate-900 text-white">Cheque</option>
-                <option value="CARD">Card</option>
+                <option value="CARD" className="bg-slate-900 text-white">Card</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Reference / Transaction ID
+              </label>
+              <input
+                type="text"
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+                placeholder="e.g. UTR12345678 or Cash Receipt No"
+                className="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              />
             </div>
           </div>
 
-          {/* Dynamic Settlement Breakdown Banner */}
-          {selectedInvoice && enteredAmt > 0 && (
-            <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-1.5 text-xs">
-              <div className="flex justify-between items-center text-slate-300 font-medium">
-                <span>Allocated to {selectedInvoice.invoice_number}:</span>
-                <span className="font-mono font-bold text-emerald-400">₹{allocatedToInvoice.toFixed(2)}</span>
+          {/* Settlement Breakdown Card */}
+          {activeDue > 0 && (amtNum > 0 || discNum > 0) && (
+            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2 text-xs">
+              <div className="flex justify-between items-center text-slate-400 text-[11px]">
+                <span>Account Due Before Payment:</span>
+                <span className="font-mono font-bold text-slate-200">₹{activeDue.toFixed(2)}</span>
               </div>
-              {excessToAdvance > 0 && (
-                <div className="flex justify-between items-center text-amber-400 font-medium pt-1 border-t border-slate-800">
-                  <span>Advance Customer Credit (Excess):</span>
-                  <span className="font-mono font-bold">+₹{excessToAdvance.toFixed(2)}</span>
+              <div className="flex justify-between items-center text-slate-300">
+                <span>Amount Received ({paymentMethod}):</span>
+                <span className="font-mono font-bold text-emerald-400">₹{amtNum.toFixed(2)}</span>
+              </div>
+              {discNum > 0 && (
+                <div className="flex justify-between items-center text-amber-300">
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-amber-400" />
+                    Settlement Cash Discount / Round-off:
+                  </span>
+                  <span className="font-mono font-bold text-amber-400">-₹{discNum.toFixed(2)}</span>
                 </div>
               )}
+              <div className="pt-1.5 border-t border-slate-800 flex justify-between items-center text-xs font-bold">
+                <span className="text-slate-200">Total Settled on Account:</span>
+                <span className="font-mono text-white text-sm">₹{totalSettled.toFixed(2)}</span>
+              </div>
+              <div className="pt-1 border-t border-slate-800/60 flex justify-between items-center text-xs">
+                <span className="text-slate-400">Remaining Balance:</span>
+                {remainingDue <= 0.009 ? (
+                  <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold rounded text-[11px] border border-emerald-500/30 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Fully Settled (₹0.00)
+                  </span>
+                ) : (
+                  <span className="font-mono font-bold text-amber-400">₹{remainingDue.toFixed(2)} remaining</span>
+                )}
+              </div>
               {excessToAdvance > 0 && (
-                <p className="text-[10px] text-slate-400">
-                  The extra ₹{excessToAdvance.toFixed(2)} will be retained as unallocated credit on customer ledger for future orders.
-                </p>
+                <div className="flex justify-between items-center text-amber-400 text-[11px] pt-1">
+                  <span>Advance Credit (Excess):</span>
+                  <span className="font-mono font-bold">+₹{excessToAdvance.toFixed(2)}</span>
+                </div>
               )}
             </div>
           )}
 
+          {/* Notes */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Reference / Transaction ID
-            </label>
-            <input
-              type="text"
-              value={referenceNumber}
-              onChange={(e) => setReferenceNumber(e.target.value)}
-              placeholder="e.g. UTR12345678 or Cash Receipt No"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Notes
+              Notes / Concession Reason
             </label>
             <textarea
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Direct settlement at counter"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              placeholder="e.g. ₹20 counter concession agreed with customer"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 placeholder:text-slate-600"
             />
           </div>
 
+          {/* Action Buttons */}
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg uppercase tracking-wider"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg uppercase tracking-wider transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg shadow-lg shadow-emerald-600/20 uppercase tracking-wider"
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg shadow-lg shadow-emerald-600/20 uppercase tracking-wider transition-colors disabled:opacity-50"
             >
               {submitting ? 'Recording...' : 'Confirm Payment'}
             </button>

@@ -423,6 +423,109 @@ def test_executive_handover_memo(test_db):
     assert memo2["memo"] == "Deposited ₹15,000 cash in bank. Sundupalli van delivery at 3 PM."
     assert memo2["updated_by"] == "Brother 1"
 
+def test_payment_with_settlement_cash_discount(test_db):
+    """Verifies that recording payment with a cash discount (customer paid less) settles the invoice and ledger completely."""
+    from app.services.billing_service import BillingService
+    from app.services.payment_service import PaymentService
+    from app.services.customer_service import CustomerService
+    from app.schemas.payment import PaymentCreate, PaymentAllocationCreate
+    from app.domain.enums import InvoiceStatus
+
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+
+    # 1. Create and issue invoice for Rs. 5564.40
+    # Price = 5300 + 5% tax = 5565, or explicit rate
+    inv = BillingService.create_invoice(
+        test_db,
+        InvoiceCreate(
+            customer_id=cust.id,
+            items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("10.00"), unit_price=Decimal("530.00"))]
+        )
+    )
+    BillingService.issue_invoice(test_db, inv.id)
+    issued_inv = test_db.query(Invoice).filter(Invoice.id == inv.id).first()
+    due_before = float(issued_inv.outstanding_amount)
+
+    # 2. Customer pays Rs. 20 less as settlement concession
+    discount_concession = Decimal("20.00")
+    received_cash = Decimal(str(due_before)) - discount_concession
+
+    pay = PaymentService.record_payment(
+        test_db,
+        PaymentCreate(
+            customer_id=cust.id,
+            amount=received_cash,
+            discount_amount=discount_concession,
+            payment_method="UPI",
+            allocations=[PaymentAllocationCreate(invoice_id=issued_inv.id, amount=received_cash)]
+        )
+    )
+
+    test_db.refresh(issued_inv)
+    # The invoice outstanding must be 0.00 and status must be PAID
+    assert issued_inv.outstanding_amount == Decimal("0.00")
+    assert issued_inv.status == InvoiceStatus.PAID.value
+    assert issued_inv.discount_amount >= Decimal("20.00")
+
+    # Customer ledger outstanding must be 0.00
+    _, _, net_balance = CustomerService.get_customer_balances(test_db, cust.id)
+    assert net_balance == Decimal("0.00")
+
+    # 3. Test printable receipt reflects the discount banner
+    from app.api.payments import get_printable_payment
+    receipt_html = get_printable_payment(pay.id, test_db)
+    receipt_body = receipt_html.body.decode("utf-8")
+    assert "Settlement Cash Discount / Round-off Applied" in receipt_body
+    assert "20.00" in receipt_body
+
+def test_payment_with_settlement_cash_discount_fifo(test_db):
+    """Verifies that paying less with cash discount via general unallocated pool settles open invoice via FIFO."""
+    from app.services.billing_service import BillingService
+    from app.services.payment_service import PaymentService
+    from app.services.customer_service import CustomerService
+    from app.schemas.payment import PaymentCreate
+    from app.domain.enums import InvoiceStatus
+
+    cust = test_db.query(Customer).first()
+    prod = test_db.query(Product).first()
+
+    inv = BillingService.create_invoice(
+        test_db,
+        InvoiceCreate(
+            customer_id=cust.id,
+            items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("5.00"), unit_price=Decimal("1000.00"))]
+        )
+    )
+    BillingService.issue_invoice(test_db, inv.id)
+    issued_inv = test_db.query(Invoice).filter(Invoice.id == inv.id).first()
+    due_before = float(issued_inv.outstanding_amount)
+
+    discount_concession = Decimal("20.00")
+    received_cash = Decimal(str(due_before)) - discount_concession
+
+    # No allocations passed (e.g. user selected unallocated pool)
+    pay = PaymentService.record_payment(
+        test_db,
+        PaymentCreate(
+            customer_id=cust.id,
+            amount=received_cash,
+            discount_amount=discount_concession,
+            payment_method="CASH",
+            allocations=[]
+        )
+    )
+
+    test_db.refresh(issued_inv)
+    assert issued_inv.outstanding_amount == Decimal("0.00")
+    assert issued_inv.status == InvoiceStatus.PAID.value
+    assert issued_inv.discount_amount >= Decimal("20.00")
+
+    _, _, net_balance = CustomerService.get_customer_balances(test_db, cust.id)
+    assert net_balance == Decimal("0.00")
+
+
+
 
 
 

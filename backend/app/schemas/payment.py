@@ -11,6 +11,7 @@ class PaymentCreate(BaseModel):
     customer_id: str
     payment_date: Optional[date] = None # Defaults to today
     amount: Decimal
+    discount_amount: Optional[Decimal] = Decimal("0.00") # Cash concession / settlement discount / round-off
     payment_method: str = "CASH" # CASH, UPI, NEFT_RTGS, CHEQUE, CARD
     reference_number: Optional[str] = None
     notes: Optional[str] = None
@@ -46,6 +47,7 @@ class PaymentResponse(BaseModel):
     customer_outstanding_balance: Optional[Decimal] = None
     payment_date: date
     amount: Decimal
+    discount_amount: Optional[Decimal] = Decimal("0.00")
     allocated_amount: Decimal
     unallocated_amount: Decimal
     payment_method: str
