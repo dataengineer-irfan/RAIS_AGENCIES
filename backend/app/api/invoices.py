@@ -201,13 +201,14 @@ def get_printable_invoice(
         ltotal = float(getattr(itm, 'line_total', 0))
         items_rows += f"""
         <tr class="border-b border-gray-200 text-sm">
-            <td class="py-2.5 text-center">{idx}</td>
-            <td class="py-2.5 font-medium text-gray-800">{desc} <span class="text-xs text-gray-500">({pkg})</span></td>
-            <td class="py-2.5 text-center text-gray-600">{hsn}</td>
-            <td class="py-2.5 text-center font-bold">{qty}</td>
+            <td class="py-2.5 text-center text-gray-500 font-mono text-xs">{idx}</td>
+            <td class="py-2.5 font-medium text-gray-800">{desc} <span class="text-xs text-gray-500 font-mono">({pkg})</span></td>
+            <td class="py-2.5 text-center text-gray-600 font-mono text-xs">{hsn}</td>
+            <td class="py-2.5 text-center font-bold font-mono">{qty}</td>
             <td class="py-2.5 text-right font-mono">₹{price:.2f}</td>
-            <td class="py-2.5 text-right text-gray-600">{disc}%</td>
-            <td class="py-2.5 text-right font-bold font-mono">₹{ltotal:.2f}</td>
+            <td class="py-2.5 text-right text-gray-600 font-mono">{disc:.1f}%</td>
+            <td class="py-2.5 text-center text-gray-500 font-mono text-xs">0%</td>
+            <td class="py-2.5 text-right font-bold font-mono text-gray-900">₹{ltotal:.2f}</td>
         </tr>
         """
 
@@ -224,17 +225,29 @@ def get_printable_invoice(
         <meta name="twitter:card" content="summary_large_image">
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+            body {{
+                font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            }}
             @media print {{
                 .no-print {{ display: none !important; }}
-                body {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
+                body {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; background: #ffffff !important; padding: 0 !important; }}
             }}
         </style>
     </head>
-    <body class="bg-gray-100 p-6 font-sans text-gray-800">
-        <div class="no-print max-w-4xl mx-auto mb-4 flex justify-between items-center">
+    <body class="bg-gray-100 p-6 text-gray-800">
+        <div id="standalone-action-bar" class="no-print max-w-4xl mx-auto mb-4 flex justify-between items-center">
             <a href="javascript:window.close()" class="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">Close</a>
-            <button onclick="window.print()" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded text-sm shadow hover:bg-blue-700">Print / Save as PDF</button>
+            <button onclick="window.print()" class="px-5 py-2 bg-emerald-600 text-white font-semibold rounded text-sm shadow hover:bg-emerald-700 flex items-center gap-1.5">
+                <span>🖨️ Print / Save as PDF</span>
+            </button>
         </div>
+        <script>
+            if (window.self !== window.top) {{
+                var ab = document.getElementById('standalone-action-bar');
+                if (ab) ab.style.display = 'none';
+            }}
+        </script>
 
         <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md border border-gray-200">
             <!-- Header -->
@@ -279,14 +292,15 @@ def get_printable_invoice(
             <!-- Items Table -->
             <table class="w-full text-left border-collapse my-6">
                 <thead>
-                    <tr class="border-b-2 border-gray-300 text-xs font-bold text-gray-600 uppercase">
-                        <th class="py-2 text-center w-10">#</th>
-                        <th class="py-2">Item Description</th>
-                        <th class="py-2 text-center">HSN</th>
-                        <th class="py-2 text-center">Qty</th>
-                        <th class="py-2 text-right">Rate</th>
-                        <th class="py-2 text-right">Disc %</th>
-                        <th class="py-2 text-right">Total (₹)</th>
+                    <tr class="border-b-2 border-gray-900 text-xs font-bold text-gray-700 uppercase tracking-wider bg-gray-50">
+                        <th class="py-2.5 text-center w-10">#</th>
+                        <th class="py-2.5 pl-2">Item Description & Unit</th>
+                        <th class="py-2.5 text-center">HSN</th>
+                        <th class="py-2.5 text-center">Qty</th>
+                        <th class="py-2.5 text-right">Rate</th>
+                        <th class="py-2.5 text-right">Disc %</th>
+                        <th class="py-2.5 text-center">GST %</th>
+                        <th class="py-2.5 text-right pr-2">Total (₹)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -314,7 +328,8 @@ def get_printable_invoice(
                      '<h4 class="font-bold text-gray-800 uppercase tracking-wider mb-1">Bank & UPI Settlement:</h4>'
                      '<p>UPI ID: <span class="font-mono font-bold text-gray-900">9347453135@ybl</span> (RAIS Agencies)</p>'
                      '<p class="mt-1">For direct orders & accounts support: <span class="font-bold">9347453135 / 9573261696</span></p>'
-                     '<p class="mt-2 italic text-gray-500">Thank you for partnering with RAIS Agencies! Quality frozen food products delivered fresh.</p>'
+                     '<p class="mt-2 text-[11px] font-semibold text-emerald-700">✓ Wholesale GST Status: Intra-State AP Registered • Direct Wholesale Pricing (0.00% GST)</p>'
+                     '<p class="mt-1 italic text-gray-500">Thank you for partnering with RAIS Agencies! Quality frozen food products delivered fresh.</p>'
                      '</div>'}
                 </div>
 
@@ -324,9 +339,21 @@ def get_printable_invoice(
                         <span>₹{inv.subtotal:.2f}</span>
                     </div>
                     {f'<div class="flex justify-between text-emerald-600"><span>Discount:</span><span>-₹{inv.discount_amount:.2f}</span></div>' if inv.discount_amount > 0 else ''}
-                    <div class="flex justify-between text-base font-bold text-gray-900 border-t border-b border-gray-400 py-1 font-sans">
+                    <div class="flex justify-between text-gray-800 font-semibold pt-1 border-t border-gray-200 text-xs">
+                        <span>Taxable Value (ITC Eligible):</span>
+                        <span class="font-bold text-sm">₹{inv.taxable_amount:.2f}</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 pl-1.5">
+                        <span>• CGST (0.00%):</span>
+                        <span>₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 pl-1.5">
+                        <span>• SGST (0.00%):</span>
+                        <span>₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-base font-bold text-gray-900 border-t border-b-2 border-gray-900 py-1.5 font-sans">
                         <span>Grand Total:</span>
-                        <span class="font-mono">₹{inv.total_amount:.2f}</span>
+                        <span class="font-mono font-black">₹{inv.total_amount:.2f}</span>
                     </div>
                     {f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Amount Received:</span><span>₹{inv.received_amount:.2f}</span></div>' if getattr(inv, 'received_amount', None) and inv.received_amount > 0 else f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Paid to Date:</span><span>₹{inv.paid_amount:.2f}</span></div>' if inv.paid_amount > 0 else ''}
                     {f'<div class="flex justify-between text-xs text-sky-700 font-semibold"><span>Past Dues Cleared:</span><span>₹{inv.applied_to_previous:.2f}</span></div>' if getattr(inv, 'applied_to_previous', None) and inv.applied_to_previous > 0 else ''}

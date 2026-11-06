@@ -194,12 +194,20 @@ export const ThermalReceiptModal = ({ isOpen, onClose, invoiceId }) => {
                   <span>Subtotal:</span>
                   <span>Rs. {parseFloat(receipt?.financials?.subtotal || 0).toFixed(2)}</span>
                 </div>
-                {parseFloat(receipt?.financials?.tax_total || 0) > 0 && (
+                {parseFloat(receipt?.financials?.discount || 0) > 0 && (
                   <div className="flex justify-between text-[11px] text-gray-700">
-                    <span>Tax:</span>
-                    <span>Rs. {parseFloat(receipt?.financials?.tax_total || 0).toFixed(2)}</span>
+                    <span>Discount:</span>
+                    <span>-Rs. {parseFloat(receipt.financials.discount).toFixed(2)}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-[11px] text-gray-700">
+                  <span>Taxable Value (ITC):</span>
+                  <span>Rs. {(parseFloat(receipt?.financials?.subtotal || 0) - parseFloat(receipt?.financials?.discount || 0)).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-gray-600">
+                  <span>CGST (0%) + SGST (0%):</span>
+                  <span>Rs. 0.00</span>
+                </div>
                 <div className="flex justify-between font-black text-xs border-t border-black pt-1 mt-1">
                   <span>NET TOTAL:</span>
                   <span>Rs. {parseFloat(receipt?.financials?.grand_total || 0).toFixed(2)}</span>

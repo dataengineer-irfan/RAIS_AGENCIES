@@ -1144,16 +1144,18 @@ export const InvoiceBuilderModal = ({
                 </div>
 
                 {/* Items Table */}
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse my-2">
                   <thead>
-                    <tr className="border-b-2 border-gray-300 text-[11px] font-bold text-gray-600 uppercase">
+                    <tr className="border-b-2 border-gray-900 text-[11px] font-bold text-gray-700 uppercase tracking-wider bg-gray-50">
                       <th className="py-2 text-center w-8">#</th>
-                      <th className="py-2">Item SKU & Description</th>
+                      <th className="py-2 pl-2">Item Description & SKU</th>
                       <th className="py-2 text-center">Unit</th>
+                      <th className="py-2 text-center">HSN</th>
                       <th className="py-2 text-center">Qty</th>
                       <th className="py-2 text-right">Rate</th>
                       <th className="py-2 text-right">Disc %</th>
-                      <th className="py-2 text-right">Total (₹)</th>
+                      <th className="py-2 text-center">GST %</th>
+                      <th className="py-2 text-right pr-2">Total (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1164,18 +1166,21 @@ export const InvoiceBuilderModal = ({
                       const disc = parseFloat(itm.discount_rate) || 0;
                       const lineGross = qty * rate;
                       const lineTotal = lineGross - (lineGross * (disc / 100));
+                      const hsn = itm.hsn_code || prod?.hsn_code || '-';
 
                       return (
                         <tr key={idx} className="border-b border-gray-200 text-xs">
-                          <td className="py-2 text-center font-mono">{idx + 1}</td>
-                          <td className="py-2 font-semibold text-gray-800">
-                            {prod?.name || 'Product'} <span className="text-[10px] text-gray-500 font-mono">({prod?.sku})</span>
+                          <td className="py-2 text-center font-mono text-gray-500">{idx + 1}</td>
+                          <td className="py-2 pl-2 font-semibold text-gray-800">
+                            {prod?.name || 'Product'} <span className="text-[10px] text-gray-500 font-mono">({prod?.sku || 'SKU'})</span>
                           </td>
                           <td className="py-2 text-center text-gray-600">{itm.packaging_unit || prod?.packaging_unit || 'PKT'}</td>
+                          <td className="py-2 text-center text-gray-500 font-mono text-[11px]">{hsn}</td>
                           <td className="py-2 text-center font-bold font-mono">{qty}</td>
                           <td className="py-2 text-right font-mono">₹{parseFloat(rate || 0).toFixed(2)}</td>
-                          <td className="py-2 text-right text-gray-600">{disc}%</td>
-                          <td className="py-2 text-right font-bold font-mono text-gray-900">₹{parseFloat(lineTotal || 0).toFixed(2)}</td>
+                          <td className="py-2 text-right text-gray-600 font-mono">{disc}%</td>
+                          <td className="py-2 text-center text-gray-500 font-mono text-[11px]">0%</td>
+                          <td className="py-2 text-right pr-2 font-bold font-mono text-gray-900">₹{parseFloat(lineTotal || 0).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -1207,18 +1212,22 @@ export const InvoiceBuilderModal = ({
                             <strong className="font-mono">₹{surplusAmount.toFixed(2)}</strong>
                           </div>
                         )}
+                        <div className="pt-1 text-[10px] text-emerald-800 font-medium">
+                          ✓ Wholesale GST: Intra-State AP (0.00% GST / Wholesale Price)
+                        </div>
                       </div>
                     ) : (
                       <div>
                         <h4 className="font-bold text-gray-800 uppercase tracking-wider text-[10px] mb-1">Bank & UPI Settlement:</h4>
                         <p>UPI ID: <strong className="font-mono text-gray-900">9347453135@ybl</strong> (RAIS Agencies)</p>
                         <p className="mt-0.5">Order Support Hotline: <strong className="text-gray-900">9347453135 / 9573261696</strong></p>
-                        <p className="mt-1.5 italic text-gray-500">Thank you for partnering with RAIS Agencies!</p>
+                        <p className="mt-1 text-[10px] text-emerald-700 font-semibold">✓ Wholesale GST: Registered Intra-State AP (0.00% GST)</p>
+                        <p className="mt-1 italic text-gray-500">Thank you for partnering with RAIS Agencies!</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="col-span-5 text-xs space-y-1.5 font-mono">
+                  <div className="col-span-5 text-xs space-y-1 font-mono">
                     <div className="flex justify-between text-gray-600">
                       <span>Subtotal:</span>
                       <span>₹{totals.subtotal}</span>
@@ -1229,7 +1238,19 @@ export const InvoiceBuilderModal = ({
                         <span>-₹{totals.discount}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-b border-gray-400 py-1.5 font-sans">
+                    <div className="flex justify-between text-gray-800 font-semibold pt-1 border-t border-gray-200">
+                      <span>Taxable Value (ITC):</span>
+                      <strong className="font-mono">₹{(parseFloat(totals.subtotal || 0) - parseFloat(totals.discount || 0)).toFixed(2)}</strong>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-gray-500 pl-1.5">
+                      <span>• CGST (0.00%):</span>
+                      <span>₹0.00</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-gray-500 pl-1.5">
+                      <span>• SGST (0.00%):</span>
+                      <span>₹0.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-b-2 border-gray-900 py-1 font-sans">
                       <span>Grand Total:</span>
                       <span className="font-mono text-base text-gray-900 font-black">₹{totals.total}</span>
                     </div>
