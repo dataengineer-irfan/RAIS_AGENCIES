@@ -901,6 +901,7 @@ class BillingService:
         db: Optional[Session] = None, 
         balances_map: Optional[Dict[str, Decimal]] = None,
         first_inv_map: Optional[Dict[str, date]] = None,
+        cost_map: Optional[Dict[str, Decimal]] = None,
         is_list: bool = False
     ) -> InvoiceResponse:
         cust_balance = None
@@ -933,24 +934,79 @@ class BillingService:
         elif inv.customer and inv.customer.created_at:
             cust_since = inv.customer.created_at
 
-        items_resp = [
-            InvoiceItemResponse(
-                id=itm.id,
-                product_id=itm.product_id,
-                item_description=itm.item_description,
-                brand=itm.brand,
-                packaging_unit=itm.packaging_unit,
-                hsn_code=itm.hsn_code,
-                quantity=itm.quantity,
-                unit_price=itm.unit_price,
-                discount_rate=itm.discount_rate,
-                discount_amount=itm.discount_amount,
-                taxable_amount=itm.taxable_amount,
-                tax_rate=itm.tax_rate,
-                tax_amount=itm.tax_amount,
-                line_total=itm.line_total
-            ) for itm in (inv.items or [])
-        ]
+        # Resolve product unit procurement costs (COGS) for gross profit analytics
+        if cost_map is None and db and inv.items:
+            try:
+                from app.models.inventory import StockMovement
+                from app.models.catalogue import Product
+                p_ids = [itm.product_id for itm in inv.items if itm.product_id]
+                if p_ids:
+                    cost_map = {}
+                    cost_rows = db.query(
+                        StockMovement.product_id,
+                        StockMovement.purchase_cost
+                    ).filter(
+                        StockMovement.product_id.in_(p_ids),
+                        StockMovement.purchase_cost.isnot(None),
+                        StockMovement.purchase_cost > Decimal("0")
+                    ).order_by(StockMovement.created_at.desc()).all()
+                    for row in cost_rows:
+                        if row.product_id not in cost_map and row.purchase_cost is not None:
+                            cost_map[row.product_id] = Decimal(str(row.purchase_cost))
+                    missing_p_ids = [pid for pid in p_ids if pid not in cost_map]
+                    if missing_p_ids:
+                        base_prices = db.query(Product.id, Product.base_price).filter(Product.id.in_(missing_p_ids)).all()
+                        for pid, bp in base_prices:
+                            if bp is not None and bp > Decimal("0"):
+                                cost_map[pid] = Decimal(str(bp)) * Decimal("0.80")
+            except Exception:
+                cost_map = {}
+
+        total_inv_cogs = Decimal("0.00")
+        items_resp = []
+        for itm in (inv.items or []):
+            qty = Decimal(str(itm.quantity or "0"))
+            ltotal = Decimal(str(itm.line_total or "0"))
+            pcost = cost_map.get(itm.product_id) if cost_map else None
+            if pcost and pcost > Decimal("0"):
+                unit_c = pcost
+            elif itm.unit_price and itm.unit_price > Decimal("0"):
+                unit_c = Decimal(str(itm.unit_price)) * Decimal("0.80")
+            else:
+                unit_c = (ltotal / qty * Decimal("0.80")) if qty > Decimal("0") else Decimal("0.00")
+
+            item_cogs = (unit_c * qty).quantize(Decimal("0.01"))
+            item_profit = (ltotal - item_cogs).quantize(Decimal("0.01"))
+            item_margin = ((item_profit / ltotal) * Decimal("100")).quantize(Decimal("0.1")) if ltotal > Decimal("0") else Decimal("0.0")
+            total_inv_cogs += item_cogs
+
+            items_resp.append(
+                InvoiceItemResponse(
+                    id=itm.id,
+                    product_id=itm.product_id,
+                    item_description=itm.item_description,
+                    brand=itm.brand,
+                    packaging_unit=itm.packaging_unit,
+                    hsn_code=itm.hsn_code,
+                    quantity=itm.quantity,
+                    unit_price=itm.unit_price,
+                    discount_rate=itm.discount_rate,
+                    discount_amount=itm.discount_amount,
+                    taxable_amount=itm.taxable_amount,
+                    tax_rate=itm.tax_rate,
+                    tax_amount=itm.tax_amount,
+                    line_total=itm.line_total,
+                    unit_cost=unit_c.quantize(Decimal("0.01")),
+                    cogs=item_cogs,
+                    gross_profit=item_profit,
+                    gross_margin_pct=item_margin
+                )
+            )
+
+        invoice_cogs = total_inv_cogs.quantize(Decimal("0.01"))
+        inv_total = Decimal(str(inv.total_amount or "0"))
+        invoice_profit = (inv_total - invoice_cogs).quantize(Decimal("0.01"))
+        invoice_margin = ((invoice_profit / inv_total) * Decimal("100")).quantize(Decimal("0.1")) if inv_total > Decimal("0") else Decimal("0.0")
 
         allocs_resp = []
         settled_received_amount = None
@@ -1031,6 +1087,9 @@ class BillingService:
             qr_payload=inv.qr_payload,
             created_at=inv.created_at,
             updated_at=inv.updated_at,
+            cogs=invoice_cogs,
+            gross_profit=invoice_profit,
+            gross_margin_pct=invoice_margin,
             items=items_resp,
             allocations=allocs_resp
         )
@@ -1087,7 +1146,33 @@ class BillingService:
             except Exception:
                 balances_map = {}
 
-        res = [BillingService._build_invoice_response(inv, db, balances_map=balances_map, is_list=True) for inv in invoices]
+        all_p_ids = list({itm.product_id for inv in invoices for itm in (inv.items or []) if itm.product_id})
+        cost_map = {}
+        if all_p_ids:
+            try:
+                from app.models.inventory import StockMovement
+                from app.models.catalogue import Product
+                cost_rows = db.query(
+                    StockMovement.product_id,
+                    StockMovement.purchase_cost
+                ).filter(
+                    StockMovement.product_id.in_(all_p_ids),
+                    StockMovement.purchase_cost.isnot(None),
+                    StockMovement.purchase_cost > Decimal("0")
+                ).order_by(StockMovement.created_at.desc()).all()
+                for row in cost_rows:
+                    if row.product_id not in cost_map and row.purchase_cost is not None:
+                        cost_map[row.product_id] = Decimal(str(row.purchase_cost))
+                missing_p_ids = [pid for pid in all_p_ids if pid not in cost_map]
+                if missing_p_ids:
+                    base_prices = db.query(Product.id, Product.base_price).filter(Product.id.in_(missing_p_ids)).all()
+                    for pid, bp in base_prices:
+                        if bp is not None and bp > Decimal("0"):
+                            cost_map[pid] = Decimal(str(bp)) * Decimal("0.80")
+            except Exception:
+                cost_map = {}
+
+        res = [BillingService._build_invoice_response(inv, db, balances_map=balances_map, cost_map=cost_map, is_list=True) for inv in invoices]
         _INVOICES_CACHE[cache_key] = (now, res)
         return res
 

@@ -24,6 +24,10 @@ class InvoiceItemResponse(BaseModel):
     tax_rate: Decimal
     tax_amount: Decimal
     line_total: Decimal
+    unit_cost: Optional[Decimal] = None
+    cogs: Optional[Decimal] = None
+    gross_profit: Optional[Decimal] = None
+    gross_margin_pct: Optional[Decimal] = None
 
     class Config:
         from_attributes = True
@@ -101,6 +105,9 @@ class InvoiceResponse(BaseModel):
     idempotency_key: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    cogs: Optional[Decimal] = None
+    gross_profit: Optional[Decimal] = None
+    gross_margin_pct: Optional[Decimal] = None
     items: List[InvoiceItemResponse] = []
     allocations: List[InvoiceAllocationItem] = []
 
@@ -120,6 +127,9 @@ class InvoiceSummary(BaseModel):
     paid_amount: Decimal
     outstanding_amount: Decimal
     created_at: Optional[datetime] = None
+    cogs: Optional[Decimal] = None
+    gross_profit: Optional[Decimal] = None
+    gross_margin_pct: Optional[Decimal] = None
 
     class Config:
         from_attributes = True

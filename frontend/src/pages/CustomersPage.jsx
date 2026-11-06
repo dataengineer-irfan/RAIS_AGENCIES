@@ -270,6 +270,22 @@ export const CustomersPage = ({
         const diff = parseFloat(b.gross_profit || 0) - parseFloat(a.gross_profit || 0);
         if (Math.abs(diff) > 0.001) return diff;
         return (a.business_name || '').localeCompare(b.business_name || '');
+      } else if (sortBy === 'MARGIN_DESC') {
+        const revA = parseFloat(a.total_invoiced || 0);
+        const revB = parseFloat(b.total_invoiced || 0);
+        const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : -999;
+        const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : -999;
+        const diff = marginB - marginA;
+        if (Math.abs(diff) > 0.001) return diff;
+        return (a.business_name || '').localeCompare(b.business_name || '');
+      } else if (sortBy === 'MARGIN_ASC') {
+        const revA = parseFloat(a.total_invoiced || 0);
+        const revB = parseFloat(b.total_invoiced || 0);
+        const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : 999;
+        const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : 999;
+        const diff = marginA - marginB;
+        if (Math.abs(diff) > 0.001) return diff;
+        return (a.business_name || '').localeCompare(b.business_name || '');
       } else if (sortBy === 'LIMIT_DESC') {
         return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
       } else if (sortBy === 'CODE_ASC') {
@@ -441,9 +457,11 @@ export const CustomersPage = ({
               title="Sort Outlets"
             >
               <option value="BALANCE_DESC">🚨 Sort: Highest Due</option>
-              <option value="REVENUE_DESC">💰 Sort: Top Revenue</option>
+              <option value="MARGIN_DESC">📈 Sort: Highest Margin %</option>
+              <option value="PROFIT_DESC">💰 Sort: Highest Profit (₹)</option>
+              <option value="MARGIN_ASC">📉 Sort: Lowest Margin %</option>
+              <option value="REVENUE_DESC">🔥 Sort: Top Revenue</option>
               <option value="PAID_DESC">💳 Sort: Top Collections</option>
-              <option value="PROFIT_DESC">📈 Sort: Highest Profit</option>
               <option value="NAME_ASC">🔤 Sort: Name (A → Z)</option>
             </select>
             <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -548,9 +566,11 @@ export const CustomersPage = ({
               title="Sort Outlets"
             >
               <option value="BALANCE_DESC">🚨 Due ↓</option>
-              <option value="REVENUE_DESC">💰 Revenue ↓</option>
+              <option value="MARGIN_DESC">📈 Margin % ↓</option>
+              <option value="PROFIT_DESC">💰 Profit ₹ ↓</option>
+              <option value="MARGIN_ASC">📉 Margin % ↑</option>
+              <option value="REVENUE_DESC">🔥 Revenue ↓</option>
               <option value="PAID_DESC">💳 Paid ↓</option>
-              <option value="PROFIT_DESC">📈 Profit ↓</option>
               <option value="NAME_ASC">🔤 A → Z</option>
               <option value="LIMIT_DESC">💳 Limit ↓</option>
               <option value="CODE_ASC">🏷️ Code</option>
@@ -725,18 +745,37 @@ export const CustomersPage = ({
                           <span className="font-bold">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
                         </span>
 
-                        {/* PROFIT */}
+                        {/* PROFIT & MARGIN % */}
                         <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
-                          sortBy === 'PROFIT_DESC'
-                            ? 'bg-purple-500/25 text-purple-200 border-purple-400/50 font-black ring-1 ring-purple-500/40'
-                            : 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                          sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC'
+                            ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/60 font-black ring-1 ring-emerald-500/50'
+                            : sortBy === 'PROFIT_DESC'
+                              ? 'bg-purple-500/25 text-purple-200 border-purple-400/50 font-black ring-1 ring-purple-500/40'
+                              : 'bg-purple-500/10 border-purple-500/20 text-purple-300'
                         }`}>
-                          <span className="text-[9px] font-bold text-purple-400 font-sans">PROFIT:</span>
-                          <span className="font-bold">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
-                          {parseFloat(cust.total_invoiced || 0) > 0 && (
-                            <span className="text-[8px] text-purple-400/80 font-normal">
-                              ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
-                            </span>
+                          <span className="text-[9px] font-bold text-purple-400 font-sans">
+                            {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? 'MARGIN:' : 'PROFIT:'}
+                          </span>
+                          {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? (
+                            <>
+                              <span className="font-black text-emerald-300">
+                                {parseFloat(cust.total_invoiced || 0) > 0 
+                                  ? `${((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100).toFixed(1)}%`
+                                  : '0.0%'}
+                              </span>
+                              <span className="text-[8px] text-slate-400 font-mono">
+                                (₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')})
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-bold">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
+                              {parseFloat(cust.total_invoiced || 0) > 0 && (
+                                <span className="text-[8px] text-purple-400/80 font-normal">
+                                  ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
+                                </span>
+                              )}
+                            </>
                           )}
                         </span>
 
@@ -1354,6 +1393,14 @@ export const CustomersPage = ({
                                 <span className={`text-[10px] font-mono block ${parseFloat(inv.outstanding_amount || 0) > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
                                   Due: ₹{parseFloat(inv.outstanding_amount || 0).toFixed(2)}
                                 </span>
+                                {hasRole(['ADMIN', 'OPERATOR']) && inv.gross_profit !== undefined && inv.gross_profit !== null && (
+                                  <span 
+                                    className="text-[9px] font-mono font-bold text-purple-300 bg-purple-950/70 border border-purple-500/30 px-1 py-0.5 rounded block mt-0.5"
+                                    title={`Procurement COGS: ₹${parseFloat(inv.cogs || 0).toFixed(2)}`}
+                                  >
+                                    Profit: ₹{parseFloat(inv.gross_profit || 0).toFixed(0)} ({parseFloat(inv.gross_margin_pct || 0).toFixed(1)}%)
+                                  </span>
+                                )}
                               </div>
 
                               <button

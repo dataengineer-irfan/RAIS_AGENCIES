@@ -792,6 +792,14 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                         <span className={`text-[11px] font-mono block ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
                           Due: ₹{parseFloat(outstanding || 0).toFixed(2)}
                         </span>
+                        {hasRole(['ADMIN', 'OPERATOR']) && inv?.gross_profit !== undefined && inv?.gross_profit !== null && (
+                          <span 
+                            className="text-[9px] font-mono font-bold text-purple-300 bg-purple-950/70 border border-purple-500/30 px-1 py-0.2 rounded block mt-0.5"
+                            title={`Procurement COGS: ₹${parseFloat(inv?.cogs || 0).toFixed(2)}`}
+                          >
+                            Profit: ₹{parseFloat(inv?.gross_profit || 0).toFixed(0)} ({parseFloat(inv?.gross_margin_pct || 0).toFixed(1)}%)
+                          </span>
+                        )}
                       </div>
 
                       {/* Quick 1-Click Thermal Print Icon */}
@@ -1030,6 +1038,14 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                                 <div className="font-mono font-bold text-white text-xs">
                                   ₹{parseFloat(item.line_total || item.total_amount || 0).toFixed(2)}
                                 </div>
+                                {hasRole(['ADMIN', 'OPERATOR']) && item.gross_profit !== undefined && item.gross_profit !== null && (
+                                  <div 
+                                    className="text-[9px] font-mono text-purple-300 mt-0.5"
+                                    title={`Landed Cost: ₹${parseFloat(item.unit_cost || 0).toFixed(2)}/unit | COGS: ₹${parseFloat(item.cogs || 0).toFixed(2)}`}
+                                  >
+                                    Profit: +₹{parseFloat(item.gross_profit || 0).toFixed(2)} ({parseFloat(item.gross_margin_pct || 0).toFixed(1)}%)
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -1065,6 +1081,23 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                             </span>
                           </div>
                         </div>
+
+                        {/* Internal Commercial Economics (Admin & Operator Only) */}
+                        {hasRole(['ADMIN', 'OPERATOR']) && selectedInvoice.gross_profit !== undefined && selectedInvoice.gross_profit !== null && (
+                          <div className="bg-purple-950/20 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-purple-300 font-bold">
+                              <span className="text-xs">🔒</span>
+                              <span className="text-[10px] uppercase tracking-wider font-bold">Internal Profit & Economics (Admin Only)</span>
+                            </div>
+                            <div className="flex items-center gap-3 font-mono text-xs flex-wrap">
+                              <span className="text-slate-400">COGS: <strong className="text-slate-200">₹{parseFloat(selectedInvoice.cogs || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              <span className="text-purple-300">Gross Profit: <strong className="text-purple-200 text-sm font-bold">₹{parseFloat(selectedInvoice.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-200 rounded font-black border border-purple-400/40 text-[11px]">
+                                {parseFloat(selectedInvoice.gross_margin_pct || 0).toFixed(1)}% Margin
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
                         {/* 1-Click Payment Shortcut if Invoice has Due */}
                         {parseFloat(selectedInvoice.outstanding_amount || 0) > 0 && onOpenPaymentForInvoice && (
