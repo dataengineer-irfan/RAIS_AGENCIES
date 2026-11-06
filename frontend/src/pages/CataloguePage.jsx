@@ -165,7 +165,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
   // Filtered & Sorted Products
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchesCat = selectedCategory === 'ALL' || p.category_id === selectedCategory;
+      const matchesCat = selectedCategory === 'ALL' || p.category_id === selectedCategory || p.category_name === selectedCategory;
       const matchesBrand = selectedBrand === 'ALL' || p.brand === selectedBrand;
       if (!matchesCat || !matchesBrand) return false;
 
@@ -357,10 +357,10 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           </div>
         </div>
 
-        {/* Tier 2: Search Input, Category Filter Pills, Brand & Sort */}
-        <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+        {/* Tier 2: Search, Category Slicer Dropdown (Inventory Style), Brand, Sort & Reset */}
+        <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80 flex-wrap">
           {/* Search Input with Clear */}
-          <div className="relative min-w-[180px] max-w-[240px] shrink-0">
+          <div className="relative flex-1 min-w-[200px] max-w-[280px]">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -379,43 +379,29 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             )}
           </div>
 
-          {/* 1-Click Category Filter Pills (Full Room, Horizontal Scroll) */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1 min-w-0 py-0.5">
-            <button
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-                selectedCategory === 'ALL'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              All ({products.length})
-            </button>
+          {/* Category Select Dropdown (Inventory Style) */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-amber-400 text-xs font-bold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[200px] truncate shrink-0 shadow-inner"
+            title="Filter Category"
+          >
+            <option value="ALL">📂 All Categories ({categories.length})</option>
             {categories.map(c => {
-              const count = products.filter(p => p.category_id === c.id).length;
-              const isSelected = selectedCategory === c.id;
+              const count = products.filter(p => p.category_id === c.id || p.category_name === c.name).length;
               return (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategory(isSelected ? 'ALL' : c.id)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1 ${
-                    isSelected
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                  }`}
-                >
-                  <span>{c.name}</span>
-                  <span className="font-mono text-[10px] opacity-80">({count})</span>
-                </button>
+                <option key={c.id} value={c.id}>
+                  {c.name} ({count})
+                </option>
               );
             })}
-          </div>
+          </select>
 
           {/* Brand Filter */}
           <select
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[130px] truncate shrink-0 shadow-inner"
+            className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[140px] truncate shrink-0 shadow-inner"
             title="Filter by Brand"
           >
             <option value="ALL">All Brands ({uniqueBrands.length})</option>
@@ -439,6 +425,59 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             <option value="stock_desc">📦 Stock: High → Low</option>
             <option value="stock_asc">📦 Stock: Low → High</option>
           </select>
+
+          {/* Reset Slicers */}
+          {(searchTerm || selectedCategory !== 'ALL' || selectedBrand !== 'ALL' || currentSortKey !== 'name_asc') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('ALL');
+                setSelectedBrand('ALL');
+                handleSortChange('name_asc');
+              }}
+              className="text-[11px] font-bold text-slate-400 hover:text-amber-400 underline px-1 py-1 shrink-0 transition-colors"
+              title="Reset all filters"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* Tier 3: Dedicated Full-Width Category Filter Ribbon (All Categories Visible & Never Squeezed) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-0.5 border-t border-slate-800/40">
+          <button
+            onClick={() => setSelectedCategory('ALL')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+              selectedCategory === 'ALL'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <span>All Categories</span>
+            <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategory === 'ALL' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-amber-400'}`}>
+              {products.length}
+            </span>
+          </button>
+          {categories.map(c => {
+            const count = products.filter(p => p.category_id === c.id || p.category_name === c.name).length;
+            const isSelected = selectedCategory === c.id || selectedCategory === c.name;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCategory(isSelected ? 'ALL' : c.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                    : 'bg-slate-950 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <span>{c.name}</span>
+                <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-amber-400'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -508,12 +547,29 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             )}
           </div>
 
-          {/* Mobile Secondary Row: Brand & Sort Slicers */}
-          <div className="flex items-center gap-1.5">
+          {/* Mobile Secondary Row: Category, Brand & Sort Slicers */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="flex-1 bg-slate-950 border border-slate-800 text-amber-400 text-xs font-bold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate min-w-[130px]"
+              title="Filter by Category"
+            >
+              <option value="ALL">📂 All Categories ({categories.length})</option>
+              {categories.map(c => {
+                const count = products.filter(p => p.category_id === c.id || p.category_name === c.name).length;
+                return (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({count})
+                  </option>
+                );
+              })}
+            </select>
+
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate"
+              className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate min-w-[100px]"
               title="Filter by Brand"
             >
               <option value="ALL">All Brands ({uniqueBrands.length})</option>
@@ -525,7 +581,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             <select
               value={currentSortKey}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate"
+              className="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer truncate min-w-[100px]"
               title="Sort Products"
             >
               <option value="name_asc">🔤 Name (A-Z)</option>
@@ -535,6 +591,20 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               <option value="stock_desc">📦 Stock (High-Low)</option>
               <option value="stock_asc">📦 Stock (Low-High)</option>
             </select>
+
+            {(searchTerm || selectedCategory !== 'ALL' || selectedBrand !== 'ALL' || currentSortKey !== 'name_asc') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('ALL');
+                  setSelectedBrand('ALL');
+                  handleSortChange('name_asc');
+                }}
+                className="text-[11px] font-bold text-amber-400 underline px-1 py-1 shrink-0"
+              >
+                Reset
+              </button>
+            )}
           </div>
 
           {/* Swipeable Category Chips */}
