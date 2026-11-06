@@ -43,6 +43,46 @@ import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { Printer } from 'lucide-react';
 import { formatPaymentDateTime } from './PaymentsPage';
 
+export const sortCustomerItems = (list, sortKey = 'BALANCE_DESC') => {
+  if (!Array.isArray(list) || list.length === 0) return [];
+  return [...list].sort((a, b) => {
+    if (sortKey === 'NAME_ASC') {
+      return (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'BALANCE_DESC') {
+      const diff = parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
+      return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'REVENUE_DESC') {
+      const diff = parseFloat(b.total_invoiced || 0) - parseFloat(a.total_invoiced || 0);
+      return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'PAID_DESC') {
+      const diff = parseFloat(b.total_paid || 0) - parseFloat(a.total_paid || 0);
+      return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'PROFIT_DESC') {
+      const diff = parseFloat(b.gross_profit || 0) - parseFloat(a.gross_profit || 0);
+      return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'MARGIN_DESC') {
+      const revA = parseFloat(a.total_invoiced || 0);
+      const revB = parseFloat(b.total_invoiced || 0);
+      const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : -999;
+      const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : -999;
+      const diff = marginB - marginA;
+      return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'MARGIN_ASC') {
+      const revA = parseFloat(a.total_invoiced || 0);
+      const revB = parseFloat(b.total_invoiced || 0);
+      const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : 999;
+      const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : 999;
+      const diff = marginA - marginB;
+      return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+    } else if (sortKey === 'LIMIT_DESC') {
+      return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
+    } else if (sortKey === 'CODE_ASC') {
+      return (a.customer_code || '').localeCompare(b.customer_code || '');
+    }
+    return 0;
+  });
+};
+
 export const CustomersPage = ({ 
   initialCustomerId = null,
   onOpenCustomerModal,
@@ -68,8 +108,17 @@ export const CustomersPage = ({
   const [balanceFilter, setBalanceFilter] = useState('ALL'); // ALL, HAS_DUE, ZERO_DUE
   const [sortBy, setSortBy] = useState('BALANCE_DESC'); // BALANCE_DESC, NAME_ASC, LIMIT_DESC, CODE_ASC
   
-  // Selected Customer for Right Detail Inspector
-  const [selectedCustomerId, setSelectedCustomerId] = useState(initialCustomerId || null);
+  // Selected Customer for Right Detail Inspector (Defaults to top-ranked customer by balance due, NEVER random alphabetical)
+  const [selectedCustomerId, setSelectedCustomerId] = useState(() => {
+    if (initialCustomerId) return initialCustomerId;
+    const cached = getLocalCachedSnapshot('customers_list');
+    const items = Array.isArray(cached) ? cached : (cached?.items || cached?.data || []);
+    if (items.length > 0) {
+      const sorted = sortCustomerItems(items, 'BALANCE_DESC');
+      return sorted[0]?.id || items[0].id;
+    }
+    return null;
+  });
   const [ledgerData, setLedgerData] = useState(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [customerInvoices, setCustomerInvoices] = useState([]);
@@ -117,10 +166,14 @@ export const CustomersPage = ({
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       if (items.length > 0) {
         setCustomers(items);
+        const sortedItems = sortCustomerItems(items, sortBy);
         const targetId = selectId || initialCustomerId;
+        // Priority: Explicit targetId > (user's currently selected ID if still valid in items) > top-ranked customer of active sort view
         const initialId = targetId && items.some(i => i.id === targetId)
           ? targetId
-          : (selectedCustomerId && items.some(i => i.id === selectedCustomerId) ? selectedCustomerId : items[0].id);
+          : (selectedCustomerId && items.some(i => i.id === selectedCustomerId)
+              ? selectedCustomerId
+              : (sortedItems[0]?.id || items[0].id));
         setSelectedCustomerId(initialId);
         loadCustomerLedger(initialId);
         loadCustomerInvoices(initialId);
@@ -214,48 +267,7 @@ export const CustomersPage = ({
   const handleSortChange = (newSort) => {
     setSortBy(newSort);
     if (filteredCustomers.length > 0) {
-      const reordered = [...filteredCustomers].sort((a, b) => {
-        if (newSort === 'NAME_ASC') return (a.business_name || '').localeCompare(b.business_name || '');
-        if (newSort === 'BALANCE_DESC') {
-          const diff = parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
-          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
-        }
-        if (newSort === 'PROFIT_DESC') {
-          const diff = parseFloat(b.gross_profit || 0) - parseFloat(a.gross_profit || 0);
-          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
-        }
-        if (newSort === 'MARGIN_DESC') {
-          const revA = parseFloat(a.total_invoiced || 0);
-          const revB = parseFloat(b.total_invoiced || 0);
-          const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : -999;
-          const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : -999;
-          const diff = marginB - marginA;
-          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
-        }
-        if (newSort === 'MARGIN_ASC') {
-          const revA = parseFloat(a.total_invoiced || 0);
-          const revB = parseFloat(b.total_invoiced || 0);
-          const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : 999;
-          const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : 999;
-          const diff = marginA - marginB;
-          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
-        }
-        if (newSort === 'REVENUE_DESC') {
-          const diff = parseFloat(b.total_invoiced || 0) - parseFloat(a.total_invoiced || 0);
-          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
-        }
-        if (newSort === 'PAID_DESC') {
-          const diff = parseFloat(b.total_paid || 0) - parseFloat(a.total_paid || 0);
-          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
-        }
-        if (newSort === 'LIMIT_DESC') {
-          return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
-        }
-        if (newSort === 'CODE_ASC') {
-          return (a.customer_code || '').localeCompare(b.customer_code || '');
-        }
-        return 0;
-      });
+      const reordered = sortCustomerItems(filteredCustomers, newSort);
       if (reordered[0]) {
         handleSelectCustomer(reordered[0]);
       }
@@ -264,7 +276,7 @@ export const CustomersPage = ({
 
   // ─── RAIS REACTIVE SLICING & FILTERING ───
   const filteredCustomers = useMemo(() => {
-    return customers.filter(c => {
+    const matching = customers.filter(c => {
       // 1. Omni-Search Query: Matches Outlet name, contact person, customer code, phone, area, and purchased products/SKUs!
       const q = searchTerm.toLowerCase().trim();
       const matchesSearch = !q || (
@@ -303,49 +315,24 @@ export const CustomersPage = ({
       }
 
       return matchesSearch && matchesStatus && matchesArea && matchesBalance;
-    }).sort((a, b) => {
-      if (sortBy === 'NAME_ASC') {
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'BALANCE_DESC') {
-        const diff = parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
-        if (Math.abs(diff) > 0.001) return diff;
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'REVENUE_DESC') {
-        const diff = parseFloat(b.total_invoiced || 0) - parseFloat(a.total_invoiced || 0);
-        if (Math.abs(diff) > 0.001) return diff;
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'PAID_DESC') {
-        const diff = parseFloat(b.total_paid || 0) - parseFloat(a.total_paid || 0);
-        if (Math.abs(diff) > 0.001) return diff;
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'PROFIT_DESC') {
-        const diff = parseFloat(b.gross_profit || 0) - parseFloat(a.gross_profit || 0);
-        if (Math.abs(diff) > 0.001) return diff;
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'MARGIN_DESC') {
-        const revA = parseFloat(a.total_invoiced || 0);
-        const revB = parseFloat(b.total_invoiced || 0);
-        const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : -999;
-        const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : -999;
-        const diff = marginB - marginA;
-        if (Math.abs(diff) > 0.001) return diff;
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'MARGIN_ASC') {
-        const revA = parseFloat(a.total_invoiced || 0);
-        const revB = parseFloat(b.total_invoiced || 0);
-        const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : 999;
-        const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : 999;
-        const diff = marginA - marginB;
-        if (Math.abs(diff) > 0.001) return diff;
-        return (a.business_name || '').localeCompare(b.business_name || '');
-      } else if (sortBy === 'LIMIT_DESC') {
-        return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
-      } else if (sortBy === 'CODE_ASC') {
-        return (a.customer_code || '').localeCompare(b.customer_code || '');
-      }
-      return 0;
     });
+
+    return sortCustomerItems(matching, sortBy);
   }, [customers, searchTerm, statusFilter, areaFilter, balanceFilter, sortBy]);
+
+  // Synchronize selection: Ensure the right detail dossier ALWAYS matches the active left list
+  // If selectedCustomerId is null or not in the visible filtered list, auto-select the first customer (e.g. PIZZA TIME on Highest Due)
+  useEffect(() => {
+    if (filteredCustomers.length > 0) {
+      const isSelectedInList = filteredCustomers.some(c => c.id === selectedCustomerId);
+      if (!selectedCustomerId || !isSelectedInList) {
+        const topCust = filteredCustomers[0];
+        setSelectedCustomerId(topCust.id);
+        loadCustomerLedger(topCust.id);
+        loadCustomerInvoices(topCust.id);
+      }
+    }
+  }, [filteredCustomers, selectedCustomerId]);
 
   // Slicer Stats
   const totalOutlets = customers.length;
@@ -358,7 +345,9 @@ export const CustomersPage = ({
   const totalCreditExposure = customers.reduce((acc, c) => acc + parseFloat(c.credit_limit || 0), 0);
   const customersWithDues = customers.filter(c => parseFloat(c.outstanding_balance || 0) > 0.01).length;
 
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId) || filteredCustomers[0] || customers[0];
+  const selectedCustomer = (selectedCustomerId && customers.find(c => c.id === selectedCustomerId)) 
+    || filteredCustomers[0] 
+    || (customers.length > 0 ? sortCustomerItems(customers, sortBy)[0] : null);
 
   const selectedCustomerOpeningBalance = parseFloat(selectedCustomer?.opening_balance || 0);
   const selectedCustomerBilledRev = parseFloat(selectedCustomer?.total_invoiced || 0);
