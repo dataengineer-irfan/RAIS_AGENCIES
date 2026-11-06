@@ -30,7 +30,8 @@ import {
   ArrowLeft,
   Trash2,
   X,
-  ChevronDown
+  ChevronDown,
+  ArrowUpDown
 } from 'lucide-react';
 import { customerApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -77,6 +78,13 @@ export const CustomersPage = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileView, setMobileView] = useState(initialCustomerId ? 'detail' : 'list'); // 'list' | 'detail'
   const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('ALL'); // ALL, UNPAID, PAID, OVERDUE
+  const [invoiceSortOrder, setInvoiceSortOrder] = useState('DATE_DESC'); // DATE_DESC, DATE_ASC, AMOUNT_DESC, AMOUNT_ASC
+
+  // Ledger Filter & Sorting State
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [ledgerTypeFilter, setLedgerTypeFilter] = useState('ALL'); // ALL, INVOICE, PAYMENT, OPENING
+  const [ledgerSortOrder, setLedgerSortOrder] = useState('DESC'); // DESC (Newest First), ASC (Oldest First)
 
   // Modal
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -152,6 +160,8 @@ export const CustomersPage = ({
 
   const handleSelectCustomer = (customer, initialTab = null) => {
     setSelectedCustomerId(customer.id);
+    setInvoiceSearch('');
+    setLedgerSearch('');
     loadCustomerLedger(customer.id);
     loadCustomerInvoices(customer.id);
     if (initialTab) {
@@ -300,19 +310,99 @@ export const CustomersPage = ({
   const selectedCustomerBalance = parseFloat(selectedCustomer?.outstanding_balance || 0);
 
   const filteredCustomerInvoices = useMemo(() => {
-    if (!invoiceSearch.trim()) return customerInvoices;
-    const q = invoiceSearch.toLowerCase().trim();
-    return customerInvoices.filter(inv => {
-      const numMatch = (inv.invoice_number || '').toLowerCase().includes(q);
-      const dateMatch = (inv.invoice_date || '').includes(q);
-      const statusMatch = (inv.status || '').toLowerCase().includes(q);
-      const itemsMatch = Array.isArray(inv.items) && inv.items.some(it => 
-        (it.item_description || '').toLowerCase().includes(q) ||
-        (it.product?.name || '').toLowerCase().includes(q)
-      );
-      return numMatch || dateMatch || statusMatch || itemsMatch;
+    if (!Array.isArray(customerInvoices)) return [];
+    let list = [...customerInvoices];
+
+    // Status filter
+    if (invoiceStatusFilter !== 'ALL') {
+      if (invoiceStatusFilter === 'UNPAID') {
+        list = list.filter(inv => ['ISSUED', 'PARTIALLY_PAID', 'OVERDUE'].includes(inv.status));
+      } else {
+        list = list.filter(inv => inv.status === invoiceStatusFilter);
+      }
+    }
+
+    // Search query
+    if (invoiceSearch.trim()) {
+      const q = invoiceSearch.toLowerCase().trim();
+      list = list.filter(inv => {
+        const numMatch = (inv.invoice_number || '').toLowerCase().includes(q);
+        const dateMatch = (inv.invoice_date || '').includes(q);
+        const statusMatch = (inv.status || '').toLowerCase().includes(q);
+        const itemsMatch = Array.isArray(inv.items) && inv.items.some(it => 
+          (it.item_description || '').toLowerCase().includes(q) ||
+          (it.product?.name || '').toLowerCase().includes(q)
+        );
+        return numMatch || dateMatch || statusMatch || itemsMatch;
+      });
+    }
+
+    // Sort Order
+    list.sort((a, b) => {
+      const dateA = new Date(a.invoice_date || a.created_at || 0).getTime();
+      const dateB = new Date(b.invoice_date || b.created_at || 0).getTime();
+      if (invoiceSortOrder === 'DATE_DESC') return dateB - dateA;
+      if (invoiceSortOrder === 'DATE_ASC') return dateA - dateB;
+      if (invoiceSortOrder === 'AMOUNT_DESC') {
+        return (parseFloat(b.total_amount) || 0) - (parseFloat(a.total_amount) || 0);
+      }
+      if (invoiceSortOrder === 'AMOUNT_ASC') {
+        return (parseFloat(a.total_amount) || 0) - (parseFloat(b.total_amount) || 0);
+      }
+      return 0;
     });
-  }, [customerInvoices, invoiceSearch]);
+
+    return list;
+  }, [customerInvoices, invoiceSearch, invoiceStatusFilter, invoiceSortOrder]);
+
+  const filteredCustomerLedger = useMemo(() => {
+    if (!Array.isArray(ledgerData)) return [];
+    let list = [...ledgerData];
+
+    // 1. Filter by Type
+    if (ledgerTypeFilter !== 'ALL') {
+      list = list.filter(entry => entry.type === ledgerTypeFilter);
+    }
+
+    // 2. Search query (reference number, description, date, amount)
+    if (ledgerSearch.trim()) {
+      const q = ledgerSearch.toLowerCase().trim();
+      list = list.filter(entry => {
+        const refMatch = (entry.reference || '').toLowerCase().includes(q);
+        const descMatch = (entry.description || '').toLowerCase().includes(q);
+        const dateMatch = (entry.date || '').includes(q);
+        const amountMatch = (entry.debit && entry.debit.toString().includes(q)) || 
+                            (entry.credit && entry.credit.toString().includes(q)) || 
+                            (entry.running_balance && entry.running_balance.toString().includes(q));
+        return refMatch || descMatch || dateMatch || amountMatch;
+      });
+    }
+
+    // 3. Sort Order
+    // Original ledgerData is in ASC chronological order (oldest to newest).
+    // In DESC (default), reverse so that newest transactions appear at top.
+    if (ledgerSortOrder === 'DESC') {
+      list = [...list].reverse();
+    }
+
+    return list;
+  }, [ledgerData, ledgerTypeFilter, ledgerSearch, ledgerSortOrder]);
+
+  const ledgerMetrics = useMemo(() => {
+    if (!Array.isArray(filteredCustomerLedger)) return { debits: 0, credits: 0, count: 0, totalCount: 0 };
+    let debits = 0;
+    let credits = 0;
+    filteredCustomerLedger.forEach(entry => {
+      debits += parseFloat(entry.debit || 0);
+      credits += parseFloat(entry.credit || 0);
+    });
+    return {
+      debits,
+      credits,
+      count: filteredCustomerLedger.length,
+      totalCount: Array.isArray(ledgerData) ? ledgerData.length : 0
+    };
+  }, [filteredCustomerLedger, ledgerData]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden gap-1.5 font-sans">
@@ -1136,30 +1226,82 @@ export const CustomersPage = ({
                 {/* ─── TAB 2: COMMERCIAL INVOICES STREAM ─── */}
                 {activeInspectorTab === 'invoices' && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2 pb-1 flex-wrap">
-                      <div className="relative flex-1 min-w-[180px] max-w-[320px]">
-                        <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <input
-                          type="text"
-                          value={invoiceSearch}
-                          onChange={(e) => setInvoiceSearch(e.target.value)}
-                          placeholder="Filter invoices or items..."
-                          className="w-full pl-7 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
-                        />
-                        {invoiceSearch && (
-                          <button onClick={() => setInvoiceSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5">✕</button>
-                        )}
+                    {/* Controls & Filter Bar */}
+                    <div className="flex flex-col gap-1.5 pb-1">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="relative flex-1 min-w-[170px] max-w-[280px]">
+                          <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={invoiceSearch}
+                            onChange={(e) => setInvoiceSearch(e.target.value)}
+                            placeholder="Filter invoices or items..."
+                            className="w-full pl-7 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
+                          />
+                          {invoiceSearch && (
+                            <button onClick={() => setInvoiceSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5">✕</button>
+                          )}
+                        </div>
+
+                        {/* Sort Selector */}
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={invoiceSortOrder}
+                            onChange={(e) => setInvoiceSortOrder(e.target.value)}
+                            className="bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-200 focus:outline-none focus:border-amber-500 shadow-inner"
+                            title="Sort Invoices"
+                          >
+                            <option value="DATE_DESC" className="bg-slate-900 text-white">Date (Newest First)</option>
+                            <option value="DATE_ASC" className="bg-slate-900 text-white">Date (Oldest First)</option>
+                            <option value="AMOUNT_DESC" className="bg-slate-900 text-white">Amount (High to Low)</option>
+                            <option value="AMOUNT_ASC" className="bg-slate-900 text-white">Amount (Low to High)</option>
+                          </select>
+
+                          <button
+                            onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
+                            className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all shrink-0"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>+ New</span>
+                          </button>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">
-                        {filteredCustomerInvoices.length} of {customerInvoices.length} Invoices
-                      </span>
-                      <button
-                        onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
-                        className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all shrink-0"
-                      >
-                        <FileText className="w-3 h-3" />
-                        <span>+ New Invoice</span>
-                      </button>
+
+                      {/* Status Filter Pills */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap text-[11px]">
+                        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+                          {[
+                            { id: 'ALL', label: `All (${Array.isArray(customerInvoices) ? customerInvoices.length : 0})` },
+                            { id: 'UNPAID', label: 'Due / Unpaid', color: 'text-amber-400' },
+                            { id: 'PAID', label: 'Paid', color: 'text-emerald-400' },
+                            { id: 'OVERDUE', label: 'Overdue', color: 'text-rose-400' }
+                          ].map(tab => (
+                            <button
+                              key={tab.id}
+                              onClick={() => setInvoiceStatusFilter(tab.id)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                                invoiceStatusFilter === tab.id
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-400 border-slate-800'
+                              }`}
+                            >
+                              <span className={invoiceStatusFilter === tab.id ? '' : tab.color}>{tab.label}</span>
+                            </button>
+                          ))}
+                          {(invoiceSearch || invoiceStatusFilter !== 'ALL') && (
+                            <button
+                              onClick={() => { setInvoiceSearch(''); setInvoiceStatusFilter('ALL'); }}
+                              className="px-1.5 py-0.5 text-[9px] font-bold text-slate-400 hover:text-amber-400 underline"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {filteredCustomerInvoices.length} of {customerInvoices.length} Invoices
+                        </span>
+                      </div>
                     </div>
 
                     {invoicesLoading ? (
@@ -1170,9 +1312,9 @@ export const CustomersPage = ({
                     ) : filteredCustomerInvoices.length === 0 ? (
                       <div className="text-center py-8 text-slate-500 text-xs space-y-2">
                         <FileText className="w-8 h-8 mx-auto text-slate-600" />
-                        <p>{invoiceSearch ? 'No invoices match your item/invoice search.' : 'No invoices created for this outlet yet.'}</p>
-                        {invoiceSearch ? (
-                          <button onClick={() => setInvoiceSearch('')} className="px-2.5 py-1 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold">Clear Filter</button>
+                        <p>{(invoiceSearch || invoiceStatusFilter !== 'ALL') ? 'No invoices match your search / filter.' : 'No invoices created for this outlet yet.'}</p>
+                        {(invoiceSearch || invoiceStatusFilter !== 'ALL') ? (
+                          <button onClick={() => { setInvoiceSearch(''); setInvoiceStatusFilter('ALL'); }} className="px-2.5 py-1 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold">Clear Filter</button>
                         ) : (
                           <button
                             onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
@@ -1232,7 +1374,86 @@ export const CustomersPage = ({
 
                 {/* ─── TAB 3: LIVE TRANSACTION LEDGER STREAM ─── */}
                 {activeInspectorTab === 'ledger' && (
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
+                    {/* Search & Filter Control Bar */}
+                    <div className="flex flex-col gap-1.5 pb-1">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {/* Search input */}
+                        <div className="relative flex-1 min-w-[170px] max-w-[280px]">
+                          <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={ledgerSearch}
+                            onChange={(e) => setLedgerSearch(e.target.value)}
+                            placeholder="Search voucher #, note, date..."
+                            className="w-full pl-7 pr-6 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 font-sans shadow-inner"
+                          />
+                          {ledgerSearch && (
+                            <button 
+                              onClick={() => setLedgerSearch('')} 
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Sort Direction Toggle */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setLedgerSortOrder(prev => prev === 'DESC' ? 'ASC' : 'DESC')}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
+                              ledgerSortOrder === 'DESC' 
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm' 
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                            }`}
+                            title="Toggle Sort Direction: Newest First vs Oldest Chronological"
+                          >
+                            <ArrowUpDown className="w-3 h-3" />
+                            <span>{ledgerSortOrder === 'DESC' ? 'Newest First ▾' : 'Oldest First ▴'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Filter Type Pills & Metrics */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap text-[11px]">
+                        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+                          {[
+                            { id: 'ALL', label: `All (${Array.isArray(ledgerData) ? ledgerData.length : 0})` },
+                            { id: 'INVOICE', label: 'Invoices (+)', color: 'text-rose-400' },
+                            { id: 'PAYMENT', label: 'Payments (-)', color: 'text-emerald-400' },
+                            { id: 'OPENING', label: 'Opening Bal', color: 'text-amber-400' }
+                          ].map(tab => (
+                            <button
+                              key={tab.id}
+                              onClick={() => setLedgerTypeFilter(tab.id)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                                ledgerTypeFilter === tab.id
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-400 border-slate-800'
+                              }`}
+                            >
+                              <span className={ledgerTypeFilter === tab.id ? '' : tab.color}>{tab.label}</span>
+                            </button>
+                          ))}
+                          {(ledgerSearch || ledgerTypeFilter !== 'ALL') && (
+                            <button
+                              onClick={() => { setLedgerSearch(''); setLedgerTypeFilter('ALL'); }}
+                              className="px-1.5 py-0.5 text-[9px] font-bold text-slate-400 hover:text-amber-400 underline"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Filtered Summary Totals */}
+                        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 shrink-0">
+                          <span>Debits: <strong className="text-rose-400">+₹{ledgerMetrics.debits.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong></span>
+                          <span>Credits: <strong className="text-emerald-400">-₹{ledgerMetrics.credits.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
                     {ledgerLoading ? (
                       <div className="space-y-2 animate-pulse py-4">
                         <div className="h-10 bg-slate-800 rounded-xl" />
@@ -1244,9 +1465,20 @@ export const CustomersPage = ({
                         <History className="w-8 h-8 mx-auto text-slate-600" />
                         <p>No ledger transactions recorded for this customer yet.</p>
                       </div>
+                    ) : filteredCustomerLedger.length === 0 ? (
+                      <div className="text-center py-8 text-slate-500 text-xs space-y-2">
+                        <Filter className="w-8 h-8 mx-auto text-slate-600" />
+                        <p>No ledger transactions match your search / filter criteria.</p>
+                        <button
+                          onClick={() => { setLedgerSearch(''); setLedgerTypeFilter('ALL'); }}
+                          className="px-2.5 py-1 bg-slate-800 text-amber-400 rounded-lg text-xs font-bold"
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
                     ) : (
                       <div className="space-y-1.5">
-                        {ledgerData.map((entry, idx) => {
+                        {filteredCustomerLedger.map((entry, idx) => {
                           const isOpening = entry.type === 'OPENING';
                           const isInvoice = entry.type === 'INVOICE';
                           const isPayment = entry.type === 'PAYMENT';

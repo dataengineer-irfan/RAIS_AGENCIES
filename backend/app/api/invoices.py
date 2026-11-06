@@ -1,5 +1,6 @@
 import io
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from PIL import Image, ImageDraw, ImageFont
 from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import HTMLResponse
@@ -131,6 +132,37 @@ def get_printable_invoice(
     db: Session = Depends(get_db)
 ):
     inv = BillingService.get_invoice_by_id(db, invoice_id)
+
+    # Calculate live Customer Total Ledger Balance and Breakdown
+    cust_total_due = None
+    if getattr(inv, 'customer_outstanding_balance', None) is not None:
+        try:
+            cust_total_due = Decimal(str(inv.customer_outstanding_balance))
+        except Exception:
+            cust_total_due = None
+
+    if cust_total_due is None and inv.customer_id:
+        try:
+            from app.services.customer_service import CustomerService
+            _, _, cust_bal = CustomerService.get_customer_balances(db, str(inv.customer_id))
+            cust_total_due = Decimal(str(cust_bal or "0.00"))
+        except Exception:
+            cust_total_due = Decimal(str(inv.outstanding_amount or "0.00"))
+
+    if cust_total_due is None:
+        cust_total_due = Decimal(str(inv.outstanding_amount or "0.00"))
+
+    inv_out = Decimal(str(inv.outstanding_amount or "0.00"))
+    inv_total = Decimal(str(inv.total_amount or "0.00"))
+    inv_status = str(inv.status or "").upper()
+
+    # Determine Previous Balance and Total Customer Outstanding Balance
+    if inv_status in ['ISSUED', 'PARTIALLY_PAID', 'OVERDUE', 'PAID']:
+        prev_balance = max(Decimal("0.00"), cust_total_due - inv_out)
+        total_customer_due = cust_total_due
+    else:
+        prev_balance = max(Decimal("0.00"), cust_total_due)
+        total_customer_due = prev_balance + inv_out
     
     # Format created_at to IST (UTC+5:30) with date & short time
     created_str = str(inv.invoice_date)
@@ -321,16 +353,34 @@ def get_printable_invoice(
                      f'<div class="flex justify-between pt-1"><span class="text-gray-700">Total Received / Settled:</span><span class="font-bold font-mono text-gray-900">₹{getattr(inv, "received_amount", None) or inv.paid_amount:.2f}</span></div>'
                      f'<div class="flex justify-between"><span class="text-gray-700">Applied to This Bill:</span><span class="font-bold font-mono text-emerald-700">₹{inv.paid_amount:.2f}</span></div>'
                      + (f'<div class="flex justify-between text-amber-800 font-semibold"><span>Adjusted to Past Dues / Bills:</span><span class="font-bold font-mono">₹{inv.applied_to_previous:.2f}</span></div>' if getattr(inv, 'applied_to_previous', None) and inv.applied_to_previous > 0 else '')
-                     + (f'<div class="mt-1 pt-1 border-t border-emerald-200 text-[11px] font-bold text-emerald-800">✓ ALL DUES FULLY CLEARED (Current Ledger: ₹0.00)</div>' if (getattr(inv, 'closing_balance', None) is not None and inv.closing_balance <= 0.01) or (inv.status == 'PAID' and getattr(inv, 'closing_balance', 0) == 0) else f'<div class="mt-1 pt-1 border-t border-amber-200 text-[11px] font-bold text-amber-800">Remaining Ledger Balance: ₹{inv.closing_balance:.2f}</div>' if getattr(inv, 'closing_balance', None) is not None else '')
+                     + (f'<div class="mt-1 pt-1 border-t border-emerald-200 text-[11px] font-bold text-emerald-800">✓ ALL DUES FULLY CLEARED (Current Ledger: ₹0.00)</div>' if total_customer_due <= Decimal("0.01") else f'<div class="mt-1 pt-1 border-t border-amber-200 text-[11px] font-bold text-amber-800">Remaining Ledger Balance: ₹{total_customer_due:.2f}</div>')
                      + '</div>'
                      if (inv.status == 'PAID' or (getattr(inv, 'received_amount', None) and inv.received_amount > 0)) else
-                     '<div>'
-                     '<h4 class="font-bold text-gray-800 uppercase tracking-wider mb-1">Bank & UPI Settlement:</h4>'
-                     '<p>UPI ID: <span class="font-mono font-bold text-gray-900">9347453135@ybl</span> (RAIS Agencies)</p>'
-                     '<p class="mt-1">For direct orders & accounts support: <span class="font-bold">9347453135 / 9573261696</span></p>'
-                     '<p class="mt-2 text-[11px] font-semibold text-emerald-700">✓ Wholesale GST Status: Intra-State AP Registered • Direct Wholesale Pricing (0.00% GST)</p>'
-                     '<p class="mt-1 italic text-gray-500">Thank you for partnering with RAIS Agencies! Quality frozen food products delivered fresh.</p>'
-                     '</div>'}
+                     f'''<div>
+                     <h4 class="font-bold text-gray-800 uppercase tracking-wider mb-1">Bank & UPI Settlement:</h4>
+                     <p>UPI ID: <span class="font-mono font-bold text-gray-900">9347453135@ybl</span> (RAIS Agencies)</p>
+                     <p class="mt-1">For direct orders & accounts support: <span class="font-bold">9347453135 / 9573261696</span></p>
+                     <p class="mt-2 text-[11px] font-semibold text-emerald-700">✓ Wholesale GST Status: Intra-State AP Registered • Direct Wholesale Pricing (0.00% GST)</p>
+                     <div class="mt-2.5 p-2.5 bg-amber-50/90 border border-amber-300 rounded-lg text-xs space-y-1">
+                         <div class="font-black text-amber-950 uppercase tracking-wider text-[10px] flex items-center justify-between border-b border-amber-200 pb-1">
+                             <span>📋 Driver & Counter Collection Slip</span>
+                             <span class="px-1.5 py-0.2 bg-amber-200/80 text-amber-900 rounded font-bold font-mono text-[9px]">{inv.customer_code}</span>
+                         </div>
+                         <div class="flex justify-between text-[11px] text-gray-700 pt-0.5">
+                             <span>Current Bill Due:</span>
+                             <span class="font-mono font-bold text-gray-900">₹{inv_out:.2f}</span>
+                         </div>
+                         <div class="flex justify-between text-[11px] text-gray-700">
+                             <span>Previous Overdue Ledger:</span>
+                             <span class="font-mono font-bold text-amber-900">₹{prev_balance:.2f}</span>
+                         </div>
+                         <div class="flex justify-between text-xs font-black text-rose-900 pt-1 border-t border-amber-300">
+                             <span>Total Due to Collect:</span>
+                             <span class="font-mono text-sm font-black text-rose-700">₹{total_customer_due:.2f}</span>
+                         </div>
+                     </div>
+                     <p class="mt-2 italic text-gray-500">Thank you for partnering with RAIS Agencies! Quality frozen food products delivered fresh.</p>
+                     </div>'''}
                 </div>
 
                 <div class="col-span-5 text-sm space-y-1.5 font-mono">
@@ -352,12 +402,33 @@ def get_printable_invoice(
                         <span>₹0.00</span>
                     </div>
                     <div class="flex justify-between text-base font-bold text-gray-900 border-t border-b-2 border-gray-900 py-1.5 font-sans">
-                        <span>Grand Total:</span>
+                        <span>Invoice Grand Total:</span>
                         <span class="font-mono font-black">₹{inv.total_amount:.2f}</span>
                     </div>
-                    {f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Amount Received:</span><span>₹{inv.received_amount:.2f}</span></div>' if getattr(inv, 'received_amount', None) and inv.received_amount > 0 else f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Paid to Date:</span><span>₹{inv.paid_amount:.2f}</span></div>' if inv.paid_amount > 0 else ''}
+                    {f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Amount Received on Bill:</span><span>₹{inv.received_amount:.2f}</span></div>' if getattr(inv, 'received_amount', None) and inv.received_amount > 0 else f'<div class="flex justify-between text-xs text-emerald-700 pt-1 font-semibold"><span>Paid on this Bill:</span><span>₹{inv.paid_amount:.2f}</span></div>' if inv.paid_amount > 0 else ''}
                     {f'<div class="flex justify-between text-xs text-sky-700 font-semibold"><span>Past Dues Cleared:</span><span>₹{inv.applied_to_previous:.2f}</span></div>' if getattr(inv, 'applied_to_previous', None) and inv.applied_to_previous > 0 else ''}
-                    {f'<div class="flex justify-between text-xs text-emerald-700 font-bold"><span>Closing Balance:</span><span>₹0.00 (Cleared)</span></div>' if (getattr(inv, 'closing_balance', None) is not None and inv.closing_balance <= 0.01) else f'<div class="flex justify-between text-base font-black text-rose-700 bg-rose-50 p-1.5 rounded font-sans"><span>Balance Due:</span><span class="font-mono">₹{inv.outstanding_amount:.2f}</span></div>' if inv.outstanding_amount > 0 else ''}
+                    <div class="flex justify-between text-xs text-gray-700 pt-0.5">
+                        <span>This Bill Balance Due:</span>
+                        <span class="font-mono font-bold text-gray-900">₹{inv_out:.2f}</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-amber-800 font-medium">
+                        <span>Previous Ledger Balance:</span>
+                        <span class="font-mono font-bold">₹{prev_balance:.2f}</span>
+                    </div>
+                    {f'''
+                    <div class="flex justify-between items-center text-sm font-black text-rose-800 bg-rose-50 border-2 border-rose-300 p-2.5 rounded-lg font-sans mt-2 shadow-sm">
+                        <div>
+                            <div class="uppercase tracking-wider text-[11px] text-rose-900 font-black">Total Outstanding Balance:</div>
+                            <div class="text-[9px] font-medium text-rose-600">(This Bill + Previous Unpaid Dues)</div>
+                        </div>
+                        <span class="font-mono text-base font-black text-rose-700">₹{total_customer_due:.2f}</span>
+                    </div>
+                    ''' if total_customer_due > Decimal("0.01") else '''
+                    <div class="flex justify-between items-center text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-300 p-2.5 rounded-lg font-sans mt-2 shadow-sm">
+                        <span class="uppercase tracking-wider text-[10px]">Total Outstanding Balance:</span>
+                        <span class="font-mono text-xs font-bold text-emerald-700">₹0.00 (All Dues Cleared)</span>
+                    </div>
+                    '''}
                 </div>
             </div>
 

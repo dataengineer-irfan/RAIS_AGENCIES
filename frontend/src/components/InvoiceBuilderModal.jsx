@@ -1224,7 +1224,25 @@ export const InvoiceBuilderModal = ({
                         <p>UPI ID: <strong className="font-mono text-gray-900">9347453135@ybl</strong> (RAIS Agencies)</p>
                         <p className="mt-0.5">Order Support Hotline: <strong className="text-gray-900">9347453135 / 9573261696</strong></p>
                         <p className="mt-1 text-[10px] text-emerald-700 font-semibold">✓ Wholesale GST: Registered Intra-State AP (0.00% GST)</p>
-                        <p className="mt-1 italic text-gray-500">Thank you for partnering with RAIS Agencies!</p>
+                        <div className="mt-2 p-2 bg-amber-50/90 border border-amber-300 rounded-lg text-xs space-y-1">
+                          <div className="font-black text-amber-950 uppercase tracking-wider text-[10px] flex items-center justify-between border-b border-amber-200 pb-0.5">
+                            <span>📋 Driver & Counter Collection Slip</span>
+                            <span className="px-1.5 py-0.2 bg-amber-200/80 text-amber-900 rounded font-bold font-mono text-[9px]">{selectedCustomerObj?.customer_code || '-'}</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-gray-700">
+                            <span>Current Bill Due:</span>
+                            <strong className="font-mono">₹{parseFloat(totals.total || 0).toFixed(2)}</strong>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-gray-700">
+                            <span>Previous Overdue Ledger:</span>
+                            <strong className="font-mono text-amber-900">₹{custLedgerDue.toFixed(2)}</strong>
+                          </div>
+                          <div className="flex justify-between text-xs font-black text-rose-900 pt-0.5 border-t border-amber-300">
+                            <span>Total Due to Collect:</span>
+                            <strong className="font-mono text-xs text-rose-700">₹{(parseFloat(totals.total || 0) + custLedgerDue).toFixed(2)}</strong>
+                          </div>
+                        </div>
+                        <p className="mt-1.5 italic text-gray-500 text-[10px]">Thank you for partnering with RAIS Agencies!</p>
                       </div>
                     )}
                   </div>
@@ -1253,13 +1271,13 @@ export const InvoiceBuilderModal = ({
                       <span>₹0.00</span>
                     </div>
                     <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-b-2 border-gray-900 py-1 font-sans">
-                      <span>Grand Total:</span>
+                      <span>Invoice Grand Total:</span>
                       <span className="font-mono text-base text-gray-900 font-black">₹{totals.total}</span>
                     </div>
                     {effectivePaid > 0 && (
                       <>
                         <div className="flex justify-between text-xs text-emerald-700 pt-1 font-semibold">
-                          <span>Amount Received:</span>
+                          <span>Amount Received on Bill:</span>
                           <span className="font-bold">₹{effectivePaid.toFixed(2)}</span>
                         </div>
                         {surplusAmount > 0 && (
@@ -1268,11 +1286,31 @@ export const InvoiceBuilderModal = ({
                             <span className="font-bold">₹{surplusAmount.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-xs text-emerald-800 font-bold">
-                          <span>Projected Ledger:</span>
-                          <span>{projectedLedgerDue <= 0.01 ? '₹0.00 (Cleared)' : `₹${projectedLedgerDue.toFixed(2)}`}</span>
-                        </div>
                       </>
+                    )}
+                    <div className="flex justify-between text-xs text-gray-700 pt-0.5">
+                      <span>This Bill Balance Due:</span>
+                      <span className="font-mono font-bold text-gray-900">
+                        ₹{Math.max(0, parseFloat(totals.total || 0) - billSettledAmount).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-amber-800 font-medium">
+                      <span>Previous Ledger Balance:</span>
+                      <span className="font-mono font-bold">₹{custLedgerDue.toFixed(2)}</span>
+                    </div>
+                    {projectedLedgerDue > 0.01 ? (
+                      <div className="flex justify-between items-center text-sm font-black text-rose-800 bg-rose-50 border-2 border-rose-300 p-2 rounded-lg font-sans mt-1.5 shadow-sm">
+                        <div>
+                          <div className="uppercase tracking-wider text-[10px] text-rose-900 font-black">Total Outstanding Balance:</div>
+                          <div className="text-[9px] font-medium text-rose-600">(This Bill + Previous Dues)</div>
+                        </div>
+                        <span className="font-mono text-base font-black text-rose-700">₹{projectedLedgerDue.toFixed(2)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-300 p-2 rounded-lg font-sans mt-1.5 shadow-sm">
+                        <span className="uppercase tracking-wider text-[10px]">Total Outstanding Balance:</span>
+                        <span className="font-mono text-xs font-bold text-emerald-700">₹0.00 (All Dues Cleared)</span>
+                      </div>
                     )}
                   </div>
                 </div>
