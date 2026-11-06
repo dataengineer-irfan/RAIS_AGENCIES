@@ -547,7 +547,7 @@ export const generateInvoiceCanvas = ({
   curY += 15;
   const summaryWidth = 320;
   const summaryX = width - 30 - summaryWidth;
-  const boxHeight = 144;
+  const boxHeight = 154;
 
   ctx.fillStyle = '#f8fafc';
   if (ctx.roundRect) {
@@ -560,81 +560,99 @@ export const generateInvoiceCanvas = ({
     ctx.fillRect(summaryX, curY, summaryWidth, boxHeight);
   }
 
-  let sY = curY + 22;
+  let sY = curY + 20;
   ctx.fillStyle = '#64748b';
-  ctx.font = '500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('Subtotal:', summaryX + 18, sY);
   ctx.fillStyle = '#1e293b';
   ctx.font = 'bold 11.5px monospace';
   ctx.fillText(`₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
 
   if (discountAmount > 0) {
-    sY += 18;
+    sY += 16;
     ctx.fillStyle = '#16a34a';
-    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('Discount:', summaryX + 18, sY);
     ctx.font = 'bold 11px monospace';
     ctx.fillText(`-₹${discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
   }
 
-  sY += 24;
+  sY += 22;
   // Grand Total Banner inside summary
   ctx.fillStyle = '#0f172a';
   if (ctx.roundRect) {
     ctx.beginPath();
-    ctx.roundRect(summaryX + 12, sY - 16, summaryWidth - 24, 30, 6);
+    ctx.roundRect(summaryX + 12, sY - 14, summaryWidth - 24, 28, 6);
     ctx.fill();
   } else {
-    ctx.fillRect(summaryX + 12, sY - 16, summaryWidth - 24, 30);
+    ctx.fillRect(summaryX + 12, sY - 14, summaryWidth - 24, 28);
   }
 
   ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.fillText('INVOICE TOTAL:', summaryX + 22, sY + 3);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 14px monospace';
+  ctx.font = 'bold 13.5px monospace';
   ctx.fillText(`₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 115, sY + 3);
 
-  sY += 26;
+  sY += 23;
   if (isSettled) {
     // Settled Bill Breakdown under Total
     ctx.fillStyle = '#15803d';
-    ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('Amount Received:', summaryX + 18, sY);
     ctx.font = 'bold 11px monospace';
     ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
 
-    sY += 17;
+    sY += 16;
     if (appliedToPrev > 0) {
       ctx.fillStyle = '#0284c7';
-      ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillText('Past Dues Cleared:', summaryX + 18, sY);
       ctx.font = 'bold 10.5px monospace';
       ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
-    } else if (closingBalance !== null && closingBalance <= 0.01) {
+      sY += 16;
+    }
+
+    if (closingBalance !== null && closingBalance <= 0.01) {
       ctx.fillStyle = '#15803d';
-      ctx.font = 'bold 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Closing Balance:', summaryX + 18, sY);
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
       ctx.fillText('₹0.00 (Cleared)', summaryX + summaryWidth - 110, sY);
     } else if (closingBalance !== null && closingBalance > 0.01) {
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Closing Balance:', summaryX + 18, sY);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
       ctx.fillText(`₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
     }
   } else {
     // Unsettled / Due Balance
     const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : outstandingAmount;
-    if (effectiveDue > 0) {
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(`Overall Due: ₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + 18, sY);
-    } else {
-      ctx.fillStyle = '#15803d';
-      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Ledger Due: ₹0.00 (Cleared)', summaryX + 18, sY);
-    }
+    const priorBalance = Math.max(0, effectiveDue - outstandingAmount);
+
+    // Line 1: Prior Balance
+    ctx.fillStyle = '#92400e'; // warm amber/brown
+    ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('Prior Balance:', summaryX + 18, sY);
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(`₹${priorBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+
+    sY += 16;
+    // Line 2: This Bill Balance Due
+    ctx.fillStyle = '#475569';
+    ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('This Bill Balance:', summaryX + 18, sY);
+    ctx.font = 'bold 10.5px monospace';
+    ctx.fillText(`₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+
+    sY += 18;
+    // Line 3: TOTAL BALANCE DUE (Prior + This Bill)
+    ctx.fillStyle = effectiveDue > 0.01 ? '#dc2626' : '#15803d';
+    ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(`₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
   }
 
   // Left Side: Payment Settlement Receipt OR UPI Payment Box

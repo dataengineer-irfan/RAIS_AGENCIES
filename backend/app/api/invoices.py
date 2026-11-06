@@ -605,7 +605,29 @@ def get_invoice_image(
 
     # 4. Summary & UPI Cards
     cur_y += 15
-    box_h = 130
+    box_h = 145
+
+    # Calculate customer overall balance and prior balance
+    cust_total_due = None
+    if getattr(inv, 'customer_outstanding_balance', None) is not None:
+        try:
+            cust_total_due = Decimal(str(inv.customer_outstanding_balance))
+        except Exception:
+            cust_total_due = None
+
+    if cust_total_due is None and inv.customer_id:
+        try:
+            from app.services.customer_service import CustomerService
+            _, _, cust_bal = CustomerService.get_customer_balances(db, str(inv.customer_id))
+            cust_total_due = Decimal(str(cust_bal or "0.00"))
+        except Exception:
+            cust_total_due = Decimal(str(inv.outstanding_amount or "0.00"))
+
+    if cust_total_due is None:
+        cust_total_due = Decimal(str(inv.outstanding_amount or "0.00"))
+
+    inv_out = Decimal(str(inv.outstanding_amount or "0.00"))
+    prev_balance = max(Decimal("0.00"), cust_total_due - inv_out)
 
     # UPI Box (Left)
     draw.rectangle([(30, cur_y), (420, cur_y + box_h)], fill=(240, 253, 244), outline=(187, 247, 208))
@@ -620,23 +642,26 @@ def get_invoice_image(
     draw.text((660, cur_y + 10), f"₹{inv.subtotal:.2f}", fill=(30, 41, 59), font=f_bold)
 
     # Dark Card for Invoice Total
-    draw.rectangle([(450, cur_y + 30), (width - 40, cur_y + 62)], fill=(15, 23, 42))
-    draw.text((462, cur_y + 39), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
-    draw.text((650, cur_y + 39), f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
+    draw.rectangle([(450, cur_y + 28), (width - 40, cur_y + 56)], fill=(15, 23, 42))
+    draw.text((462, cur_y + 36), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
+    draw.text((650, cur_y + 36), f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
 
     if inv.paid_amount > 0:
-        draw.text((455, cur_y + 72), "Paid / Advance Settled:", fill=(5, 150, 105), font=f_regular)
-        draw.text((660, cur_y + 72), f"-₹{inv.paid_amount:.2f}", fill=(5, 150, 105), font=f_bold)
-
-        if inv.outstanding_amount > 0:
-            draw.text((455, cur_y + 96), "Balance Due on Bill:", fill=(225, 29, 72), font=f_bold)
-            draw.text((660, cur_y + 96), f"₹{inv.outstanding_amount:.2f}", fill=(225, 29, 72), font=f_mono)
-        else:
-            draw.text((455, cur_y + 96), "Balance Due on Bill:", fill=(5, 150, 105), font=f_bold)
-            draw.text((660, cur_y + 96), "₹0.00 (PAID)", fill=(5, 150, 105), font=f_mono)
+        draw.text((455, cur_y + 64), "Paid on Bill:", fill=(5, 150, 105), font=f_regular)
+        draw.text((660, cur_y + 64), f"-₹{inv.paid_amount:.2f}", fill=(5, 150, 105), font=f_bold)
     else:
-        draw.text((455, cur_y + 80), "Balance Due on Bill:", fill=(225, 29, 72), font=f_bold)
-        draw.text((660, cur_y + 80), f"₹{inv.total_amount:.2f}", fill=(225, 29, 72), font=f_mono)
+        draw.text((455, cur_y + 64), "Prior Balance:", fill=(180, 83, 9), font=f_regular)
+        draw.text((660, cur_y + 64), f"₹{prev_balance:.2f}", fill=(180, 83, 9), font=f_bold)
+
+    draw.text((455, cur_y + 82), "This Bill Balance:", fill=(100, 116, 139), font=f_regular)
+    draw.text((660, cur_y + 82), f"₹{inv_out:.2f}", fill=(30, 41, 59), font=f_bold)
+
+    # Line separator
+    draw.line([(450, cur_y + 102), (width - 40, cur_y + 102)], fill=(226, 232, 240))
+
+    due_color = (225, 29, 72) if cust_total_due > Decimal("0.01") else (5, 150, 105)
+    draw.text((455, cur_y + 108), "TOTAL BALANCE DUE:", fill=due_color, font=f_bold)
+    draw.text((650, cur_y + 108), f"₹{cust_total_due:.2f}", fill=due_color, font=f_mono)
 
     # 4b. Direct Quick Links Banner (Bold Emerald Card)
     cur_y += box_h + 10

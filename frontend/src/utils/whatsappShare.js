@@ -187,8 +187,13 @@ export const shareInvoiceOnWhatsApp = async ({
     }
   } else {
     const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : invOutstanding;
+    const priorBal = Math.max(0, effectiveDue - invOutstanding);
     if (effectiveDue > 0) {
-      settlementSection = `⚠️ *Total Due Balance:* *₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+      if (priorBal > 0.01) {
+        settlementSection = `📋 *Prior Balance:* ₹${priorBal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n📄 *This Bill Balance:* ₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n⚠️ *TOTAL BALANCE DUE:* *₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+      } else {
+        settlementSection = `⚠️ *TOTAL BALANCE DUE:* *₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+      }
     } else {
       settlementSection = `🎉 *Ledger Status:* *ALL DUES FULLY CLEARED (₹0.00)*\n`;
     }
