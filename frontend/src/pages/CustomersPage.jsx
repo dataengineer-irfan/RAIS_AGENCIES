@@ -41,6 +41,7 @@ import { useAuth } from '../context/AuthContext';
 import { CustomerModal } from '../components/CustomerModal';
 import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { Printer } from 'lucide-react';
+import { formatPaymentDateTime } from './PaymentsPage';
 
 export const CustomersPage = ({ 
   initialCustomerId = null,
@@ -1554,8 +1555,10 @@ export const CustomersPage = ({
                                     {entry.type}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                                  {entry.date} • {entry.description}
+                                <p className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center gap-1">
+                                  <span className="text-slate-300 font-semibold">{formatPaymentDateTime(entry.date, entry.created_at).fullText}</span>
+                                  <span>•</span>
+                                  <span>{entry.description}</span>
                                 </p>
                               </div>
                               

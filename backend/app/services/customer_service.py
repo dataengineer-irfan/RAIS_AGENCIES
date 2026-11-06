@@ -624,7 +624,8 @@ class CustomerService:
                 description=entry["description"],
                 debit=entry["debit"],
                 credit=entry["credit"],
-                running_balance=running_bal
+                running_balance=running_bal,
+                created_at=entry.get("created_at")
             ))
         return ledger
 

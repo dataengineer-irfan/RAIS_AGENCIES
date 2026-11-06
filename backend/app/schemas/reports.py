@@ -75,3 +75,4 @@ class CustomerLedgerEntry(BaseModel):
     debit: Decimal # Amount billed
     credit: Decimal # Amount paid
     running_balance: Decimal
+    created_at: Optional[datetime] = None

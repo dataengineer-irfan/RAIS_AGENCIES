@@ -21,7 +21,8 @@ import {
   Zap,
   Printer,
   Share2,
-  Tag
+  Tag,
+  Clock
 } from 'lucide-react';
 import { paymentApi, catalogueApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -40,6 +41,37 @@ const formatVoucherDate = (dateStr) => {
     }
   } catch (e) {}
   return dateStr;
+};
+
+export const formatPaymentDateTime = (dateVal, createdAtVal) => {
+  let dateStr = '';
+  let timeStr = '';
+
+  if (createdAtVal) {
+    try {
+      let iso = String(createdAtVal).trim();
+      if (!iso.endsWith('Z') && !iso.includes('+') && !iso.includes('-') && iso.length > 10) {
+        iso += 'Z';
+      } else if (!iso.endsWith('Z') && !iso.includes('+') && iso.includes('T')) {
+        iso += 'Z';
+      }
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+        timeStr = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+      }
+    } catch (_) {}
+  }
+
+  if (!dateStr && dateVal) {
+    dateStr = formatVoucherDate(dateVal);
+  }
+
+  return {
+    date: dateStr || '-',
+    time: timeStr || '',
+    fullText: timeStr ? `${dateStr} • ${timeStr}` : (dateStr || '-')
+  };
 };
 
 const getLocalDateStr = (d = new Date()) => {
@@ -867,9 +899,25 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                           <span className="text-amber-300 font-semibold ml-1">({p.customer_contact})</span>
                         )}
                       </h4>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        {formatVoucherDate(p?.payment_date)} {p?.reference_number ? `• Ref: ${p.reference_number}` : ''}
-                      </p>
+                      {(() => {
+                        const dt = formatPaymentDateTime(p?.payment_date, p?.created_at);
+                        return (
+                          <div className="flex items-center flex-wrap gap-1.5 mt-0.5 text-[10px]">
+                            <span className="text-slate-300 font-semibold">{dt.date}</span>
+                            {dt.time && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30">
+                                <Clock className="w-2.5 h-2.5 text-amber-400" />
+                                <span>{dt.time}</span>
+                              </span>
+                            )}
+                            {p?.reference_number && (
+                              <span className="text-slate-400 truncate max-w-[130px]" title={p.reference_number}>
+                                • Ref: {p.reference_number}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="text-right shrink-0 flex items-center gap-2">
@@ -989,9 +1037,22 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700 whitespace-nowrap shadow-sm">
                         {selectedPayment.payment_method}
                       </span>
-                      <span className="text-xs text-slate-400 whitespace-nowrap">
-                        Settled on {formatVoucherDate(selectedPayment.payment_date)}
-                      </span>
+                      {(() => {
+                        const selDt = formatPaymentDateTime(selectedPayment.payment_date, selectedPayment.created_at);
+                        return (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs text-slate-300 whitespace-nowrap">
+                              Settled on <strong className="text-white font-bold">{selDt.date}</strong>
+                            </span>
+                            {selDt.time && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-bold text-amber-300 bg-amber-500/20 border border-amber-500/35 shadow-sm">
+                                <Clock className="w-3 h-3 text-amber-400" />
+                                <span>{selDt.time}</span>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {selectedPayment.reference_number && (
                         <span className="text-[11px] font-mono text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 whitespace-nowrap hidden sm:inline-block">
                           Ref: {selectedPayment.reference_number}
@@ -1156,13 +1217,34 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                     )}
 
                     <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2.5 text-xs">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Voucher Settlement Audit
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span>Voucher Settlement Audit</span>
+                        {(() => {
+                          const dt = formatPaymentDateTime(selectedPayment.payment_date, selectedPayment.created_at);
+                          return dt.time ? (
+                            <span className="text-[10px] font-mono text-amber-300 font-bold flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              <span>{dt.date} at {dt.time}</span>
+                            </span>
+                          ) : null;
+                        })()}
                       </h4>
-                      <div className="grid grid-cols-2 gap-2 text-slate-300">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-slate-300">
                         <div>
                           <span className="text-slate-500 text-[10px] block">Payment Method:</span>
                           <span className="font-bold text-white uppercase">{selectedPayment.payment_method}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Settlement Date & Time:</span>
+                          {(() => {
+                            const dt = formatPaymentDateTime(selectedPayment.payment_date, selectedPayment.created_at);
+                            return (
+                              <span className="font-mono font-bold text-emerald-400 flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
+                                <span>{dt.date}{dt.time ? ` • ${dt.time}` : ''}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                         <div>
                           <span className="text-slate-500 text-[10px] block">
@@ -1182,9 +1264,13 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                             )}
                           </span>
                         </div>
-                        <div className="col-span-2">
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Receipt / Voucher Number:</span>
+                          <span className="font-mono font-bold text-white">{selectedPayment.payment_number}</span>
+                        </div>
+                        <div className="sm:col-span-2">
                           <span className="text-slate-500 text-[10px] block">Settlement Notes / Narration:</span>
-                          <span className="font-medium">{selectedPayment.notes || 'Account settlement recorded at Rayachoty commercial counter.'}</span>
+                          <span className="font-medium text-slate-200">{selectedPayment.notes || 'Account settlement recorded at Rayachoty commercial counter.'}</span>
                         </div>
                       </div>
                     </div>
@@ -1234,7 +1320,9 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                             <div key={idx} className="bg-slate-900 border border-slate-800 rounded-lg p-2 flex items-center justify-between text-xs">
                               <div>
                                 <span className="font-mono font-bold text-white">{alloc.invoice_number || 'INV'}</span>
-                                <p className="text-[10px] text-slate-400">{alloc.allocated_at ? formatVoucherDate(alloc.allocated_at) : 'Settled'}</p>
+                                <p className="text-[10px] text-slate-400">
+                                  {alloc.allocated_at ? formatPaymentDateTime(null, alloc.allocated_at).fullText : 'Settled'}
+                                </p>
                               </div>
                               <div className="font-mono font-bold text-emerald-400">
                                 ₹{parseFloat(alloc.allocated_amount || alloc.amount || 0).toFixed(2)}
