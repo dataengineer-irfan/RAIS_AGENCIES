@@ -560,13 +560,23 @@ def get_invoice_image(
 
     # 3. Items Table
     tbl_y = 240
+    tbl_right = width - 48  # 752px (18px clean padding inside 770px table boundary)
+
+    def draw_right(x, y, text, fill, font):
+        try:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            w = bbox[2] - bbox[0]
+            draw.text((x - w, y), text, fill=fill, font=font)
+        except Exception:
+            draw.text((x - 80, y), text, fill=fill, font=font)
+
     draw.rectangle([(30, tbl_y), (width - 30, tbl_y + 30)], fill=(15, 23, 42))
     draw.text((42, tbl_y + 8), "#", fill=(248, 250, 252), font=f_bold)
     draw.text((80, tbl_y + 8), "ITEM DESCRIPTION", fill=(248, 250, 252), font=f_bold)
     draw.text((430, tbl_y + 8), "UNIT", fill=(248, 250, 252), font=f_bold)
     draw.text((510, tbl_y + 8), "QTY", fill=(248, 250, 252), font=f_bold)
     draw.text((600, tbl_y + 8), "RATE (₹)", fill=(248, 250, 252), font=f_bold)
-    draw.text((700, tbl_y + 8), "TOTAL (₹)", fill=(248, 250, 252), font=f_bold)
+    draw_right(tbl_right, tbl_y + 8, "TOTAL (₹)", fill=(248, 250, 252), font=f_bold)
 
     cur_y = tbl_y + 30
     if items:
@@ -576,18 +586,18 @@ def get_invoice_image(
             draw.line([(30, cur_y + row_height), (width - 30, cur_y + row_height)], fill=(241, 245, 249))
 
             draw.text((42, cur_y + 9), str(idx), fill=(100, 116, 139), font=f_regular)
-            desc = itm.item_description[:40] + ("..." if len(itm.item_description) > 40 else "")
+            desc = itm.item_description[:38] + ("..." if len(itm.item_description) > 38 else "")
             draw.text((80, cur_y + 9), desc, fill=(30, 41, 59), font=f_bold)
             draw.text((430, cur_y + 9), str(itm.packaging_unit or "PKT"), fill=(100, 116, 139), font=f_regular)
             draw.text((510, cur_y + 9), str(itm.quantity), fill=(15, 23, 42), font=f_bold)
             draw.text((600, cur_y + 9), f"₹{itm.unit_price:.2f}", fill=(71, 85, 105), font=f_regular)
-            draw.text((700, cur_y + 9), f"₹{itm.line_total:.2f}", fill=(15, 23, 42), font=f_bold)
+            draw_right(tbl_right, cur_y + 9, f"₹{itm.line_total:.2f}", fill=(15, 23, 42), font=f_bold)
             cur_y += row_height
     else:
         draw.rectangle([(30, cur_y), (width - 30, cur_y + row_height)], fill=(255, 255, 255))
         draw.text((80, cur_y + 9), "Wholesale frozen foods & supplies", fill=(30, 41, 59), font=f_bold)
         draw.text((510, cur_y + 9), "1", fill=(15, 23, 42), font=f_bold)
-        draw.text((700, cur_y + 9), f"₹{inv.total_amount:.2f}", fill=(15, 23, 42), font=f_bold)
+        draw_right(tbl_right, cur_y + 9, f"₹{inv.total_amount:.2f}", fill=(15, 23, 42), font=f_bold)
         cur_y += row_height
 
     # 3b. In-Stock Restock Strip on Image Card (strictly NO PRICES)
@@ -606,6 +616,7 @@ def get_invoice_image(
     # 4. Summary & UPI Cards
     cur_y += 15
     box_h = 145
+    sum_right = width - 48  # 752px
 
     # Calculate customer overall balance and prior balance
     cust_total_due = None
@@ -639,29 +650,29 @@ def get_invoice_image(
     # Totals Box (Right)
     draw.rectangle([(440, cur_y), (width - 30, cur_y + box_h)], fill=(248, 250, 252), outline=(226, 232, 240))
     draw.text((455, cur_y + 10), "Subtotal:", fill=(100, 116, 139), font=f_regular)
-    draw.text((660, cur_y + 10), f"₹{inv.subtotal:.2f}", fill=(30, 41, 59), font=f_bold)
+    draw_right(sum_right, cur_y + 10, f"₹{inv.subtotal:.2f}", fill=(30, 41, 59), font=f_bold)
 
     # Dark Card for Invoice Total
     draw.rectangle([(450, cur_y + 28), (width - 40, cur_y + 56)], fill=(15, 23, 42))
     draw.text((462, cur_y + 36), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
-    draw.text((650, cur_y + 36), f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
+    draw_right(width - 52, cur_y + 36, f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
 
     if inv.paid_amount > 0:
         draw.text((455, cur_y + 64), "Paid on Bill:", fill=(5, 150, 105), font=f_regular)
-        draw.text((660, cur_y + 64), f"-₹{inv.paid_amount:.2f}", fill=(5, 150, 105), font=f_bold)
+        draw_right(sum_right, cur_y + 64, f"-₹{inv.paid_amount:.2f}", fill=(5, 150, 105), font=f_bold)
     else:
         draw.text((455, cur_y + 64), "Prior Balance:", fill=(180, 83, 9), font=f_regular)
-        draw.text((660, cur_y + 64), f"₹{prev_balance:.2f}", fill=(180, 83, 9), font=f_bold)
+        draw_right(sum_right, cur_y + 64, f"₹{prev_balance:.2f}", fill=(180, 83, 9), font=f_bold)
 
     draw.text((455, cur_y + 82), "This Bill Balance:", fill=(100, 116, 139), font=f_regular)
-    draw.text((660, cur_y + 82), f"₹{inv_out:.2f}", fill=(30, 41, 59), font=f_bold)
+    draw_right(sum_right, cur_y + 82, f"₹{inv_out:.2f}", fill=(30, 41, 59), font=f_bold)
 
     # Line separator
     draw.line([(450, cur_y + 102), (width - 40, cur_y + 102)], fill=(226, 232, 240))
 
     due_color = (225, 29, 72) if cust_total_due > Decimal("0.01") else (5, 150, 105)
     draw.text((455, cur_y + 108), "TOTAL BALANCE DUE:", fill=due_color, font=f_bold)
-    draw.text((650, cur_y + 108), f"₹{cust_total_due:.2f}", fill=due_color, font=f_mono)
+    draw_right(sum_right, cur_y + 108, f"₹{cust_total_due:.2f}", fill=due_color, font=f_mono)
 
     # 4b. Direct Quick Links Banner (Bold Emerald Card)
     cur_y += box_h + 10

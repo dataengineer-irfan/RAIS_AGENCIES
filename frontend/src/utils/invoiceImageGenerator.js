@@ -369,20 +369,26 @@ export const generateInvoiceCanvas = ({
 
   // 3. Line Items Table
   curY += 105;
-  const colX = { sl: 30, desc: 75, unit: 450, qty: 530, rate: 630, total: 770 };
+  const tableX = 30;
+  const tableWidth = width - 60; // 740px
+  const tableRightX = tableX + tableWidth - 18; // 752px (18px clean padding inside table border)
 
   // Table Header
   ctx.fillStyle = '#0f172a';
-  ctx.fillRect(30, curY, width - 60, tableHeaderHeight);
+  ctx.fillRect(tableX, curY, tableWidth, tableHeaderHeight);
 
   ctx.fillStyle = '#f8fafc';
   ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('#', colX.sl + 10, curY + 22);
-  ctx.fillText('ITEM DESCRIPTION', colX.desc, curY + 22);
-  ctx.fillText('UNIT', colX.unit, curY + 22);
-  ctx.fillText('QTY', colX.qty, curY + 22);
-  ctx.fillText('RATE (₹)', colX.rate, curY + 22);
-  ctx.fillText('AMOUNT (₹)', colX.total - 40, curY + 22);
+  ctx.textAlign = 'left';
+  ctx.fillText('#', 42, curY + 22);
+  ctx.fillText('ITEM DESCRIPTION', 75, curY + 22);
+  ctx.fillText('UNIT', 425, curY + 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillText('QTY', 535, curY + 22);
+  ctx.fillText('RATE (₹)', 635, curY + 22);
+  ctx.fillText('AMOUNT (₹)', tableRightX, curY + 22);
+  ctx.textAlign = 'left';
 
   curY += tableHeaderHeight;
 
@@ -390,14 +396,14 @@ export const generateInvoiceCanvas = ({
   processedItems.forEach((itm, idx) => {
     const isEven = idx % 2 === 0;
     ctx.fillStyle = isEven ? '#ffffff' : '#f8fafc';
-    ctx.fillRect(30, curY, width - 60, rowHeight);
+    ctx.fillRect(tableX, curY, tableWidth, rowHeight);
 
     // Row bottom border
     ctx.strokeStyle = '#f1f5f9';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(30, curY + rowHeight);
-    ctx.lineTo(width - 30, curY + rowHeight);
+    ctx.moveTo(tableX, curY + rowHeight);
+    ctx.lineTo(tableX + tableWidth, curY + rowHeight);
     ctx.stroke();
 
     const p = products.find(prod => prod.id === itm.product_id);
@@ -409,29 +415,32 @@ export const generateInvoiceCanvas = ({
 
     ctx.fillStyle = '#64748b';
     ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(`${idx + 1}`, colX.sl + 12, curY + 22);
+    ctx.textAlign = 'left';
+    ctx.fillText(`${idx + 1}`, 42, curY + 22);
 
     ctx.fillStyle = '#1e293b';
     ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     // Truncate long descriptions
-    const descText = name.length > 45 ? name.substring(0, 42) + '...' : name;
-    ctx.fillText(descText, colX.desc, curY + 22);
+    const descText = name.length > 38 ? name.substring(0, 35) + '...' : name;
+    ctx.fillText(descText, 75, curY + 22);
 
     ctx.fillStyle = '#64748b';
     ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(unit, colX.unit, curY + 22);
+    ctx.fillText(unit, 425, curY + 22);
 
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(`${qty}`, colX.qty, curY + 22);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${qty}`, 535, curY + 22);
 
     ctx.fillStyle = '#475569';
     ctx.font = '400 11px monospace';
-    ctx.fillText(`₹${rate}`, colX.rate, curY + 22);
+    ctx.fillText(`₹${rate}`, 635, curY + 22);
 
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 12px monospace';
-    ctx.fillText(`₹${lineTot}`, colX.total - 40, curY + 22);
+    ctx.fillText(`₹${lineTot}`, tableRightX, curY + 22);
+    ctx.textAlign = 'left';
 
     curY += rowHeight;
   });
@@ -546,7 +555,9 @@ export const generateInvoiceCanvas = ({
   // 4. Financial Summary Card & Settlement Box
   curY += 15;
   const summaryWidth = 320;
-  const summaryX = width - 30 - summaryWidth;
+  const summaryX = width - 30 - summaryWidth; // 450px
+  const summaryRightX = summaryX + summaryWidth - 18; // 752px (18px clean padding inside summary card)
+  const summaryBannerRightX = summaryX + summaryWidth - 24; // 746px (12px padding inside dark banner)
   const boxHeight = 154;
 
   ctx.fillStyle = '#f8fafc';
@@ -563,10 +574,13 @@ export const generateInvoiceCanvas = ({
   let sY = curY + 20;
   ctx.fillStyle = '#64748b';
   ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'left';
   ctx.fillText('Subtotal:', summaryX + 18, sY);
   ctx.fillStyle = '#1e293b';
   ctx.font = 'bold 11.5px monospace';
-  ctx.fillText(`₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+  ctx.textAlign = 'right';
+  ctx.fillText(`₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+  ctx.textAlign = 'left';
 
   if (discountAmount > 0) {
     sY += 16;
@@ -574,7 +588,9 @@ export const generateInvoiceCanvas = ({
     ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('Discount:', summaryX + 18, sY);
     ctx.font = 'bold 11px monospace';
-    ctx.fillText(`-₹${discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+    ctx.textAlign = 'right';
+    ctx.fillText(`-₹${discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+    ctx.textAlign = 'left';
   }
 
   sY += 22;
@@ -590,20 +606,26 @@ export const generateInvoiceCanvas = ({
 
   ctx.fillStyle = '#f59e0b';
   ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'left';
   ctx.fillText('INVOICE TOTAL:', summaryX + 22, sY + 3);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 13.5px monospace';
-  ctx.fillText(`₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 115, sY + 3);
+  ctx.textAlign = 'right';
+  ctx.fillText(`₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryBannerRightX, sY + 3);
+  ctx.textAlign = 'left';
 
   sY += 23;
   if (isSettled) {
     // Settled Bill Breakdown under Total
     ctx.fillStyle = '#15803d';
     ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'left';
     ctx.fillText('Amount Received:', summaryX + 18, sY);
     ctx.font = 'bold 11px monospace';
-    ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+    ctx.textAlign = 'left';
 
     sY += 16;
     if (appliedToPrev > 0) {
@@ -611,7 +633,9 @@ export const generateInvoiceCanvas = ({
       ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillText('Past Dues Cleared:', summaryX + 18, sY);
       ctx.font = 'bold 10.5px monospace';
-      ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
       sY += 16;
     }
 
@@ -619,12 +643,16 @@ export const generateInvoiceCanvas = ({
       ctx.fillStyle = '#15803d';
       ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
-      ctx.fillText('₹0.00 (Cleared)', summaryX + summaryWidth - 110, sY);
+      ctx.textAlign = 'right';
+      ctx.fillText('₹0.00 (Cleared)', summaryRightX, sY);
+      ctx.textAlign = 'left';
     } else if (closingBalance !== null && closingBalance > 0.01) {
       ctx.fillStyle = '#dc2626';
       ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
-      ctx.fillText(`₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
     }
   } else {
     // Unsettled / Due Balance
@@ -634,9 +662,12 @@ export const generateInvoiceCanvas = ({
     // Line 1: Prior Balance
     ctx.fillStyle = '#92400e'; // warm amber/brown
     ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'left';
     ctx.fillText('Prior Balance:', summaryX + 18, sY);
     ctx.font = 'bold 11px monospace';
-    ctx.fillText(`₹${priorBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${priorBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+    ctx.textAlign = 'left';
 
     sY += 16;
     // Line 2: This Bill Balance Due
@@ -644,7 +675,9 @@ export const generateInvoiceCanvas = ({
     ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('This Bill Balance:', summaryX + 18, sY);
     ctx.font = 'bold 10.5px monospace';
-    ctx.fillText(`₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+    ctx.textAlign = 'left';
 
     sY += 18;
     // Line 3: TOTAL BALANCE DUE (Prior + This Bill)
@@ -652,7 +685,9 @@ export const generateInvoiceCanvas = ({
     ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
     ctx.font = 'bold 12px monospace';
-    ctx.fillText(`₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + summaryWidth - 110, sY);
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+    ctx.textAlign = 'left';
   }
 
   // Left Side: Payment Settlement Receipt OR UPI Payment Box

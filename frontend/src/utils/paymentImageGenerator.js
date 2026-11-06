@@ -192,31 +192,39 @@ export const generatePaymentCanvas = ({
 
   // 4. Allocations Table
   curY += heroBoxHeight + 15;
+  const payTableX = 30;
+  const payTableWidth = width - 60; // 740px
+  const payTableRightX = payTableX + payTableWidth - 18; // 752px
+
   ctx.fillStyle = '#0f172a';
-  ctx.fillRect(30, curY, width - 60, tableHeaderHeight);
+  ctx.fillRect(payTableX, curY, payTableWidth, tableHeaderHeight);
 
   ctx.fillStyle = '#f8fafc';
   ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'left';
   ctx.fillText('#', 44, curY + 22);
   ctx.fillText('ALLOCATED INVOICE #', 80, curY + 22);
   ctx.fillText('ALLOCATION DATE', 440, curY + 22);
-  ctx.fillText('SETTLED AMOUNT (₹)', 640, curY + 22);
+  ctx.textAlign = 'right';
+  ctx.fillText('SETTLED AMOUNT (₹)', payTableRightX, curY + 22);
+  ctx.textAlign = 'left';
 
   curY += tableHeaderHeight;
   if (allocations && allocations.length > 0) {
     allocations.forEach((a, idx) => {
       const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
       ctx.fillStyle = bg;
-      ctx.fillRect(30, curY, width - 60, rowHeight);
+      ctx.fillRect(payTableX, curY, payTableWidth, rowHeight);
 
       ctx.strokeStyle = '#f1f5f9';
       ctx.beginPath();
-      ctx.moveTo(30, curY + rowHeight);
-      ctx.lineTo(width - 30, curY + rowHeight);
+      ctx.moveTo(payTableX, curY + rowHeight);
+      ctx.lineTo(payTableX + payTableWidth, curY + rowHeight);
       ctx.stroke();
 
       ctx.fillStyle = '#64748b';
       ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
       ctx.fillText(String(idx + 1), 44, curY + 22);
 
       const invNum = a.invoice_number || `INV-${a.invoice_id?.slice(0, 8) || idx + 1}`;
@@ -238,13 +246,15 @@ export const generatePaymentCanvas = ({
       const allocAmtFormatted = parseFloat(a.allocated_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
       ctx.fillStyle = '#047857';
       ctx.font = 'bold 12px monospace';
-      ctx.fillText(`₹${allocAmtFormatted}`, 640, curY + 22);
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${allocAmtFormatted}`, payTableRightX, curY + 22);
+      ctx.textAlign = 'left';
 
       curY += rowHeight;
     });
   } else {
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(30, curY, width - 60, rowHeight);
+    ctx.fillRect(payTableX, curY, payTableWidth, rowHeight);
     ctx.fillStyle = '#64748b';
     ctx.font = 'italic 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('Direct credit settlement recorded against customer account ledger.', 80, curY + 22);
