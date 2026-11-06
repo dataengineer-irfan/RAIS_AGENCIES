@@ -744,6 +744,14 @@ export const InvoiceBuilderModal = ({
           res.payment_method = methodVal;
           res.closing_balance = closingLedgerVal;
           res.customer_outstanding_balance = closingLedgerVal;
+        } else if (res) {
+          // Unpaid credit invoice: ensure closing balance includes this bill
+          const prevDue = parseFloat(selectedCustomerObj?.outstanding_balance || 0);
+          const computedBal = (res.customer_outstanding_balance !== undefined && res.customer_outstanding_balance !== null)
+            ? parseFloat(res.customer_outstanding_balance)
+            : (prevDue + billTotalVal);
+          res.closing_balance = computedBal;
+          res.customer_outstanding_balance = computedBal;
         }
 
         // Fallback immediate cash settlement if marked as paid/collected and backend hasn't already auto-settled
@@ -768,11 +776,21 @@ export const InvoiceBuilderModal = ({
                 res.paid_amount = allocToInvoice;
                 res.outstanding_amount = parseFloat(res.total_amount) - allocToInvoice;
               }
+              try {
+                const refreshed = await billingApi.getInvoice(res.id);
+                if (refreshed) {
+                  res = { ...res, ...refreshed };
+                }
+              } catch (_) {}
             }
           } catch (payErr) {
             console.warn('Auto cash settlement error:', payErr);
           }
         }
+
+        // Keep local customer balance in sync so subsequent actions ("Create Another") immediately see updated due
+        const latestDue = parseFloat(res?.closing_balance ?? res?.customer_outstanding_balance ?? closingLedgerVal ?? 0);
+        setCustomers(prev => (prev || []).map(c => c.id === customerId ? { ...c, outstanding_balance: latestDue } : c));
 
         setSuccessInvoice(res);
         setShowPreview(false);
@@ -1293,18 +1311,28 @@ export const InvoiceBuilderModal = ({
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
-                  onClick={() => shareInvoiceOnWhatsApp({
-                    invoice: {
-                      invoice_number: 'PREVIEW',
-                      invoice_date: invoiceDate,
-                      created_at: new Date().toISOString(),
-                      total_amount: totals.total,
-                      payment_terms: paymentTerms
-                    },
-                    customer: selectedCustomerObj,
-                    items: items,
-                    products: products
-                  })}
+                  onClick={() => {
+                    const prevDue = parseFloat(selectedCustomerObj?.outstanding_balance || 0);
+                    const billAmt = parseFloat(totals.total || 0);
+                    const estClosing = prevDue + billAmt;
+                    shareInvoiceOnWhatsApp({
+                      invoice: {
+                        invoice_number: 'PREVIEW',
+                        invoice_date: invoiceDate,
+                        created_at: new Date().toISOString(),
+                        total_amount: totals.total,
+                        payment_terms: paymentTerms,
+                        customer_outstanding_balance: estClosing,
+                        closing_balance: estClosing
+                      },
+                      customer: {
+                        ...selectedCustomerObj,
+                        outstanding_balance: estClosing
+                      },
+                      items: items,
+                      products: products
+                    });
+                  }}
                   className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />

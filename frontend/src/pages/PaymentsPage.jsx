@@ -134,12 +134,44 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
 
   const handleSendWhatsAppReceipt = async (p) => {
     if (!p) return;
-    await sharePaymentOnWhatsApp({ payment: p });
+    let fullPayment = p;
+    try {
+      const freshP = await paymentApi.get(p.id);
+      if (freshP) fullPayment = freshP;
+    } catch (_) {}
+    await sharePaymentOnWhatsApp({
+      payment: fullPayment,
+      customer: {
+        id: fullPayment.customer_id,
+        business_name: fullPayment.customer_name,
+        contact_person: fullPayment.customer_contact,
+        phone: fullPayment.customer_phone,
+        address: fullPayment.customer_address,
+        customer_code: fullPayment.customer_code,
+        outstanding_balance: fullPayment.customer_outstanding_balance
+      }
+    });
   };
 
   const handleSharePaymentImage = async (p) => {
     if (!p) return;
-    await sharePaymentImageFile({ payment: p });
+    let fullPayment = p;
+    try {
+      const freshP = await paymentApi.get(p.id);
+      if (freshP) fullPayment = freshP;
+    } catch (_) {}
+    await sharePaymentImageFile({
+      payment: fullPayment,
+      customer: {
+        id: fullPayment.customer_id,
+        business_name: fullPayment.customer_name,
+        contact_person: fullPayment.customer_contact,
+        phone: fullPayment.customer_phone,
+        address: fullPayment.customer_address,
+        customer_code: fullPayment.customer_code,
+        outstanding_balance: fullPayment.customer_outstanding_balance
+      }
+    });
   };
 
   const handlePrintVoucher = (p) => {

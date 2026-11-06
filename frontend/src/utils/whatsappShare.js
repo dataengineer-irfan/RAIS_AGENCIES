@@ -186,10 +186,11 @@ export const shareInvoiceOnWhatsApp = async ({
       settlementSection += `⚠️ *Remaining Account Balance:* *₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
     }
   } else {
-    if (overallDue !== null && overallDue > 0) {
-      settlementSection = `⚠️ *Total Due Balance:* *₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
-    } else if (invOutstanding > 0 && invOutstanding !== billAmt) {
-      settlementSection = `⚠️ *Balance Due on Bill:* *₹${invOutstanding.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+    const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : invOutstanding;
+    if (effectiveDue > 0) {
+      settlementSection = `⚠️ *Total Due Balance:* *₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n`;
+    } else {
+      settlementSection = `🎉 *Ledger Status:* *ALL DUES FULLY CLEARED (₹0.00)*\n`;
     }
   }
 

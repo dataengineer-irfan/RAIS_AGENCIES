@@ -905,10 +905,10 @@ class BillingService:
     ) -> InvoiceResponse:
         cust_balance = None
         cust_since = None
-        if not is_list:
-            if balances_map is not None and inv.customer_id:
-                cust_balance = balances_map.get(inv.customer_id)
-            elif db and inv.customer_id:
+        if balances_map is not None and inv.customer_id:
+            cust_balance = balances_map.get(inv.customer_id)
+        elif not is_list:
+            if db and inv.customer_id:
                 try:
                     from app.services.customer_service import CustomerService
                     _, _, cust_balance = CustomerService.get_customer_balances(db, inv.customer_id)
@@ -990,9 +990,12 @@ class BillingService:
             settled_received_amount = inv.paid_amount or inv.total_amount
             settled_applied_to_previous = Decimal("0.00")
 
-        settled_closing_balance = cust_balance if cust_balance is not None else (
-            Decimal("0.00") if inv.status == InvoiceStatus.PAID.value and (cust_balance is None or cust_balance <= Decimal("0.00")) else None
-        )
+        if inv.status == InvoiceStatus.DRAFT.value and cust_balance is not None:
+            settled_closing_balance = cust_balance + inv.total_amount
+        else:
+            settled_closing_balance = cust_balance if cust_balance is not None else (
+                Decimal("0.00") if inv.status == InvoiceStatus.PAID.value and (cust_balance is None or cust_balance <= Decimal("0.00")) else None
+            )
 
         return InvoiceResponse(
             id=inv.id,
@@ -1075,7 +1078,16 @@ class BillingService:
         
         invoices = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()
 
-        res = [BillingService._build_invoice_response(inv, db, is_list=True) for inv in invoices]
+        cust_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
+        balances_map = {}
+        if cust_ids:
+            try:
+                from app.services.customer_service import CustomerService
+                balances_map = CustomerService.get_customer_balances_map(db, cust_ids)
+            except Exception:
+                balances_map = {}
+
+        res = [BillingService._build_invoice_response(inv, db, balances_map=balances_map, is_list=True) for inv in invoices]
         _INVOICES_CACHE[cache_key] = (now, res)
         return res
 

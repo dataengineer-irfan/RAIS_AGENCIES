@@ -192,13 +192,13 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   const handleSendWhatsAppInvoice = async (inv) => {
     if (!inv) return;
     let fullInvoice = inv;
-    if (!fullInvoice.items || fullInvoice.items.length === 0) {
-      try {
-        fullInvoice = await billingApi.getInvoice(inv.id);
-      } catch (e) {
-        console.warn('Could not fetch full invoice items, sharing available data:', e);
-      }
+    try {
+      const freshInv = await billingApi.getInvoice(inv.id);
+      if (freshInv) fullInvoice = freshInv;
+    } catch (e) {
+      console.warn('Could not fetch fresh invoice details, sharing available data:', e);
     }
+    const balanceToUse = fullInvoice.customer_outstanding_balance ?? fullInvoice.closing_balance ?? null;
     await shareInvoiceOnWhatsApp({
       invoice: fullInvoice,
       customer: {
@@ -206,7 +206,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
         phone: fullInvoice.customer_phone,
         address: fullInvoice.customer_address,
         customer_code: fullInvoice.customer_code,
-        outstanding_balance: fullInvoice.customer_outstanding_balance
+        outstanding_balance: balanceToUse
       },
       items: fullInvoice.items || []
     });
@@ -215,13 +215,13 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   const handleShareInvoiceImage = async (inv) => {
     if (!inv) return;
     let fullInvoice = inv;
-    if (!fullInvoice.items || fullInvoice.items.length === 0) {
-      try {
-        fullInvoice = await billingApi.getInvoice(inv.id);
-      } catch (e) {
-        console.warn('Could not fetch full invoice items, sharing available data:', e);
-      }
+    try {
+      const freshInv = await billingApi.getInvoice(inv.id);
+      if (freshInv) fullInvoice = freshInv;
+    } catch (e) {
+      console.warn('Could not fetch fresh invoice details, sharing available data:', e);
     }
+    const balanceToUse = fullInvoice.customer_outstanding_balance ?? fullInvoice.closing_balance ?? null;
     await shareInvoiceImageFile({
       invoice: fullInvoice,
       customer: {
@@ -229,7 +229,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
         phone: fullInvoice.customer_phone,
         address: fullInvoice.customer_address,
         customer_code: fullInvoice.customer_code,
-        outstanding_balance: fullInvoice.customer_outstanding_balance
+        outstanding_balance: balanceToUse
       },
       items: fullInvoice.items || []
     });

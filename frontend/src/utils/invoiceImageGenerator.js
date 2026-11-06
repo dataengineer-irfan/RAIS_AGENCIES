@@ -598,14 +598,15 @@ export const generateInvoiceCanvas = ({
     }
   } else {
     // Unsettled / Due Balance
-    if (overallDue !== null && overallDue > 0) {
+    const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : outstandingAmount;
+    if (effectiveDue > 0) {
       ctx.fillStyle = '#ef4444';
       ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(`Overall Due: ₹${overallDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + 18, sY);
-    } else if (outstandingAmount > 0 && outstandingAmount !== totalAmount) {
-      ctx.fillStyle = '#f59e0b';
+      ctx.fillText(`Overall Due: ₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + 18, sY);
+    } else {
+      ctx.fillStyle = '#15803d';
       ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText(`Balance Due: ₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryX + 18, sY);
+      ctx.fillText('Ledger Due: ₹0.00 (Cleared)', summaryX + 18, sY);
     }
   }
 
