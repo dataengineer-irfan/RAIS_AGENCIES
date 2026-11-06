@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2, Tag, RotateCcw } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
+import { emitDataUpdated } from '../utils/eventBus';
 
 export const PaymentModal = ({ 
   isOpen, 
@@ -151,6 +152,7 @@ export const PaymentModal = ({
       };
 
       const result = await paymentApi.record(payload);
+      emitDataUpdated('payment-recorded', { payment: result });
       const discText = discNum > 0 ? ` (with ₹${discNum.toFixed(2)} cash discount)` : '';
       setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${amtNum.toFixed(2)}${discText} recorded successfully!`);
       if (onPaymentRecorded) {

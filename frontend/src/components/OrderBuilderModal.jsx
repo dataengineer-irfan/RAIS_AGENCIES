@@ -6,6 +6,7 @@ import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { getLocalDateString } from '../utils/dateUtils';
+import { emitDataUpdated } from '../utils/eventBus';
 
 export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselectedCustomerId, initialCustomerId }) => {
   const effectiveCustomerId = preselectedCustomerId || initialCustomerId;
@@ -197,6 +198,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
 
       const res = await orderApi.create(payload);
       setCreatedOrder(res);
+      emitDataUpdated('order-created', { order: res });
       if (onOrderCreated) {
         onOrderCreated(res);
       }

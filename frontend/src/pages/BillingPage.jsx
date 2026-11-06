@@ -33,6 +33,7 @@ import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { InvoiceBuilderModal } from '../components/InvoiceBuilderModal';
 import { shareInvoiceOnWhatsApp, shareInvoiceImageFile } from '../utils/whatsappShare';
 import { formatInvoiceDateTime } from '../utils/invoiceImageGenerator';
+import { emitDataUpdated } from '../utils/eventBus';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 // ─── MODULE-LEVEL & PERSISTENT CACHE FOR INSTANT 0-MS INVOICE RENDERING ───
@@ -175,6 +176,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     if (!selectedInvoiceId) return;
     try {
       await billingApi.updateStatus(selectedInvoiceId, statusToSet, statusReason);
+      emitDataUpdated('invoice-status-change', { id: selectedInvoiceId, status: statusToSet });
       setStatusModalOpen(false);
       setStatusReason('');
       await loadInvoices(selectedInvoiceId);
@@ -240,6 +242,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     setIsDeletingInvoice(true);
     try {
       await billingApi.deleteInvoice(inv.id);
+      emitDataUpdated('invoice-deleted', { id: inv.id });
       setDeleteModalOpen(false);
       setInvoiceToDelete(null);
       setNotification({

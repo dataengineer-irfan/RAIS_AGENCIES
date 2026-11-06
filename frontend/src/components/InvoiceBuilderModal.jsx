@@ -10,6 +10,7 @@ import { VoiceDictationModal } from './VoiceDictationModal';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 import { getLocalDateString } from '../utils/dateUtils';
+import { emitDataUpdated } from '../utils/eventBus';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -696,6 +697,7 @@ export const InvoiceBuilderModal = ({
         res = await billingApi.updateInvoice(invoiceToEdit.id, editPayload);
         setSuccessInvoice(res);
         setShowPreview(false);
+        emitDataUpdated('invoice-updated', { invoice: res });
         if (onInvoiceCreated) onInvoiceCreated(res);
       } else {
         // ─── CREATE BILL MODE (With Client Idempotency Key) ───
@@ -794,6 +796,7 @@ export const InvoiceBuilderModal = ({
 
         setSuccessInvoice(res);
         setShowPreview(false);
+        emitDataUpdated('invoice-updated', { invoice: res });
         if (onInvoiceCreated) onInvoiceCreated(res);
       }
     } catch (err) {

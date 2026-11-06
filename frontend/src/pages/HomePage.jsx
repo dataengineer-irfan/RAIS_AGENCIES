@@ -18,6 +18,7 @@ import {
   Truck, 
   Sparkles, 
   ChevronRight, 
+  ChevronLeft,
   ArrowUpRight, 
   Save, 
   Edit3, 
@@ -44,6 +45,10 @@ export const HomePage = ({
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [briefing, setBriefing] = useState(null);
   const [error, setError] = useState(null);
+
+  // Rotation indices for multi-item intelligence cards (Minimum 3 items)
+  const [basketGapIdx, setBasketGapIdx] = useState(0);
+  const [routeIdx, setRouteIdx] = useState(0);
 
   // Memo state
   const [memoText, setMemoText] = useState('');
@@ -82,34 +87,40 @@ export const HomePage = ({
     }
   };
 
-  // Initial mount + real-time 25s polling + tab visibility / focus sync
+  // Initial mount + real-time 12s polling + tab visibility / focus sync + event bus
   useEffect(() => {
     fetchBriefingData();
 
-    // 25-second live telemetry polling heartbeat
+    // 12-second live telemetry polling heartbeat for real-time operations
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchBriefingData(false, true);
       }
-    }, 25000);
+    }, 12000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchBriefingData(false, true);
+        fetchBriefingData(true, true);
       }
     };
 
     const handleWindowFocus = () => {
-      fetchBriefingData(false, true);
+      fetchBriefingData(true, true);
+    };
+
+    const handleDataUpdated = () => {
+      fetchBriefingData(true, true);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('rais:data-updated', handleDataUpdated);
 
     return () => {
       clearInterval(pollInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('rais:data-updated', handleDataUpdated);
     };
   }, []);
 
@@ -155,6 +166,24 @@ export const HomePage = ({
   const priorities = briefing?.priorities || [];
   const marketIntel = briefing?.market_intelligence || [];
   const execStory = briefing?.executive_story || {};
+
+  // Extract Minimum 3 Basket Gaps and Route Rotation Strategies
+  const basketGaps = (briefing?.basket_gaps && briefing.basket_gaps.length > 0)
+    ? briefing.basket_gaps
+    : (marketIntel.filter(m => m.type === 'BASKET_OPPORTUNITY').length > 0
+        ? marketIntel.filter(m => m.type === 'BASKET_OPPORTUNITY')
+        : [marketIntel[0] || {}]);
+
+  const routeStrategies = (briefing?.route_strategies && briefing.route_strategies.length > 0)
+    ? briefing.route_strategies
+    : (marketIntel.filter(m => m.type === 'LOGISTICS_OPTIMIZATION').length > 0
+        ? marketIntel.filter(m => m.type === 'LOGISTICS_OPTIMIZATION')
+        : [marketIntel[2] || {}]);
+
+  const weekendTrend = marketIntel.find(m => m.type === 'DEMAND_SURGE') || marketIntel[1] || {};
+
+  const currentBasketGap = basketGaps[Math.abs(basketGapIdx) % (basketGaps.length || 1)] || basketGaps[0] || {};
+  const currentRoute = routeStrategies[Math.abs(routeIdx) % (routeStrategies.length || 1)] || routeStrategies[0] || {};
 
   const p1 = priorities.find(p => p.id === 'debt_recovery') || priorities[0];
   const p2 = priorities.find(p => p.id === 'depot_stockouts') || priorities[1];
@@ -550,35 +579,223 @@ export const HomePage = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {marketIntel.map((intel, idx) => (
-            <div 
-              key={intel.id || idx}
-              className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all"
-            >
-              <div>
+
+          {/* ─── CARD 1: RAYACHOTY BASKET GAP (Minimum 3 Rotation) ─── */}
+          <div className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+            <div>
+              {/* Header with Rotation Controls */}
+              <div className="flex items-center justify-between gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  {isTe ? intel.tag_te : intel.tag_en}
+                  {isTe ? (currentBasketGap.tag_te || "రాయచోటి బాస్కెట్ గ్యాప్") : (currentBasketGap.tag_en || "Rayachoty Basket Gap")}
                 </span>
 
-                <h4 className="text-sm font-bold text-white mt-2.5 leading-snug">
-                  {isTe ? intel.title_te : intel.title_en}
-                </h4>
-
-                <p className="text-xs text-slate-300 mt-2 leading-relaxed font-normal">
-                  {isTe ? intel.insight_te : intel.insight_en}
-                </p>
+                {basketGaps.length > 1 && (
+                  <div className="flex items-center gap-1.5 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setBasketGapIdx(prev => prev - 1)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
+                      title={isTe ? "మునుపటి బాస్కెట్ అవకాశం" : "Previous Basket Gap"}
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                    </button>
+                    <span className="text-[10px] font-mono font-bold text-amber-400 px-1">
+                      {(Math.abs(basketGapIdx) % basketGaps.length) + 1}/{basketGaps.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setBasketGapIdx(prev => prev + 1)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
+                      title={isTe ? "తదుపరి బాస్కెట్ అవకాశం" : "Next Basket Gap"}
+                    >
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {intel.action_recommended_en && (
-                <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center gap-2 text-amber-300 text-[11px] font-bold">
+              {/* Progress Dots */}
+              {basketGaps.length > 1 && (
+                <div className="flex items-center gap-1 mt-2">
+                  {basketGaps.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setBasketGapIdx(i)}
+                      className={`h-1 rounded-full transition-all ${
+                        (Math.abs(basketGapIdx) % basketGaps.length) === i
+                          ? 'w-4 bg-amber-400'
+                          : 'w-1 bg-slate-700 hover:bg-slate-600'
+                      }`}
+                      title={`Opportunity ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <h4 className="text-sm font-bold text-white mt-2.5 leading-snug">
+                {isTe ? currentBasketGap.title_te : currentBasketGap.title_en}
+              </h4>
+
+              <p className="text-xs text-slate-300 mt-2 leading-relaxed font-normal">
+                {isTe ? currentBasketGap.insight_te : currentBasketGap.insight_en}
+              </p>
+            </div>
+
+            <div className="mt-3.5 space-y-2">
+              {(currentBasketGap.action_recommended_en || currentBasketGap.action_recommended_te) && (
+                <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2 text-amber-300 text-[11px] font-bold">
                   <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span className="leading-tight">
-                    {isTe ? intel.action_recommended_te : intel.action_recommended_en}
+                    {isTe ? currentBasketGap.action_recommended_te : currentBasketGap.action_recommended_en}
                   </span>
                 </div>
               )}
+
+              {currentBasketGap.whatsapp_url && (
+                <a
+                  href={currentBasketGap.whatsapp_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{isTe ? "వాట్సాప్ ఆఫర్ పంపండి" : "1-Tap WhatsApp Pitch"}</span>
+                </a>
+              )}
             </div>
-          ))}
+          </div>
+
+          {/* ─── CARD 2: WEEKEND & COMMERCIAL DEMAND SURGE ─── */}
+          <div className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+            <div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                {isTe ? weekendTrend.tag_te : weekendTrend.tag_en}
+              </span>
+
+              <h4 className="text-sm font-bold text-white mt-2.5 leading-snug">
+                {isTe ? weekendTrend.title_te : weekendTrend.title_en}
+              </h4>
+
+              <p className="text-xs text-slate-300 mt-2 leading-relaxed font-normal">
+                {isTe ? weekendTrend.insight_te : weekendTrend.insight_en}
+              </p>
+            </div>
+
+            <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center gap-2 text-amber-300 text-[11px] font-bold">
+              <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="leading-tight">
+                {isTe ? weekendTrend.action_recommended_te : weekendTrend.action_recommended_en}
+              </span>
+            </div>
+          </div>
+
+          {/* ─── CARD 3: DISPATCH ROUTE SYNERGY (Minimum 3 Rotation on My Data & External Factors) ─── */}
+          <div className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
+            <div>
+              {/* Header with Rotation Controls */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  {isTe ? (currentRoute.tag_te || "డెలివరీ రూట్ సమన్వయం") : (currentRoute.tag_en || "Dispatch Route Synergy")}
+                </span>
+
+                {routeStrategies.length > 1 && (
+                  <div className="flex items-center gap-1.5 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setRouteIdx(prev => prev - 1)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
+                      title={isTe ? "మునుపటి డెలివరీ రూట్" : "Previous Route Strategy"}
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                    </button>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 px-1">
+                      {(Math.abs(routeIdx) % routeStrategies.length) + 1}/{routeStrategies.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setRouteIdx(prev => prev + 1)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
+                      title={isTe ? "తదుపరి డెలివరీ రూట్" : "Next Route Strategy"}
+                    >
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Dots */}
+              {routeStrategies.length > 1 && (
+                <div className="flex items-center gap-1 mt-2">
+                  {routeStrategies.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setRouteIdx(i)}
+                      className={`h-1 rounded-full transition-all ${
+                        (Math.abs(routeIdx) % routeStrategies.length) === i
+                          ? 'w-4 bg-emerald-400'
+                          : 'w-1 bg-slate-700 hover:bg-slate-600'
+                      }`}
+                      title={`Route ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Status Pill & Route Logistics KPI Badges */}
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                {currentRoute.status_pill_en && (
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    {isTe ? currentRoute.status_pill_te : currentRoute.status_pill_en}
+                  </span>
+                )}
+                {currentRoute.total_dues !== undefined && (
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-rose-500/15 text-rose-300 border border-rose-500/25">
+                    {formatINR(currentRoute.total_dues)} {isTe ? 'బకాయి' : 'Dues'}
+                  </span>
+                )}
+                {currentRoute.fuel_savings_inr && (
+                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                    ~₹{currentRoute.fuel_savings_inr} {isTe ? 'ఇంధనం ఆదా' : 'Fuel Saved'}
+                  </span>
+                )}
+              </div>
+
+              <h4 className="text-sm font-bold text-white mt-2 leading-snug">
+                {isTe ? currentRoute.title_te : currentRoute.title_en}
+              </h4>
+
+              <p className="text-xs text-slate-300 mt-2 leading-relaxed font-normal">
+                {isTe ? currentRoute.insight_te : currentRoute.insight_en}
+              </p>
+            </div>
+
+            <div className="mt-3.5 space-y-2">
+              {(currentRoute.action_recommended_en || currentRoute.action_recommended_te) && (
+                <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2 text-amber-300 text-[11px] font-bold">
+                  <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="leading-tight">
+                    {isTe ? currentRoute.action_recommended_te : currentRoute.action_recommended_en}
+                  </span>
+                </div>
+              )}
+
+              <a
+                href={`https://wa.me/919347453135?text=Van%20Dispatch%20Route%3A%20${encodeURIComponent(currentRoute.corridor_name || 'Delivery Route')}%20-%20Total%20Dues%20to%20Collect%3A%20${encodeURIComponent(formatINR(currentRoute.total_dues || 0))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-blue-600/90 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>{isTe ? "వ్యాన్ రూట్ మేనిఫెస్ట్" : "WhatsApp Route Manifest"}</span>
+              </a>
+            </div>
+          </div>
+
         </div>
       </div>
 

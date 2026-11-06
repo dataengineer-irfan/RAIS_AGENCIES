@@ -23,6 +23,7 @@ import { AIAssistantDrawer } from './components/AIAssistantDrawer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { MobileQuickActionFab } from './components/MobileQuickActionFab';
 import { customerApi, API_BASE_URL } from './services/api';
+import { emitDataUpdated } from './utils/eventBus';
 
 export const App = () => {
   const { isAuthenticated } = useAuth();
@@ -77,6 +78,7 @@ export const App = () => {
 
   const handleDataRefresh = () => {
     setDataRefreshKey(k => k + 1);
+    emitDataUpdated('app-data-refresh');
   };
 
   // Active re-order alerts count (reactive badge for Header & Dashboard)
