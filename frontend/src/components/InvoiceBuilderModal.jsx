@@ -3,7 +3,7 @@ import { X, Plus, Trash2, Calculator, CheckCircle2, FileText, Printer, Sparkles,
 import { customerApi, catalogueApi, billingApi, paymentApi, inventoryApi } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { QuickStockInwardModal } from './QuickStockInwardModal';
-import { shareInvoiceOnWhatsApp, shareInvoiceImageFile } from '../utils/whatsappShare';
+import { shareInvoiceOnWhatsApp, shareInvoiceImageFile, deriveRestockSuggestion } from '../utils/whatsappShare';
 import { formatProductDisplay, sortProductsByCleanName } from '../utils/productHelpers';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { VoiceDictationModal } from './VoiceDictationModal';
@@ -1087,7 +1087,7 @@ export const InvoiceBuilderModal = ({
             <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
               
               {/* Top Banner inside Preview */}
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-400">
+              <div className="print:hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs text-amber-400">
                 <div className="flex items-center gap-2">
                   <Eye className="w-4 h-4" />
                   <span className="font-bold">Live Pre-Issue Verification: Direct Cash Pricing (Zero GST)</span>
@@ -1098,19 +1098,19 @@ export const InvoiceBuilderModal = ({
               </div>
 
               {/* Styled Paper Sheet Preview */}
-              <div className="bg-white text-gray-900 rounded-xl p-6 shadow-2xl border border-gray-200 text-xs font-sans space-y-5">
+              <div className="printable-invoice-sheet bg-white text-gray-900 rounded-xl p-6 sm:p-8 shadow-2xl border border-gray-200 text-xs font-sans space-y-5">
                 
                 {/* Header Row */}
                 <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4">
                   <div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center font-black text-lg text-white">R</div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 bg-emerald-600 rounded-xl flex items-center justify-center font-black text-xl text-white shadow-sm border border-emerald-500">R</div>
                       <div>
-                        <h1 className="text-lg font-black tracking-wide text-gray-900">RAIS AGENCIES</h1>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Frozen Foods & Beverages Wholesale</p>
+                        <h1 className="text-xl font-black tracking-wide text-gray-900">RAIS AGENCIES</h1>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Central Frozen Food Depot • Rayachoty</p>
                       </div>
                     </div>
-                    <p className="text-[11px] text-gray-600 mt-1.5">Reddies Colony, Rayachoty - 516269</p>
+                    <p className="text-[11px] text-gray-600 mt-2">Reddies Colony, Rayachoty - 516269</p>
                     <p className="text-[11px] text-gray-600 font-semibold">Phone: 9347453135 | 9573261696</p>
                   </div>
                   <div className="text-right">
@@ -1124,7 +1124,7 @@ export const InvoiceBuilderModal = ({
                 </div>
 
                 {/* Billed To & Terms */}
-                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-2 gap-4 p-3.5 bg-gray-50 rounded-lg border border-gray-200">
                   <div>
                     <h3 className="font-bold text-gray-500 uppercase text-[10px] tracking-wider mb-1">Billed To (Customer):</h3>
                     <p className="text-sm font-bold text-gray-900">{selectedCustomerObj?.business_name || 'Customer'}</p>
@@ -1147,15 +1147,14 @@ export const InvoiceBuilderModal = ({
                 <table className="w-full text-left border-collapse my-2">
                   <thead>
                     <tr className="border-b-2 border-gray-900 text-[11px] font-bold text-gray-700 uppercase tracking-wider bg-gray-50">
-                      <th className="py-2 text-center w-8">#</th>
-                      <th className="py-2 pl-2">Item Description & SKU</th>
-                      <th className="py-2 text-center">Unit</th>
-                      <th className="py-2 text-center">HSN</th>
-                      <th className="py-2 text-center">Qty</th>
-                      <th className="py-2 text-right">Rate</th>
-                      <th className="py-2 text-right">Disc %</th>
-                      <th className="py-2 text-center">GST %</th>
-                      <th className="py-2 text-right pr-2">Total (₹)</th>
+                      <th className="py-2.5 text-center w-8">#</th>
+                      <th className="py-2.5 pl-2">Item Description & SKU</th>
+                      <th className="py-2.5 text-center">Packaging</th>
+                      <th className="py-2.5 text-center">HSN</th>
+                      <th className="py-2.5 text-center">Qty</th>
+                      <th className="py-2.5 text-right">Rate</th>
+                      <th className="py-2.5 text-right">Disc %</th>
+                      <th className="py-2.5 text-right pr-2">Total (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1167,20 +1166,20 @@ export const InvoiceBuilderModal = ({
                       const lineGross = qty * rate;
                       const lineTotal = lineGross - (lineGross * (disc / 100));
                       const hsn = itm.hsn_code || prod?.hsn_code || '-';
+                      const pkg = itm.packaging_unit || prod?.packaging_unit || 'PKT';
 
                       return (
                         <tr key={idx} className="border-b border-gray-200 text-xs">
-                          <td className="py-2 text-center font-mono text-gray-500">{idx + 1}</td>
-                          <td className="py-2 pl-2 font-semibold text-gray-800">
+                          <td className="py-2.5 text-center font-mono text-gray-500">{idx + 1}</td>
+                          <td className="py-2.5 pl-2 font-semibold text-gray-900">
                             {prod?.name || 'Product'} <span className="text-[10px] text-gray-500 font-mono">({prod?.sku || 'SKU'})</span>
                           </td>
-                          <td className="py-2 text-center text-gray-600">{itm.packaging_unit || prod?.packaging_unit || 'PKT'}</td>
-                          <td className="py-2 text-center text-gray-500 font-mono text-[11px]">{hsn}</td>
-                          <td className="py-2 text-center font-bold font-mono">{qty}</td>
-                          <td className="py-2 text-right font-mono">₹{parseFloat(rate || 0).toFixed(2)}</td>
-                          <td className="py-2 text-right text-gray-600 font-mono">{disc}%</td>
-                          <td className="py-2 text-center text-gray-500 font-mono text-[11px]">0%</td>
-                          <td className="py-2 text-right pr-2 font-bold font-mono text-gray-900">₹{parseFloat(lineTotal || 0).toFixed(2)}</td>
+                          <td className="py-2.5 text-center text-gray-700 font-medium text-xs font-mono">{pkg}</td>
+                          <td className="py-2.5 text-center text-gray-500 font-mono text-xs">{hsn}</td>
+                          <td className="py-2.5 text-center font-bold font-mono text-gray-900">{qty}</td>
+                          <td className="py-2.5 text-right font-mono text-gray-800">₹{parseFloat(rate || 0).toFixed(2)}</td>
+                          <td className="py-2.5 text-right text-gray-600 font-mono text-xs">{disc}%</td>
+                          <td className="py-2.5 text-right pr-2 font-bold font-mono text-gray-900">₹{parseFloat(lineTotal || 0).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -1275,6 +1274,63 @@ export const InvoiceBuilderModal = ({
                   </div>
                 </div>
 
+                {/* Visual Product Companion Spotlight Banner (Mirrors A4 Print / WhatsApp Image) */}
+                {(() => {
+                  const companion = deriveRestockSuggestion(items, products);
+                  if (!companion || !companion.name) return null;
+                  const encodedName = encodeURIComponent(companion.name);
+
+                  return (
+                    <div className="mt-4 p-3 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/90 border border-amber-300 rounded-xl text-xs flex items-center justify-between gap-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-lg bg-white border border-amber-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                          <img
+                            src={companion.image_url}
+                            alt={companion.name}
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="px-1.5 py-0.5 bg-amber-200/90 text-amber-900 rounded font-black text-[9px] uppercase tracking-wider">🔥 Popular Companion</span>
+                            <span className="text-[10px] font-bold text-amber-800">{companion.context_note || 'In Stock at Depot'}</span>
+                          </div>
+                          <div className="font-black text-sm text-gray-900">{companion.name}</div>
+                          <div className="text-gray-600 text-[11px] font-medium flex items-center gap-1.5 mt-0.5">
+                            <span>Pack: <strong className="text-gray-800">{companion.packaging_unit || 'PKT'}</strong></span>
+                            <span>•</span>
+                            <span className="text-emerald-700 font-bold">100% In Depot Stock</span>
+                          </div>
+                          <div className="text-[10px] text-amber-800/80 font-medium mt-0.5 italic">{companion.telugu_note}</div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 print:hidden">
+                        <span className="px-2.5 py-1 bg-emerald-600 text-white text-[9px] font-bold rounded uppercase tracking-wider shadow-sm block text-center">Ready to Dispatch</span>
+                        <a
+                          href={`https://wa.me/919347453135?text=Hi%20RAIS%20Agencies%2C%20please%20add%20${encodedName}%20to%20our%20next%20delivery`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold underline mt-1 inline-block"
+                        >
+                          1-Tap WhatsApp Order
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Customer Signature & Authorised Signatory Block */}
+                <div className="flex justify-between items-end mt-8 pt-4 text-[11px] text-gray-500 border-t border-gray-200">
+                  <div>
+                    <p className="font-bold text-gray-700">Customer Signature / Stamp</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-700">For RAIS AGENCIES</p>
+                    <p className="text-[10px] text-gray-400 mt-5">Authorised Signatory</p>
+                  </div>
+                </div>
+
                 {/* Direct Quick Links (Bold Green Hyperlinks) */}
                 <div className="mt-4 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 print:hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 shrink-0">
@@ -1319,7 +1375,7 @@ export const InvoiceBuilderModal = ({
             </div>
 
             {/* Preview Footer Actions */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-3 shrink-0">
+            <div className="print:hidden p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowPreview(false)}

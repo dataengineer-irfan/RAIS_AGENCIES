@@ -456,3 +456,54 @@ html:not(.theme-light) body {
   background-color: #030712;
   color: #f8fafc;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CLEAN A4 PAPER PRINT ISOLATION FOR INVOICES & BILLS
+   Hides modal overlays, backdrops, navbars, and buttons on print.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print,
+  nav,
+  header,
+  footer,
+  aside,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Isolate modal sheet when printing from InvoiceBuilderModal */
+  .printable-invoice-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1cm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 0 !important;
+    display: block !important;
+    z-index: 9999 !important;
+  }
+
+  /* Remove modal backdrop & scrolling parent clips */
+  .fixed.inset-0:has(.printable-invoice-sheet) {
+    position: static !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}

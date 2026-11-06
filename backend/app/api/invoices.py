@@ -193,7 +193,7 @@ def get_printable_invoice(
     items_rows = ""
     for idx, itm in enumerate(inv.items, 1):
         desc = getattr(itm, 'item_description', 'Product')
-        pkg = getattr(itm, 'packaging_unit', 'PKT')
+        pkg = getattr(itm, 'packaging_unit', 'PKT') or 'PKT'
         hsn = getattr(itm, 'hsn_code', '-') or '-'
         qty = getattr(itm, 'quantity', 1)
         price = float(getattr(itm, 'unit_price', 0))
@@ -202,13 +202,13 @@ def get_printable_invoice(
         items_rows += f"""
         <tr class="border-b border-gray-200 text-sm">
             <td class="py-2.5 text-center text-gray-500 font-mono text-xs">{idx}</td>
-            <td class="py-2.5 font-medium text-gray-800">{desc} <span class="text-xs text-gray-500 font-mono">({pkg})</span></td>
-            <td class="py-2.5 text-center text-gray-600 font-mono text-xs">{hsn}</td>
-            <td class="py-2.5 text-center font-bold font-mono">{qty}</td>
-            <td class="py-2.5 text-right font-mono">₹{price:.2f}</td>
-            <td class="py-2.5 text-right text-gray-600 font-mono">{disc:.1f}%</td>
-            <td class="py-2.5 text-center text-gray-500 font-mono text-xs">0%</td>
-            <td class="py-2.5 text-right font-bold font-mono text-gray-900">₹{ltotal:.2f}</td>
+            <td class="py-2.5 font-semibold text-gray-900 pl-1">{desc}</td>
+            <td class="py-2.5 text-center text-gray-700 font-medium text-xs font-mono">{pkg}</td>
+            <td class="py-2.5 text-center text-gray-500 font-mono text-xs">{hsn}</td>
+            <td class="py-2.5 text-center font-bold font-mono text-gray-900">{qty}</td>
+            <td class="py-2.5 text-right font-mono text-gray-800">₹{price:.2f}</td>
+            <td class="py-2.5 text-right text-gray-600 font-mono text-xs">{disc:.1f}%</td>
+            <td class="py-2.5 text-right font-bold font-mono text-gray-900 pr-1">₹{ltotal:.2f}</td>
         </tr>
         """
 
@@ -254,10 +254,10 @@ def get_printable_invoice(
             <div class="flex justify-between items-start border-b-2 border-gray-900 pb-6">
                 <div>
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-amber-500 rounded flex items-center justify-center font-black text-2xl text-white">R</div>
+                        <div class="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center font-black text-2xl text-white shadow-sm border border-emerald-500">R</div>
                         <div>
                             <h1 class="text-2xl font-black tracking-wide text-gray-900">{settings.COMPANY_NAME}</h1>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-amber-600">{settings.COMPANY_TAGLINE}</p>
+                            <p class="text-xs font-bold uppercase tracking-widest text-amber-600">Central Frozen Food Depot • Rayachoty</p>
                         </div>
                     </div>
                     <p class="text-xs text-gray-600 mt-2">{settings.COMPANY_ADDRESS}</p>
@@ -294,13 +294,13 @@ def get_printable_invoice(
                 <thead>
                     <tr class="border-b-2 border-gray-900 text-xs font-bold text-gray-700 uppercase tracking-wider bg-gray-50">
                         <th class="py-2.5 text-center w-10">#</th>
-                        <th class="py-2.5 pl-2">Item Description & Unit</th>
+                        <th class="py-2.5 pl-1">Item Description & SKU</th>
+                        <th class="py-2.5 text-center">Packaging</th>
                         <th class="py-2.5 text-center">HSN</th>
                         <th class="py-2.5 text-center">Qty</th>
                         <th class="py-2.5 text-right">Rate</th>
                         <th class="py-2.5 text-right">Disc %</th>
-                        <th class="py-2.5 text-center">GST %</th>
-                        <th class="py-2.5 text-right pr-2">Total (₹)</th>
+                        <th class="py-2.5 text-right pr-1">Total (₹)</th>
                     </tr>
                 </thead>
                 <tbody>
