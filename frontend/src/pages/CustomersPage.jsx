@@ -208,7 +208,58 @@ export const CustomersPage = ({
     setStatusFilter('ALL');
     setAreaFilter('ALL');
     setBalanceFilter('ALL');
-    setSortBy('BALANCE_DESC');
+    handleSortChange('BALANCE_DESC');
+  };
+
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort);
+    if (filteredCustomers.length > 0) {
+      const reordered = [...filteredCustomers].sort((a, b) => {
+        if (newSort === 'NAME_ASC') return (a.business_name || '').localeCompare(b.business_name || '');
+        if (newSort === 'BALANCE_DESC') {
+          const diff = parseFloat(b.outstanding_balance || 0) - parseFloat(a.outstanding_balance || 0);
+          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+        }
+        if (newSort === 'PROFIT_DESC') {
+          const diff = parseFloat(b.gross_profit || 0) - parseFloat(a.gross_profit || 0);
+          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+        }
+        if (newSort === 'MARGIN_DESC') {
+          const revA = parseFloat(a.total_invoiced || 0);
+          const revB = parseFloat(b.total_invoiced || 0);
+          const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : -999;
+          const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : -999;
+          const diff = marginB - marginA;
+          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+        }
+        if (newSort === 'MARGIN_ASC') {
+          const revA = parseFloat(a.total_invoiced || 0);
+          const revB = parseFloat(b.total_invoiced || 0);
+          const marginA = revA > 0 ? (parseFloat(a.gross_profit || 0) / revA) * 100 : 999;
+          const marginB = revB > 0 ? (parseFloat(b.gross_profit || 0) / revB) * 100 : 999;
+          const diff = marginA - marginB;
+          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+        }
+        if (newSort === 'REVENUE_DESC') {
+          const diff = parseFloat(b.total_invoiced || 0) - parseFloat(a.total_invoiced || 0);
+          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+        }
+        if (newSort === 'PAID_DESC') {
+          const diff = parseFloat(b.total_paid || 0) - parseFloat(a.total_paid || 0);
+          return Math.abs(diff) > 0.001 ? diff : (a.business_name || '').localeCompare(b.business_name || '');
+        }
+        if (newSort === 'LIMIT_DESC') {
+          return parseFloat(b.credit_limit || 0) - parseFloat(a.credit_limit || 0);
+        }
+        if (newSort === 'CODE_ASC') {
+          return (a.customer_code || '').localeCompare(b.customer_code || '');
+        }
+        return 0;
+      });
+      if (reordered[0]) {
+        handleSelectCustomer(reordered[0]);
+      }
+    }
   };
 
   // ─── RAIS REACTIVE SLICING & FILTERING ───
@@ -453,7 +504,7 @@ export const CustomersPage = ({
           <div className="relative">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => handleSortChange(e.target.value)}
               className="bg-slate-950 border border-slate-800 text-amber-400 text-xs font-bold rounded-lg pl-2.5 pr-7 py-1.5 focus:outline-none cursor-pointer appearance-none shadow-inner"
               title="Sort Outlets"
             >
@@ -562,7 +613,7 @@ export const CustomersPage = ({
             {/* Compact Sort Select on Mobile */}
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => handleSortChange(e.target.value)}
               className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold rounded-xl px-2 py-1.5 focus:outline-none shrink-0"
               title="Sort Outlets"
             >
@@ -653,8 +704,15 @@ export const CustomersPage = ({
         {/* ─── LEFT MASTER PANE (38% Width = 5 cols) ─── */}
         <div className={`${mobileView === 'detail' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 bg-slate-900 rounded-xl border border-slate-800 p-2.5 shadow-lg flex-col overflow-hidden`}>
           <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
-            <span>Customer Accounts ({filteredCustomers.length})</span>
-            <span>Balance Due</span>
+            <span className="flex items-center gap-1.5 truncate pr-2">
+              <span>Customer Accounts ({filteredCustomers.length})</span>
+              {selectedCustomer && (
+                <span className="text-amber-400 font-normal normal-case tracking-normal truncate hidden sm:inline">
+                  • viewing <strong className="text-white font-bold">{selectedCustomer.business_name}</strong>
+                </span>
+              )}
+            </span>
+            <span className="shrink-0">Balance Due</span>
           </div>
 
           {/* Master Scrollable List */}
@@ -694,7 +752,7 @@ export const CustomersPage = ({
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1">
-                      {/* Line 1: Code, Business Name, Location */}
+                      {/* Line 1: Code, Business Name, Location & Selection Badge */}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono font-bold text-[11px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                           {cust.customer_code}
@@ -705,6 +763,11 @@ export const CustomersPage = ({
                         <span className="text-[10px] text-slate-400 font-mono truncate">
                           📍 {cust.city || 'Rayachoty'}
                         </span>
+                        {isSelected && (
+                          <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-sans tracking-wider shadow-xs ml-auto">
+                            ACTIVE DOSSIER ➔
+                          </span>
+                        )}
                       </div>
                       
                       {/* Line 2: Contact, Phone & Top Purchased Items */}
