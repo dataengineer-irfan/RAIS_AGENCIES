@@ -46,9 +46,15 @@ export const HomePage = ({
   const [briefing, setBriefing] = useState(null);
   const [error, setError] = useState(null);
 
-  // Rotation indices for multi-item intelligence cards (Minimum 3 items)
+  // Rotation indices for multi-item intelligence cards (Minimum 3 items each)
   const [basketGapIdx, setBasketGapIdx] = useState(0);
+  const [trendIdx, setTrendIdx] = useState(0);
   const [routeIdx, setRouteIdx] = useState(0);
+
+  // Hover states to pause auto-scrolling
+  const [isHoveredBasket, setIsHoveredBasket] = useState(false);
+  const [isHoveredTrend, setIsHoveredTrend] = useState(false);
+  const [isHoveredRoute, setIsHoveredRoute] = useState(false);
 
   // Memo state
   const [memoText, setMemoText] = useState('');
@@ -151,6 +157,39 @@ export const HomePage = ({
 
   const isTe = lang === 'te';
 
+  // Counts for auto-scrolling intervals
+  const basketGapsCount = briefing?.basket_gaps?.length || (briefing?.market_intelligence?.filter(m => m.type === 'BASKET_OPPORTUNITY').length || 1);
+  const demandTrendsCount = briefing?.demand_trends?.length || (briefing?.market_intelligence?.filter(m => m.type === 'DEMAND_SURGE').length || 1);
+  const routeStrategiesCount = briefing?.route_strategies?.length || (briefing?.market_intelligence?.filter(m => m.type === 'LOGISTICS_OPTIMIZATION').length || 1);
+
+  // Continuous Auto-Scrolling Carousels with Hover-to-Pause
+  // Card 1: Basket Gaps rotation (every 5.5s)
+  useEffect(() => {
+    if (isHoveredBasket || basketGapsCount <= 1) return;
+    const timer = setInterval(() => {
+      setBasketGapIdx(prev => (prev + 1) % basketGapsCount);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [isHoveredBasket, basketGapsCount]);
+
+  // Card 2: Dynamic Demand Trends rotation (every 6.0s)
+  useEffect(() => {
+    if (isHoveredTrend || demandTrendsCount <= 1) return;
+    const timer = setInterval(() => {
+      setTrendIdx(prev => (prev + 1) % demandTrendsCount);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [isHoveredTrend, demandTrendsCount]);
+
+  // Card 3: Route Strategies rotation (every 6.5s)
+  useEffect(() => {
+    if (isHoveredRoute || routeStrategiesCount <= 1) return;
+    const timer = setInterval(() => {
+      setRouteIdx(prev => (prev + 1) % routeStrategiesCount);
+    }, 6500);
+    return () => clearInterval(timer);
+  }, [isHoveredRoute, routeStrategiesCount]);
+
   if (loading && !briefing) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-400">
@@ -167,12 +206,18 @@ export const HomePage = ({
   const marketIntel = briefing?.market_intelligence || [];
   const execStory = briefing?.executive_story || {};
 
-  // Extract Minimum 3 Basket Gaps and Route Rotation Strategies
+  // Extract Minimum 3 Basket Gaps, Demand Trends, and Route Rotation Strategies
   const basketGaps = (briefing?.basket_gaps && briefing.basket_gaps.length > 0)
     ? briefing.basket_gaps
     : (marketIntel.filter(m => m.type === 'BASKET_OPPORTUNITY').length > 0
         ? marketIntel.filter(m => m.type === 'BASKET_OPPORTUNITY')
         : [marketIntel[0] || {}]);
+
+  const demandTrends = (briefing?.demand_trends && briefing.demand_trends.length > 0)
+    ? briefing.demand_trends
+    : (marketIntel.filter(m => m.type === 'DEMAND_SURGE').length > 0
+        ? marketIntel.filter(m => m.type === 'DEMAND_SURGE')
+        : [marketIntel[1] || {}]);
 
   const routeStrategies = (briefing?.route_strategies && briefing.route_strategies.length > 0)
     ? briefing.route_strategies
@@ -180,9 +225,8 @@ export const HomePage = ({
         ? marketIntel.filter(m => m.type === 'LOGISTICS_OPTIMIZATION')
         : [marketIntel[2] || {}]);
 
-  const weekendTrend = marketIntel.find(m => m.type === 'DEMAND_SURGE') || marketIntel[1] || {};
-
   const currentBasketGap = basketGaps[Math.abs(basketGapIdx) % (basketGaps.length || 1)] || basketGaps[0] || {};
+  const currentTrend = demandTrends[Math.abs(trendIdx) % (demandTrends.length || 1)] || demandTrends[0] || {};
   const currentRoute = routeStrategies[Math.abs(routeIdx) % (routeStrategies.length || 1)] || routeStrategies[0] || {};
 
   const p1 = priorities.find(p => p.id === 'debt_recovery') || priorities[0];
@@ -568,20 +612,34 @@ export const HomePage = ({
           5. RAYACHOTY LOCAL MARKET & COMMERCIAL INTELLIGENCE
       ───────────────────────────────────────────────────────────── */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-            {isTe ? "రాయచోటి స్థానిక వ్యాపార అవకాశాలు & సూచనలు" : "Rayachoty Market & Commercial Intelligence"}
-          </h2>
-          <span className="text-xs text-slate-400">
-            {isTe ? "ఇన్‌వాయిస్ డేటా ఆధారిత సూచనలు" : "Inferred from live billing & order basket patterns"}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <h2 className="text-base font-extrabold text-white">
+              {isTe ? "రాయచోటి స్థానిక వ్యాపార అవకాశాలు & సూచనలు" : "Rayachoty Market & Commercial Intelligence"}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-950/80 text-amber-300 border border-slate-800 shadow-inner">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span>{isTe ? "ఆటో-స్క్రోలింగ్ • ఆపడానికి మౌస్ ఉంచండి" : "Auto-Scrolling Carousel • Hover to Pause"}</span>
+            </span>
+            <span className="text-xs text-slate-400 hidden md:inline">
+              {isTe ? "ఇన్‌వాయిస్ డేటా ఆధారిత సూచనలు" : "Inferred from live billing & order basket patterns"}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* ─── CARD 1: RAYACHOTY BASKET GAP (Minimum 3 Rotation) ─── */}
-          <div className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group">
+          <div
+            onMouseEnter={() => setIsHoveredBasket(true)}
+            onMouseLeave={() => setIsHoveredBasket(false)}
+            onTouchStart={() => setIsHoveredBasket(true)}
+            onTouchEnd={() => setIsHoveredBasket(false)}
+            className="bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group"
+          >
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
               {/* Header with Rotation Controls */}
@@ -594,7 +652,7 @@ export const HomePage = ({
                   <div className="flex items-center gap-1.5 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">
                     <button
                       type="button"
-                      onClick={() => setBasketGapIdx(prev => prev - 1)}
+                      onClick={() => setBasketGapIdx(prev => (prev - 1 + basketGaps.length) % basketGaps.length)}
                       className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
                       title={isTe ? "మునుపటి బాస్కెట్ అవకాశం" : "Previous Basket Gap"}
                     >
@@ -605,12 +663,17 @@ export const HomePage = ({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setBasketGapIdx(prev => prev + 1)}
+                      onClick={() => setBasketGapIdx(prev => (prev + 1) % basketGaps.length)}
                       className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
                       title={isTe ? "తదుపరి బాస్కెట్ అవకాశం" : "Next Basket Gap"}
                     >
                       <ChevronRight className="w-3 h-3" />
                     </button>
+                    {isHoveredBasket ? (
+                      <span className="text-[8px] font-mono font-bold text-amber-400 px-1 bg-amber-500/10 rounded">PAUSED</span>
+                    ) : (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mx-0.5" title="Auto-rotating" />
+                    )}
                   </div>
                 )}
               </div>
@@ -667,33 +730,109 @@ export const HomePage = ({
             </div>
           </div>
 
-          {/* ─── CARD 2: WEEKEND & COMMERCIAL DEMAND SURGE ─── */}
-          <div className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group">
+          {/* ─── CARD 2: WEEKEND & COMMERCIAL DEMAND SURGE (Continuous Auto-Scroll) ─── */}
+          <div
+            onMouseEnter={() => setIsHoveredTrend(true)}
+            onMouseLeave={() => setIsHoveredTrend(false)}
+            onTouchStart={() => setIsHoveredTrend(true)}
+            onTouchEnd={() => setIsHoveredTrend(false)}
+            className="bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group"
+          >
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                {isTe ? weekendTrend.tag_te : weekendTrend.tag_en}
-              </span>
+              {/* Header with Rotation Controls */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  {isTe ? (currentTrend.tag_te || "డిమాండ్ ట్రెండ్") : (currentTrend.tag_en || "Demand Trend")}
+                </span>
+
+                {demandTrends.length > 1 && (
+                  <div className="flex items-center gap-1.5 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setTrendIdx(prev => (prev - 1 + demandTrends.length) % demandTrends.length)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
+                      title={isTe ? "మునుపటి ట్రెండ్" : "Previous Demand Trend"}
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                    </button>
+                    <span className="text-[10px] font-mono font-bold text-amber-400 px-1">
+                      {(Math.abs(trendIdx) % demandTrends.length) + 1}/{demandTrends.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTrendIdx(prev => (prev + 1) % demandTrends.length)}
+                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
+                      title={isTe ? "తదుపరి ట్రెండ్" : "Next Demand Trend"}
+                    >
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                    {isHoveredTrend ? (
+                      <span className="text-[8px] font-mono font-bold text-amber-400 px-1 bg-amber-500/10 rounded">PAUSED</span>
+                    ) : (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse mx-0.5" title="Auto-rotating" />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Dots */}
+              {demandTrends.length > 1 && (
+                <div className="flex items-center gap-1 mt-2">
+                  {demandTrends.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setTrendIdx(i)}
+                      className={`h-1 rounded-full transition-all ${
+                        (Math.abs(trendIdx) % demandTrends.length) === i
+                          ? 'w-4 bg-amber-400'
+                          : 'w-1 bg-slate-700 hover:bg-slate-600'
+                      }`}
+                      title={`Trend ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
 
               <h4 className="text-sm font-bold text-white mt-2.5 leading-snug">
-                {isTe ? weekendTrend.title_te : weekendTrend.title_en}
+                {isTe ? currentTrend.title_te : currentTrend.title_en}
               </h4>
 
               <p className="text-xs text-slate-300 mt-2 leading-relaxed font-normal">
-                {isTe ? weekendTrend.insight_te : weekendTrend.insight_en}
+                {isTe ? currentTrend.insight_te : currentTrend.insight_en}
               </p>
             </div>
 
-            <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center gap-2 text-amber-300 text-[11px] font-bold">
-              <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="leading-tight">
-                {isTe ? weekendTrend.action_recommended_te : weekendTrend.action_recommended_en}
-              </span>
+            <div className="mt-3.5 space-y-2">
+              {(currentTrend.action_recommended_en || currentTrend.action_recommended_te) && (
+                <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2 text-amber-300 text-[11px] font-bold">
+                  <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="leading-tight">
+                    {isTe ? currentTrend.action_recommended_te : currentTrend.action_recommended_en}
+                  </span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate('inventory')}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-sm active:scale-95"
+              >
+                <Boxes className="w-3.5 h-3.5" />
+                <span>{isTe ? "డిపో స్టాక్ వివరాలు చూడండి" : "Inspect Depot Stock & Inward"}</span>
+              </button>
             </div>
           </div>
 
           {/* ─── CARD 3: DISPATCH ROUTE SYNERGY (Minimum 3 Rotation on My Data & External Factors) ─── */}
-          <div className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group">
+          <div
+            onMouseEnter={() => setIsHoveredRoute(true)}
+            onMouseLeave={() => setIsHoveredRoute(false)}
+            onTouchStart={() => setIsHoveredRoute(true)}
+            onTouchEnd={() => setIsHoveredRoute(false)}
+            className="bg-slate-900/90 border border-slate-800 hover:border-blue-500/40 rounded-2xl p-4 flex flex-col justify-between shadow-lg transition-all relative overflow-hidden group"
+          >
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
               {/* Header with Rotation Controls */}
@@ -706,7 +845,7 @@ export const HomePage = ({
                   <div className="flex items-center gap-1.5 bg-slate-950/80 p-0.5 rounded-xl border border-slate-800">
                     <button
                       type="button"
-                      onClick={() => setRouteIdx(prev => prev - 1)}
+                      onClick={() => setRouteIdx(prev => (prev - 1 + routeStrategies.length) % routeStrategies.length)}
                       className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
                       title={isTe ? "మునుపటి డెలివరీ రూట్" : "Previous Route Strategy"}
                     >
@@ -717,12 +856,17 @@ export const HomePage = ({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setRouteIdx(prev => prev + 1)}
+                      onClick={() => setRouteIdx(prev => (prev + 1) % routeStrategies.length)}
                       className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors active:scale-95"
                       title={isTe ? "తదుపరి డెలివరీ రూట్" : "Next Route Strategy"}
                     >
                       <ChevronRight className="w-3 h-3" />
                     </button>
+                    {isHoveredRoute ? (
+                      <span className="text-[8px] font-mono font-bold text-amber-400 px-1 bg-amber-500/10 rounded">PAUSED</span>
+                    ) : (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse mx-0.5" title="Auto-rotating" />
+                    )}
                   </div>
                 )}
               </div>

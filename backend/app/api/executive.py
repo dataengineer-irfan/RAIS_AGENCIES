@@ -579,7 +579,19 @@ def get_executive_briefing(
             if any(k in txt for k in ["GARLIC MAYO", "TANDOORI MAYO", "MAYO"]):
                 cust_profile[cid]["has_bulk_mayo"] = True
 
-    # Identify individual customer gap opportunities
+    # Identify individual customer gap opportunities using real catalogue products
+    cheese_prod = db.query(Product).filter(Product.is_active == True, or_(Product.name.ilike("%cheese%"), Product.name.ilike("%mozzarella%"))).first()
+    cheese_rate = float(cheese_prod.base_price) if cheese_prod else 906.0
+    cheese_name = cheese_prod.name if cheese_prod else "Milky Mist 2KG Mozzarella"
+
+    peri_prod = db.query(Product).filter(Product.is_active == True, or_(Product.name.ilike("%peri%"), Product.name.ilike("%sprinkler%"))).first()
+    peri_rate = float(peri_prod.base_price) if peri_prod else 380.0
+    peri_name = peri_prod.name if peri_prod else "RAIS Peri-Peri Sprinkler"
+
+    mayo_prod = db.query(Product).filter(Product.is_active == True, or_(Product.name.ilike("%burger mayo%"), Product.name.ilike("%mayo%"))).first()
+    mayo_rate = float(mayo_prod.base_price) if mayo_prod else 240.0
+    mayo_name = mayo_prod.name if mayo_prod else "Delmonte Gourmet Burger Mayo 1KG"
+
     detected_customer_gaps = []
 
     for cid, cp in cust_profile.items():
@@ -603,16 +615,16 @@ def get_executive_briefing(
                 "insight_en": (
                     f"{cp['name']} bought ₹{box_spend:,.0f} worth of Pizza Boxes from RAIS, but ₹0 Mozzarella Cheese. "
                     f"A Rayachoty pizzeria using that volume needs ~25kg mozzarella/month. "
-                    f"Pitch Milky Mist 2KG Diced Cheese at ₹906/pkt to capture ~₹{est_cheese:,.0f}/month incremental sales!"
+                    f"Pitch {cheese_name} at ₹{cheese_rate:,.0f}/pkt to capture ~₹{est_cheese:,.0f}/month incremental sales!"
                 ),
                 "insight_te": (
                     f"{cp['name']} మన వద్ద ₹{box_spend:,.0f} పిజ్జా బాక్స్‌లు కొనుగోలు చేసింది, కానీ చీజ్ కొనడం లేదు. "
-                    f"ఆ షాపుకు నెలకు కనీసం 25-30 కేజీల చీజ్ అవసరం. మన మిల్కీ మిస్ట్ చీజ్ వారికి ఆఫర్ చేయడం ద్వారా "
+                    f"ఆ షాపుకు నెలకు కనీసం 25-30 కేజీల చీజ్ అవసరం. మన {cheese_name} వారికి ఆఫర్ చేయడం ద్వారా "
                     f"నెలకు సుమారు ₹{est_cheese:,.0f} అదనపు వ్యాపారం సాధించవచ్చు!"
                 ),
-                "action_recommended_en": f"Offer a sample block of Milky Mist Mozzarella to {cp['name']}.",
-                "action_recommended_te": f"{cp['name']} కు మిల్కీ మిస్ట్ చీజ్ శాంపిల్ ఇచ్చి ఆర్డర్ పొందండి.",
-                "whatsapp_url": f"https://wa.me/{wa_phone}?text=Hello%20{cp['name']}%2C%20special%20wholesale%20offer%20on%20Milky%20Mist%20Mozzarella%202KG%20Cheese%20from%20RAIS%20Agencies!" if wa_phone else None
+                "action_recommended_en": f"Offer a sample block of {cheese_name} to {cp['name']}.",
+                "action_recommended_te": f"{cp['name']} కు {cheese_name} శాంపిల్ ఇచ్చి ఆర్డర్ పొందండి.",
+                "whatsapp_url": f"https://wa.me/{wa_phone}?text=Hello%20{cp['name']}%2C%20special%20wholesale%20offer%20on%20{cheese_name}%20from%20RAIS%20Agencies!" if wa_phone else None
             })
 
         # 2. Fries / Snacks buyer with zero Peri-Peri
@@ -630,16 +642,16 @@ def get_executive_briefing(
                 "title_te": f"అదనపు అమ్మకం: {cp['name']} ఫ్రెంచ్ ఫ్రైస్ కొంటోంది కానీ పెరి-పెరి కొనడం లేదు",
                 "insight_en": (
                     f"{cp['name']} bought ₹{f_spend:,.0f} worth of French Fries & snacks but zero seasoning sprinkler. "
-                    f"Outlets serving fries make 32% margin on seasoned fries. Pitch RAIS Peri-Peri Sprinkler (1KG tub at ₹380) "
+                    f"Outlets serving fries make 32% margin on seasoned fries. Pitch {peri_name} (wholesale ₹{peri_rate:,.0f}) "
                     f"to add ~₹{est_peri:,.0f}/month incremental revenue!"
                 ),
                 "insight_te": (
                     f"{cp['name']} మన వద్ద ₹{f_spend:,.0f} ఫ్రెంచ్ ఫ్రైస్ తీసుకుంటోంది కానీ పెరి-పెరి మసాలా కొనడం లేదు. "
-                    f"ఫ్రైస్‌తో పాటు 1KG పెరి-పెరి స్ప్రింక్లర్ అందించడం ద్వారా నెలకు సుమారు ₹{est_peri:,.0f} అదనపు లాభం పొందవచ్చు!"
+                    f"ఫ్రైస్‌తో పాటు {peri_name} (ధర ₹{peri_rate:,.0f}) అందించడం ద్వారా నెలకు సుమారు ₹{est_peri:,.0f} అదనపు లాభం పొందవచ్చు!"
                 ),
-                "action_recommended_en": f"Offer a Peri-Peri Sprinkler demo shaker to {cp['name']}.",
-                "action_recommended_te": f"{cp['name']} కు పెరి-పెరి స్ప్రింక్లర్ ఆఫర్ చేసి ఆర్డర్ తీసుకోండి.",
-                "whatsapp_url": f"https://wa.me/{wa_phone}?text=Hello%20{cp['name']}%2C%20try%20our%20premium%20RAIS%20Peri-Peri%20Sprinkler%20for%20your%20French%20Fries!" if wa_phone else None
+                "action_recommended_en": f"Offer a {peri_name} demo shaker to {cp['name']}.",
+                "action_recommended_te": f"{cp['name']} కు {peri_name} ఆఫర్ చేసి ఆర్డర్ తీసుకోండి.",
+                "whatsapp_url": f"https://wa.me/{wa_phone}?text=Hello%20{cp['name']}%2C%20try%20our%20premium%20{peri_name}%20for%20your%20French%20Fries!" if wa_phone else None
             })
 
         # 3. Burger Box buyer with zero Burger Mayo / Patties
@@ -657,16 +669,16 @@ def get_executive_briefing(
                 "title_te": f"అదనపు అమ్మకం: {cp['name']} బర్గార్ బాక్స్‌లు కొంటోంది కానీ మయోన్నైస్ కొనడం లేదు",
                 "insight_en": (
                     f"{cp['name']} bought ₹{b_spend:,.0f} in Burger Boxes but sources sauces elsewhere. "
-                    f"Pitch Delmonte Gourmet Burger Mayo 1KG and Nutrich Chicken Patties at depot wholesale rates "
+                    f"Pitch {mayo_name} at depot wholesale rate ₹{mayo_rate:,.0f} and Chicken Patties "
                     f"to capture ~₹{est_mayo:,.0f}/month kitchen spend!"
                 ),
                 "insight_te": (
                     f"{cp['name']} మన వద్ద ₹{b_spend:,.0f} బర్గార్ బాక్స్‌లు తీసుకుంటోంది కానీ సాస్ బయట కొంటోంది. "
-                    f"మన డిపో హోల్‌సేల్ రేటుతో డెల్‌మోంటే బర్గార్ మయోన్నైస్ మరియు ప్యాటీలు సరఫరా చేయండి!"
+                    f"మన డిపో హోల్‌సేల్ రేటు ₹{mayo_rate:,.0f} తో {mayo_name} మరియు ప్యాటీలు సరఫరా చేయండి!"
                 ),
-                "action_recommended_en": f"Send Burger Mayo & Patty sample kit to {cp['name']}.",
-                "action_recommended_te": f"{cp['name']} కు బర్గార్ మయోన్నైస్ శాంపిల్ ఇచ్చి ఆర్డర్ పొందండి.",
-                "whatsapp_url": f"https://wa.me/{wa_phone}?text=Hello%20{cp['name']}%2C%20special%20wholesale%20rates%20on%20Delmonte%20Burger%20Mayo%20and%20Patties%20at%20RAIS!" if wa_phone else None
+                "action_recommended_en": f"Send {mayo_name} & Patty sample kit to {cp['name']}.",
+                "action_recommended_te": f"{cp['name']} కు {mayo_name} శాంపిల్ ఇచ్చి ఆర్డర్ పొందండి.",
+                "whatsapp_url": f"https://wa.me/{wa_phone}?text=Hello%20{cp['name']}%2C%20special%20wholesale%20rates%20on%20{mayo_name}%20at%20RAIS!" if wa_phone else None
             })
 
         # 4. Tortilla / Shawarma buyer with zero Bulk Mayo
@@ -766,37 +778,233 @@ def get_executive_briefing(
         bg["tag_en"] = f"Rayachoty Basket Gap ({idx}/{len(final_basket_gaps)})"
         bg["tag_te"] = f"రాయచోటి బాస్కెట్ గ్యాప్ ({idx}/{len(final_basket_gaps)})"
 
-    # B) Weekend & Day Demand Surge Predictor
+    # ─────────────────────────────────────────────────────────────
+    # B) DYNAMIC LIVE DEMAND TRENDS & SURGE ENGINE (Derived from Real Invoices)
+    # ─────────────────────────────────────────────────────────────
+    # Query live invoice velocity and billed revenue across active invoices
+    top_velocity_rows = db.query(
+        InvoiceItem.product_id,
+        Product.name.label("prod_name"),
+        Product.sku.label("prod_sku"),
+        Product.packaging_unit.label("pkg_unit"),
+        Product.current_stock.label("curr_stock"),
+        Product.min_stock_alert.label("min_alert"),
+        Product.base_price.label("unit_rate"),
+        func.sum(InvoiceItem.quantity).label("total_qty"),
+        func.sum(InvoiceItem.line_total).label("total_billed")
+    ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+     .outerjoin(Product, Product.id == InvoiceItem.product_id)\
+     .filter(Invoice.status.in_(valid_statuses))\
+     .group_by(
+         InvoiceItem.product_id,
+         Product.name,
+         Product.sku,
+         Product.packaging_unit,
+         Product.current_stock,
+         Product.min_stock_alert,
+         Product.base_price
+     )\
+     .order_by(desc("total_qty")).all()
+
     weekday = today.strftime("%A")
-    fries_prod = db.query(Product).filter(Product.is_active == True, Product.sku.ilike("%VEG-02%")).first()
-    tortilla_prod = db.query(Product).filter(Product.is_active == True, Product.sku.ilike("%CHK-02%")).first()
+    day_idx = today.weekday()  # 0=Monday, ..., 4=Friday, 5=Saturday, 6=Sunday
+    is_weekend = (day_idx in (4, 5, 6))
 
-    fries_stock = float(fries_prod.current_stock) if fries_prod else 0.0
-    tortilla_stock = float(tortilla_prod.current_stock) if tortilla_prod else 0.0
+    # Real stock checks for key QSR products in Rayachoty
+    qsr_prods = db.query(Product).filter(
+        Product.is_active == True,
+        or_(
+            Product.name.ilike("%fries%"),
+            Product.name.ilike("%tortilla%"),
+            Product.name.ilike("%burger%"),
+            Product.name.ilike("%cheese%"),
+            Product.name.ilike("%mozzarella%"),
+            Product.name.ilike("%momo%")
+        )
+    ).limit(4).all()
+    qsr_stock_summary = ", ".join([f"{p.name.split()[0]} ({float(p.current_stock):g})" for p in qsr_prods]) if qsr_prods else "Depot inventory verified"
 
-    surge_warning_en = (
-        f"Rayachoty fast-food & cafe dining surges +40% on Friday-Sunday evenings. "
-        f"Depot reserves: French Fries ({fries_stock:g} pkts), Signature Tortilla ({tortilla_stock:g} pkts). "
-        f"{'Stock is healthy for weekend demand.' if fries_stock >= 30 and tortilla_stock >= 25 else 'Restock urgently before Friday afternoon rush!'}"
-    )
-    surge_warning_te = (
-        f"రాయచోటిలో శుక్రవారం నుండి ఆదివారం వరకు ఫాస్ట్ ఫుడ్ వ్యాపారం 40% పైగా పెరుగుతుంది. "
-        f"ప్రస్తుత నిల్వలు: ఫ్రెంచ్ ఫ్రైస్ ({fries_stock:g} ప్యాకెట్లు), టోర్టిల్లా ({tortilla_stock:g} ప్యాకెట్లు). "
-        f"{'వారాంతపు డిమాండ్‌కు స్టాక్ సరిపోతుంది.' if fries_stock >= 30 and tortilla_stock >= 25 else 'శుక్రవారం మధ్యాహ్నానికి ముందే తక్షణమే రీఆర్డర్ చేయండి!'}"
-    )
+    final_demand_trends = []
 
-    weekend_trend_card = {
-        "id": "weekend_demand_surge",
-        "type": "DEMAND_SURGE",
-        "tag_en": f"Weekend Trend ({weekday})",
-        "tag_te": f"వారాంతపు ట్రెండ్ ({weekday})",
-        "title_en": "Rayachoty Weekend QSR Demand Rush (Fri - Sun)",
-        "title_te": "రాయచోటి వారాంతపు ఫాస్ట్ ఫుడ్ రద్దీ (శుక్ర - ఆది)",
-        "insight_en": surge_warning_en,
-        "insight_te": surge_warning_te,
-        "action_recommended_en": "Verify freezer pallet temperatures and top up high-velocity SKUs today.",
-        "action_recommended_te": "ఫ్రీజర్ స్టాక్ సరిచూసి ముఖ్యమైన సరుకులు తగినంతగా ఉండేలా చూసుకోండి."
-    }
+    # Trend 1: Real Fast-Mover Velocity Leader from Invoices
+    if top_velocity_rows:
+        top_v1 = top_velocity_rows[0]
+        p1_name = top_v1.prod_name or "High Demand SKU"
+        p1_qty = float(top_v1.total_qty or 0)
+        p1_billed = float(top_v1.total_billed or 0)
+        p1_stock = float(top_v1.curr_stock or 0)
+        p1_unit = top_v1.pkg_unit or "units"
+        p1_min = float(top_v1.min_alert or 10)
+
+        if p1_stock <= p1_min:
+            stock_note_en = f"Depot reserve is critically low ({p1_stock:g} {p1_unit} left vs alert {p1_min:g}). Reorder urgent!"
+            stock_note_te = f"డిపో నిల్వలు తక్కువగా ఉన్నాయి ({p1_stock:g} {p1_unit} మాత్రమే ఉంది). తక్షణమే ఆర్డర్ చేయండి!"
+            act_en = f"Place inward order for {p1_name} immediately."
+            act_te = f"{p1_name} కోసం తక్షణమే ఇన్‌వర్డ్ ఆర్డర్ ఇవ్వండి."
+        else:
+            stock_note_en = f"Depot reserve is healthy at {p1_stock:g} {p1_unit} available for immediate fulfillment."
+            stock_note_te = f"డిపోలో తగినంతగా {p1_stock:g} {p1_unit} నిల్వ సిద్ధంగా ఉంది."
+            act_en = f"Promote {p1_name} to high-volume commercial dining accounts today."
+            act_te = f"{p1_name} ను రెగ్యులర్ రెస్టారెంట్ ఖాతాదారులకు ఆఫర్ చేయండి."
+
+        final_demand_trends.append({
+            "id": "trend_velocity_leader",
+            "type": "DEMAND_SURGE",
+            "tag_en": "Demand Trend (1/3 • Velocity Leader)",
+            "tag_te": "డిమాండ్ ట్రెండ్ (1/3 • అత్యధిక విక్రయాలు)",
+            "title_en": f"Rayachoty Velocity Leader: {p1_name}",
+            "title_te": f"రాయచోటి అత్యధిక విక్రయాలు: {p1_name}",
+            "insight_en": (
+                f"{p1_name} leads Rayachoty commercial demand with {p1_qty:g} {p1_unit} billed across accounts "
+                f"(totaling ₹{p1_billed:,.0f} revenue). {stock_note_en}"
+            ),
+            "insight_te": (
+                f"{p1_name} మొత్తం {p1_qty:g} {p1_unit} అమ్మకాలతో (₹{p1_billed:,.0f} ఆదాయం) రాయచోటి డిపోలో "
+                f"అత్యధిక డిమాండ్ గల సరుకుగా ఉంది. {stock_note_te}"
+            ),
+            "action_recommended_en": act_en,
+            "action_recommended_te": act_te
+        })
+    else:
+        # Fallback to top catalog product
+        cat_p = db.query(Product).filter(Product.is_active == True).order_by(desc(Product.current_stock)).first()
+        cp_name = cat_p.name if cat_p else "Milky Mist Mozzarella Cheese"
+        cp_stock = float(cat_p.current_stock) if cat_p else 35.0
+        cp_unit = cat_p.packaging_unit if cat_p else "PKTS"
+        final_demand_trends.append({
+            "id": "trend_velocity_leader",
+            "type": "DEMAND_SURGE",
+            "tag_en": "Demand Trend (1/3 • Velocity Leader)",
+            "tag_te": "డిమాండ్ ట్రెండ్ (1/3 • అత్యధిక విక్రయాలు)",
+            "title_en": f"Rayachoty Demand Anchor: {cp_name}",
+            "title_te": f"రాయచోటి ప్రధాన డిమాండ్: {cp_name}",
+            "insight_en": f"{cp_name} serves as core pillar for Rayachoty pizza & cafe dining. Depot reserve: {cp_stock:g} {cp_unit}.",
+            "insight_te": f"{cp_name} రాయచోటి ఫాస్ట్ ఫుడ్ మరియు కేఫ్ విక్రయాలలో కీలకమైనది. డిపో నిల్వలు: {cp_stock:g} {cp_unit}.",
+            "action_recommended_en": f"Maintain steady depot inventory of {cp_name} for Rayachoty restaurants.",
+            "action_recommended_te": f"{cp_name} ను రాయచోటి రెస్టారెంట్లకు నిరంతరం అందుబాటులో ఉంచండి."
+        })
+
+    # Trend 2: Day-of-Week Commercial Rhythm & QSR Surge (Dynamic based on today!)
+    if is_weekend:
+        final_demand_trends.append({
+            "id": "trend_day_rhythm",
+            "type": "DEMAND_SURGE",
+            "tag_en": f"Demand Trend (2/3 • Weekend Rush)",
+            "tag_te": f"డిమాండ్ ట్రెండ్ (2/3 • వారాంతపు రద్దీ)",
+            "title_en": f"Rayachoty Weekend QSR Demand Rush ({weekday} Peak)",
+            "title_te": f"రాయచోటి వారాంతపు ఫాస్ట్ ఫుడ్ రద్దీ ({weekday} పీక్)",
+            "insight_en": (
+                f"Rayachoty fast-food, cafe, and shawarma dining surges +35-45% on Friday-Sunday evenings. "
+                f"Active depot reserves: {qsr_stock_summary}. Dispatch orders early to prevent evening kitchen stockouts."
+            ),
+            "insight_te": (
+                f"రాయచోటిలో వారాంతపు సాయంత్రాల్లో కేఫ్‌లు మరియు ఫాస్ట్ ఫుడ్ సెంటర్లలో రద్దీ 35-45% పెరుగుతుంది. "
+                f"ప్రస్తుత డిపో నిల్వలు: {qsr_stock_summary}. సాయంత్రం రద్దీకి ముందే ఆర్డర్లు సరఫరా చేయండి."
+            ),
+            "action_recommended_en": "Verify freezer pallet temperatures and stage weekend dispatch batches.",
+            "action_recommended_te": "డీప్ ఫ్రీజర్ ఉష్ణోగ్రత (-18°C) సరిచూసి వారాంతపు ఆర్డర్లను సిద్ధం చేయండి."
+        })
+    else:
+        final_demand_trends.append({
+            "id": "trend_day_rhythm",
+            "type": "DEMAND_SURGE",
+            "tag_en": f"Demand Trend (2/3 • Mid-Week Cadence)",
+            "tag_te": f"డిమాండ్ ట్రెండ్ (2/3 • వీక్‌డే సైకిల్)",
+            "title_en": f"Mid-Week Commercial Restock Rhythm ({weekday})",
+            "title_te": f"వారపు మధ్యలో కేఫ్ రీస్టాక్ సైకిల్ ({weekday})",
+            "insight_en": (
+                f"Rayachoty food outlets and bakery counters place core replenishment orders on {weekday}s to reset kitchen inventory. "
+                f"Depot ready stock: {qsr_stock_summary}. Lock in reorders early in the morning dispatch run."
+            ),
+            "insight_te": (
+                f"రాయచోటి రెస్టారెంట్లు మరియు బేకరీలు తమ కిచెన్ నిల్వలను రీసెట్ చేసుకోవడానికి {weekday}లలో ఆర్డర్లు ఇస్తాయి. "
+                f"డిపో నిల్వలు: {qsr_stock_summary}. ఉదయపు వ్యాన్ ట్రిప్‌లోనే డెలివరీలను పూర్తి చేయండి."
+            ),
+            "action_recommended_en": f"Contact regular cafe accounts for {weekday} mid-week replenishment.",
+            "action_recommended_te": f"రెగ్యులర్ కేఫ్ ఖాతాదారులను సంప్రదించి రీస్టాక్ ఆర్డర్లు నమోదు చేయండి."
+        })
+
+    # Trend 3: Stock Depletion Alert / Commercial Revenue Anchor
+    depleted_candidate = None
+    for r in top_velocity_rows:
+        c_stock = float(r.curr_stock or 0)
+        m_alert = float(r.min_alert or 10)
+        if c_stock <= m_alert:
+            depleted_candidate = r
+            break
+
+    if depleted_candidate:
+        dp_name = depleted_candidate.prod_name or "High Velocity Item"
+        dp_stock = float(depleted_candidate.curr_stock or 0)
+        dp_unit = depleted_candidate.pkg_unit or "units"
+        dp_sold = float(depleted_candidate.total_qty or 0)
+        final_demand_trends.append({
+            "id": "trend_depletion_risk",
+            "type": "DEMAND_SURGE",
+            "tag_en": "Demand Trend (3/3 • Depot Depletion Alert)",
+            "tag_te": "డిమాండ్ ట్రెండ్ (3/3 • స్టాక్ అలర్ట్)",
+            "title_en": f"Stock Depletion Risk: {dp_name}",
+            "title_te": f"సరుకు కొరత హెచ్చరిక: {dp_name}",
+            "insight_en": (
+                f"{dp_name} has moved {dp_sold:g} units in recent billing, but current depot stock is down to {dp_stock:g} {dp_unit}. "
+                f"Inward fresh supplier batches before active customer orders stall."
+            ),
+            "insight_te": (
+                f"{dp_name} ఇటీవలి బిల్లుల్లో {dp_sold:g} యూనిట్లు అమ్ముడైంది, కానీ ప్రస్తుత స్టాక్ {dp_stock:g} {dp_unit} మాత్రమే ఉంది. "
+                f"కస్టమర్ ఆర్డర్లు ఆగిపోకుండా వెంటనే సరుకు తెప్పించండి."
+            ),
+            "action_recommended_en": f"Place manufacturer replenishment order for {dp_name} today.",
+            "action_recommended_te": f"{dp_name} కోసం వెంటనే కంపెనీ ఆర్డర్ పెట్టండి."
+        })
+    elif len(top_velocity_rows) > 1:
+        top_v2 = top_velocity_rows[1]
+        p2_name = top_v2.prod_name or "Commercial Anchor SKU"
+        p2_qty = float(top_v2.total_qty or 0)
+        p2_billed = float(top_v2.total_billed or 0)
+        p2_stock = float(top_v2.curr_stock or 0)
+        p2_unit = top_v2.pkg_unit or "units"
+        final_demand_trends.append({
+            "id": "trend_revenue_anchor",
+            "type": "DEMAND_SURGE",
+            "tag_en": "Demand Trend (3/3 • Commercial Anchor)",
+            "tag_te": "డిమాండ్ ట్రెండ్ (3/3 • ప్రధాన ఆదాయం)",
+            "title_en": f"Commercial Revenue Anchor: {p2_name}",
+            "title_te": f"వాణిజ్య ఆదాయ మూలస్తంభం: {p2_name}",
+            "insight_en": (
+                f"{p2_name} generated ₹{p2_billed:,.0f} across {p2_qty:g} {p2_unit} in restaurant billing. "
+                f"Depot reserve stands at {p2_stock:g} {p2_unit}. Key profitability driver for Rayachoty route."
+            ),
+            "insight_te": (
+                f"{p2_name} ద్వారా మొత్తం {p2_qty:g} {p2_unit} అమ్మకాలతో ₹{p2_billed:,.0f} వ్యాపారం నమోదైంది. "
+                f"ప్రస్తుత డిపో నిల్వ {p2_stock:g} {p2_unit}. డిపో లాభాలకు ఇది కీలకమైన సరుకు."
+            ),
+            "action_recommended_en": f"Cross-sell {p2_name} alongside core daily deliveries.",
+            "action_recommended_te": f"రోజువారీ డెలివరీలతో పాటు {p2_name} ను అదనంగా ఆఫర్ చేయండి."
+        })
+    else:
+        # Fallback to secondary catalog product
+        sample_prods = db.query(Product).filter(Product.is_active == True).limit(2).all()
+        s_prod = sample_prods[1] if len(sample_prods) > 1 else (sample_prods[0] if sample_prods else None)
+        s_name = s_prod.name if s_prod else "Delmonte Pizza Pasta Sauce"
+        s_stock = float(s_prod.current_stock) if s_prod else 40.0
+        s_unit = s_prod.packaging_unit if s_prod else "PKTS"
+        final_demand_trends.append({
+            "id": "trend_catalogue_anchor",
+            "type": "DEMAND_SURGE",
+            "tag_en": "Demand Trend (3/3 • Catalog Anchor)",
+            "tag_te": "డిమాండ్ ట్రెండ్ (3/3 • కేటలాగ్ ప్రధాన సరుకు)",
+            "title_en": f"Commercial Demand Anchor: {s_name}",
+            "title_te": f"వాణిజ్య డిమాండ్ సరుకు: {s_name}",
+            "insight_en": f"Steady recurring pull for {s_name}. Depot maintains {s_stock:g} {s_unit} ready for immediate dispatch.",
+            "insight_te": f"{s_name} కోసం నిరంతర స్థిరమైన డిమాండ్ ఉంది. డిపోలో {s_stock:g} {s_unit} యూనిట్లు సిద్ధంగా ఉన్నాయి.",
+            "action_recommended_en": "Maintain standard safety inventory levels.",
+            "action_recommended_te": "డిపోలో కనీస భద్రతా స్టాక్ నిల్వలను నిర్వహించండి."
+        })
+
+    # Ensure tags reflect index
+    for idx, dt in enumerate(final_demand_trends, 1):
+        dt["tag_en"] = f"Demand Trend ({idx}/{len(final_demand_trends)})"
+        dt["tag_te"] = f"డిమాండ్ ట్రెండ్ ({idx}/{len(final_demand_trends)})"
 
     # C) Pro-Grade Dispatch Route Strategy Engine (Internal Dues + External Day/Weather/Fuel Factors)
     # Master delivery corridors connecting Rayachoty central depot
@@ -963,7 +1171,7 @@ def get_executive_briefing(
     # Backward-compatible 3-pillar market intelligence array
     market_intelligence = [
         final_basket_gaps[0],
-        weekend_trend_card,
+        final_demand_trends[0],
         final_route_strategies[0]
     ]
 
@@ -1133,6 +1341,7 @@ def get_executive_briefing(
         ],
         "market_intelligence": market_intelligence,
         "basket_gaps": final_basket_gaps,
+        "demand_trends": final_demand_trends,
         "route_strategies": final_route_strategies,
         "handover_memo": memo_data
     }

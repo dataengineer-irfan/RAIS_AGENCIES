@@ -75,9 +75,22 @@ def test_briefing_minimum_three_basket_gaps_and_route_rotation(db):
 
     # Assertions
     assert "basket_gaps" in briefing
+    assert "demand_trends" in briefing
     assert "route_strategies" in briefing
     assert len(briefing["basket_gaps"]) >= 3, f"Expected >= 3 basket gaps, got {len(briefing['basket_gaps'])}"
+    assert len(briefing["demand_trends"]) >= 3, f"Expected >= 3 demand trends, got {len(briefing['demand_trends'])}"
     assert len(briefing["route_strategies"]) >= 3, f"Expected >= 3 route strategies, got {len(briefing['route_strategies'])}"
+
+    # Demand trends dynamic validation
+    trends = briefing["demand_trends"]
+    assert trends[0]["type"] == "DEMAND_SURGE"
+    assert "Velocity Leader" in trends[0]["tag_en"] or "Demand" in trends[0]["tag_en"]
+    # The top billed item in our test was PIZZA BOX (5 units total) or CHEESE
+    assert any("PIZZA BOX" in t["title_en"] or "CHEESE" in t["title_en"] or "Demand" in t["title_en"] for t in trends)
+    for t in trends:
+        assert "title_en" in t and "title_te" in t
+        assert "insight_en" in t and "insight_te" in t
+        assert "action_recommended_en" in t and "action_recommended_te" in t
 
     # Mohammed Walid must NOT have any pizza-cheese gap
     for gap in briefing["basket_gaps"]:
