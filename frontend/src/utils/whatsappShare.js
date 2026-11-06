@@ -463,8 +463,15 @@ export const sharePaymentOnWhatsApp = async ({
 
   // Optional in-stock restock note for next order (strictly NO PRICES)
   let restockSection = '';
+  let effectiveProducts = products;
+  if (!effectiveProducts || !effectiveProducts.length) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('rais_cached_products') || '[]');
+      if (Array.isArray(cached) && cached.length > 0) effectiveProducts = cached;
+    } catch (_) {}
+  }
   const finalSuggestion = showRestock
-    ? (restockSuggestion || (products && products.length > 0 ? deriveRestockSuggestion([], products) : null))
+    ? (restockSuggestion || deriveRestockSuggestion([], effectiveProducts || [], null, bName))
     : null;
   if (finalSuggestion && finalSuggestion.display_text) {
     restockSection = `${finalSuggestion.display_text}\n`;

@@ -162,7 +162,43 @@ def get_printable_payment(
             db=db,
             customer_id=str(p.customer_id)
         )
+        if not suggestion:
+            cust_name_up = (p.customer_name or "").upper()
+            if "PIZZA" in cust_name_up:
+                suggestion = {
+                    "name": "DELMONTE PIZZA PASTA SAUCE",
+                    "packaging_unit": "1 KG PACKET",
+                    "context_note": "In Stock for your Pizzas",
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/delmonte_pizza_sauce.jpg",
+                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                }
+            elif "BURGER" in cust_name_up:
+                suggestion = {
+                    "name": 'BURGER BOX 4"x4" PRINTED',
+                    "packaging_unit": "100 NOS",
+                    "context_note": "In Stock for your Burgers",
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg",
+                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                }
+            elif any(k in cust_name_up for k in ["CHICKEN", "SNACK", "MFC", "AFC"]):
+                suggestion = {
+                    "name": 'CHICKEN BOX 4"5x8"',
+                    "packaging_unit": "100 NOS",
+                    "context_note": "In Stock for your Kitchen",
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg",
+                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                }
+            else:
+                suggestion = {
+                    "name": "VKL PERI PERI SPRINKLER",
+                    "packaging_unit": "1 PACKET",
+                    "context_note": "Fast Moving Kitchen Companion",
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/vkl_peri_peri.jpg",
+                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                }
+
         if suggestion:
+            ctx_tag = (suggestion.get("context_note") or "Ready for Next Order").upper()
             p_name = suggestion.get("name", "Product")
             p_unit = suggestion.get("packaging_unit", "PACKET")
             p_img = suggestion.get("image_url", "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg")
@@ -178,7 +214,7 @@ def get_printable_payment(
                     </div>
                     <div>
                         <div class="flex items-center gap-1.5 mb-0.5">
-                            <span class="px-2 py-0.5 bg-emerald-200/90 text-emerald-900 rounded font-black text-[9px] uppercase tracking-wider">🔥 Ready For Next Order</span>
+                            <span class="px-2 py-0.5 bg-emerald-200/90 text-emerald-900 rounded font-black text-[9px] uppercase tracking-wider">🔥 {ctx_tag}</span>
                             <span class="text-[10px] font-bold text-emerald-800">In Depot Stock</span>
                         </div>
                         <div class="font-black text-sm text-gray-900">{p_name}</div>
@@ -380,10 +416,53 @@ def get_payment_image(
     allocations = list(p.allocations) if p.allocations else []
     alloc_count = len(allocations) if allocations else 1
 
-    # Dynamic sizing based on allocation rows
+    # Intelligent Companion Restock Promotion for Next Order (strictly NO PRICES)
+    suggestion = None
+    try:
+        from app.services.recommendation_service import RecommendationService
+        suggestion = RecommendationService.get_customer_restock_suggestion(
+            db=db,
+            customer_id=str(p.customer_id)
+        )
+    except Exception:
+        suggestion = None
+
+    if not suggestion:
+        cust_name_up = (p.customer_name or "").upper()
+        if "PIZZA" in cust_name_up:
+            suggestion = {
+                "name": "DELMONTE PIZZA PASTA SAUCE",
+                "packaging_unit": "1 KG PACKET",
+                "context_note": "In Stock for your Pizzas",
+                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+            }
+        elif "BURGER" in cust_name_up:
+            suggestion = {
+                "name": 'BURGER BOX 4"x4" PRINTED',
+                "packaging_unit": "100 NOS",
+                "context_note": "In Stock for your Burgers",
+                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+            }
+        elif any(k in cust_name_up for k in ["CHICKEN", "SNACK", "MFC", "AFC"]):
+            suggestion = {
+                "name": 'CHICKEN BOX 4"5x8"',
+                "packaging_unit": "100 NOS",
+                "context_note": "In Stock for your Kitchen",
+                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+            }
+        else:
+            suggestion = {
+                "name": "VKL PERI PERI SPRINKLER",
+                "packaging_unit": "1 PACKET",
+                "context_note": "Fast Moving Kitchen Companion",
+                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+            }
+
+    # Dynamic sizing based on allocation rows + promotional strip
     width = 800
     row_height = 34
-    height = 620 + (alloc_count * row_height)
+    rec_strip_h = 52 if suggestion else 0
+    height = 620 + (alloc_count * row_height) + rec_strip_h
 
     img = Image.new("RGB", (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
@@ -492,6 +571,22 @@ def get_payment_image(
         else:
             draw.rectangle([(30, cur_y), (width - 30, cur_y + 40)], fill=(236, 253, 245), outline=(167, 243, 208))
             draw.text((45, cur_y + 12), "CURRENT LEDGER STATUS: ALL DUES FULLY CLEARED (₹0.00)", fill=(4, 120, 87), font=f_bold)
+        cur_y += 50
+
+    # 5a. Visual Promotional Restock Spotlight Card (strictly NO PRICES)
+    if suggestion:
+        draw.rectangle([(30, cur_y), (width - 30, cur_y + 40)], fill=(236, 253, 245), outline=(16, 185, 129))
+        ctx_tag = (suggestion.get("context_note") or "Ready for Next Order").upper()
+        p_name = (suggestion.get("name") or "Product")[:38]
+        p_unit = suggestion.get("packaging_unit") or "PACKET"
+        te_note = suggestion.get("telugu_note") or "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+
+        draw.text((45, cur_y + 6), f"🔥 READY FOR YOUR NEXT ORDER • {ctx_tag}:", fill=(6, 95, 70), font=f_bold)
+        draw.text((45, cur_y + 22), f"📦 {p_name} ({p_unit})  •  100% In Depot Stock", fill=(15, 23, 42), font=f_bold)
+
+        # Right badge: In Depot Stock
+        draw.rectangle([(width - 175, cur_y + 7), (width - 45, cur_y + 33)], fill=(5, 150, 105))
+        draw.text((width - 163, cur_y + 12), "READY TO DISPATCH", fill=(255, 255, 255), font=f_small)
         cur_y += 50
 
     # 5b. Direct Quick Links Banner (Bold Emerald Card)

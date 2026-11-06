@@ -1,10 +1,16 @@
 import React from 'react';
 import { CreditCard, CheckCircle2, ArrowRight, MessageSquare } from 'lucide-react';
 import { sharePaymentOnWhatsApp } from '../utils/whatsappShare';
+import { getLocalCachedSnapshot } from '../services/api';
 
 export const RecentPaymentsCard = ({ payments = [], onNavigateToPayments }) => {
   const handleSendWhatsAppReceipt = async (p) => {
-    await sharePaymentOnWhatsApp({ payment: p });
+    let prods = [];
+    try {
+      const cached = getLocalCachedSnapshot('products');
+      if (Array.isArray(cached)) prods = cached;
+    } catch (_) {}
+    await sharePaymentOnWhatsApp({ payment: p, products: prods });
   };
 
   const getMethodBadge = (method) => {

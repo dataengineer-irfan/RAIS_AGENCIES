@@ -55,7 +55,7 @@ export const formatCustomerDisplayName = (businessName, contactPerson) => {
   return `${bName} (${cPerson})`;
 };
 
-export const deriveRestockSuggestion = (items = [], products = [], explicitSuggestion = null) => {
+export const deriveRestockSuggestion = (items = [], products = [], explicitSuggestion = null, customerContextText = '') => {
   if (explicitSuggestion) {
     const s = { ...explicitSuggestion };
     if (!s.image_url) s.image_url = getProductImageUrl(s);
@@ -63,7 +63,44 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
     return s;
   }
 
+  const contextCombined = `${customerContextText || ''} ` + (items || []).map(i => {
+    const p = (products || []).find(x => x?.id === i?.product_id);
+    return `${p?.name || ''} ${i?.item_description || ''}`.toUpperCase();
+  }).join(' ');
+
+  const isPizza = /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(contextCombined);
+  const isBurger = /BURGER|PATTY|BUN/i.test(contextCombined);
+  const isSnack = /FRIES|MOMO|NUGGET|POPCORN|POPS|CHICKEN/i.test(contextCombined);
+
   if (!products || !products.length) {
+    if (isPizza) {
+      const pName = 'DELMONTE PIZZA PASTA SAUCE';
+      const pUnit = '1 KG PACKET';
+      const pCtx = 'In Stock for your Pizzas';
+      return {
+        sku: 'RAIS-SAU-06',
+        name: pName,
+        packaging_unit: pUnit,
+        context_note: pCtx,
+        image_url: getProductImageUrl('RAIS-SAU-06', pName),
+        telugu_note: getTeluguCompanionPhrase(pName),
+        display_text: `📦 *${pCtx.toUpperCase()}:* ${pName} (${pUnit}) — _Ready for immediate delivery_`
+      };
+    }
+    if (isBurger) {
+      const pName = 'BURGER BOX 4"x4" PRINTED';
+      const pUnit = '100 NOS';
+      const pCtx = 'In Stock for your Burgers';
+      return {
+        sku: 'RAIS-BOX-02',
+        name: pName,
+        packaging_unit: pUnit,
+        context_note: pCtx,
+        image_url: getProductImageUrl('RAIS-BOX-02', pName),
+        telugu_note: getTeluguCompanionPhrase(pName),
+        display_text: `📦 *${pCtx.toUpperCase()}:* ${pName} (${pUnit}) — _Ready for immediate delivery_`
+      };
+    }
     // Default fast-moving depot companion if product list isn't provided (e.g. direct receipt downloads)
     const defaultName = 'VKL PERI PERI SPRINKLER';
     const defaultUnit = '1 PACKET';
@@ -80,16 +117,6 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   }
 
   const currentProductIds = new Set((items || []).map(i => i.product_id));
-
-  // Detect affinity from current items
-  const itemTexts = (items || []).map(i => {
-    const p = products.find(x => x.id === i.product_id);
-    return `${p?.name || ''} ${i.item_description || ''}`.toUpperCase();
-  }).join(' ');
-
-  const isPizza = /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(itemTexts);
-  const isBurger = /BURGER|PATTY|BUN/i.test(itemTexts);
-  const isSnack = /FRIES|MOMO|NUGGET|POPCORN|POPS/i.test(itemTexts);
 
   // Filter products with current_stock > 0 and not on current bill
   const available = products.filter(p => {

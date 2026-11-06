@@ -23,7 +23,7 @@ import {
   Share2,
   Tag
 } from 'lucide-react';
-import { paymentApi } from '../services/api';
+import { paymentApi, catalogueApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { sharePaymentOnWhatsApp, sharePaymentImageFile } from '../utils/whatsappShare';
 import { useAuth } from '../context/AuthContext';
@@ -92,6 +92,14 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
+  const [products, setProducts] = useState(() => {
+    try {
+      const cached = getLocalCachedSnapshot('products');
+      return Array.isArray(cached) ? cached : [];
+    } catch (_) {
+      return [];
+    }
+  });
 
   const openDeleteModal = (payment) => {
     setDeleteModalError('');
@@ -100,6 +108,10 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
 
   useEffect(() => {
     loadPayments();
+    catalogueApi.listProducts({ limit: 100 }).then(data => {
+      const prods = Array.isArray(data) ? data : (data?.items || data?.data || []);
+      if (prods.length > 0) setProducts(prods);
+    }).catch(() => {});
   }, []);
 
   const loadPayments = async (selectId = null) => {
@@ -149,7 +161,8 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
         address: fullPayment.customer_address,
         customer_code: fullPayment.customer_code,
         outstanding_balance: fullPayment.customer_outstanding_balance
-      }
+      },
+      products: products
     });
   };
 
@@ -170,7 +183,8 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
         address: fullPayment.customer_address,
         customer_code: fullPayment.customer_code,
         outstanding_balance: fullPayment.customer_outstanding_balance
-      }
+      },
+      products: products
     });
   };
 

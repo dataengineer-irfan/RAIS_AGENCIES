@@ -41,8 +41,16 @@ export const generatePaymentCanvas = ({
   const allocations = payment?.allocations || [];
 
   // Derive companion restock suggestion (strictly ZERO PRICES)
+  let effectiveProducts = products;
+  if (!effectiveProducts || !effectiveProducts.length) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('rais_cached_products') || '[]');
+      if (Array.isArray(cached) && cached.length > 0) effectiveProducts = cached;
+    } catch (_) {}
+  }
+  const custContext = customer?.business_name || payment?.customer_name || '';
   const suggestion = includeRestockSuggestion !== false
-    ? (restockSuggestion || (products && products.length > 0 ? deriveRestockSuggestion([], products) : null))
+    ? (restockSuggestion || deriveRestockSuggestion([], effectiveProducts || [], null, custContext))
     : null;
   const restockStripHeight = suggestion ? 84 : 0;
 
@@ -451,8 +459,16 @@ export const generatePaymentCanvas = ({
 export const generatePaymentBlob = async (data) => {
   let preloadedImg = null;
   try {
+    let effectiveProducts = data?.products;
+    if (!effectiveProducts || !effectiveProducts.length) {
+      try {
+        const cached = JSON.parse(localStorage.getItem('rais_cached_products') || '[]');
+        if (Array.isArray(cached) && cached.length > 0) effectiveProducts = cached;
+      } catch (_) {}
+    }
+    const custContext = data?.customer?.business_name || data?.payment?.customer_name || '';
     const suggestion = data?.includeRestockSuggestion !== false
-      ? (data?.restockSuggestion || (data?.products && data.products.length > 0 ? deriveRestockSuggestion([], data.products) : null))
+      ? (data?.restockSuggestion || deriveRestockSuggestion([], effectiveProducts || [], null, custContext))
       : null;
     if (suggestion) {
       const imgUrl = suggestion.image_url || getProductImageUrl(suggestion);
