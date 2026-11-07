@@ -269,6 +269,7 @@ export const App = () => {
 
           {activeTab === 'customers' && (
             <CustomersPage
+              key={dataRefreshKey}
               initialCustomerId={selectedCustomerIdForDossier}
               onOpenCustomerModal={handleOpenCustomerModal}
               onOpenPaymentForCustomer={(cust) => handleOpenPayment(cust, null)}

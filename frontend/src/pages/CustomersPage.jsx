@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -119,6 +119,9 @@ export const CustomersPage = ({
     }
     return null;
   });
+  const activeCustomerRef = useRef(selectedCustomerId);
+  activeCustomerRef.current = selectedCustomerId;
+
   const [ledgerData, setLedgerData] = useState(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [customerInvoices, setCustomerInvoices] = useState([]);
@@ -153,11 +156,20 @@ export const CustomersPage = ({
   useEffect(() => {
     if (initialCustomerId) {
       setSelectedCustomerId(initialCustomerId);
-      loadCustomerLedger(initialCustomerId);
-      loadCustomerInvoices(initialCustomerId);
       setMobileView('detail');
     }
   }, [initialCustomerId]);
+
+  // ─── MASTER SYNCHRONIZER: Keep Ledger & Invoices Strictly Locked to Active Customer ───
+  useEffect(() => {
+    if (selectedCustomerId) {
+      loadCustomerLedger(selectedCustomerId);
+      loadCustomerInvoices(selectedCustomerId);
+    } else {
+      setLedgerData([]);
+      setCustomerInvoices([]);
+    }
+  }, [selectedCustomerId]);
 
   const loadCustomers = async (selectId = null) => {
     if (customers.length === 0) setLoading(true);
@@ -175,8 +187,6 @@ export const CustomersPage = ({
               ? selectedCustomerId
               : (sortedItems[0]?.id || items[0].id));
         setSelectedCustomerId(initialId);
-        loadCustomerLedger(initialId);
-        loadCustomerInvoices(initialId);
         if (targetId) setMobileView('detail');
       }
     } catch (err) {
@@ -187,28 +197,44 @@ export const CustomersPage = ({
   };
 
   const loadCustomerLedger = async (customerId) => {
+    if (!customerId) return;
     setLedgerLoading(true);
+    setLedgerData(null); // Immediate flush to guarantee zero cross-outlet leakage
     try {
       const ledger = await customerApi.getLedger(customerId);
-      setLedgerData(Array.isArray(ledger) ? ledger : (ledger?.entries || []));
+      if (activeCustomerRef.current === customerId) {
+        setLedgerData(Array.isArray(ledger) ? ledger : (ledger?.entries || []));
+      }
     } catch (err) {
       console.error('Failed to load customer ledger:', err);
-      setLedgerData([]);
+      if (activeCustomerRef.current === customerId) {
+        setLedgerData([]);
+      }
     } finally {
-      setLedgerLoading(false);
+      if (activeCustomerRef.current === customerId) {
+        setLedgerLoading(false);
+      }
     }
   };
 
   const loadCustomerInvoices = async (customerId) => {
+    if (!customerId) return;
     setInvoicesLoading(true);
+    setCustomerInvoices([]); // Immediate flush
     try {
       const invs = await billingApi.listInvoices({ customer_id: customerId });
-      setCustomerInvoices(Array.isArray(invs) ? invs : []);
+      if (activeCustomerRef.current === customerId) {
+        setCustomerInvoices(Array.isArray(invs) ? invs : []);
+      }
     } catch (err) {
       console.error('Failed to load customer invoices:', err);
-      setCustomerInvoices([]);
+      if (activeCustomerRef.current === customerId) {
+        setCustomerInvoices([]);
+      }
     } finally {
-      setInvoicesLoading(false);
+      if (activeCustomerRef.current === customerId) {
+        setInvoicesLoading(false);
+      }
     }
   };
 
@@ -216,8 +242,6 @@ export const CustomersPage = ({
     setSelectedCustomerId(customer.id);
     setInvoiceSearch('');
     setLedgerSearch('');
-    loadCustomerLedger(customer.id);
-    loadCustomerInvoices(customer.id);
     if (initialTab) {
       setActiveInspectorTab(initialTab);
     }
@@ -328,8 +352,6 @@ export const CustomersPage = ({
       if (!selectedCustomerId || !isSelectedInList) {
         const topCust = filteredCustomers[0];
         setSelectedCustomerId(topCust.id);
-        loadCustomerLedger(topCust.id);
-        loadCustomerInvoices(topCust.id);
       }
     }
   }, [filteredCustomers, selectedCustomerId]);
