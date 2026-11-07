@@ -511,6 +511,24 @@ export const reportApi = {
   },
   getProductSales: async () => {
     return cachedGet('/reports/product-sales');
+  },
+  getFinancialAuditScan: async () => {
+    const res = await api.get('/reports/financial-audit/scan');
+    return res.data;
+  },
+  getCustomerAuditStatement: async (customerId) => {
+    const res = await api.get(`/reports/financial-audit/customer/${customerId}`);
+    return res.data;
+  },
+  exportFinancialAuditExcel: async (payload = {}) => {
+    const res = await api.post('/reports/financial-audit/export-excel', payload, {
+      responseType: 'blob'
+    });
+    return res.data;
+  },
+  resolveDuplicatePayment: async (payload) => {
+    const res = await api.post('/reports/financial-audit/resolve-duplicate', payload);
+    return res.data;
   }
 };
 

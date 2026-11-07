@@ -199,13 +199,3 @@ def update_product(
         created_at=p.created_at,
         updated_at=p.updated_at
     )
-        base_price=p.base_price,
-        tax_rate=p.tax_rate,
-        hsn_code=p.hsn_code,
-        description=p.description,
-        current_stock=p.current_stock,
-        min_stock_alert=p.min_stock_alert,
-        is_active=p.is_active,
-        created_at=p.created_at,
-        updated_at=p.updated_at
-    )

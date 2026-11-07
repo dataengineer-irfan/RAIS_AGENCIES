@@ -17,7 +17,8 @@ import {
   Sun,
   Moon,
   Globe,
-  ExternalLink
+  ExternalLink,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -50,6 +51,7 @@ export const Sidebar = ({
   ];
 
   if (hasRole('ADMIN') || hasRole('OPERATOR')) {
+    menuItems.push({ id: 'financial-audit', label: 'Financial Audit Hub', icon: FileSpreadsheet, highlight: true, badge: 'PRO' });
     menuItems.push({ id: 'audit', label: 'Audit & Data Vault', icon: ShieldCheck });
   }
 

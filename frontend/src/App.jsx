@@ -14,6 +14,7 @@ import { PaymentsPage } from './pages/PaymentsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AIAssistantPage } from './pages/AIAssistantPage';
 import { AuditPage } from './pages/AuditPage';
+import { FinancialAuditPage } from './pages/FinancialAuditPage';
 import { InvoiceBuilderModal } from './components/InvoiceBuilderModal';
 import { OrderBuilderModal } from './components/OrderBuilderModal';
 import { PaymentModal } from './components/PaymentModal';
@@ -307,9 +308,13 @@ export const App = () => {
             />
           )}
 
-          {activeTab === 'reports' && <ReportsPage key={dataRefreshKey} />}
+          {activeTab === 'reports' && <ReportsPage key={dataRefreshKey} onNavigate={handleNavigate} />}
 
           {activeTab === 'ai' && <AIAssistantPage />}
+
+          {activeTab === 'financial-audit' && (
+            <FinancialAuditPage key={dataRefreshKey} onNavigate={handleNavigate} />
+          )}
 
           {activeTab === 'audit' && <AuditPage initialParams={auditInitialParams} />}
         </main>

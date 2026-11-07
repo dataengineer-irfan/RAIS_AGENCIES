@@ -27,7 +27,8 @@ import {
   RefreshCw,
   Bell,
   Sun,
-  Moon
+  Moon,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -395,12 +396,13 @@ export const Header = ({
                     <button
                       onClick={() => {
                         setProfileModalOpen(false);
-                        if (onNavigate) onNavigate('audit');
+                        if (onNavigate) onNavigate('financial-audit');
                       }}
-                      className="flex items-center justify-center gap-1.5 py-2 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-[11px] border border-slate-700 active:scale-95 transition"
+                      className="flex items-center justify-center gap-1.5 py-2 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold rounded-xl text-[11px] border border-amber-500/30 active:scale-95 transition"
+                      title="Open Financial Audit Hub"
                     >
-                      <ShieldCheck className="w-3 h-3 text-amber-400" />
-                      <span>Audit Hub</span>
+                      <FileSpreadsheet className="w-3 h-3 text-amber-400" />
+                      <span>Financial Audit</span>
                     </button>
                   </div>
 
@@ -483,7 +485,8 @@ export const Header = ({
                   { id: 'reports', label: 'Financial Reports & Aging', icon: BarChart3 },
                   { id: 'ai', label: 'Executive AI Co-Pilot', icon: Sparkles },
                   ...(hasRole && (hasRole('ADMIN') || hasRole('OPERATOR')) ? [
-                    { id: 'audit', label: 'Audit & Data Vault (Backup)', icon: ShieldCheck, highlight: true }
+                    { id: 'financial-audit', label: 'Financial Audit Hub (Excel/Dossiers)', icon: FileSpreadsheet, highlight: true },
+                    { id: 'audit', label: 'Audit & Data Vault (Backup)', icon: ShieldCheck }
                   ] : [])
                 ].map(item => {
                   const Icon = item.icon;

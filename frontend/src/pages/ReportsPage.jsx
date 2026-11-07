@@ -18,13 +18,14 @@ import {
   Info,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  FileSpreadsheet
 } from 'lucide-react';
 import { reportApi, paymentApi, getLocalCachedSnapshot } from '../services/api';
 import { openWhatsApp } from '../utils/mobileHelpers';
 import { DrillableMetricModal } from '../components/DrillableMetricModal';
 
-export const ReportsPage = () => {
+export const ReportsPage = ({ onNavigate }) => {
   const [aging, setAging] = useState(() => getLocalCachedSnapshot('reports_aging'));
   const [customerAging, setCustomerAging] = useState(() => getLocalCachedSnapshot('reports_customer_aging') || []);
   const [productSales, setProductSales] = useState([]);
@@ -357,15 +358,27 @@ export const ReportsPage = () => {
           <span className="text-amber-400">Due: <strong className="font-bold">₹{totalOutstandingVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
         </div>
 
-        {/* Right: FIFO Reconcile CTA */}
-        <button
-          onClick={() => setFifoModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-          title="Open FIFO Reconciliation Dialog"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>FIFO Reconcile</span>
-        </button>
+        {/* Right: FIFO Reconcile CTA & Financial Audit Hub Link */}
+        <div className="flex items-center gap-2 shrink-0">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('financial-audit')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-amber-400 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all hover:scale-105"
+              title="Open Senior Forensic Audit & Excel Dossier Hub"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
+              <span>Audit Hub</span>
+            </button>
+          )}
+          <button
+            onClick={() => setFifoModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+            title="Open FIFO Reconciliation Dialog"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>FIFO Reconcile</span>
+          </button>
+        </div>
       </div>
 
       {/* ─── MOBILE NATIVE ULTRA-COMPACT CONTROLS (< md) ─── */}
