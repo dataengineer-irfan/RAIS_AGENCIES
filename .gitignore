@@ -78,4 +78,5 @@ backend/tests/*.png
 # Local input media & scratch scripts
 _input/
 scratch/
+*.xlsx
 
