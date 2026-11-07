@@ -10,6 +10,15 @@ from app.core.exceptions import RaisAppException
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Safe schema migrations on startup
+from sqlalchemy import text as _text
+try:
+    with engine.connect() as _conn:
+        _conn.execute(_text("ALTER TABLE products ADD COLUMN IF NOT EXISTS purchase_cost NUMERIC(12,2) NULL"))
+        _conn.commit()
+except Exception:
+    pass
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Production-Grade Business Management & Billing Platform for RAIS Agencies",

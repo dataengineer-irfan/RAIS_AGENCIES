@@ -18,6 +18,7 @@ class StockOverviewItem(BaseModel):
     base_price: Decimal
     tax_rate: Decimal
     purchase_cost: Optional[Decimal] = None
+    is_cost_estimated: Optional[bool] = False
     margin_amount: Optional[Decimal] = None
     margin_percent: Optional[Decimal] = None
 

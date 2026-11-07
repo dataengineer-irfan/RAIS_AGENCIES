@@ -28,10 +28,12 @@ def seed_database():
     try:
         with engine.connect() as _conn:
             _conn.execute(_text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS opening_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00"))
+            _conn.execute(_text("ALTER TABLE products ADD COLUMN IF NOT EXISTS purchase_cost NUMERIC(12,2) NULL"))
             _conn.execute(_text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64) NULL"))
             _conn.execute(_text("CREATE UNIQUE INDEX IF NOT EXISTS ix_invoices_idempotency_key ON invoices(idempotency_key) WHERE idempotency_key IS NOT NULL"))
             _conn.commit()
             print("  + Migration: opening_balance column ensured on customers table")
+            print("  + Migration: purchase_cost column ensured on products table")
             print("  + Migration: idempotency_key column ensured on invoices table")
     except Exception as _e:
         print(f"  ~ Migration note: {_e}")

@@ -126,7 +126,8 @@ class CustomerService:
             InvoiceItem.product_id,
             InvoiceItem.quantity,
             InvoiceItem.line_total,
-            Product.base_price
+            Product.base_price,
+            Product.purchase_cost
         ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
          .outerjoin(Product, Product.id == InvoiceItem.product_id)\
          .filter(
@@ -140,8 +141,9 @@ class CustomerService:
             qty = Decimal(str(row[1] or "0"))
             ltotal = Decimal(str(row[2] or "0"))
             base_p = Decimal(str(row[3] or "0")) if row[3] is not None else Decimal("0")
+            prod_cost = Decimal(str(row[4] or "0")) if row[4] is not None else Decimal("0")
 
-            pcost = cost_map.get(pid)
+            pcost = cost_map.get(pid) or (prod_cost if prod_cost > Decimal("0") else None)
             if pcost and pcost > Decimal("0"):
                 cogs = pcost * qty
             elif base_p > Decimal("0"):
@@ -238,7 +240,8 @@ class CustomerService:
             InvoiceItem.quantity,
             InvoiceItem.line_total,
             Product.base_price,
-            InvoiceItem.item_description
+            InvoiceItem.item_description,
+            Product.purchase_cost
         ).join(InvoiceItem, Invoice.id == InvoiceItem.invoice_id)\
          .outerjoin(Product, Product.id == InvoiceItem.product_id)\
          .filter(
@@ -255,11 +258,12 @@ class CustomerService:
             ltotal = Decimal(str(row[3] or "0"))
             base_p = Decimal(str(row[4] or "0")) if row[4] is not None else Decimal("0")
             desc = (row[5] or "").strip()
+            prod_cost = Decimal(str(row[6] or "0")) if len(row) > 6 and row[6] is not None else Decimal("0")
 
             if desc and desc not in items_map[cid] and len(items_map[cid]) < 8:
                 items_map[cid].append(desc)
 
-            pcost = cost_map.get(pid)
+            pcost = cost_map.get(pid) or (prod_cost if prod_cost > Decimal("0") else None)
             if pcost and pcost > Decimal("0"):
                 cogs = pcost * qty
             elif base_p > Decimal("0"):

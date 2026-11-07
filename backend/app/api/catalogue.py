@@ -91,7 +91,8 @@ def list_products(
             packaging_unit=p.packaging_unit,
             unit_quantity=p.unit_quantity,
             base_price=p.base_price,
-            landed_cost=cost_map.get(p.id),
+            purchase_cost=p.purchase_cost or cost_map.get(p.id),
+            landed_cost=cost_map.get(p.id) or p.purchase_cost,
             tax_rate=p.tax_rate,
             hsn_code=p.hsn_code,
             description=p.description,
@@ -113,6 +114,7 @@ def get_product(
     latest_cost = db.query(StockMovement.purchase_cost)\
         .filter(StockMovement.product_id == p.id, StockMovement.purchase_cost.isnot(None))\
         .order_by(StockMovement.created_at.desc()).limit(1).scalar()
+    resolved_cost = p.purchase_cost or (Decimal(str(latest_cost)) if latest_cost is not None else None)
     return ProductResponse(
         id=p.id,
         category_id=p.category_id,
@@ -123,7 +125,8 @@ def get_product(
         packaging_unit=p.packaging_unit,
         unit_quantity=p.unit_quantity,
         base_price=p.base_price,
-        landed_cost=Decimal(str(latest_cost)) if latest_cost is not None else None,
+        purchase_cost=resolved_cost,
+        landed_cost=resolved_cost,
         tax_rate=p.tax_rate,
         hsn_code=p.hsn_code,
         description=p.description,
@@ -151,6 +154,8 @@ def create_product(
         packaging_unit=p.packaging_unit,
         unit_quantity=p.unit_quantity,
         base_price=p.base_price,
+        purchase_cost=p.purchase_cost,
+        landed_cost=p.purchase_cost,
         tax_rate=p.tax_rate,
         hsn_code=p.hsn_code,
         description=p.description,
@@ -169,6 +174,10 @@ def update_product(
     current_user: User = Depends(require_operator_or_admin)
 ):
     p = CatalogueService.update_product(db, product_id, data, user_id=current_user.id)
+    latest_cost = db.query(StockMovement.purchase_cost)\
+        .filter(StockMovement.product_id == p.id, StockMovement.purchase_cost.isnot(None))\
+        .order_by(StockMovement.created_at.desc()).limit(1).scalar()
+    resolved_cost = p.purchase_cost or (Decimal(str(latest_cost)) if latest_cost is not None else None)
     return ProductResponse(
         id=p.id,
         category_id=p.category_id,
@@ -178,6 +187,18 @@ def update_product(
         brand=p.brand,
         packaging_unit=p.packaging_unit,
         unit_quantity=p.unit_quantity,
+        base_price=p.base_price,
+        purchase_cost=resolved_cost,
+        landed_cost=resolved_cost,
+        tax_rate=p.tax_rate,
+        hsn_code=p.hsn_code,
+        description=p.description,
+        current_stock=p.current_stock,
+        min_stock_alert=p.min_stock_alert,
+        is_active=p.is_active,
+        created_at=p.created_at,
+        updated_at=p.updated_at
+    )
         base_price=p.base_price,
         tax_rate=p.tax_rate,
         hsn_code=p.hsn_code,

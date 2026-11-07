@@ -54,8 +54,15 @@ class InventoryService:
                     continue
 
             base_price = Decimal(str(p.base_price))
-            # If last purchase cost exists, use it; otherwise standard wholesale gross margin is ~22-25%
-            last_cost = last_cost_map.get(p.id, (base_price * Decimal("0.75")).quantize(Decimal("0.01")))
+            # Resolved cost: 1. Latest inward receipt batch, 2. Explicit standard product purchase_cost, 3. 75% fallback
+            recorded_cost = last_cost_map.get(p.id) or (Decimal(str(p.purchase_cost)) if p.purchase_cost is not None else None)
+            is_estimated = False
+            if recorded_cost is not None and recorded_cost > Decimal("0"):
+                last_cost = recorded_cost
+            else:
+                last_cost = (base_price * Decimal("0.75")).quantize(Decimal("0.01"))
+                is_estimated = True
+
             margin_amt = base_price - last_cost
             margin_pct = ((margin_amt / base_price) * 100).quantize(Decimal("0.1")) if base_price > 0 else Decimal("0.0")
 
@@ -74,6 +81,7 @@ class InventoryService:
                 "base_price": base_price,
                 "tax_rate": Decimal(str(p.tax_rate)),
                 "purchase_cost": last_cost,
+                "is_cost_estimated": is_estimated,
                 "margin_amount": margin_amt,
                 "margin_percent": margin_pct
             })

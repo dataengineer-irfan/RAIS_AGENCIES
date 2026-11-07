@@ -34,6 +34,7 @@ class Product(Base):
     packaging_unit = Column(String(100), nullable=False)  # e.g., "1 PACKET", "1 KG PACKET", "100 NOS"
     unit_quantity = Column(Numeric(10, 2), default=1.00, nullable=False)
     base_price = Column(Numeric(12, 2), nullable=False)   # Wholesale price in ₹ INR
+    purchase_cost = Column(Numeric(12, 2), nullable=True) # Standard/base procurement cost in ₹ INR
     tax_rate = Column(Numeric(5, 2), default=0.00, nullable=False) # GST percentage (e.g. 5.00, 12.00, 18.00)
     hsn_code = Column(String(20), nullable=True)
     description = Column(Text, nullable=True)

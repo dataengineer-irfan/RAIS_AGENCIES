@@ -955,9 +955,11 @@ class BillingService:
                             cost_map[row.product_id] = Decimal(str(row.purchase_cost))
                     missing_p_ids = [pid for pid in p_ids if pid not in cost_map]
                     if missing_p_ids:
-                        base_prices = db.query(Product.id, Product.base_price).filter(Product.id.in_(missing_p_ids)).all()
-                        for pid, bp in base_prices:
-                            if bp is not None and bp > Decimal("0"):
+                        prod_records = db.query(Product.id, Product.purchase_cost, Product.base_price).filter(Product.id.in_(missing_p_ids)).all()
+                        for pid, pc, bp in prod_records:
+                            if pc is not None and pc > Decimal("0"):
+                                cost_map[pid] = Decimal(str(pc))
+                            elif bp is not None and bp > Decimal("0"):
                                 cost_map[pid] = Decimal(str(bp)) * Decimal("0.80")
             except Exception:
                 cost_map = {}
@@ -1165,9 +1167,11 @@ class BillingService:
                         cost_map[row.product_id] = Decimal(str(row.purchase_cost))
                 missing_p_ids = [pid for pid in all_p_ids if pid not in cost_map]
                 if missing_p_ids:
-                    base_prices = db.query(Product.id, Product.base_price).filter(Product.id.in_(missing_p_ids)).all()
-                    for pid, bp in base_prices:
-                        if bp is not None and bp > Decimal("0"):
+                    prod_records = db.query(Product.id, Product.purchase_cost, Product.base_price).filter(Product.id.in_(missing_p_ids)).all()
+                    for pid, pc, bp in prod_records:
+                        if pc is not None and pc > Decimal("0"):
+                            cost_map[pid] = Decimal(str(pc))
+                        elif bp is not None and bp > Decimal("0"):
                             cost_map[pid] = Decimal(str(bp)) * Decimal("0.80")
             except Exception:
                 cost_map = {}

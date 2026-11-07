@@ -46,9 +46,10 @@ import {
   MapPin,
   Layers,
   Award,
-  ShoppingBag
+  ShoppingBag,
+  Edit3
 } from 'lucide-react';
-import { inventoryApi, catalogueApi, billingApi } from '../services/api';
+import { inventoryApi, catalogueApi, billingApi, clearApiCache } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ProductModal } from '../components/ProductModal';
 import { ReceiveStockModal } from '../components/ReceiveStockModal';
@@ -113,6 +114,60 @@ export const InventoryPage = () => {
   const [movementsDrawerOpen, setMovementsDrawerOpen] = useState(false);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [stagedVoiceInventory, setStagedVoiceInventory] = useState(null);
+
+  // Quick Inward Purchase Cost Editor Modal State
+  const [costModalOpen, setCostModalOpen] = useState(false);
+  const [costModalProduct, setCostModalProduct] = useState(null);
+  const [costInputValue, setCostInputValue] = useState('');
+  const [costSaving, setCostSaving] = useState(false);
+  const [costError, setCostError] = useState('');
+
+  const handleOpenEditCost = (prod) => {
+    if (!prod) return;
+    setCostModalProduct(prod);
+    setCostInputValue(prod.purchase_cost && !prod.is_cost_estimated ? parseFloat(prod.purchase_cost).toFixed(2) : '');
+    setCostError('');
+    setCostModalOpen(true);
+  };
+
+  const handleSavePurchaseCost = async () => {
+    if (!costModalProduct) return;
+    const numCost = parseFloat(costInputValue);
+    if (isNaN(numCost) || numCost < 0) {
+      setCostError('Please enter a valid purchase rate greater than or equal to 0.');
+      return;
+    }
+
+    setCostSaving(true);
+    setCostError('');
+    try {
+      const pid = costModalProduct.product_id || costModalProduct.id;
+      await catalogueApi.updateProduct(pid, {
+        purchase_cost: numCost
+      });
+      clearApiCache();
+      setStockItems(prev => prev.map(item => {
+        if (item.product_id === pid || item.id === pid) {
+          const bp = parseFloat(item.base_price || 0);
+          const newMarginAmt = bp - numCost;
+          const newMarginPct = bp > 0 ? ((newMarginAmt / bp) * 100).toFixed(1) : '0.0';
+          return {
+            ...item,
+            purchase_cost: numCost,
+            is_cost_estimated: false,
+            margin_amount: newMarginAmt,
+            margin_percent: newMarginPct
+          };
+        }
+        return item;
+      }));
+      setCostModalOpen(false);
+    } catch (err) {
+      setCostError(err.response?.data?.detail || 'Failed to update purchase cost.');
+    } finally {
+      setCostSaving(false);
+    }
+  };
 
   const handleApplyVoiceInventory = (parsed) => {
     if (!parsed) return;
@@ -450,6 +505,7 @@ export const InventoryPage = () => {
   const selectedValuation = selectedStock * selectedRate;
 
   // SKU Intelligence & Commercial Metrics
+  const isCostEstimated = selectedProduct?.is_cost_estimated ?? (!selectedProduct?.purchase_cost);
   const purchaseCost = parseFloat(selectedProduct?.purchase_cost || (selectedRate * 0.75));
   const marginAmt = parseFloat(selectedProduct?.margin_amount || (selectedRate - purchaseCost));
   const marginPct = selectedRate > 0 ? (selectedProduct?.margin_percent ? parseFloat(selectedProduct.margin_percent).toFixed(1) : ((marginAmt / selectedRate) * 100).toFixed(1)) : '0.0';
@@ -1262,11 +1318,33 @@ export const InventoryPage = () => {
                       {/* Economics Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase block">Inward Purchase Rate</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block">Inward Purchase Rate</span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditCost(selectedProduct)}
+                              className="text-amber-400 hover:text-amber-300 p-0.5 rounded hover:bg-slate-800 transition-colors"
+                              title="Update Purchase Cost"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                          </div>
                           <p className="text-sm font-black font-mono text-slate-200 mt-0.5">
                             ₹{parseFloat(purchaseCost || 0).toFixed(2)} <span className="text-[9px] text-slate-500 font-normal">/ pkt</span>
                           </p>
-                          <span className="text-[9px] text-slate-500">Recorded Inward</span>
+                          {isCostEstimated ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditCost(selectedProduct)}
+                              className="text-[9px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 hover:underline text-left mt-0.5 cursor-pointer"
+                            >
+                              <span>⚠️ Estimated (75%) • Set actual</span>
+                            </button>
+                          ) : (
+                            <span className="text-[9px] text-emerald-400 font-semibold flex items-center gap-0.5 mt-0.5">
+                              ✓ Recorded Inward
+                            </span>
+                          )}
                         </div>
 
                         <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
@@ -2262,6 +2340,120 @@ export const InventoryPage = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── QUICK EDIT PURCHASE COST MODAL ─── */}
+      {costModalOpen && costModalProduct && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                  ₹
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Update Inward Cost</h3>
+                  <p className="text-[10px] text-slate-400">Set standard procurement rate</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCostModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 text-xs">
+              {costError && (
+                <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{costError}</span>
+                </div>
+              )}
+
+              {/* SKU & Selling Rate Info */}
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-mono text-[11px]">{costModalProduct.sku}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">{costModalProduct.packaging_unit || 'Unit'}</span>
+                </div>
+                <h4 className="text-white font-bold text-xs truncate">{costModalProduct.name}</h4>
+                <div className="pt-1 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Wholesale Selling Rate:</span>
+                  <strong className="text-amber-400 font-mono">₹{parseFloat(costModalProduct.base_price || 0).toFixed(2)}</strong>
+                </div>
+              </div>
+
+              {/* Cost Input Field */}
+              <div>
+                <label className="block font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Actual Inward Purchase Cost (₹) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-500 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    autoFocus
+                    required
+                    value={costInputValue}
+                    onChange={(e) => setCostInputValue(e.target.value)}
+                    placeholder="e.g. 210.00"
+                    className="w-full pl-8 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-mono font-bold text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Cost per packet/unit paid to distributor or manufacturer.
+                </p>
+              </div>
+
+              {/* Live Margin Calculation Preview */}
+              {costInputValue && parseFloat(costInputValue) >= 0 && (
+                <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl space-y-1 font-mono text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Net Profit / Unit:</span>
+                    <strong className={parseFloat(costModalProduct.base_price || 0) - parseFloat(costInputValue) >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                      {parseFloat(costModalProduct.base_price || 0) - parseFloat(costInputValue) >= 0 ? "+" : ""}
+                      ₹{(parseFloat(costModalProduct.base_price || 0) - parseFloat(costInputValue)).toFixed(2)}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Gross Margin %:</span>
+                    <strong className="text-emerald-400">
+                      {parseFloat(costModalProduct.base_price || 0) > 0 
+                        ? (((parseFloat(costModalProduct.base_price || 0) - parseFloat(costInputValue)) / parseFloat(costModalProduct.base_price || 0)) * 100).toFixed(1)
+                        : "0.0"}%
+                    </strong>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCostModalOpen(false)}
+                  disabled={costSaving}
+                  className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSavePurchaseCost}
+                  disabled={costSaving || !costInputValue}
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {costSaving ? 'Saving...' : 'Save Cost'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

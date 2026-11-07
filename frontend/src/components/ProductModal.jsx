@@ -9,6 +9,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
   const [brand, setBrand] = useState('RAIS Master');
   const [packagingUnit, setPackagingUnit] = useState('1 KG PACKET');
   const [basePrice, setBasePrice] = useState('');
+  const [purchaseCost, setPurchaseCost] = useState('');
   const [taxRate, setTaxRate] = useState('0.00');
   const [hsnCode, setHsnCode] = useState('');
   const [description, setDescription] = useState('');
@@ -67,6 +68,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           setBrand(productToEdit.brand || 'RAIS Master');
           setPackagingUnit(productToEdit.packaging_unit || '1 KG PACKET');
           setBasePrice(productToEdit.base_price?.toString() || '');
+          setPurchaseCost(productToEdit.purchase_cost?.toString() || productToEdit.landed_cost?.toString() || '');
           setTaxRate(productToEdit.tax_rate?.toString() || '0.00');
           setHsnCode(productToEdit.hsn_code || '');
           setDescription(productToEdit.description || '');
@@ -81,6 +83,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           setBrand('RAIS Master');
           setPackagingUnit('1 KG PACKET');
           setBasePrice('');
+          setPurchaseCost('');
           setTaxRate('0.00');
           setHsnCode('21069099');
           setDescription('');
@@ -133,6 +136,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
 
     const skuToUse = (customSku.trim() || getSuggestedSku()).toUpperCase();
 
+    const numericPurchaseCost = purchaseCost ? parseFloat(purchaseCost) : null;
+
     setLoading(true);
     try {
       if (productToEdit && productToEdit.id) {
@@ -142,6 +147,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           brand: brand.trim(),
           packaging_unit: packagingUnit,
           base_price: numericBasePrice,
+          purchase_cost: numericPurchaseCost,
           tax_rate: numericTaxRate,
           hsn_code: hsnCode.trim() || null,
           description: description.trim() || null,
@@ -157,6 +163,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           brand: brand.trim(),
           packaging_unit: packagingUnit,
           base_price: numericBasePrice,
+          purchase_cost: numericPurchaseCost,
           tax_rate: numericTaxRate,
           hsn_code: hsnCode.trim() || null,
           description: description.trim() || null,
@@ -297,8 +304,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
                 </div>
               </div>
 
-              {/* Field 3: Wholesale Rate & Pack Size */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Field 3: Rates, Purchase Cost & Pack Size */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
                     3. Wholesale Rate (₹) *
@@ -312,10 +319,39 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
                       required
                       value={basePrice}
                       onChange={(e) => setBasePrice(e.target.value)}
-                      placeholder="240.00"
+                      placeholder="280.00"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-black text-amber-400 focus:outline-none focus:border-amber-500"
                     />
                   </div>
+                  <span className="text-[10px] text-slate-500 mt-1 block">B2B Wholesale Selling Price</span>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+                    <span>4. Purchase Cost (₹)</span>
+                    <span className="text-[9px] text-emerald-400 font-bold uppercase px-1.5 py-0.2 bg-emerald-500/10 rounded">Inward</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-slate-500 font-black text-sm">₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={purchaseCost}
+                      onChange={(e) => setPurchaseCost(e.target.value)}
+                      placeholder={basePrice ? (parseFloat(basePrice) * 0.75).toFixed(2) : "210.00"}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-1 block">
+                    {purchaseCost && basePrice && parseFloat(basePrice) > 0 ? (
+                      <span className="text-emerald-400 font-semibold">
+                        Margin: +₹{(parseFloat(basePrice) - parseFloat(purchaseCost)).toFixed(2)} ({(((parseFloat(basePrice) - parseFloat(purchaseCost)) / parseFloat(basePrice)) * 100).toFixed(1)}%)
+                      </span>
+                    ) : (
+                      "Procurement / Inward Rate"
+                    )}
+                  </span>
                 </div>
 
                 <div>
@@ -327,15 +363,15 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
                     value={packagingUnit}
                     onChange={(e) => setPackagingUnit(e.target.value)}
                     placeholder="1 KG PACKET"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
                   />
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    {popularUnits.slice(0, 5).map(u => (
+                    {popularUnits.slice(0, 4).map(u => (
                       <button
                         key={u}
                         type="button"
                         onClick={() => setPackagingUnit(u)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-colors ${
                           packagingUnit === u ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400 hover:text-white'
                         }`}
                       >
@@ -418,7 +454,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
           </div>
 
           {/* Packaging Unit & Pricing */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
                 Packaging Unit *
@@ -447,7 +483,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
 
             <div>
               <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Wholesale Base Price (₹) *
+                Wholesale Selling Price (₹) *
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-slate-500 font-bold">₹</span>
@@ -459,7 +495,26 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
                   placeholder="240.00"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-7 pr-3 py-2.5 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-7 pr-3 py-2.5 text-xs font-mono font-bold text-amber-400 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+                <span>Standard Purchase Cost (₹)</span>
+                <span className="text-[9px] text-emerald-400 font-bold uppercase px-1.5 py-0.2 bg-emerald-500/10 rounded">Inward</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-slate-500 font-bold">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={purchaseCost}
+                  onChange={(e) => setPurchaseCost(e.target.value)}
+                  placeholder={basePrice ? (parseFloat(basePrice) * 0.75).toFixed(2) : "210.00"}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-7 pr-3 py-2.5 text-xs font-mono font-bold text-slate-200 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
@@ -470,13 +525,20 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
             <div className="p-3 bg-slate-950 border border-slate-800/80 rounded-xl flex items-center justify-between font-mono">
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4 text-amber-400" />
-                <span className="text-slate-400 text-[11px]">Pricing Valuation:</span>
+                <span className="text-slate-400 text-[11px]">Commercial Economics:</span>
               </div>
-              <div className="flex items-center gap-4 text-xs">
-                <span>Wholesale Unit Rate: <b className="text-slate-200 font-bold">₹{parseFloat(numericBasePrice || 0).toFixed(2)}</b></span>
-                <span className="text-amber-400 font-bold border-l border-slate-800 pl-3">
-                  Billed Price: ₹{parseFloat(finalPriceInclTax || 0).toFixed(2)} (Direct)
-                </span>
+              <div className="flex items-center gap-3 text-xs">
+                <span>Wholesale: <b className="text-amber-400 font-bold">₹{parseFloat(numericBasePrice || 0).toFixed(2)}</b></span>
+                {purchaseCost && parseFloat(purchaseCost) > 0 && (
+                  <span className="border-l border-slate-800 pl-3 text-slate-300">
+                    Cost: <b className="text-slate-200 font-mono">₹{parseFloat(purchaseCost).toFixed(2)}</b>
+                  </span>
+                )}
+                {purchaseCost && parseFloat(purchaseCost) > 0 && (
+                  <span className="border-l border-slate-800 pl-3 text-emerald-400 font-bold">
+                    Margin: +₹{(numericBasePrice - parseFloat(purchaseCost)).toFixed(2)} ({(((numericBasePrice - parseFloat(purchaseCost)) / numericBasePrice) * 100).toFixed(1)}%)
+                  </span>
+                )}
               </div>
             </div>
           )}

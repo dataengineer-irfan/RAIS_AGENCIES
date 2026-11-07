@@ -29,6 +29,7 @@ class ProductBase(BaseModel):
     packaging_unit: str
     unit_quantity: Decimal = Decimal("1.00")
     base_price: Decimal
+    purchase_cost: Optional[Decimal] = None
     tax_rate: Decimal = Decimal("0.00")
     hsn_code: Optional[str] = None
     description: Optional[str] = None
@@ -46,6 +47,7 @@ class ProductUpdate(BaseModel):
     packaging_unit: Optional[str] = None
     unit_quantity: Optional[Decimal] = None
     base_price: Optional[Decimal] = None
+    purchase_cost: Optional[Decimal] = None
     tax_rate: Optional[Decimal] = None
     hsn_code: Optional[str] = None
     description: Optional[str] = None

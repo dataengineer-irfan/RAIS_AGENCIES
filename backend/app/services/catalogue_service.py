@@ -103,6 +103,7 @@ class CatalogueService:
             packaging_unit=data.packaging_unit,
             unit_quantity=data.unit_quantity,
             base_price=data.base_price,
+            purchase_cost=data.purchase_cost,
             tax_rate=data.tax_rate,
             hsn_code=data.hsn_code,
             description=data.description,
@@ -123,6 +124,7 @@ class CatalogueService:
         before_state = {
             "name": product.name,
             "base_price": str(product.base_price),
+            "purchase_cost": str(product.purchase_cost) if product.purchase_cost is not None else None,
             "tax_rate": str(product.tax_rate),
             "current_stock": str(product.current_stock)
         }
