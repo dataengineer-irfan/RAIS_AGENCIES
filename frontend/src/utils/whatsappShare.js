@@ -176,9 +176,25 @@ export const shareInvoiceOnWhatsApp = async ({
 
   let settlementSection = '';
   if (isSettled) {
-    settlementSection = `✅ *Status:* *PAID IN FULL*\n💵 *Settlement Received:* *₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (${paymentMethod || 'CASH'})\n🔹 *Applied to Current Bill:* ₹${appliedToCurrent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
-    if (appliedToPrev > 0) {
-      settlementSection += `🔹 *Adjusted to Past Dues:* ₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+    const finalBalance = (closingBalance !== null && closingBalance !== undefined) ? closingBalance : overallDue;
+    let priorBal = 0;
+    if (finalBalance !== null && finalBalance !== undefined) {
+      priorBal = Math.max(0, finalBalance + receivedAmount - billAmt);
+    } else if (appliedToPrev > 0) {
+      priorBal = appliedToPrev;
+    }
+    const totalObligation = billAmt + priorBal;
+
+    settlementSection = `✅ *Status:* *PAID IN FULL*\n💵 *Settlement Received:* *₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (${paymentMethod || 'CASH'})\n`;
+    if (priorBal > 0.01) {
+      settlementSection += `📋 *Prior Past Due:* +₹${priorBal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+      settlementSection += `📊 *Total Account Obligation:* ₹${totalObligation.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+      settlementSection += `💵 *Total Payment Received:* -₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+    } else {
+      settlementSection += `🔹 *Applied to Current Bill:* ₹${appliedToCurrent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+      if (appliedToPrev > 0) {
+        settlementSection += `🔹 *Adjusted to Past Dues:* ₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
+      }
     }
     if (closingBalance !== null && closingBalance <= 0.01) {
       settlementSection += `🎉 *Ledger Status:* *ALL DUES FULLY CLEARED (₹0.00)*\n`;

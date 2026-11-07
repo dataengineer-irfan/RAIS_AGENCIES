@@ -155,6 +155,8 @@ def get_printable_invoice(
     inv_out = Decimal(str(inv.outstanding_amount or "0.00"))
     inv_total = Decimal(str(inv.total_amount or "0.00"))
     inv_status = str(inv.status or "").upper()
+    received_amt = Decimal(str(getattr(inv, "received_amount", None) or inv.paid_amount or "0.00"))
+    is_settled = (inv_status == 'PAID') or (received_amt > Decimal("0.00")) or (inv.paid_amount and inv.paid_amount > Decimal("0.00"))
 
     # Determine Previous Balance and Total Customer Outstanding Balance
     if inv_status in ['ISSUED', 'PARTIALLY_PAID', 'OVERDUE', 'PAID']:
@@ -613,10 +615,11 @@ def get_invoice_image(
         draw.text((width - 158, cur_y + 8), "IN STOCK AT DEPOT", fill=(255, 255, 255), font=f_small)
         cur_y += strip_h
 
-    # 4. Summary & UPI Cards
+    # 4. Summary & Settlement / UPI Cards
     cur_y += 15
-    box_h = 145
+    box_h = 172
     sum_right = width - 48  # 752px
+    left_right = 412        # 18px inner padding inside left card (430 - 18)
 
     # Calculate customer overall balance and prior balance
     cust_total_due = None
@@ -638,14 +641,64 @@ def get_invoice_image(
         cust_total_due = Decimal(str(inv.outstanding_amount or "0.00"))
 
     inv_out = Decimal(str(inv.outstanding_amount or "0.00"))
-    prev_balance = max(Decimal("0.00"), cust_total_due - inv_out)
+    inv_total = Decimal(str(inv.total_amount or "0.00"))
+    inv_status = str(inv.status or "").upper()
+    received_amt = Decimal(str(getattr(inv, "received_amount", None) or inv.paid_amount or "0.00"))
+    applied_to_prev = Decimal(str(getattr(inv, "applied_to_previous", None) or "0.00"))
+    is_settled = (inv_status == 'PAID') or (received_amt > Decimal("0.00")) or (inv.paid_amount and inv.paid_amount > Decimal("0.00"))
+    applied_to_curr = min(inv_total, received_amt if received_amt > Decimal("0.00") else (inv.paid_amount or inv_total))
 
-    # UPI Box (Left)
-    draw.rectangle([(30, cur_y), (420, cur_y + box_h)], fill=(240, 253, 244), outline=(187, 247, 208))
-    draw.text((45, cur_y + 12), "💳 OFFICIAL UPI SETTLEMENT:", fill=(21, 128, 61), font=f_bold)
-    draw.text((45, cur_y + 34), "9347453135@ybl", fill=(15, 23, 42), font=f_title)
-    draw.text((45, cur_y + 70), "Payee: RAIS AGENCIES • GPay / PhonePe: 9347453135", fill=(51, 65, 85), font=f_regular)
-    draw.text((45, cur_y + 92), "Share payment confirmation on WhatsApp for instant credit.", fill=(21, 128, 61), font=f_small)
+    if is_settled:
+        prev_balance = max(Decimal("0.00"), cust_total_due + received_amt - inv_total)
+    else:
+        prev_balance = max(Decimal("0.00"), cust_total_due - inv_out)
+    total_obligation = inv_total + prev_balance
+
+    # Left Box
+    draw.rectangle([(30, cur_y), (430, cur_y + box_h)], fill=(240, 253, 244), outline=(134, 239, 172))
+    if is_settled:
+        # Header
+        draw.text((48, cur_y + 12), "✓ PAYMENT SETTLEMENT RECEIPT", fill=(21, 128, 61), font=f_bold)
+        mode_text = (inv.payment_method or "CASH").upper()
+        draw.rectangle([(352, cur_y + 10), (412, cur_y + 26)], fill=(220, 252, 231), outline=(134, 239, 172))
+        draw.text((362, cur_y + 12), mode_text, fill=(22, 101, 52), font=f_small)
+        draw.line([(44, cur_y + 34), (416, cur_y + 34)], fill=(187, 247, 208))
+
+        # Row 1: Total Received
+        draw.text((48, cur_y + 54), "Total Payment Received:", fill=(51, 65, 85), font=f_regular)
+        draw_right(left_right, cur_y + 54, f"₹{received_amt:.2f}", fill=(15, 23, 42), font=f_bold)
+
+        # Row 2: Applied to Current Bill
+        draw.text((48, cur_y + 77), "Applied to Current Bill:", fill=(71, 85, 105), font=f_regular)
+        draw_right(left_right, cur_y + 77, f"₹{applied_to_curr:.2f}", fill=(21, 128, 61), font=f_bold)
+
+        # Row 3: Adjusted to Past Dues
+        if applied_to_prev > Decimal("0.00"):
+            draw.text((48, cur_y + 98), "Adjusted to Past Dues:", fill=(146, 64, 14), font=f_bold)
+            draw_right(left_right, cur_y + 98, f"₹{applied_to_prev:.2f}", fill=(180, 83, 9), font=f_bold)
+        else:
+            draw.text((48, cur_y + 98), "Settlement Mode:", fill=(100, 116, 139), font=f_regular)
+            draw_right(left_right, cur_y + 98, f"Counter {mode_text}", fill=(15, 23, 42), font=f_bold)
+
+        # Bottom Status Pill
+        is_cleared = cust_total_due <= Decimal("0.01")
+        pill_fill = (220, 252, 231) if is_cleared else (254, 243, 199)
+        pill_out = (134, 239, 172) if is_cleared else (253, 230, 138)
+        draw.rectangle([(44, cur_y + 124), (416, cur_y + 158)], fill=pill_fill, outline=pill_out)
+        if is_cleared:
+            draw.text((54, cur_y + 135), "✓ ALL DUES FULLY CLEARED (₹0.00)", fill=(21, 128, 61), font=f_bold)
+        else:
+            draw.text((54, cur_y + 135), "Remaining Account Due:", fill=(146, 64, 14), font=f_bold)
+            draw_right(406, cur_y + 135, f"₹{cust_total_due:.2f}", fill=(146, 64, 14), font=f_mono)
+    else:
+        draw.text((48, cur_y + 12), "💳 OFFICIAL UPI SETTLEMENT", fill=(21, 128, 61), font=f_bold)
+        draw.line([(44, cur_y + 34), (416, cur_y + 34)], fill=(187, 247, 208))
+        draw.text((48, cur_y + 54), "9347453135@ybl", fill=(15, 23, 42), font=f_title)
+        draw.text((48, cur_y + 80), "Payee: RAIS AGENCIES", fill=(51, 65, 85), font=f_regular)
+        draw.text((48, cur_y + 98), "GPay / PhonePe / Paytm: 9347453135", fill=(71, 85, 105), font=f_regular)
+        draw.rectangle([(44, cur_y + 124), (416, cur_y + 158)], fill=(254, 243, 199), outline=(253, 230, 138))
+        draw.text((54, cur_y + 135), "Driver Collection / Total Due:", fill=(146, 64, 14), font=f_bold)
+        draw_right(406, cur_y + 135, f"₹{cust_total_due:.2f}", fill=(146, 64, 14), font=f_mono)
 
     # Totals Box (Right)
     draw.rectangle([(440, cur_y), (width - 30, cur_y + box_h)], fill=(248, 250, 252), outline=(226, 232, 240))
@@ -653,26 +706,48 @@ def get_invoice_image(
     draw_right(sum_right, cur_y + 10, f"₹{inv.subtotal:.2f}", fill=(30, 41, 59), font=f_bold)
 
     # Dark Card for Invoice Total
-    draw.rectangle([(450, cur_y + 28), (width - 40, cur_y + 56)], fill=(15, 23, 42))
-    draw.text((462, cur_y + 36), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
-    draw_right(width - 52, cur_y + 36, f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
-
-    if inv.paid_amount > 0:
-        draw.text((455, cur_y + 64), "Paid on Bill:", fill=(5, 150, 105), font=f_regular)
-        draw_right(sum_right, cur_y + 64, f"-₹{inv.paid_amount:.2f}", fill=(5, 150, 105), font=f_bold)
-    else:
-        draw.text((455, cur_y + 64), "Prior Balance:", fill=(180, 83, 9), font=f_regular)
-        draw_right(sum_right, cur_y + 64, f"₹{prev_balance:.2f}", fill=(180, 83, 9), font=f_bold)
-
-    draw.text((455, cur_y + 82), "This Bill Balance:", fill=(100, 116, 139), font=f_regular)
-    draw_right(sum_right, cur_y + 82, f"₹{inv_out:.2f}", fill=(30, 41, 59), font=f_bold)
-
-    # Line separator
-    draw.line([(450, cur_y + 102), (width - 40, cur_y + 102)], fill=(226, 232, 240))
+    draw.rectangle([(450, cur_y + 30), (width - 40, cur_y + 58)], fill=(15, 23, 42))
+    draw.text((462, cur_y + 38), "INVOICE TOTAL:", fill=(245, 158, 11), font=f_bold)
+    draw_right(width - 52, cur_y + 38, f"₹{inv.total_amount:.2f}", fill=(255, 255, 255), font=f_mono)
 
     due_color = (225, 29, 72) if cust_total_due > Decimal("0.01") else (5, 150, 105)
-    draw.text((455, cur_y + 108), "TOTAL BALANCE DUE:", fill=due_color, font=f_bold)
-    draw_right(sum_right, cur_y + 108, f"₹{cust_total_due:.2f}", fill=due_color, font=f_mono)
+
+    if is_settled:
+        if prev_balance > Decimal("0.01"):
+            # Option 1 Waterfall
+            draw.text((455, cur_y + 76), "Prior Past Due Balance:", fill=(180, 83, 9), font=f_regular)
+            draw_right(sum_right, cur_y + 76, f"+₹{prev_balance:.2f}", fill=(180, 83, 9), font=f_bold)
+
+            draw.text((455, cur_y + 94), "Total Account Obligation:", fill=(51, 65, 85), font=f_regular)
+            draw_right(sum_right, cur_y + 94, f"₹{total_obligation:.2f}", fill=(15, 23, 42), font=f_bold)
+
+            draw.text((455, cur_y + 112), "Total Payment Received:", fill=(21, 128, 61), font=f_regular)
+            draw_right(sum_right, cur_y + 112, f"-₹{received_amt:.2f}", fill=(21, 128, 61), font=f_bold)
+
+            draw.line([(450, cur_y + 128), (width - 40, cur_y + 128)], fill=(226, 232, 240))
+            draw.text((455, cur_y + 140), "TOTAL BALANCE DUE:", fill=due_color, font=f_bold)
+            draw_right(sum_right, cur_y + 140, f"₹{cust_total_due:.2f}" if cust_total_due > Decimal("0.01") else "₹0.00 (Cleared)", fill=due_color, font=f_mono)
+        else:
+            draw.text((455, cur_y + 80), "Total Payment Received:", fill=(21, 128, 61), font=f_regular)
+            draw_right(sum_right, cur_y + 80, f"-₹{received_amt:.2f}", fill=(21, 128, 61), font=f_bold)
+
+            draw.line([(450, cur_y + 115), (width - 40, cur_y + 115)], fill=(226, 232, 240))
+            draw.text((455, cur_y + 140), "TOTAL BALANCE DUE:", fill=due_color, font=f_bold)
+            draw_right(sum_right, cur_y + 140, f"₹{cust_total_due:.2f}" if cust_total_due > Decimal("0.01") else "₹0.00 (Cleared)", fill=due_color, font=f_mono)
+    else:
+        if prev_balance > Decimal("0.01"):
+            draw.text((455, cur_y + 76), "Prior Past Due Balance:", fill=(180, 83, 9), font=f_regular)
+            draw_right(sum_right, cur_y + 76, f"+₹{prev_balance:.2f}", fill=(180, 83, 9), font=f_bold)
+
+            draw.text((455, cur_y + 96), "This Bill Balance Due:", fill=(100, 116, 139), font=f_regular)
+            draw_right(sum_right, cur_y + 96, f"₹{inv_out:.2f}", fill=(30, 41, 59), font=f_bold)
+        else:
+            draw.text((455, cur_y + 80), "This Bill Balance Due:", fill=(100, 116, 139), font=f_regular)
+            draw_right(sum_right, cur_y + 80, f"₹{inv_out:.2f}", fill=(30, 41, 59), font=f_bold)
+
+        draw.line([(450, cur_y + 122), (width - 40, cur_y + 122)], fill=(226, 232, 240))
+        draw.text((455, cur_y + 140), "TOTAL BALANCE DUE:", fill=due_color, font=f_bold)
+        draw_right(sum_right, cur_y + 140, f"₹{cust_total_due:.2f}", fill=due_color, font=f_mono)
 
     # 4b. Direct Quick Links Banner (Bold Emerald Card)
     cur_y += box_h + 10

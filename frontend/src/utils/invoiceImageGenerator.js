@@ -260,7 +260,7 @@ export const generateInvoiceCanvas = ({
   const tableHeaderHeight = 36;
   const rowHeight = 36;
   const tableHeight = tableHeaderHeight + (processedItems.length * rowHeight) + 10;
-  const totalsHeight = 170;
+  const totalsHeight = 190;
   const linksHeight = 72;
   const footerHeight = 120;
   const height = headerHeight + 110 + tableHeight + restockStripHeight + totalsHeight + linksHeight + footerHeight;
@@ -558,14 +558,37 @@ export const generateInvoiceCanvas = ({
   const summaryX = width - 30 - summaryWidth; // 450px
   const summaryRightX = summaryX + summaryWidth - 18; // 752px (18px clean padding inside summary card)
   const summaryBannerRightX = summaryX + summaryWidth - 24; // 746px (12px padding inside dark banner)
-  const boxHeight = 154;
+  const boxHeight = 172;
 
+  // Left Side: Payment Settlement Receipt OR UPI Payment Box
+  const upiWidth = width - 60 - summaryWidth - 20; // 400px
+  const leftBoxX = 30;
+  const leftBoxRightX = leftBoxX + upiWidth - 18; // 412px (18px clean right padding)
+  const leftBoxTextX = leftBoxX + 18; // 48px (18px clean left padding)
+
+  // Derive Ledger & Settlement Waterfall figures (Option 1)
+  let priorBalance = 0;
+  if (isSettled) {
+    const finalBalance = (closingBalance !== null && closingBalance !== undefined) ? closingBalance : overallDue;
+    if (finalBalance !== null && finalBalance !== undefined) {
+      priorBalance = Math.max(0, finalBalance + receivedAmount - totalAmount);
+    } else if (appliedToPrev > 0) {
+      priorBalance = appliedToPrev;
+    }
+  } else {
+    const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : outstandingAmount;
+    priorBalance = Math.max(0, effectiveDue - outstandingAmount);
+  }
+  const totalObligation = totalAmount + priorBalance;
+
+  // Right Box: Financial Summary Card (Option 1 Unified Waterfall)
   ctx.fillStyle = '#f8fafc';
   if (ctx.roundRect) {
     ctx.beginPath();
     ctx.roundRect(summaryX, curY, summaryWidth, boxHeight, 8);
     ctx.fill();
     ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
     ctx.stroke();
   } else {
     ctx.fillRect(summaryX, curY, summaryWidth, boxHeight);
@@ -583,7 +606,7 @@ export const generateInvoiceCanvas = ({
   ctx.textAlign = 'left';
 
   if (discountAmount > 0) {
-    sY += 16;
+    sY += 15;
     ctx.fillStyle = '#16a34a';
     ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('Discount:', summaryX + 18, sY);
@@ -593,219 +616,369 @@ export const generateInvoiceCanvas = ({
     ctx.textAlign = 'left';
   }
 
-  sY += 22;
   // Grand Total Banner inside summary
+  const bannerY = discountAmount > 0 ? sY + 8 : curY + 34;
+  const bannerH = 28;
   ctx.fillStyle = '#0f172a';
   if (ctx.roundRect) {
     ctx.beginPath();
-    ctx.roundRect(summaryX + 12, sY - 14, summaryWidth - 24, 28, 6);
+    ctx.roundRect(summaryX + 12, bannerY, summaryWidth - 24, bannerH, 6);
     ctx.fill();
   } else {
-    ctx.fillRect(summaryX + 12, sY - 14, summaryWidth - 24, 28);
+    ctx.fillRect(summaryX + 12, bannerY, summaryWidth - 24, bannerH);
   }
 
   ctx.fillStyle = '#f59e0b';
   ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('INVOICE TOTAL:', summaryX + 22, sY + 3);
+  ctx.fillText('INVOICE TOTAL:', summaryX + 22, bannerY + 18);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 13.5px monospace';
   ctx.textAlign = 'right';
-  ctx.fillText(`₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryBannerRightX, sY + 3);
+  ctx.fillText(`₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryBannerRightX, bannerY + 18);
   ctx.textAlign = 'left';
 
-  sY += 23;
   if (isSettled) {
-    // Settled Bill Breakdown under Total
-    ctx.fillStyle = '#15803d';
-    ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Amount Received:', summaryX + 18, sY);
-    ctx.font = 'bold 11px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
-    ctx.textAlign = 'left';
-
-    sY += 16;
-    if (appliedToPrev > 0) {
-      ctx.fillStyle = '#0284c7';
-      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Past Dues Cleared:', summaryX + 18, sY);
-      ctx.font = 'bold 10.5px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+    if (priorBalance > 0.01) {
+      // ─── OPTION 1: UNIFIED ACCOUNT WATERFALL ───
+      // Line 1: Prior Past Due Balance
+      sY = bannerY + bannerH + 16;
+      ctx.fillStyle = '#92400e';
+      ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
-      sY += 16;
-    }
+      ctx.fillText('Prior Past Due Balance:', summaryX + 18, sY);
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`+₹${priorBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
 
-    if (closingBalance !== null && closingBalance <= 0.01) {
+      // Line 2: Total Account Obligation
+      sY += 18;
+      ctx.fillStyle = '#334155';
+      ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('Total Account Obligation:', summaryX + 18, sY);
+      ctx.font = 'bold 11.5px monospace';
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${totalObligation.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
+
+      // Line 3: Total Payment Received
+      sY += 18;
       ctx.fillStyle = '#15803d';
-      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
+      ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('Total Payment Received:', summaryX + 18, sY);
+      ctx.font = 'bold 11.5px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText('₹0.00 (Cleared)', summaryRightX, sY);
+      ctx.fillText(`-₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
       ctx.textAlign = 'left';
-    } else if (closingBalance !== null && closingBalance > 0.01) {
-      ctx.fillStyle = '#dc2626';
-      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+      // Line Separator
+      sY += 10;
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.moveTo(summaryX + 14, sY);
+      ctx.lineTo(summaryRightX, sY);
+      ctx.stroke();
+
+      // Line 4: TOTAL BALANCE DUE (matches bottom status pill baseline!)
+      sY = curY + 150;
+      const isDueCleared = closingBalance !== null && closingBalance <= 0.01;
+      ctx.fillStyle = isDueCleared ? '#15803d' : '#dc2626';
+      ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
+      ctx.font = isDueCleared ? 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'bold 12.5px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(`₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.fillText(
+        isDueCleared ? '₹0.00 (Cleared)' : `₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        summaryRightX,
+        sY
+      );
+      ctx.textAlign = 'left';
+    } else {
+      // Settled with NO prior dues (Clean & direct)
+      sY = bannerY + bannerH + 20;
+      ctx.fillStyle = '#15803d';
+      ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Total Payment Received:', summaryX + 18, sY);
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`-₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
+
+      // Line Separator
+      sY += 20;
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.moveTo(summaryX + 14, sY);
+      ctx.lineTo(summaryRightX, sY);
+      ctx.stroke();
+
+      sY = curY + 150;
+      const isDueCleared = closingBalance === null || closingBalance <= 0.01;
+      ctx.fillStyle = isDueCleared ? '#15803d' : '#dc2626';
+      ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
+      ctx.font = isDueCleared ? 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'bold 12.5px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(
+        isDueCleared ? '₹0.00 (Cleared)' : `₹${closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        summaryRightX,
+        sY
+      );
       ctx.textAlign = 'left';
     }
   } else {
-    // Unsettled / Due Balance
+    // ─── UNSETTLED / DUE BILL SUMMARY ───
     const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : outstandingAmount;
-    const priorBalance = Math.max(0, effectiveDue - outstandingAmount);
+    sY = bannerY + bannerH + 16;
+    if (priorBalance > 0.01) {
+      ctx.fillStyle = '#92400e';
+      ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Prior Past Due Balance:', summaryX + 18, sY);
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`+₹${priorBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
 
-    // Line 1: Prior Balance
-    ctx.fillStyle = '#92400e'; // warm amber/brown
-    ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Prior Balance:', summaryX + 18, sY);
-    ctx.font = 'bold 11px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`₹${priorBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
-    ctx.textAlign = 'left';
+      sY += 18;
+      ctx.fillStyle = '#475569';
+      ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('This Bill Balance Due:', summaryX + 18, sY);
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
+    } else {
+      ctx.fillStyle = '#475569';
+      ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('This Bill Balance Due:', summaryX + 18, sY);
+      ctx.font = 'bold 11.5px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
+      ctx.textAlign = 'left';
+    }
 
+    // Line Separator
     sY += 16;
-    // Line 2: This Bill Balance Due
-    ctx.fillStyle = '#475569';
-    ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('This Bill Balance:', summaryX + 18, sY);
-    ctx.font = 'bold 10.5px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`₹${outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
-    ctx.textAlign = 'left';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.moveTo(summaryX + 14, sY);
+    ctx.lineTo(summaryRightX, sY);
+    ctx.stroke();
 
-    sY += 18;
-    // Line 3: TOTAL BALANCE DUE (Prior + This Bill)
+    sY = curY + 150;
     ctx.fillStyle = effectiveDue > 0.01 ? '#dc2626' : '#15803d';
     ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillText('TOTAL BALANCE DUE:', summaryX + 18, sY);
-    ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 12.5px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(`₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, summaryRightX, sY);
     ctx.textAlign = 'left';
   }
 
   // Left Side: Payment Settlement Receipt OR UPI Payment Box
-  const upiWidth = width - 60 - summaryWidth - 20;
-
   if (isSettled) {
     // ─── A: COUNTER SETTLEMENT CONFIRMED BOX ───
     ctx.fillStyle = '#f0fdf4';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(30, curY, upiWidth, boxHeight, 8);
+      ctx.roundRect(leftBoxX, curY, upiWidth, boxHeight, 8);
       ctx.fill();
       ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 1;
       ctx.stroke();
     } else {
-      ctx.fillRect(30, curY, upiWidth, boxHeight);
+      ctx.fillRect(leftBoxX, curY, upiWidth, boxHeight);
     }
 
-    // Top Header Badge
+    // Top Header Badge Title
     ctx.fillStyle = '#15803d';
     ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('✓ PAYMENT SETTLEMENT RECEIPT', 44, curY + 22);
+    ctx.fillText('✓ PAYMENT SETTLEMENT RECEIPT', leftBoxTextX, curY + 22);
 
-    // Mode Pill on Right of Header
+    // Mode Pill on Right of Header (Centered text, aligned to 18px inner padding)
     const modeBadgeText = paymentMethod || 'CASH';
+    ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const modeBadgeWidth = Math.max(54, ctx.measureText(modeBadgeText).width + 16);
+    const modeBadgeX = leftBoxRightX - modeBadgeWidth;
+    const modeBadgeY = curY + 11;
     ctx.fillStyle = '#dcfce7';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(upiWidth - 45, curY + 10, 60, 18, 4);
+      ctx.roundRect(modeBadgeX, modeBadgeY, modeBadgeWidth, 18, 4);
       ctx.fill();
+      ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     } else {
-      ctx.fillRect(upiWidth - 45, curY + 10, 60, 18);
+      ctx.fillRect(modeBadgeX, modeBadgeY, modeBadgeWidth, 18);
     }
     ctx.fillStyle = '#166534';
-    ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(modeBadgeText, upiWidth - 40, curY + 23);
+    ctx.textAlign = 'center';
+    ctx.fillText(modeBadgeText, modeBadgeX + modeBadgeWidth / 2, modeBadgeY + 13);
+    ctx.textAlign = 'left';
 
-    // Metrics Rows
-    let lY = curY + 44;
-    ctx.fillStyle = '#475569';
-    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Total Received:', 44, lY);
+    // Header divider line
+    ctx.strokeStyle = '#bbf7d0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftBoxX + 14, curY + 34);
+    ctx.lineTo(leftBoxRightX, curY + 34);
+    ctx.stroke();
+
+    // Row 1: Total Payment Received (Large bold monospace, right-aligned to leftBoxRightX)
+    let lY = curY + 54;
+    ctx.fillStyle = '#334155';
+    ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('Total Payment Received:', leftBoxTextX, lY);
+
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 220, lY);
+    ctx.font = 'bold 13.5px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftBoxRightX, lY);
+    ctx.textAlign = 'left';
 
-    lY += 21;
+    // Row 2: Applied to Current Bill (Emerald, right-aligned to leftBoxRightX)
+    lY = curY + 77;
     ctx.fillStyle = '#475569';
     ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Applied to This Bill:', 44, lY);
-    ctx.fillStyle = '#15803d';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(`₹${appliedToCurrent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 220, lY);
+    ctx.fillText('Applied to Current Bill:', leftBoxTextX, lY);
 
-    lY += 20;
+    ctx.fillStyle = '#15803d';
+    ctx.font = 'bold 11.5px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${appliedToCurrent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftBoxRightX, lY);
+    ctx.textAlign = 'left';
+
+    // Row 3: Adjusted to Past Dues (Amber, right-aligned to leftBoxRightX)
+    lY = curY + 98;
     if (appliedToPrev > 0) {
-      ctx.fillStyle = '#b45309';
+      ctx.fillStyle = '#92400e';
       ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Adjusted to Past Dues:', 44, lY);
-      ctx.font = 'bold 12px monospace';
-      ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 220, lY);
+      ctx.fillText('Adjusted to Past Dues:', leftBoxTextX, lY);
+
+      ctx.fillStyle = '#b45309';
+      ctx.font = 'bold 11.5px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftBoxRightX, lY);
+      ctx.textAlign = 'left';
     } else {
       ctx.fillStyle = '#64748b';
       ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Settlement Mode:', 44, lY);
+      ctx.fillText('Settlement Mode:', leftBoxTextX, lY);
+
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 11px monospace';
-      ctx.fillText(`Counter ${modeBadgeText}`, 220, lY);
+      ctx.textAlign = 'right';
+      ctx.fillText(`Counter ${modeBadgeText}`, leftBoxRightX, lY);
+      ctx.textAlign = 'left';
     }
 
-    // Account Status Pill (Bottom)
-    lY += 14;
+    // Row 4: Account Status Pill (Bottom)
+    const pillY = curY + 124;
+    const pillH = 34;
+    const pillX = leftBoxX + 14;
+    const pillW = upiWidth - 28;
     const isCleared = (closingBalance !== null && closingBalance <= 0.01) || (isPaid && (closingBalance === null || closingBalance <= 0.01));
+
     ctx.fillStyle = isCleared ? '#dcfce7' : '#fef3c7';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(40, lY, upiWidth - 20, 22, 4);
+      ctx.roundRect(pillX, pillY, pillW, pillH, 6);
       ctx.fill();
+      ctx.strokeStyle = isCleared ? '#86efac' : '#fde68a';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     } else {
-      ctx.fillRect(40, lY, upiWidth - 20, 22);
+      ctx.fillRect(pillX, pillY, pillW, pillH);
     }
 
-    ctx.fillStyle = isCleared ? '#15803d' : '#b45309';
-    ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const statusText = isCleared
-      ? '✓ ALL DUES FULLY CLEARED (Current Balance: ₹0.00)'
-      : `Remaining Account Due: ₹${(closingBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-    ctx.fillText(statusText, 48, lY + 15);
+    if (isCleared) {
+      ctx.fillStyle = '#15803d';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✓ ALL DUES FULLY CLEARED (Current Balance: ₹0.00)', pillX + pillW / 2, pillY + 21);
+      ctx.textAlign = 'left';
+    } else {
+      ctx.fillStyle = '#92400e';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Remaining Account Due:', pillX + 12, pillY + 21);
+
+      ctx.fillStyle = '#92400e';
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`₹${(closingBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, pillX + pillW - 12, pillY + 21);
+      ctx.textAlign = 'left';
+    }
 
   } else {
     // ─── B: OFFICIAL UPI SETTLEMENT BOX (Unpaid Bills) ───
     ctx.fillStyle = '#f0fdf4';
     if (ctx.roundRect) {
       ctx.beginPath();
-      ctx.roundRect(30, curY, upiWidth, boxHeight, 8);
+      ctx.roundRect(leftBoxX, curY, upiWidth, boxHeight, 8);
       ctx.fill();
-      ctx.strokeStyle = '#bbf7d0';
+      ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 1;
       ctx.stroke();
     } else {
-      ctx.fillRect(30, curY, upiWidth, boxHeight);
+      ctx.fillRect(leftBoxX, curY, upiWidth, boxHeight);
     }
 
     ctx.fillStyle = '#15803d';
-    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('💳 OFFICIAL UPI SETTLEMENT:', 46, curY + 28);
+    ctx.font = 'bold 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('💳 OFFICIAL UPI SETTLEMENT', leftBoxTextX, curY + 22);
+
+    // Subtle header divider
+    ctx.strokeStyle = '#bbf7d0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftBoxX + 14, curY + 34);
+    ctx.lineTo(leftBoxRightX, curY + 34);
+    ctx.stroke();
 
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 15px monospace';
-    ctx.fillText('9347453135@ybl', 46, curY + 54);
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('9347453135@ybl', leftBoxTextX, curY + 58);
 
     ctx.fillStyle = '#334155';
     ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Payee: RAIS AGENCIES', 46, curY + 76);
-    ctx.fillText('GPay / PhonePe / Paytm: 9347453135', 46, curY + 94);
+    ctx.fillText('Payee: RAIS AGENCIES', leftBoxTextX, curY + 78);
+    ctx.fillText('GPay / PhonePe / Paytm: 9347453135', leftBoxTextX, curY + 96);
 
-    ctx.fillStyle = '#15803d';
-    ctx.font = 'italic 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Please share payment screenshot on WhatsApp for instant receipt credit.', 46, curY + 118);
+    // Bottom Collection Pill
+    const pillY = curY + 124;
+    const pillH = 34;
+    const pillX = leftBoxX + 14;
+    const pillW = upiWidth - 28;
+    const effectiveDue = (overallDue !== null && overallDue !== undefined) ? overallDue : outstandingAmount;
+
+    ctx.fillStyle = '#fef3c7';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillW, pillH, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else {
+      ctx.fillRect(pillX, pillY, pillW, pillH);
+    }
+
+    ctx.fillStyle = '#92400e';
+    ctx.font = 'bold 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('Driver Collection / Total Due:', pillX + 12, pillY + 21);
+
+    ctx.fillStyle = '#92400e';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`₹${effectiveDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, pillX + pillW - 12, pillY + 21);
+    ctx.textAlign = 'left';
   }
 
   // 4b. Bold Green Quick Links Banner
