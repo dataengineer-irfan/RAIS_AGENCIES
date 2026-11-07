@@ -15,11 +15,24 @@ from app.services.audit_service import AuditService
 from app.domain.enums import InvoiceStatus, AuditAction
 from app.core.exceptions import EntityNotFoundException, InvalidFinancialOperationException
 
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+except ImportError:
+    openpyxl = None
+    Font = PatternFill = Alignment = Border = Side = get_column_letter = None
 
 IST_OFFSET = timedelta(hours=5, minutes=30)
+
+def get_seconds_delta(dt1: Optional[datetime], dt2: Optional[datetime]) -> float:
+    if not dt1 or not dt2:
+        return 999999.0
+    if dt1.tzinfo is not None and dt2.tzinfo is None:
+        dt2 = dt2.replace(tzinfo=dt1.tzinfo)
+    elif dt2.tzinfo is not None and dt1.tzinfo is None:
+        dt1 = dt1.replace(tzinfo=dt2.tzinfo)
+    return abs((dt2 - dt1).total_seconds())
 
 def to_ist_str(dt: Optional[datetime]) -> str:
     if not dt:
@@ -51,6 +64,8 @@ class FinancialAuditService:
         valid_statuses = [InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.PAID.value, InvoiceStatus.OVERDUE.value]
         total_invoiced_query = db.query(func.coalesce(func.sum(Invoice.total_amount), 0)).filter(Invoice.status.in_(valid_statuses)).scalar()
         total_collected_query = db.query(func.coalesce(func.sum(Payment.amount), 0)).scalar()
+        total_invoices_count = db.query(func.count(Invoice.id)).filter(Invoice.status.in_(valid_statuses)).scalar() or 0
+        total_payments_count = db.query(func.count(Payment.id)).scalar() or 0
         
         total_invoiced = Decimal(str(total_invoiced_query or "0.00"))
         total_collected = Decimal(str(total_collected_query or "0.00"))
@@ -65,7 +80,7 @@ class FinancialAuditService:
             p1 = payments[i]
             p2 = payments[i + 1]
             if p1.customer_id == p2.customer_id and p1.amount == p2.amount and p1.payment_method == p2.payment_method:
-                delta = abs((p2.created_at - p1.created_at).total_seconds())
+                delta = get_seconds_delta(p1.created_at, p2.created_at)
                 if delta <= 60:
                     cust_obj = p1.customer
                     anomaly = {
@@ -120,6 +135,8 @@ class FinancialAuditService:
         return {
             "summary": {
                 "total_customers": len(customers),
+                "total_invoices_count": int(total_invoices_count),
+                "total_payments_count": int(total_payments_count),
                 "total_invoiced": float(total_invoiced),
                 "total_collected": float(total_collected),
                 "total_outstanding": float(total_outstanding),
@@ -151,7 +168,7 @@ class FinancialAuditService:
             p1 = payments[i]
             p2 = payments[i + 1]
             if p1.amount == p2.amount and p1.payment_method == p2.payment_method:
-                delta = abs((p2.created_at - p1.created_at).total_seconds())
+                delta = get_seconds_delta(p1.created_at, p2.created_at)
                 if delta <= 60:
                     suspect_pay_ids.add(p1.payment_number)
                     suspect_pay_ids.add(p2.payment_number)
@@ -259,6 +276,9 @@ class FinancialAuditService:
         """
         Dynamically generates a production-grade multi-tab Excel workbook.
         """
+        if openpyxl is None:
+            raise RuntimeError("The 'openpyxl' library is required for Excel export. Please ensure openpyxl is installed.")
+
         wb = openpyxl.Workbook()
 
         # Styles
@@ -337,7 +357,7 @@ class FinancialAuditService:
             p1 = all_pays[i]
             p2 = all_pays[i + 1]
             if p1.customer_id == p2.customer_id and p1.amount == p2.amount and p1.payment_method == p2.payment_method:
-                delta = abs((p2.created_at - p1.created_at).total_seconds())
+                delta = get_seconds_delta(p1.created_at, p2.created_at)
                 if delta <= 15: # high severity rapid-fire
                     suspect_map[p1.customer_id] = suspect_map.get(p1.customer_id, 0.0) + float(p1.amount)
 

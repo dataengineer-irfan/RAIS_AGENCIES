@@ -234,14 +234,23 @@ export const FinancialAuditPage = ({ onNavigate }) => {
       )}
 
       {errorNotice && (
-        <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-bold flex items-center justify-between animate-in fade-in">
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-bold flex items-center justify-between gap-3 animate-in fade-in">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
             <span>{errorNotice}</span>
           </div>
-          <button onClick={() => setErrorNotice(null)} className="text-slate-400 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => loadScanData()}
+              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Retry</span>
+            </button>
+            <button onClick={() => setErrorNotice(null)} className="text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -267,7 +276,7 @@ export const FinancialAuditPage = ({ onNavigate }) => {
             ₹{(summary.total_collected || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
           <span className="text-[10px] text-slate-400 mt-1 block">
-            Across 459 Recorded Payments
+            Across {summary.total_payments_count || 0} Recorded Payments
           </span>
         </div>
 
@@ -279,7 +288,7 @@ export const FinancialAuditPage = ({ onNavigate }) => {
             ₹{(summary.total_outstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
           <span className="text-[10px] text-slate-400 mt-1 block">
-            Across all {summary.total_customers || 34} Customer Accounts
+            Across all {summary.total_customers || 0} Customer Accounts
           </span>
         </div>
 
@@ -385,7 +394,7 @@ export const FinancialAuditPage = ({ onNavigate }) => {
               <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
               <h3 className="text-sm font-bold text-white">No Unresolved Duplicate Payments Detected</h3>
               <p className="text-xs text-slate-400 mt-1">
-                All 515 invoices and 459 payments strictly satisfy mathematical ledger invariants.
+                All {summary.total_invoices_count || 0} invoices and {summary.total_payments_count || 0} payments strictly satisfy mathematical ledger invariants.
               </p>
             </div>
           ) : (
