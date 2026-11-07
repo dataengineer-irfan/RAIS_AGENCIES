@@ -658,27 +658,16 @@ def get_invoice_image(
     draw.rectangle([(30, cur_y), (430, cur_y + box_h)], fill=(240, 253, 244), outline=(134, 239, 172))
     if is_settled:
         # Header
-        draw.text((48, cur_y + 12), "✓ PAYMENT SETTLEMENT RECEIPT", fill=(21, 128, 61), font=f_bold)
-        mode_text = (inv.payment_method or "CASH").upper()
+        draw.text((48, cur_y + 12), "✓ PAYMENT RECEIVED & VERIFIED", fill=(21, 128, 61), font=f_bold)
+        mode_text = (inv.payment_method or "UPI").upper()
         draw.rectangle([(352, cur_y + 10), (412, cur_y + 26)], fill=(220, 252, 231), outline=(134, 239, 172))
         draw.text((362, cur_y + 12), mode_text, fill=(22, 101, 52), font=f_small)
         draw.line([(44, cur_y + 34), (416, cur_y + 34)], fill=(187, 247, 208))
 
-        # Row 1: Total Received
-        draw.text((48, cur_y + 54), "Total Payment Received:", fill=(51, 65, 85), font=f_regular)
-        draw_right(left_right, cur_y + 54, f"₹{received_amt:.2f}", fill=(15, 23, 42), font=f_bold)
-
-        # Row 2: Applied to Current Bill
-        draw.text((48, cur_y + 77), "Applied to Current Bill:", fill=(71, 85, 105), font=f_regular)
-        draw_right(left_right, cur_y + 77, f"₹{applied_to_curr:.2f}", fill=(21, 128, 61), font=f_bold)
-
-        # Row 3: Adjusted to Past Dues
-        if applied_to_prev > Decimal("0.00"):
-            draw.text((48, cur_y + 98), "Adjusted to Past Dues:", fill=(146, 64, 14), font=f_bold)
-            draw_right(left_right, cur_y + 98, f"₹{applied_to_prev:.2f}", fill=(180, 83, 9), font=f_bold)
-        else:
-            draw.text((48, cur_y + 98), "Settlement Mode:", fill=(100, 116, 139), font=f_regular)
-            draw_right(left_right, cur_y + 98, f"Counter {mode_text}", fill=(15, 23, 42), font=f_bold)
+        # Primary UPI ID & Official Settlement Channel
+        draw.text((48, cur_y + 54), "9347453135@ybl", fill=(15, 23, 42), font=f_title)
+        draw.text((48, cur_y + 80), "Payee: RAIS AGENCIES (Rayachoty Depot)", fill=(51, 65, 85), font=f_regular)
+        draw.text((48, cur_y + 98), "GPay • PhonePe • Paytm • BHIM | Instant Receipt Credit", fill=(5, 150, 105), font=f_regular)
 
         # Bottom Status Pill
         is_cleared = cust_total_due <= Decimal("0.01")
@@ -686,9 +675,9 @@ def get_invoice_image(
         pill_out = (134, 239, 172) if is_cleared else (253, 230, 138)
         draw.rectangle([(44, cur_y + 124), (416, cur_y + 158)], fill=pill_fill, outline=pill_out)
         if is_cleared:
-            draw.text((54, cur_y + 135), "✓ ALL DUES FULLY CLEARED (₹0.00)", fill=(21, 128, 61), font=f_bold)
+            draw.text((54, cur_y + 135), "✓ ALL DUES FULLY CLEARED (Current Balance: ₹0.00)", fill=(21, 128, 61), font=f_bold)
         else:
-            draw.text((54, cur_y + 135), "Remaining Account Due:", fill=(146, 64, 14), font=f_bold)
+            draw.text((54, cur_y + 135), "Remaining Due for Next Settlement:", fill=(146, 64, 14), font=f_bold)
             draw_right(406, cur_y + 135, f"₹{cust_total_due:.2f}", fill=(146, 64, 14), font=f_mono)
     else:
         draw.text((48, cur_y + 12), "💳 OFFICIAL UPI SETTLEMENT", fill=(21, 128, 61), font=f_bold)

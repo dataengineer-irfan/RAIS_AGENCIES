@@ -39,6 +39,25 @@ class PaymentService:
         if data.payment_method not in valid_methods:
             raise InvalidFinancialOperationException(f"Invalid payment method '{data.payment_method}'. Must be one of {valid_methods}.")
 
+        # Anti-Duplicate / Rapid-Fire Double Submission Guard (10-second window)
+        from datetime import timedelta
+        now_naive = datetime.utcnow()
+        ten_seconds_ago = now_naive - timedelta(seconds=10)
+        recent_duplicate = db.query(Payment).filter(
+            Payment.customer_id == customer.id,
+            Payment.amount == data.amount,
+            Payment.payment_method == data.payment_method,
+            Payment.created_at >= ten_seconds_ago
+        ).first()
+        if recent_duplicate and not (data.notes and "__ALLOW_RAPID_DUPLICATE__" in data.notes):
+            created_dt = recent_duplicate.created_at.replace(tzinfo=None) if recent_duplicate.created_at else now_naive
+            elapsed = max(0, int((now_naive - created_dt).total_seconds()))
+            raise InvalidFinancialOperationException(
+                f"Rapid-fire duplicate payment prevented. A payment of ₹{data.amount:.2f} ({data.payment_method}) "
+                f"was already recorded for {customer.business_name} {elapsed}s ago (Ref: {recent_duplicate.payment_number}). "
+                "Please wait before submitting again."
+            )
+
         pay_number = SequenceService.get_next_sequence(db, "PAY")
         pay_date = data.payment_date or get_ist_today()
 

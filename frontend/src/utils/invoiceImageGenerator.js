@@ -780,9 +780,9 @@ export const generateInvoiceCanvas = ({
     ctx.textAlign = 'left';
   }
 
-  // Left Side: Payment Settlement Receipt OR UPI Payment Box
+  // Left Side: Payment Settlement & Verification Box OR UPI Payment Box
   if (isSettled) {
-    // ─── A: COUNTER SETTLEMENT CONFIRMED BOX ───
+    // ─── A: COUNTER SETTLEMENT & UPI DETAILS BOX ───
     ctx.fillStyle = '#f0fdf4';
     if (ctx.roundRect) {
       ctx.beginPath();
@@ -798,10 +798,10 @@ export const generateInvoiceCanvas = ({
     // Top Header Badge Title
     ctx.fillStyle = '#15803d';
     ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('✓ PAYMENT SETTLEMENT RECEIPT', leftBoxTextX, curY + 22);
+    ctx.fillText('✓ PAYMENT RECEIVED & VERIFIED', leftBoxTextX, curY + 22);
 
     // Mode Pill on Right of Header (Centered text, aligned to 18px inner padding)
-    const modeBadgeText = paymentMethod || 'CASH';
+    const modeBadgeText = (paymentMethod || 'UPI').toUpperCase();
     ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     const modeBadgeWidth = Math.max(54, ctx.measureText(modeBadgeText).width + 16);
     const modeBadgeX = leftBoxRightX - modeBadgeWidth;
@@ -830,53 +830,23 @@ export const generateInvoiceCanvas = ({
     ctx.lineTo(leftBoxRightX, curY + 34);
     ctx.stroke();
 
-    // Row 1: Total Payment Received (Large bold monospace, right-aligned to leftBoxRightX)
+    // Primary UPI ID / Official Settlement Channel
     let lY = curY + 54;
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('9347453135@ybl', leftBoxTextX, lY);
+
+    // Payee Details
+    lY = curY + 76;
     ctx.fillStyle = '#334155';
     ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Total Payment Received:', leftBoxTextX, lY);
+    ctx.fillText('Payee: RAIS AGENCIES (Rayachoty Depot)', leftBoxTextX, lY);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 13.5px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftBoxRightX, lY);
-    ctx.textAlign = 'left';
-
-    // Row 2: Applied to Current Bill (Emerald, right-aligned to leftBoxRightX)
-    lY = curY + 77;
-    ctx.fillStyle = '#475569';
-    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Applied to Current Bill:', leftBoxTextX, lY);
-
-    ctx.fillStyle = '#15803d';
-    ctx.font = 'bold 11.5px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`₹${appliedToCurrent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftBoxRightX, lY);
-    ctx.textAlign = 'left';
-
-    // Row 3: Adjusted to Past Dues (Amber, right-aligned to leftBoxRightX)
-    lY = curY + 98;
-    if (appliedToPrev > 0) {
-      ctx.fillStyle = '#92400e';
-      ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Adjusted to Past Dues:', leftBoxTextX, lY);
-
-      ctx.fillStyle = '#b45309';
-      ctx.font = 'bold 11.5px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`₹${appliedToPrev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, leftBoxRightX, lY);
-      ctx.textAlign = 'left';
-    } else {
-      ctx.fillStyle = '#64748b';
-      ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Settlement Mode:', leftBoxTextX, lY);
-
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`Counter ${modeBadgeText}`, leftBoxRightX, lY);
-      ctx.textAlign = 'left';
-    }
+    // Accepted Apps & Settlement Note
+    lY = curY + 96;
+    ctx.fillStyle = '#059669';
+    ctx.font = '500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('GPay • PhonePe • Paytm • BHIM | Instant Receipt Credit', leftBoxTextX, lY);
 
     // Row 4: Account Status Pill (Bottom)
     const pillY = curY + 124;
@@ -905,12 +875,12 @@ export const generateInvoiceCanvas = ({
       ctx.textAlign = 'left';
     } else {
       ctx.fillStyle = '#92400e';
-      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = 'bold 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('Remaining Account Due:', pillX + 12, pillY + 21);
+      ctx.fillText('Remaining Due for Next Settlement:', pillX + 12, pillY + 21);
 
       ctx.fillStyle = '#92400e';
-      ctx.font = 'bold 13px monospace';
+      ctx.font = 'bold 12.5px monospace';
       ctx.textAlign = 'right';
       ctx.fillText(`₹${(closingBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, pillX + pillW - 12, pillY + 21);
       ctx.textAlign = 'left';

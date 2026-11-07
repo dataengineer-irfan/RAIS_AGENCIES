@@ -119,6 +119,7 @@ export const PaymentModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     setError('');
     if (!customerId) {
       setError('Please select a customer to record payment.');
