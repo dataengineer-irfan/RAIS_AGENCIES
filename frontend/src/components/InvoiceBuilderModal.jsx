@@ -756,40 +756,6 @@ export const InvoiceBuilderModal = ({
           res.customer_outstanding_balance = computedBal;
         }
 
-        // Fallback immediate cash settlement if marked as paid/collected and backend hasn't already auto-settled
-        if (!isSplit && effectiveAmountPaid > 0 && res?.id && res?.status !== 'PAID' && res?.status !== 'PARTIALLY_PAID') {
-          try {
-            const payRes = await paymentApi.record({
-              customer_id: customerId,
-              amount: effectiveAmountPaid,
-              payment_method: (paymentTerms || '').includes('UPI') ? 'UPI' : 'CASH',
-              payment_date: invoiceDate,
-              notes: `Counter Settlement for Invoice #${res.invoice_number}`
-            });
-            if (payRes?.id) {
-              const allocToInvoice = Math.min(effectiveAmountPaid, parseFloat(res.total_amount));
-              await paymentApi.allocate(payRes.id, res.id, allocToInvoice);
-              if (allocToInvoice >= parseFloat(res.total_amount)) {
-                res.status = 'PAID';
-                res.paid_amount = res.total_amount;
-                res.outstanding_amount = 0;
-              } else {
-                res.status = 'PARTIALLY_PAID';
-                res.paid_amount = allocToInvoice;
-                res.outstanding_amount = parseFloat(res.total_amount) - allocToInvoice;
-              }
-              try {
-                const refreshed = await billingApi.getInvoice(res.id);
-                if (refreshed) {
-                  res = { ...res, ...refreshed };
-                }
-              } catch (_) {}
-            }
-          } catch (payErr) {
-            console.warn('Auto cash settlement error:', payErr);
-          }
-        }
-
         // Keep local customer balance in sync so subsequent actions ("Create Another") immediately see updated due
         const latestDue = parseFloat(res?.closing_balance ?? res?.customer_outstanding_balance ?? closingLedgerVal ?? 0);
         setCustomers(prev => (prev || []).map(c => c.id === customerId ? { ...c, outstanding_balance: latestDue } : c));

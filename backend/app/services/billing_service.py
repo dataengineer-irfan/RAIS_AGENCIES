@@ -460,11 +460,43 @@ class BillingService:
             else:
                 invoice.status = InvoiceStatus.PARTIALLY_PAID.value
 
-            # If customer paid surplus over the current bill (e.g. ₹1000 on ₹550 bill -> ₹450 surplus):
-            # Automatically apply the surplus to previous unpaid invoices chronologically (FIFO)!
+            # If customer paid surplus over the current bill (e.g. ₹1500 on ₹630 bill -> ₹870 surplus):
+            # Automatically apply the surplus to previous unpaid invoices chronologically (FIFO)
+            # while permanently preserving this current invoice's PAID status!
             if unalloc_surplus > Decimal("0.00"):
-                from app.services.reconciliation_service import ReconciliationService
-                ReconciliationService.reconcile_customer_fifo(db, customer.id, auto_commit=False)
+                open_past_invoices = db.query(Invoice).filter(
+                    Invoice.customer_id == customer.id,
+                    Invoice.id != invoice.id,
+                    Invoice.outstanding_amount > Decimal("0.00"),
+                    Invoice.status.in_([
+                        InvoiceStatus.ISSUED.value,
+                        InvoiceStatus.PARTIALLY_PAID.value,
+                        InvoiceStatus.OVERDUE.value
+                    ])
+                ).order_by(Invoice.invoice_date.asc(), Invoice.created_at.asc()).all()
+
+                rem_surplus = unalloc_surplus
+                for past_inv in open_past_invoices:
+                    if rem_surplus <= Decimal("0.00"):
+                        break
+                    cov = min(past_inv.outstanding_amount, rem_surplus)
+                    if cov > Decimal("0.00"):
+                        surplus_alloc = PaymentAllocation(
+                            payment_id=payment.id,
+                            invoice_id=past_inv.id,
+                            allocated_amount=cov,
+                            allocated_at=now_dt
+                        )
+                        db.add(surplus_alloc)
+                        past_inv.paid_amount = quantize_amount(past_inv.paid_amount + cov)
+                        past_inv.outstanding_amount = quantize_amount(past_inv.outstanding_amount - cov)
+                        if past_inv.outstanding_amount <= Decimal("0.00"):
+                            past_inv.status = InvoiceStatus.PAID.value
+                        else:
+                            past_inv.status = InvoiceStatus.PARTIALLY_PAID.value
+                        rem_surplus -= cov
+                        payment.allocated_amount += cov
+                        payment.unallocated_amount -= cov
 
             AuditService.log(
                 db=db,
