@@ -11,6 +11,7 @@ export const generatePaymentCanvas = ({
   payment,
   customer,
   products = [],
+  settledItems = [],
   restockSuggestion = null,
   includeRestockSuggestion = true,
   preloadedSuggestionImage = null
@@ -40,7 +41,30 @@ export const generatePaymentCanvas = ({
 
   const allocations = payment?.allocations || [];
 
-  // Derive companion restock suggestion (strictly ZERO PRICES)
+  // Collect all items from the settled invoices to strictly exclude them from cross-sell
+  const effectiveSettledItems = [];
+  if (Array.isArray(settledItems) && settledItems.length > 0) {
+    effectiveSettledItems.push(...settledItems);
+  } else if (Array.isArray(payment?.settled_items) && payment.settled_items.length > 0) {
+    effectiveSettledItems.push(...payment.settled_items);
+  } else if (Array.isArray(payment?.items) && payment.items.length > 0) {
+    effectiveSettledItems.push(...payment.items);
+  } else {
+    try {
+      const cachedInvoices = JSON.parse(localStorage.getItem('rais_cached_invoices') || '[]');
+      const allocInvoiceIds = new Set((allocations || []).map(a => a.invoice_id).filter(Boolean));
+      const allocInvoiceNums = new Set((allocations || []).map(a => a.invoice_number).filter(Boolean));
+      cachedInvoices.forEach(inv => {
+        if (allocInvoiceIds.has(inv.id) || allocInvoiceNums.has(inv.invoice_number)) {
+          if (Array.isArray(inv.items)) {
+            effectiveSettledItems.push(...inv.items);
+          }
+        }
+      });
+    } catch (_) {}
+  }
+
+  // Derive companion restock suggestion (strictly ZERO PRICES & NEVER recommend settled items)
   let effectiveProducts = products;
   if (!effectiveProducts || !effectiveProducts.length) {
     try {
@@ -50,7 +74,7 @@ export const generatePaymentCanvas = ({
   }
   const custContext = customer?.business_name || payment?.customer_name || '';
   const suggestion = includeRestockSuggestion !== false
-    ? (restockSuggestion || deriveRestockSuggestion([], effectiveProducts || [], null, custContext))
+    ? (restockSuggestion || payment?.restock_suggestion || deriveRestockSuggestion(effectiveSettledItems, effectiveProducts || [], null, custContext))
     : null;
   const restockStripHeight = suggestion ? 84 : 0;
 
@@ -477,8 +501,15 @@ export const generatePaymentBlob = async (data) => {
       } catch (_) {}
     }
     const custContext = data?.customer?.business_name || data?.payment?.customer_name || '';
+    const effectiveSettled = (Array.isArray(data?.settledItems) && data.settledItems.length > 0)
+      ? data.settledItems
+      : (Array.isArray(data?.payment?.settled_items) && data.payment.settled_items.length > 0)
+      ? data.payment.settled_items
+      : (Array.isArray(data?.payment?.items) && data.payment.items.length > 0)
+      ? data.payment.items
+      : [];
     const suggestion = data?.includeRestockSuggestion !== false
-      ? (data?.restockSuggestion || deriveRestockSuggestion([], effectiveProducts || [], null, custContext))
+      ? (data?.restockSuggestion || data?.payment?.restock_suggestion || deriveRestockSuggestion(effectiveSettled, effectiveProducts || [], null, custContext))
       : null;
     if (suggestion) {
       const imgUrl = suggestion.image_url || getProductImageUrl(suggestion);

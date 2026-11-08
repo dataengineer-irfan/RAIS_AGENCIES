@@ -60,68 +60,153 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
     const s = { ...explicitSuggestion };
     if (!s.image_url) s.image_url = getProductImageUrl(s);
     if (!s.telugu_note) s.telugu_note = getTeluguCompanionPhrase(s.name);
+    // Sanitize packaging unit if box has KG
+    if (/BOX|BUCKET|CONTAINER/i.test(s.name || '') && /KG/i.test(s.packaging_unit || '')) {
+      s.packaging_unit = '100 NOS';
+    }
     return s;
   }
 
-  const contextCombined = `${customerContextText || ''} ` + (items || []).map(i => {
-    const p = (products || []).find(x => x?.id === i?.product_id);
-    return `${p?.name || ''} ${i?.item_description || ''}`.toUpperCase();
-  }).join(' ');
+  // 1. Analyze all items on the current or settled transaction
+  const purchasedProductIds = new Set();
+  const purchasedSkus = new Set();
+  const transactionTexts = [];
 
-  const isPizza = /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(contextCombined);
-  const isBurger = /BURGER|PATTY|BUN/i.test(contextCombined);
-  const isSnack = /FRIES|MOMO|NUGGET|POPCORN|POPS|CHICKEN/i.test(contextCombined);
+  (items || []).forEach(item => {
+    if (item.product_id) purchasedProductIds.add(String(item.product_id));
+    const p = (products || []).find(x => String(x?.id) === String(item.product_id));
+    if (p?.sku) purchasedSkus.add(p.sku.toUpperCase().trim());
+    if (item.sku) purchasedSkus.add(item.sku.toUpperCase().trim());
+    const combined = `${p?.name || ''} ${item.item_description || ''} ${item.product_name || ''} ${item.name || ''}`.toUpperCase();
+    transactionTexts.push(combined);
+  });
 
+  if (customerContextText) {
+    transactionTexts.push(customerContextText.toUpperCase());
+  }
+
+  const allTxText = transactionTexts.join(' ');
+
+  // 2. Detect Specific Category Purchases (to STRICTLY DISQUALIFY identical items)
+  const hasPizzaBox = /PIZZA\s*BOX/i.test(allTxText);
+  const hasBurgerBox = /BURGER\s*BOX/i.test(allTxText);
+  const hasChickenBucket = /BUCKET|CHICKEN\s*BOX/i.test(allTxText);
+  const hasButterPaper = /BUTTER\s*PAPER|GREASEPROOF/i.test(allTxText);
+  const hasKetchup = /KETCHUP/i.test(allTxText);
+  const hasMayo = /MAYO|MAYONNAISE/i.test(allTxText);
+  const hasOregano = /OREGANO|PIZZA\s*SEASONING/i.test(allTxText);
+  const hasCheese = /CHEESE|MOZZARELLA|MOZEROLLA/i.test(allTxText);
+  const hasPizzaSauce = /PIZZA\s*SAUCE|PASTA\s*SAUCE|PIZZA\s*PASTA/i.test(allTxText);
+  const hasFries = /FRIES|FRENCH\s*FRIES/i.test(allTxText);
+  const hasPeriPeri = /PERI\s*PERI/i.test(allTxText);
+  const hasBreading = /BREADING|MARINADE/i.test(allTxText);
+  const hasTortilla = /TORTILLA|TORTILLAH|WRAP/i.test(allTxText);
+  const hasPatty = /PATTY|PATTIES/i.test(allTxText);
+  const hasMomosNuggets = /MOMO|NUGGET|POPS|POPCORN/i.test(allTxText);
+
+  // General vertical affinity detection
+  const isPizza = hasPizzaBox || hasCheese || hasPizzaSauce || /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(allTxText);
+  const isBurger = hasBurgerBox || hasPatty || hasMayo || /BURGER|PATTY|BUN/i.test(allTxText);
+  const isSnack = hasFries || hasMomosNuggets || /FRIES|MOMO|NUGGET|POPCORN|POPS|CHICKEN/i.test(allTxText);
+  const isChicken = hasBreading || hasChickenBucket || /BREADING|MARINADE|CAJUN|CRISPY\s*CHICKEN/i.test(allTxText);
+  const isWrap = hasTortilla || hasButterPaper || /TORTILLA|TORTILLAH|WRAP|SHAWARMA/i.test(allTxText);
+
+  // 3. Strict Negative Disqualification Function
+  const isDisqualified = (candidate) => {
+    if (!candidate) return true;
+    if (purchasedProductIds.has(String(candidate.id))) return true;
+    const cSku = (candidate.sku || '').toUpperCase().trim();
+    if (cSku && purchasedSkus.has(cSku)) return true;
+
+    const cName = (candidate.name || '').toUpperCase();
+    if (hasPizzaBox && /PIZZA\s*BOX/i.test(cName)) return true;
+    if (hasBurgerBox && /BURGER\s*BOX/i.test(cName)) return true;
+    if (hasChickenBucket && /BUCKET|CHICKEN\s*BOX/i.test(cName)) return true;
+    if (hasButterPaper && /BUTTER\s*PAPER|GREASEPROOF/i.test(cName)) return true;
+    if (hasKetchup && /KETCHUP/i.test(cName)) return true;
+    if (hasMayo && /MAYO/i.test(cName)) return true;
+    if (hasOregano && /OREGANO/i.test(cName)) return true;
+    if (hasCheese && /CHEESE|MOZZARELLA|MOZEROLLA/i.test(cName)) return true;
+    if (hasPizzaSauce && /PIZZA\s*SAUCE|PASTA\s*SAUCE/i.test(cName)) return true;
+    if (hasFries && /FRIES/i.test(cName)) return true;
+    if (hasPeriPeri && /PERI\s*PERI/i.test(cName)) return true;
+    if (hasBreading && /BREADING|MARINADE/i.test(cName)) return true;
+    if (hasTortilla && /TORTILLA|TORTILLAH|WRAP/i.test(cName)) return true;
+    if (hasPatty && /PATTY/i.test(cName)) return true;
+
+    return false;
+  };
+
+  // 4. Fallback if product catalogue is not loaded
   if (!products || !products.length) {
     if (isPizza) {
-      const pName = 'DELMONTE PIZZA PASTA SAUCE';
-      const pUnit = '1 KG PACKET';
-      const pCtx = 'In Stock for your Pizzas';
-      return {
-        sku: 'RAIS-SAU-06',
-        name: pName,
-        packaging_unit: pUnit,
-        context_note: pCtx,
-        image_url: getProductImageUrl('RAIS-SAU-06', pName),
-        telugu_note: getTeluguCompanionPhrase(pName),
-        display_text: `📦 *${pCtx.toUpperCase()}:* ${pName} (${pUnit}) — _Ready for immediate delivery_`
-      };
+      if (!hasOregano) {
+        const pName = 'BIG BELL OREGANO SEASONING';
+        return {
+          sku: 'RAIS-SAU-06',
+          name: pName,
+          packaging_unit: '1 PACKET',
+          context_note: 'In Stock for your Pizzas',
+          image_url: getProductImageUrl('RAIS-SAU-06', pName),
+          telugu_note: getTeluguCompanionPhrase(pName),
+          display_text: `📦 *IN STOCK FOR YOUR PIZZAS:* ${pName} (1 PACKET) — _Ready for immediate delivery_`
+        };
+      }
+      if (!hasCheese) {
+        const pName = 'MILKY MIST MOZZARELLA CHEESE';
+        return {
+          sku: 'RAIS-CHS-01',
+          name: pName,
+          packaging_unit: '1 KG PACKET',
+          context_note: 'Premium Pizza Mozzarella',
+          image_url: getProductImageUrl('RAIS-CHS-01', pName),
+          telugu_note: getTeluguCompanionPhrase(pName),
+          display_text: `📦 *PREMIUM PIZZA MOZZARELLA:* ${pName} (1 KG) — _Ready for immediate delivery_`
+        };
+      }
     }
     if (isBurger) {
-      const pName = 'BURGER BOX 4"x4" PRINTED';
-      const pUnit = '100 NOS';
-      const pCtx = 'In Stock for your Burgers';
-      return {
-        sku: 'RAIS-BOX-02',
-        name: pName,
-        packaging_unit: pUnit,
-        context_note: pCtx,
-        image_url: getProductImageUrl('RAIS-BOX-02', pName),
-        telugu_note: getTeluguCompanionPhrase(pName),
-        display_text: `📦 *${pCtx.toUpperCase()}:* ${pName} (${pUnit}) — _Ready for immediate delivery_`
-      };
+      if (!hasMayo) {
+        const pName = 'DELMONTE TANDOORI MAYO';
+        return {
+          sku: 'RAIS-SAU-04',
+          name: pName,
+          packaging_unit: '1 KG PACKET',
+          context_note: 'In Stock for your Burgers',
+          image_url: getProductImageUrl('RAIS-SAU-04', pName),
+          telugu_note: getTeluguCompanionPhrase(pName),
+          display_text: `📦 *IN STOCK FOR YOUR BURGERS:* ${pName} (1 KG) — _Ready for immediate delivery_`
+        };
+      }
+      if (!hasFries) {
+        const pName = 'AMUL FRENCH FRIES 6MM';
+        return {
+          sku: 'RAIS-VEG-01',
+          name: pName,
+          packaging_unit: '2.5 KG PACKET',
+          context_note: 'Best-Selling Burger Side',
+          image_url: getProductImageUrl('RAIS-VEG-01', pName),
+          telugu_note: getTeluguCompanionPhrase(pName),
+          display_text: `📦 *BEST-SELLING BURGER SIDE:* ${pName} (2.5 KG) — _Ready for immediate delivery_`
+        };
+      }
     }
-    // Default fast-moving depot companion if product list isn't provided (e.g. direct receipt downloads)
     const defaultName = 'VKL PERI PERI SPRINKLER';
-    const defaultUnit = '1 PACKET';
-    const defaultContext = 'In Stock for your Kitchen';
     return {
       sku: 'RAIS-BRD-03',
       name: defaultName,
-      packaging_unit: defaultUnit,
-      context_note: defaultContext,
+      packaging_unit: '1 PACKET',
+      context_note: 'In Stock for your Kitchen',
       image_url: getProductImageUrl('RAIS-BRD-03', defaultName),
       telugu_note: getTeluguCompanionPhrase(defaultName),
-      display_text: `📦 *${defaultContext.toUpperCase()}:* ${defaultName} (${defaultUnit}) — _Ready for immediate delivery_`
+      display_text: `📦 *IN STOCK FOR YOUR KITCHEN:* ${defaultName} (1 PACKET) — _Ready for immediate delivery_`
     };
   }
 
-  const currentProductIds = new Set((items || []).map(i => i.product_id));
-
-  // Filter products with current_stock > 0 and not on current bill
+  // 5. Available products: active, in-stock, and NOT disqualified
   const available = products.filter(p => {
     const stock = parseFloat(p.current_stock || 0);
-    return stock > 0 && !currentProductIds.has(p.id) && p.is_active !== false;
+    return stock > 0 && p.is_active !== false && !isDisqualified(p);
   });
 
   if (!available.length) return null;
@@ -129,44 +214,122 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   let candidate = null;
   let contextNote = 'In Stock at Depot';
 
+  // ── True Complementary Cross-Sell Ladders ──
+  // A. PIZZA LADDER
   if (isPizza) {
-    candidate = available.find(p => /PIZZA BOX/i.test(p.name)) || available.find(p => /OREGANO/i.test(p.name));
-    if (candidate) contextNote = 'In Stock for your Pizzas';
+    if (hasPizzaBox) {
+      // Bought Pizza Boxes -> Suggest Oregano, Mozzarella, or Pizza Sauce
+      candidate = available.find(p => /OREGANO/i.test(p.name)) ||
+                  available.find(p => /MOZZARELLA|CHEESE/i.test(p.name)) ||
+                  available.find(p => /PIZZA.*SAUCE|PASTA.*SAUCE/i.test(p.name));
+      if (candidate) {
+        contextNote = /OREGANO/i.test(candidate.name)
+          ? 'In Stock for your Pizzas'
+          : /MOZZARELLA|CHEESE/i.test(candidate.name)
+          ? 'Premium Pizza Mozzarella'
+          : 'Rich Pizza Sauce in Stock';
+      }
+    } else {
+      // Bought Pizza Ingredients -> Suggest Pizza Boxes first, then Seasonings
+      candidate = available.find(p => /PIZZA\s*BOX/i.test(p.name)) ||
+                  available.find(p => /OREGANO/i.test(p.name)) ||
+                  available.find(p => /MOZZARELLA|CHEESE/i.test(p.name));
+      if (candidate) contextNote = 'In Stock for your Pizzas';
+    }
   }
 
+  // B. BURGER LADDER
   if (!candidate && isBurger) {
-    candidate = available.find(p => /BURGER BOX/i.test(p.name)) || available.find(p => /MAYO/i.test(p.name));
-    if (candidate) contextNote = 'In Stock for your Burgers';
+    if (hasBurgerBox) {
+      // Bought Burger Boxes -> Suggest Mayo, French Fries, Peri Peri, or Patties
+      candidate = available.find(p => /MAYO/i.test(p.name)) ||
+                  available.find(p => /FRIES/i.test(p.name)) ||
+                  available.find(p => /PERI\s*PERI/i.test(p.name)) ||
+                  available.find(p => /PATTY/i.test(p.name));
+      if (candidate) {
+        contextNote = /MAYO/i.test(candidate.name)
+          ? 'In Stock for your Burgers'
+          : /FRIES/i.test(candidate.name)
+          ? 'Best-Selling Burger Side'
+          : /PERI\s*PERI/i.test(candidate.name)
+          ? 'Top Seasoning for Fries'
+          : 'Crispy Patties in Stock';
+      }
+    } else {
+      // Bought Patties/Mayo -> Suggest Burger Boxes first, then Fries
+      candidate = available.find(p => /BURGER\s*BOX/i.test(p.name)) ||
+                  available.find(p => /MAYO/i.test(p.name)) ||
+                  available.find(p => /FRIES/i.test(p.name));
+      if (candidate) contextNote = 'In Stock for your Burgers';
+    }
   }
 
+  // C. FRIED CHICKEN LADDER
+  if (!candidate && isChicken) {
+    if (hasChickenBucket) {
+      candidate = available.find(p => /BREADING|MARINADE/i.test(p.name)) ||
+                  available.find(p => /PERI\s*PERI/i.test(p.name));
+      if (candidate) contextNote = 'Crispy Broasted Breading in Stock';
+    } else {
+      candidate = available.find(p => /BUCKET/i.test(p.name)) ||
+                  available.find(p => /PERI\s*PERI/i.test(p.name));
+      if (candidate) contextNote = 'Fried Chicken Takeaway Buckets';
+    }
+  }
+
+  // D. SHAWARMA / WRAP LADDER
+  if (!candidate && isWrap) {
+    if (hasTortilla) {
+      candidate = available.find(p => /BUTTER\s*PAPER|GREASEPROOF/i.test(p.name)) ||
+                  available.find(p => /MAYO/i.test(p.name));
+      if (candidate) contextNote = 'Greaseproof Wrapping Paper';
+    } else {
+      candidate = available.find(p => /TORTILLA|TORTILLAH/i.test(p.name)) ||
+                  available.find(p => /MAYO/i.test(p.name));
+      if (candidate) contextNote = 'Fresh Tortilla Wraps in Stock';
+    }
+  }
+
+  // E. SNACKS / SIDES LADDER
   if (!candidate && isSnack) {
-    candidate = available.find(p => /PERI PERI/i.test(p.name)) || available.find(p => /KETCHUP/i.test(p.name));
-    if (candidate) contextNote = 'In Stock for your Kitchen';
+    candidate = available.find(p => /PERI\s*PERI/i.test(p.name)) ||
+                available.find(p => /KETCHUP/i.test(p.name));
+    if (candidate) contextNote = 'Top Seasoning for Sides';
   }
 
+  // F. UNIVERSAL HIGH-MARGIN FAST-MOVING DEPOT STAPLES
   if (!candidate) {
-    candidate = available.find(p => /BOX/i.test(p.name) || (p.category && p.category.code === 'PACKAGING'));
-    if (candidate) contextNote = 'In Stock at Packaging Depot';
-  }
-
-  if (!candidate) {
-    candidate = available[0];
+    candidate = available.find(p => /PERI\s*PERI/i.test(p.name)) ||
+                available.find(p => /MAYO/i.test(p.name)) ||
+                available.find(p => /MOZZARELLA|CHEESE/i.test(p.name)) ||
+                available.find(p => /FRIES/i.test(p.name)) ||
+                available[0];
+    if (candidate) contextNote = 'Fast Moving Depot Companion';
   }
 
   if (!candidate) return null;
 
-  const unit = candidate.packaging_unit || 'PACKET';
+  // Sanitize packaging unit: boxes/buckets must NEVER say 'KG'
+  let cleanUnit = (candidate.packaging_unit || 'PACKET').trim();
+  const isBoxCandidate = /BOX|BUCKET|CONTAINER/i.test(candidate.name) || (candidate.sku && candidate.sku.startsWith('RAIS-BOX-'));
+  if (isBoxCandidate && /KG/i.test(cleanUnit)) {
+    cleanUnit = '100 NOS';
+  } else if (!cleanUnit || cleanUnit.toUpperCase() === 'NONE') {
+    cleanUnit = isBoxCandidate ? '100 NOS' : 'PACKET';
+  }
+
   const imgUrl = getProductImageUrl(candidate);
   const teluguNote = getTeluguCompanionPhrase(candidate.name);
+
   return {
     id: candidate.id,
     sku: candidate.sku,
     name: candidate.name,
-    packaging_unit: unit,
+    packaging_unit: cleanUnit,
     context_note: contextNote,
     image_url: imgUrl,
     telugu_note: teluguNote,
-    display_text: `📦 *${contextNote.toUpperCase()}:* ${candidate.name} (${unit}) — _Ready for immediate delivery_`
+    display_text: `📦 *${contextNote.toUpperCase()}:* ${candidate.name} (${cleanUnit}) — _Ready for immediate delivery_`
   };
 };
 
@@ -408,7 +571,12 @@ export const generateInvoiceCanvas = ({
 
     const p = products.find(prod => prod.id === itm.product_id);
     const name = p?.name || itm.item_description || itm.product_name || `Item ${idx + 1}`;
-    const unit = itm.packaging_unit || p?.packaging_unit || 'PKT';
+    let unit = (itm.packaging_unit || p?.packaging_unit || 'PKT').trim();
+    if (/BOX|BUCKET|CONTAINER/i.test(name) || (itm.sku && itm.sku.startsWith('RAIS-BOX-')) || (p?.sku && p.sku.startsWith('RAIS-BOX-'))) {
+      if (/KG/i.test(unit)) {
+        unit = '100 NOS';
+      }
+    }
     const qty = itm.quantity || 1;
     const rate = parseFloat(itm.unit_price || 0).toFixed(2);
     const lineTot = parseFloat(itm.line_total || (qty * parseFloat(itm.unit_price || 0))).toFixed(2);

@@ -1135,7 +1135,12 @@ export const InvoiceBuilderModal = ({
                       const lineGross = qty * rate;
                       const lineTotal = lineGross - (lineGross * (disc / 100));
                       const hsn = itm.hsn_code || prod?.hsn_code || '-';
-                      const pkg = itm.packaging_unit || prod?.packaging_unit || 'PKT';
+                      let pkg = (itm.packaging_unit || prod?.packaging_unit || 'PKT').trim();
+                      if (/BOX|BUCKET|CONTAINER/i.test(prod?.name || itm.item_description || '') || (prod?.sku && prod.sku.startsWith('RAIS-BOX-'))) {
+                        if (/KG/i.test(pkg)) {
+                          pkg = '100 NOS';
+                        }
+                      }
 
                       return (
                         <tr key={idx} className="border-b border-gray-200 text-xs">

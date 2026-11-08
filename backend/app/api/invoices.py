@@ -181,10 +181,12 @@ def get_printable_invoice(
     try:
         from app.services.recommendation_service import RecommendationService
         exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
+        current_descs = [getattr(itm, 'item_description', '') for itm in (inv.items or []) if getattr(itm, 'item_description', None)]
         suggestion = RecommendationService.get_customer_restock_suggestion(
             db=db,
             customer_id=str(inv.customer_id),
-            exclude_product_ids=exclude_pids
+            exclude_product_ids=exclude_pids,
+            current_item_descriptions=current_descs
         )
         if suggestion:
             ctx_note = suggestion.get("context_note", "In Stock at Depot")
@@ -228,6 +230,8 @@ def get_printable_invoice(
     for idx, itm in enumerate(inv.items, 1):
         desc = getattr(itm, 'item_description', 'Product')
         pkg = getattr(itm, 'packaging_unit', 'PKT') or 'PKT'
+        if any(w in desc.upper() for w in ["BOX", "BUCKET", "CONTAINER"]) and "KG" in pkg.upper():
+            pkg = "100 NOS"
         hsn = getattr(itm, 'hsn_code', '-') or '-'
         qty = getattr(itm, 'quantity', 1)
         price = float(getattr(itm, 'unit_price', 0))
@@ -507,10 +511,12 @@ def get_invoice_image(
     try:
         from app.services.recommendation_service import RecommendationService
         exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in items if getattr(itm, 'product_id', None)]
+        current_descs = [getattr(itm, 'item_description', '') for itm in items if getattr(itm, 'item_description', None)]
         suggestion = RecommendationService.get_customer_restock_suggestion(
             db=db,
             customer_id=str(inv.customer_id),
-            exclude_product_ids=exclude_pids
+            exclude_product_ids=exclude_pids,
+            current_item_descriptions=current_descs
         )
     except Exception:
         suggestion = None
@@ -771,10 +777,12 @@ def get_invoice_restock_suggestion(
         from app.services.recommendation_service import RecommendationService
         inv = BillingService.get_invoice_by_id(db, invoice_id)
         exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
+        current_descs = [getattr(itm, 'item_description', '') for itm in (inv.items or []) if getattr(itm, 'item_description', None)]
         suggestion = RecommendationService.get_customer_restock_suggestion(
             db=db,
             customer_id=str(inv.customer_id),
-            exclude_product_ids=exclude_pids
+            exclude_product_ids=exclude_pids,
+            current_item_descriptions=current_descs
         )
         return {"suggestion": suggestion}
     except Exception:

@@ -28,11 +28,19 @@ class RecommendationService:
         cls,
         db: Session,
         customer_id: Optional[str] = None,
-        exclude_product_ids: Optional[List[str]] = None
+        exclude_product_ids: Optional[List[str]] = None,
+        current_item_descriptions: Optional[List[str]] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Calculates a dynamic in-stock restock recommendation for a customer.
+        Calculates an intelligent, high-conversion in-stock cross-sell / restock recommendation.
         Returns a dict with product name and packaging unit (NO PRICE) or None.
+        
+        Strict Commercial Integrity Rules:
+        1. NEVER recommend a product category the customer is currently purchasing or has just settled
+           (e.g., if buying Pizza Boxes, NEVER suggest another Pizza Box; suggest Oregano, Mozzarella, or Pizza Sauce).
+        2. NEVER recommend a product the customer already bought on this bill or settled on this receipt.
+        3. Exclude out-of-stock or inactive products.
+        4. Guarantee sanitization of packaging units (boxes are 100 NOS / BUNDLE, NEVER 1.2 KG).
         """
         # Kill-switch guard
         if not getattr(settings, "ENABLE_RESTOCK_SUGGESTIONS", True):
@@ -41,19 +49,48 @@ class RecommendationService:
         if not db:
             return None
 
-        exclude_ids = set(exclude_product_ids or [])
+        exclude_ids = {str(pid) for pid in (exclude_product_ids or []) if pid}
+        exclude_skus = set()
 
         try:
             detected_affinities = set()
 
-            if customer_id:
-                # 1. Fetch recent invoice items for this customer (last 100 items from past invoices)
+            # Query names and SKUs of explicitly excluded product IDs to extract purchased categories
+            excluded_prods = []
+            if exclude_ids:
+                excluded_prods = db.query(Product).filter(Product.id.in_(list(exclude_ids))).all()
+                for ep in excluded_prods:
+                    if ep.sku:
+                        exclude_skus.add(ep.sku.strip().upper())
+
+            # Combine all items on the current / settled transaction
+            all_transaction_descs = list(current_item_descriptions or [])
+            for ep in excluded_prods:
+                if ep.name:
+                    all_transaction_descs.append(ep.name)
+
+            # Analyze recent transaction items to detect customer kitchen verticals
+            for desc in all_transaction_descs:
+                text = (desc or "").upper()
+                if any(w in text for w in ["PIZZA", "MOZEROLLA", "MOZZARELLA", "BASE 9", "BASE 8", "BASE 7"]):
+                    detected_affinities.add("PIZZA")
+                if any(w in text for w in ["BURGER", "PATTY", "BUN"]):
+                    detected_affinities.add("BURGER")
+                if any(w in text for w in ["FRIES", "MOMO", "NUGGET", "POPCORN", "POPS", "SWEET CORN"]):
+                    detected_affinities.add("SNACKS")
+                if any(w in text for w in ["TORTILLAH", "TORTILLA", "WRAP", "SHAWARMA"]):
+                    detected_affinities.add("WRAP")
+                if any(w in text for w in ["BREADING", "MARINADE", "CAJUN", "CRISPY CHICKEN"]):
+                    detected_affinities.add("FRIED_CHICKEN")
+
+            # If customer_id provided, also check historical purchasing profile for baseline affinities
+            if customer_id and not detected_affinities:
                 recent_items = (
                     db.query(InvoiceItem.item_description, InvoiceItem.product_id)
                     .join(Invoice, Invoice.id == InvoiceItem.invoice_id)
                     .filter(Invoice.customer_id == customer_id)
                     .order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc())
-                    .limit(100)
+                    .limit(50)
                     .all()
                 )
 
@@ -68,29 +105,132 @@ class RecommendationService:
                     if any(w in text for w in ["TORTILLAH", "TORTILLA", "WRAP"]):
                         detected_affinities.add("WRAP")
 
-            # 2. Build target SKU / Keyword affinity lists based on detected profile
+            # Extract specific product category purchase flags on CURRENT / SETTLED transaction
+            tx_combined_text = " ".join(all_transaction_descs).upper()
+
+            has_pizza_box = "PIZZA BOX" in tx_combined_text
+            has_burger_box = "BURGER BOX" in tx_combined_text
+            has_chicken_bucket = any(w in tx_combined_text for w in ["BUCKET", "CHICKEN BOX"])
+            has_butter_paper = any(w in tx_combined_text for w in ["BUTTER PAPER", "GREASEPROOF"])
+            has_ketchup = "KETCHUP" in tx_combined_text
+            has_mayo = any(w in tx_combined_text for w in ["MAYO", "MAYONNAISE"])
+            has_oregano = any(w in tx_combined_text for w in ["OREGANO", "PIZZA SEASONING"])
+            has_cheese = any(w in tx_combined_text for w in ["CHEESE", "MOZZARELLA", "MOZEROLLA"])
+            has_pizza_sauce = any(w in tx_combined_text for w in ["PIZZA SAUCE", "PASTA SAUCE", "PIZZA PASTA"])
+            has_fries = any(w in tx_combined_text for w in ["FRIES", "FRENCH FRIES"])
+            has_peri_peri = "PERI PERI" in tx_combined_text
+            has_breading = any(w in tx_combined_text for w in ["BREADING", "MARINADE"])
+            has_tortilla = any(w in tx_combined_text for w in ["TORTILLA", "TORTILLAH", "WRAP"])
+            has_patty = any(w in tx_combined_text for w in ["PATTY", "PATTIES"])
+            has_momos_nuggets = any(w in tx_combined_text for w in ["MOMO", "NUGGET", "POPS", "POPCORN"])
+
+            # Strict Negative Disqualification Keywords: Any product containing these is DISALLOWED
+            blacklisted_keywords = set()
+            if has_pizza_box:
+                blacklisted_keywords.add("PIZZA BOX")
+            if has_burger_box:
+                blacklisted_keywords.add("BURGER BOX")
+            if has_chicken_bucket:
+                blacklisted_keywords.add("BUCKET")
+                blacklisted_keywords.add("CHICKEN BOX")
+            if has_butter_paper:
+                blacklisted_keywords.add("BUTTER PAPER")
+            if has_ketchup:
+                blacklisted_keywords.add("KETCHUP")
+            if has_mayo:
+                blacklisted_keywords.add("MAYO")
+            if has_oregano:
+                blacklisted_keywords.add("OREGANO")
+            if has_cheese:
+                blacklisted_keywords.add("CHEESE")
+                blacklisted_keywords.add("MOZZARELLA")
+                blacklisted_keywords.add("MOZEROLLA")
+            if has_pizza_sauce:
+                blacklisted_keywords.add("PIZZA SAUCE")
+                blacklisted_keywords.add("PASTA SAUCE")
+            if has_fries:
+                blacklisted_keywords.add("FRIES")
+            if has_peri_peri:
+                blacklisted_keywords.add("PERI PERI")
+            if has_breading:
+                blacklisted_keywords.add("BREADING")
+                blacklisted_keywords.add("MARINADE")
+            if has_tortilla:
+                blacklisted_keywords.add("TORTILLA")
+                blacklisted_keywords.add("TORTILLAH")
+            if has_patty:
+                blacklisted_keywords.add("PATTY")
+
+            def is_disqualified(prod: Product) -> bool:
+                if not prod or not prod.is_active or (prod.current_stock or 0) <= 0:
+                    return True
+                if str(prod.id) in exclude_ids:
+                    return True
+                p_sku = (prod.sku or "").upper().strip()
+                if p_sku in exclude_skus:
+                    return True
+                p_name = (prod.name or "").upper()
+                for b_kw in blacklisted_keywords:
+                    if b_kw in p_name:
+                        return True
+                return False
+
+            # Build prioritized cross-sell ladders with TRUE complementary affinity
             target_skus = []
             target_keywords = []
 
-            if "PIZZA" in detected_affinities:
-                # Prioritize Pizza Boxes and Pizza seasonings/sauces
-                target_skus.extend(["RAIS-BOX-01", "RAIS-BOX-03", "RAIS-BRD-04", "RAIS-SAU-06"])
-                target_keywords.extend(["PIZZA BOX", "OREGANO"])
+            # ── 1. PIZZA AFFINITY ──
+            if "PIZZA" in detected_affinities or has_pizza_box or has_cheese or has_pizza_sauce:
+                if has_pizza_box:
+                    # They already bought Pizza Boxes! Recommend Oregano, Mozzarella Cheese, or Pizza Sauce!
+                    target_skus.extend(["RAIS-BRD-04", "RAIS-SAU-06", "RAIS-CHS-01", "RAIS-CHS-02"])
+                    target_keywords.extend(["OREGANO", "MOZZARELLA", "PIZZA SAUCE"])
+                else:
+                    # They bought pizza ingredients; recommend boxes first, then seasonings
+                    target_skus.extend(["RAIS-BOX-01", "RAIS-BOX-03", "RAIS-SAU-06", "RAIS-CHS-01"])
+                    target_keywords.extend(["PIZZA BOX", "OREGANO", "MOZZARELLA"])
 
-            if "BURGER" in detected_affinities:
-                # Prioritize Burger Boxes and Mayo
-                target_skus.extend(["RAIS-BOX-02", "RAIS-BOX-04", "RAIS-BOX-05", "RAIS-SAU-04", "RAIS-SAU-08"])
-                target_keywords.extend(["BURGER BOX", "MAYO"])
+            # ── 2. BURGER AFFINITY ──
+            if "BURGER" in detected_affinities or has_burger_box or has_patty or has_mayo:
+                if has_burger_box:
+                    # They already bought Burger Boxes! Recommend Mayo, French Fries, Peri Peri, or Patties!
+                    target_skus.extend(["RAIS-SAU-04", "RAIS-SAU-08", "RAIS-VEG-01", "RAIS-BRD-03", "RAIS-VEG-04", "RAIS-CHK-03"])
+                    target_keywords.extend(["MAYO", "FRIES", "PERI PERI", "PATTY"])
+                else:
+                    # They bought patties/mayo; recommend printed boxes, then sides
+                    target_skus.extend(["RAIS-BOX-02", "RAIS-BOX-04", "RAIS-BOX-05", "RAIS-SAU-04", "RAIS-VEG-01"])
+                    target_keywords.extend(["BURGER BOX", "MAYO", "FRIES"])
 
-            if "SNACKS" in detected_affinities:
-                # Prioritize Peri Peri, Ketchup sachets, Breading
-                target_skus.extend(["RAIS-BRD-03", "RAIS-SAU-03", "RAIS-SAU-07", "RAIS-BRD-02"])
+            # ── 3. FRIED CHICKEN / BROASTED ──
+            if "FRIED_CHICKEN" in detected_affinities or has_breading or has_chicken_bucket:
+                if has_chicken_bucket:
+                    target_skus.extend(["RAIS-BRD-04", "RAIS-BRD-05", "RAIS-BRD-03"])
+                    target_keywords.extend(["BREADING", "MARINADE", "PERI PERI"])
+                else:
+                    target_skus.extend(["RAIS-BOX-08", "RAIS-BOX-06", "RAIS-BRD-03"])
+                    target_keywords.extend(["BUCKET", "PERI PERI"])
+
+            # ── 4. SHAWARMA / WRAP ──
+            if "WRAP" in detected_affinities or has_tortilla or has_butter_paper:
+                if has_tortilla:
+                    target_skus.extend(["RAIS-PKG-01", "RAIS-SAU-04", "RAIS-VEG-BUTT"])
+                    target_keywords.extend(["BUTTER PAPER", "MAYO"])
+                else:
+                    target_skus.extend(["RAIS-CHK-01", "RAIS-CHK-02", "RAIS-SAU-04"])
+                    target_keywords.extend(["TORTILLA", "MAYO"])
+
+            # ── 5. SNACKS / SIDES ──
+            if "SNACKS" in detected_affinities or has_fries or has_momos_nuggets:
+                target_skus.extend(["RAIS-BRD-03", "RAIS-SAU-01", "RAIS-SAU-03"])
                 target_keywords.extend(["PERI PERI", "KETCHUP"])
 
-            if "WRAP" in detected_affinities:
-                target_skus.extend(["RAIS-SAU-04", "RAIS-BRD-02", "RAIS-SAU-08"])
+            # Universal high-margin depot staples if nothing matched above
+            universal_fallbacks = ["RAIS-BRD-03", "RAIS-SAU-04", "RAIS-CHS-01", "RAIS-VEG-01"]
+            for u_sku in universal_fallbacks:
+                if u_sku not in target_skus:
+                    target_skus.append(u_sku)
 
-            # 3. Step A: Try matching against target SKUs that are IN STOCK and NOT excluded
+            # Step A: Match against prioritized target SKUs that pass the disqualification filter
             for sku in target_skus:
                 prod = (
                     db.query(Product)
@@ -101,12 +241,12 @@ class RecommendationService:
                     )
                     .first()
                 )
-                if prod and str(prod.id) not in exclude_ids:
-                    return cls._format_suggestion(prod, detected_affinities)
+                if prod and not is_disqualified(prod):
+                    return cls._format_suggestion(prod, detected_affinities, has_pizza_box, has_burger_box)
 
-            # 4. Step B: Try matching against target keywords in Product.name that are IN STOCK
+            # Step B: Match against target keywords that pass disqualification
             for kw in target_keywords:
-                prod = (
+                prods = (
                     db.query(Product)
                     .filter(
                         Product.is_active == True,
@@ -114,39 +254,26 @@ class RecommendationService:
                         func.upper(Product.name).like(f"%{kw}%")
                     )
                     .order_by(Product.current_stock.desc())
-                    .first()
+                    .all()
                 )
-                if prod and str(prod.id) not in exclude_ids:
-                    return cls._format_suggestion(prod, detected_affinities)
+                for prod in prods:
+                    if prod and not is_disqualified(prod):
+                        return cls._format_suggestion(prod, detected_affinities, has_pizza_box, has_burger_box)
 
-            # 5. Step C: Fallback to any active packaging product with stock > 0
-            packaging_cat = db.query(Category).filter(Category.code == "PACKAGING").first()
-            if packaging_cat:
-                fallback_pkg = (
-                    db.query(Product)
-                    .filter(
-                        Product.category_id == packaging_cat.id,
-                        Product.is_active == True,
-                        Product.current_stock > 0
-                    )
-                    .order_by(Product.current_stock.desc())
-                    .first()
-                )
-                if fallback_pkg and str(fallback_pkg.id) not in exclude_ids:
-                    return cls._format_suggestion(fallback_pkg, detected_affinities)
-
-            # 6. Step D: General fallback to any fast-moving in-stock product not on this bill
-            general_fallback = (
+            # Step C: Fallback to any active product not blacklisted
+            general_prods = (
                 db.query(Product)
                 .filter(
                     Product.is_active == True,
                     Product.current_stock > 0
                 )
                 .order_by(Product.current_stock.desc())
-                .first()
+                .limit(20)
+                .all()
             )
-            if general_fallback and str(general_fallback.id) not in exclude_ids:
-                return cls._format_suggestion(general_fallback, detected_affinities)
+            for prod in general_prods:
+                if prod and not is_disqualified(prod):
+                    return cls._format_suggestion(prod, detected_affinities, has_pizza_box, has_burger_box)
 
             return None
 
@@ -155,20 +282,53 @@ class RecommendationService:
             return None
 
     @classmethod
-    def _format_suggestion(cls, product: Product, affinities: set) -> Dict[str, Any]:
+    def _format_suggestion(
+        cls,
+        product: Product,
+        affinities: set,
+        has_pizza_box: bool = False,
+        has_burger_box: bool = False
+    ) -> Dict[str, Any]:
         """
         Formats product suggestion for print and WhatsApp templates.
         STRICTLY OMITS ANY PRICES.
+        Sanitizes packaging units (boxes are 100 NOS, never 1.2 KG).
         """
         clean_name = product.name.strip()
         unit = (product.packaging_unit or "PACKET").strip()
 
+        # Sanitize packaging unit: corrugated boxes, buckets, or packaging SKUs must NEVER say 'KG'
+        is_box = any(w in clean_name.upper() for w in ["BOX", "BUCKET", "CONTAINER"]) or (product.sku and product.sku.startswith("RAIS-BOX-"))
+        if is_box and "KG" in unit.upper():
+            unit = "100 NOS"
+        elif not unit or unit.upper() == "NONE":
+            unit = "100 NOS" if is_box else "PACKET"
+
         # Context-aware title headline without prices
-        if "PIZZA" in affinities and ("PIZZA" in clean_name.upper() or "BOX" in clean_name.upper()):
+        uname = clean_name.upper()
+        if "OREGANO" in uname:
             context_note = "In Stock for your Pizzas"
-        elif "BURGER" in affinities and ("BURGER" in clean_name.upper() or "BOX" in clean_name.upper()):
+        elif "MOZZARELLA" in uname or "CHEESE" in uname:
+            context_note = "Premium Pizza Mozzarella"
+        elif "PIZZA SAUCE" in uname or "PASTA SAUCE" in uname:
+            context_note = "Rich Pizza Sauce in Stock"
+        elif "MAYO" in uname:
+            context_note = "In Stock for your Burgers & Rolls"
+        elif "FRIES" in uname:
+            context_note = "Best-Selling Burger Side"
+        elif "PERI PERI" in uname:
+            context_note = "Top Seasoning for Fries & Chicken"
+        elif "BUTTER PAPER" in uname:
+            context_note = "Greaseproof Wrapping Paper"
+        elif "BUCKET" in uname:
+            context_note = "Fried Chicken Takeaway Buckets"
+        elif "BREADING" in uname or "MARINADE" in uname:
+            context_note = "Crispy Broasted Breading in Stock"
+        elif "PIZZA BOX" in uname:
+            context_note = "In Stock for your Pizzas"
+        elif "BURGER BOX" in uname:
             context_note = "In Stock for your Burgers"
-        elif "BOX" in clean_name.upper() or "PACK" in clean_name.upper():
+        elif is_box:
             context_note = "In Stock at Packaging Depot"
         else:
             context_note = "In Stock at Depot"
@@ -262,6 +422,12 @@ class RecommendationService:
             return "మిల్కీ మిస్ట్ మొజారెల్లా చీజ్"
         if "FRIES" in uname:
             return "అముల్ ఫ్రెంచ్ ఫ్రైస్ క్రిస్పీ స్టాక్"
+        if "BUTTER PAPER" in uname:
+            return "షవర్మా బటర్ పేపర్ డిపో స్టాక్"
+        if "PIZZA SAUCE" in uname or "PASTA SAUCE" in uname:
+            return "పిజ్జా పాస్తా సాస్ డిపో స్టాక్"
+        if "BUCKET" in uname:
+            return "చికెన్ బకెట్ బాక్సులు డిపో స్టాక్"
         return "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
 
     # ─── IN-MEMORY DEMAND RADAR CACHE (60s TTL) ───

@@ -55,6 +55,8 @@ class PaymentResponse(BaseModel):
     notes: Optional[str] = None
     created_at: datetime
     allocations: List[PaymentAllocationResponse] = []
+    settled_items: List[Dict[str, Any]] = []
+    restock_suggestion: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True

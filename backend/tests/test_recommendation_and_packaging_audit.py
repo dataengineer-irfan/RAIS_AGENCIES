@@ -288,3 +288,113 @@ def test_new_customer_with_no_purchase_history_gets_safe_in_stock_depot_fallback
     assert suggestion is not None
     assert "In Stock" in suggestion["context_note"]
     assert "₹" not in suggestion["display_text"]
+
+
+def test_pizza_box_buyer_never_receives_another_pizza_box(setup_db):
+    """
+    Commercial Cross-Sell Integrity:
+    If customer is currently buying a Pizza Box (e.g. RAIS-BOX-03),
+    the recommendation engine MUST NEVER recommend another Pizza Box (even RAIS-BOX-01).
+    It MUST recommend complementary ingredients/seasonings: Oregano, Mozzarella, or Pizza Sauce.
+    """
+    db = setup_db["db"]
+    cust = setup_db["cust_pizza"]
+
+    # Customer is buying Pizza Box
+    suggestion = RecommendationService.get_customer_restock_suggestion(
+        db=db,
+        customer_id=str(cust.id),
+        current_item_descriptions=['PIZZA BOX 8"x8" PRINTED Laminated']
+    )
+
+    assert suggestion is not None
+    assert "PIZZA BOX" not in suggestion["name"].upper()
+    assert suggestion["sku"] not in ["RAIS-BOX-01", "RAIS-BOX-03"]
+    # Verified complementary cross-sell (e.g. OREGANO or PIZZA SAUCE)
+    assert any(term in suggestion["name"].upper() for term in ["OREGANO", "SAUCE", "CHEESE", "MOZZARELLA"])
+
+
+def test_burger_box_buyer_never_receives_another_burger_box(setup_db):
+    """
+    Commercial Cross-Sell Integrity:
+    If customer is currently buying a Burger Box,
+    the recommendation engine MUST NEVER recommend another Burger Box.
+    It MUST recommend high-margin sides/sauces: Mayo, French Fries, or Peri Peri.
+    """
+    db = setup_db["db"]
+    cust = setup_db["cust_burger"]
+
+    suggestion = RecommendationService.get_customer_restock_suggestion(
+        db=db,
+        customer_id=str(cust.id),
+        current_item_descriptions=['BURGER BOX 4"x4" PRINTED']
+    )
+
+    assert suggestion is not None
+    assert "BURGER BOX" not in suggestion["name"].upper()
+    assert suggestion["sku"] not in ["RAIS-BOX-02", "RAIS-BOX-04", "RAIS-BOX-05"]
+    assert any(term in suggestion["name"].upper() for term in ["MAYO", "FRIES", "PERI PERI", "PATTY"])
+
+
+def test_al_bek_multi_item_order_strict_exclusion(setup_db):
+    """
+    Verifies the exact production scenario from Invoice #INV-202611-00068:
+    Customer bought:
+      1. PIZZA BOX 8"x8" PRINTED Laminated
+      2. FOODRITE TOMATO KETCHUP
+      3. BURGER BOX 4"x4" PRINTED
+    
+    The engine MUST:
+    - DISALLOW all Pizza Boxes
+    - DISALLOW all Burger Boxes
+    - DISALLOW all Ketchup
+    - Cross-sell a true kitchen complement (e.g. Oregano, Mozzarella, Mayo, Fries).
+    """
+    db = setup_db["db"]
+    cust = setup_db["cust_new"]
+
+    items_on_bill = [
+        'PIZZA BOX 8"x8" PRINTED Laminated',
+        'FOODRITE TOMATO KETCHUP',
+        'BURGER BOX 4"x4" PRINTED'
+    ]
+
+    suggestion = RecommendationService.get_customer_restock_suggestion(
+        db=db,
+        customer_id=str(cust.id),
+        current_item_descriptions=items_on_bill
+    )
+
+    assert suggestion is not None
+    assert "PIZZA BOX" not in suggestion["name"].upper()
+    assert "BURGER BOX" not in suggestion["name"].upper()
+    assert "KETCHUP" not in suggestion["name"].upper()
+    assert suggestion["packaging_unit"] != "1.2 KG PACKET"
+
+
+def test_packaging_unit_is_sanitized_from_kg_to_nos(setup_db):
+    """
+    Guarantees that corrugated boxes/buckets NEVER display a weight unit like '1.2 KG PACKET'.
+    Boxes must always be formatted as '100 NOS' or 'BUNDLE'.
+    """
+    db = setup_db["db"]
+    cat_pkg = setup_db["p_box8"].category_id
+
+    # Create a box product that mistakenly has packaging_unit = '1.2 KG PACKET'
+    flawed_box = Product(
+        sku="RAIS-BOX-ERR",
+        category_id=cat_pkg,
+        name='SPECIAL CORRUGATED BOX 10"x10"',
+        brand="Packaging Solutions",
+        packaging_unit="1.2 KG PACKET",
+        base_price=Decimal("700.00"),
+        current_stock=Decimal("100.00"),
+        is_active=True
+    )
+    db.add(flawed_box)
+    db.flush()
+
+    formatted = RecommendationService._format_suggestion(flawed_box, set())
+    assert formatted["packaging_unit"] == "100 NOS"
+    assert "1.2 KG" not in formatted["display_text"]
+

@@ -158,31 +158,43 @@ def get_printable_payment(
     restock_banner = ""
     try:
         from app.services.recommendation_service import RecommendationService
+        from app.models.invoice import InvoiceItem
+        settled_inv_ids = [str(a.invoice_id) for a in (p.allocations or []) if getattr(a, 'invoice_id', None)]
+        settled_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id.in_(settled_inv_ids)).all() if settled_inv_ids else []
+        exclude_pids = [str(itm.product_id) for itm in settled_items if itm.product_id]
+        current_descs = [itm.item_description for itm in settled_items if itm.item_description]
         suggestion = RecommendationService.get_customer_restock_suggestion(
             db=db,
-            customer_id=str(p.customer_id)
+            customer_id=str(p.customer_id) if p.customer_id else None,
+            exclude_product_ids=exclude_pids,
+            current_item_descriptions=current_descs
         )
         if not suggestion:
             cust_name_up = (p.customer_name or "").upper()
             if "PIZZA" in cust_name_up:
                 suggestion = {
-                    "name": "DELMONTE PIZZA PASTA SAUCE",
-                    "packaging_unit": "1 KG PACKET",
+                    "name": "BIG BELL OREGANO SEASONING",
+                    "packaging_unit": "1 PACKET",
                     "context_note": "In Stock for your Pizzas",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/delmonte_pizza_sauce.jpg",
-                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/big_bell_oregano.jpg",
+                    "telugu_note": "పిజ్జా కోసం ఒరేగానో తాజా స్టాక్"
                 }
             elif "BURGER" in cust_name_up:
                 suggestion = {
-                    "name": 'BURGER BOX 4"x4" PRINTED',
-                    "packaging_unit": "100 NOS",
+                    "name": "DELMONTE TANDOORI MAYO",
+                    "packaging_unit": "1 KG PACKET",
                     "context_note": "In Stock for your Burgers",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg",
-                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/delmonte_tandoori_mayo.jpg",
+                    "telugu_note": "రుచికరమైన తందూరి మాయోనైస్ డిపో స్టాక్"
                 }
             elif any(k in cust_name_up for k in ["CHICKEN", "SNACK", "MFC", "AFC"]):
                 suggestion = {
-                    "name": 'CHICKEN BOX 4"5x8"',
+                    "name": "VKL PERI PERI SPRINKLER",
+                    "packaging_unit": "1 PACKET",
+                    "context_note": "In Stock for your Kitchen",
+                    "image_url": "https://rais-frontend.onrender.com/assets/products/vkl_peri_peri_sprinkler.jpg",
+                    "telugu_note": "ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్"
+                }
                     "packaging_unit": "100 NOS",
                     "context_note": "In Stock for your Kitchen",
                     "image_url": "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg",
@@ -420,9 +432,16 @@ def get_payment_image(
     suggestion = None
     try:
         from app.services.recommendation_service import RecommendationService
+        from app.models.invoice import InvoiceItem
+        settled_inv_ids = [str(a.invoice_id) for a in (p.allocations or []) if getattr(a, 'invoice_id', None)]
+        settled_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id.in_(settled_inv_ids)).all() if settled_inv_ids else []
+        exclude_pids = [str(itm.product_id) for itm in settled_items if itm.product_id]
+        current_descs = [itm.item_description for itm in settled_items if itm.item_description]
         suggestion = RecommendationService.get_customer_restock_suggestion(
             db=db,
-            customer_id=str(p.customer_id)
+            customer_id=str(p.customer_id) if p.customer_id else None,
+            exclude_product_ids=exclude_pids,
+            current_item_descriptions=current_descs
         )
     except Exception:
         suggestion = None
@@ -431,24 +450,24 @@ def get_payment_image(
         cust_name_up = (p.customer_name or "").upper()
         if "PIZZA" in cust_name_up:
             suggestion = {
-                "name": "DELMONTE PIZZA PASTA SAUCE",
-                "packaging_unit": "1 KG PACKET",
+                "name": "BIG BELL OREGANO SEASONING",
+                "packaging_unit": "1 PACKET",
                 "context_note": "In Stock for your Pizzas",
-                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                "telugu_note": "పిజ్జా కోసం ఒరేగానో తాజా స్టాక్"
             }
         elif "BURGER" in cust_name_up:
             suggestion = {
-                "name": 'BURGER BOX 4"x4" PRINTED',
-                "packaging_unit": "100 NOS",
+                "name": "DELMONTE TANDOORI MAYO",
+                "packaging_unit": "1 KG PACKET",
                 "context_note": "In Stock for your Burgers",
-                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                "telugu_note": "రుచికరమైన తందూరి మాయోనైస్ డిపో స్టాక్"
             }
         elif any(k in cust_name_up for k in ["CHICKEN", "SNACK", "MFC", "AFC"]):
             suggestion = {
-                "name": 'CHICKEN BOX 4"5x8"',
-                "packaging_unit": "100 NOS",
+                "name": "VKL PERI PERI SPRINKLER",
+                "packaging_unit": "1 PACKET",
                 "context_note": "In Stock for your Kitchen",
-                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
+                "telugu_note": "ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్"
             }
         else:
             suggestion = {
@@ -695,10 +714,17 @@ def get_payment_restock_suggestion(
     """
     try:
         from app.services.recommendation_service import RecommendationService
+        from app.models.invoice import InvoiceItem
         p = PaymentService.get_payment_by_id(db, payment_id)
+        settled_inv_ids = [str(a.invoice_id) for a in (p.allocations or []) if getattr(a, 'invoice_id', None)]
+        settled_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id.in_(settled_inv_ids)).all() if settled_inv_ids else []
+        exclude_pids = [str(itm.product_id) for itm in settled_items if itm.product_id]
+        current_descs = [itm.item_description for itm in settled_items if itm.item_description]
         suggestion = RecommendationService.get_customer_restock_suggestion(
             db=db,
-            customer_id=str(p.customer_id)
+            customer_id=str(p.customer_id) if p.customer_id else None,
+            exclude_product_ids=exclude_pids,
+            current_item_descriptions=current_descs
         )
         return {"suggestion": suggestion}
     except Exception:

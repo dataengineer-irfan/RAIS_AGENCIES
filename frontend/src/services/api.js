@@ -527,7 +527,7 @@ export const reportApi = {
     return res.data;
   },
   getFinancialAuditMarginLeakage: async (params = {}) => {
-    const res = await api.get('/reports/financial-audit/margin-leakage', { params });
+    const res = await api.get('/audit/margin-leakage', { params });
     return res.data;
   },
   resolveDuplicatePayment: async (payload) => {

@@ -309,6 +309,39 @@ class PaymentService:
             except Exception:
                 disc_val = Decimal("0.00")
 
+        settled_items_list = []
+        settled_descs = []
+        exclude_pids = []
+        if p.allocations:
+            for a in p.allocations:
+                if a.invoice and a.invoice.items:
+                    for itm in a.invoice.items:
+                        settled_items_list.append({
+                            "product_id": str(itm.product_id) if itm.product_id else None,
+                            "item_description": itm.item_description,
+                            "packaging_unit": itm.packaging_unit,
+                            "quantity": float(itm.quantity or 0)
+                        })
+                        if itm.product_id:
+                            exclude_pids.append(str(itm.product_id))
+                        if itm.item_description:
+                            settled_descs.append(itm.item_description)
+
+        restock_sugg = None
+        db_state = getattr(p, '_sa_instance_state', None)
+        active_db = getattr(db_state, 'session', None) if db_state else None
+        if active_db and p.customer_id:
+            try:
+                from app.services.recommendation_service import RecommendationService
+                restock_sugg = RecommendationService.get_customer_restock_suggestion(
+                    db=active_db,
+                    customer_id=str(p.customer_id),
+                    exclude_product_ids=exclude_pids,
+                    current_item_descriptions=settled_descs
+                )
+            except Exception:
+                restock_sugg = None
+
         return PaymentResponse(
             id=p.id,
             payment_number=p.payment_number,
@@ -328,7 +361,9 @@ class PaymentService:
             reference_number=p.reference_number,
             notes=p.notes,
             created_at=p.created_at,
-            allocations=allocs
+            allocations=allocs,
+            settled_items=settled_items_list,
+            restock_suggestion=restock_sugg
         )
 
     @staticmethod

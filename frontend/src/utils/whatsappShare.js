@@ -482,7 +482,7 @@ export const sharePaymentOnWhatsApp = async ({
     }
   }
 
-  // Optional in-stock restock note for next order (strictly NO PRICES)
+  // Optional in-stock restock note for next order (strictly NO PRICES & NEVER recommend settled items)
   let restockSection = '';
   let effectiveProducts = products;
   if (!effectiveProducts || !effectiveProducts.length) {
@@ -491,8 +491,13 @@ export const sharePaymentOnWhatsApp = async ({
       if (Array.isArray(cached) && cached.length > 0) effectiveProducts = cached;
     } catch (_) {}
   }
+  const effectiveSettled = (Array.isArray(payment?.settled_items) && payment.settled_items.length > 0)
+    ? payment.settled_items
+    : (Array.isArray(payment?.items) && payment.items.length > 0)
+    ? payment.items
+    : [];
   const finalSuggestion = showRestock
-    ? (restockSuggestion || deriveRestockSuggestion([], effectiveProducts || [], null, bName))
+    ? (restockSuggestion || payment?.restock_suggestion || deriveRestockSuggestion(effectiveSettled, effectiveProducts || [], null, bName))
     : null;
   if (finalSuggestion && finalSuggestion.display_text) {
     restockSection = `${finalSuggestion.display_text}\n`;
@@ -572,7 +577,10 @@ ${ledgerSection}${restockSection}${getCompactQuickLinks(cleanPayUrl, 'Download V
         try {
           await downloadPaymentImage({
             payment,
-            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
+            customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
+            products,
+            restockSuggestion: finalSuggestion,
+            includeRestockSuggestion: showRestock
           });
         } catch (dlErr) {
           // non-blocking
@@ -605,7 +613,10 @@ ${ledgerSection}${restockSection}${getCompactQuickLinks(cleanPayUrl, 'Download V
       try {
         await downloadPaymentImage({
           payment,
-          customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone }
+          customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
+          products,
+          restockSuggestion: finalSuggestion,
+          includeRestockSuggestion: showRestock
         });
       } catch (dlErr) {
         console.warn('Payment image auto-download failed:', dlErr);
