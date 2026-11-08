@@ -108,6 +108,10 @@ class FinancialAuditService:
 
         total_at_risk = sum([a["amount"] for a in suspect_anomalies if a["severity"] == "HIGH"])
 
+        # Quick snapshot of commercial margin leakage
+        leakage_data = FinancialAuditService.get_margin_leakage_records(db)
+        leakage_summary = leakage_data.get("summary", {})
+
         # 3. Customer Summaries
         cust_list = []
         for c in customers:
@@ -142,10 +146,142 @@ class FinancialAuditService:
                 "total_outstanding": float(total_outstanding),
                 "anomalies_count": len(suspect_anomalies),
                 "high_severity_count": len([a for a in suspect_anomalies if a["severity"] == "HIGH"]),
-                "total_at_risk_amount": float(total_at_risk)
+                "total_at_risk_amount": float(total_at_risk),
+                "margin_leakage_loss": leakage_summary.get("total_loss", 0.0),
+                "margin_leakage_items_count": leakage_summary.get("total_items", 0)
             },
             "anomalies": suspect_anomalies,
             "customers": cust_list
+        }
+
+    @staticmethod
+    def get_margin_leakage_records(
+        db: Session,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Detects historical margin leakages where products were billed below procurement landed cost.
+        """
+        from app.models.inventory import StockMovement
+        from app.models.user import User
+
+        cost_rows = db.query(
+            StockMovement.product_id,
+            StockMovement.purchase_cost
+        ).filter(StockMovement.purchase_cost.isnot(None))\
+         .order_by(StockMovement.created_at.desc()).all()
+
+        cost_map: Dict[str, Decimal] = {}
+        for row in cost_rows:
+            if row.product_id not in cost_map and row.purchase_cost is not None:
+                cost_map[row.product_id] = Decimal(str(row.purchase_cost))
+
+        valid_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+        query = db.query(
+            InvoiceItem,
+            Invoice,
+            Customer,
+            Product,
+            User
+        ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+         .join(Customer, Customer.id == Invoice.customer_id)\
+         .join(Product, Product.id == InvoiceItem.product_id)\
+         .outerjoin(User, User.id == Invoice.created_by_id)\
+         .filter(Invoice.status.in_(valid_statuses))
+
+        if start_date:
+            query = query.filter(Invoice.invoice_date >= start_date)
+        if end_date:
+            query = query.filter(Invoice.invoice_date <= end_date)
+
+        rows = query.order_by(Invoice.invoice_date.desc(), Invoice.invoice_number.desc()).all()
+
+        leakage_items = []
+        total_loss = Decimal("0.00")
+        affected_invoices = set()
+        customer_loss_map: Dict[str, Decimal] = {}
+        sku_loss_map: Dict[str, Dict[str, Any]] = {}
+
+        term = search.strip().lower() if (isinstance(search, str) and search.strip()) else None
+
+        for item, inv, cust, prod, user in rows:
+            cost = cost_map.get(item.product_id)
+            if cost is None:
+                continue
+
+            unit_price = Decimal(str(item.unit_price or "0"))
+            if unit_price >= cost:
+                continue
+
+            qty = Decimal(str(item.quantity or "0"))
+            unit_loss = cost - unit_price
+            item_total_loss = unit_loss * qty
+
+            if term:
+                searchable = f"{inv.invoice_number} {cust.business_name} {prod.sku} {prod.name} {user.username if user else ''}".lower()
+                if term not in searchable:
+                    continue
+
+            total_loss += item_total_loss
+            affected_invoices.add(inv.id)
+
+            customer_loss_map[cust.business_name] = customer_loss_map.get(cust.business_name, Decimal("0")) + item_total_loss
+
+            if prod.sku not in sku_loss_map:
+                sku_loss_map[prod.sku] = {"name": prod.name, "loss": Decimal("0")}
+            sku_loss_map[prod.sku]["loss"] += item_total_loss
+
+            classification = "CRITICAL_TYPO" if unit_price < (cost * Decimal("0.30")) else "BELOW_COST_DISCOUNT"
+
+            leakage_items.append({
+                "id": item.id,
+                "invoice_id": inv.id,
+                "invoice_number": inv.invoice_number,
+                "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+                "customer_id": cust.id,
+                "customer_name": cust.business_name,
+                "product_id": prod.id,
+                "sku": prod.sku,
+                "product_name": prod.name,
+                "packaging_unit": item.packaging_unit or prod.packaging_unit,
+                "quantity": float(qty),
+                "unit_price": float(unit_price),
+                "landed_cost": float(cost),
+                "unit_loss": float(unit_loss),
+                "total_loss": float(item_total_loss),
+                "loss_pct": round(float((unit_loss / cost) * 100), 1) if cost > 0 else 0.0,
+                "classification": classification,
+                "billed_by": user.username if user else "admin"
+            })
+
+        leakage_items.sort(key=lambda x: x["total_loss"], reverse=True)
+
+        worst_customer = max(customer_loss_map.items(), key=lambda x: x[1])[0] if customer_loss_map else None
+        worst_customer_loss = float(max(customer_loss_map.values())) if customer_loss_map else 0.0
+
+        worst_sku = max(sku_loss_map.items(), key=lambda x: x[1]["loss"]) if sku_loss_map else None
+
+        summary = {
+            "total_loss": round(float(total_loss), 2),
+            "total_items": len(leakage_items),
+            "total_invoices": len(affected_invoices),
+            "worst_customer": worst_customer,
+            "worst_customer_loss": round(worst_customer_loss, 2),
+            "worst_sku": worst_sku[0] if worst_sku else None,
+            "worst_sku_loss": round(float(worst_sku[1]["loss"]), 2) if worst_sku else 0.0,
+            "worst_product_name": worst_sku[1]["name"] if worst_sku else None
+        }
+
+        return {
+            "summary": summary,
+            "items": leakage_items
         }
 
     @staticmethod
@@ -440,6 +576,110 @@ class FinancialAuditService:
         ws_sum.row_dimensions[row_idx].height = 22
 
         # ----------------------------------------------------------------------
+        # TAB 2: MARGIN LEAKAGE FORENSICS (BELOW LANDED COST)
+        # ----------------------------------------------------------------------
+        leakage_res = FinancialAuditService.get_margin_leakage_records(db)
+        leakage_items = leakage_res.get("items", [])
+        leakage_sum = leakage_res.get("summary", {})
+
+        ws_leak = wb.create_sheet(title="Margin Leakage Forensics")
+        ws_leak.views.sheetView[0].showGridLines = True
+
+        ws_leak.merge_cells("A1:L1")
+        ws_leak["A1"] = "HISTORICAL MARGIN LEAKAGE AUDIT (SOLD BELOW REAL PROCUREMENT COST)"
+        ws_leak["A1"].font = font_title
+        ws_leak["A1"].fill = PatternFill(start_color="991B1B", end_color="991B1B", fill_type="solid")
+        ws_leak["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_leak.row_dimensions[1].height = 30
+
+        ws_leak.merge_cells("A2:L2")
+        ws_leak["A2"] = f"Total Cash Loss: ₹{float(leakage_sum.get('total_loss', 0)):,.2f} | Affected Line Items: {len(leakage_items)} across {leakage_sum.get('total_invoices', 0)} distinct invoices"
+        ws_leak["A2"].font = font_subtitle
+        ws_leak["A2"].fill = fill_dark_sub
+        ws_leak["A2"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_leak.row_dimensions[2].height = 20
+
+        leak_hdrs = [
+            "Date", "Invoice #", "Customer Outlet", "SKU", "Product Name", "Unit",
+            "Qty", "Billed Rate (₹)", "Landed Cost (₹)", "Unit Loss (₹)", "Total Loss (₹)", "Diagnosis"
+        ]
+        for col_idx, h in enumerate(leak_hdrs, 1):
+            c = ws_leak.cell(row=4, column=col_idx, value=h)
+            c.font = font_tbl_hdr
+            c.fill = fill_tbl_hdr
+            c.alignment = Alignment(horizontal="center", vertical="center")
+        ws_leak.row_dimensions[4].height = 24
+
+        l_row = 5
+        tot_l_qty = 0.0
+        tot_l_loss = 0.0
+
+        for item in leakage_items:
+            tot_l_qty += float(item.get("quantity", 0))
+            tot_l_loss += float(item.get("total_loss", 0))
+            diag = "Typo / Fatal Rate (<30% Cost)" if item.get("classification") == "CRITICAL_TYPO" else "Wholesale Below Cost"
+            l_vals = [
+                item.get("invoice_date", ""),
+                item.get("invoice_number", ""),
+                item.get("customer_name", ""),
+                item.get("sku", ""),
+                item.get("product_name", ""),
+                item.get("packaging_unit", "PKT"),
+                float(item.get("quantity", 0)),
+                float(item.get("unit_price", 0)),
+                float(item.get("landed_cost", 0)),
+                float(item.get("unit_loss", 0)),
+                float(item.get("total_loss", 0)),
+                diag
+            ]
+            for col_idx, val in enumerate(l_vals, 1):
+                c = ws_leak.cell(row=l_row, column=col_idx, value=val)
+                c.font = font_regular
+                c.border = border_cell
+                if item.get("classification") == "CRITICAL_TYPO":
+                    c.fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+                elif l_row % 2 == 0:
+                    c.fill = fill_zebra
+                
+                if col_idx in [1, 2, 4, 6, 12]:
+                    c.alignment = Alignment(horizontal="center", vertical="center")
+                elif col_idx in [7, 8, 9, 10, 11]:
+                    c.alignment = Alignment(horizontal="right", vertical="center")
+                    if col_idx in [8, 9, 10, 11]:
+                        c.number_format = CURRENCY_FORMAT
+                    else:
+                        c.number_format = INTEGER_FORMAT
+                else:
+                    c.alignment = Alignment(horizontal="left", vertical="center")
+            ws_leak.row_dimensions[l_row].height = 20
+            l_row += 1
+
+        # Leakage Totals Row
+        ws_leak.cell(row=l_row, column=1, value="TOTAL MARGIN LEAKAGE").font = font_bold
+        ws_leak.cell(row=l_row, column=7, value=float(tot_l_qty)).number_format = INTEGER_FORMAT
+        ws_leak.cell(row=l_row, column=11, value=float(tot_l_loss)).number_format = CURRENCY_FORMAT
+        for c in range(1, 13):
+            ws_leak.cell(row=l_row, column=c).border = double_bottom
+            ws_leak.cell(row=l_row, column=c).font = font_bold
+            if c in [7, 11]:
+                ws_leak.cell(row=l_row, column=c).alignment = Alignment(horizontal="right", vertical="center")
+        ws_leak.row_dimensions[l_row].height = 22
+
+        # Format ws_leak column widths
+        ws_leak.column_dimensions['A'].width = 14
+        ws_leak.column_dimensions['B'].width = 20
+        ws_leak.column_dimensions['C'].width = 26
+        ws_leak.column_dimensions['D'].width = 16
+        ws_leak.column_dimensions['E'].width = 32
+        ws_leak.column_dimensions['F'].width = 12
+        ws_leak.column_dimensions['G'].width = 10
+        ws_leak.column_dimensions['H'].width = 14
+        ws_leak.column_dimensions['I'].width = 14
+        ws_leak.column_dimensions['J'].width = 14
+        ws_leak.column_dimensions['K'].width = 16
+        ws_leak.column_dimensions['L'].width = 28
+
+        # ----------------------------------------------------------------------
         # TAB 2..N: CUSTOMER SPECIFIC SHEETS
         # ----------------------------------------------------------------------
         # Generate detailed statement tabs for requested customers or accounts with anomalies
@@ -628,7 +868,7 @@ class FinancialAuditService:
         ws_items.column_dimensions['I'].width = 16
 
         for ws_c in wb.worksheets:
-            if ws_c not in [ws_sum, ws_items]:
+            if ws_c not in [ws_sum, ws_items, ws_leak]:
                 ws_c.column_dimensions['A'].width = 14
                 ws_c.column_dimensions['B'].width = 22
                 ws_c.column_dimensions['C'].width = 12

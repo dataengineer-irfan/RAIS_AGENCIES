@@ -93,6 +93,22 @@ def export_financial_audit_excel(
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
+@router.get("/financial-audit/margin-leakage")
+def get_financial_audit_margin_leakage(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    search: Optional[str] = Query(None, min_length=1, max_length=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """Forensic margin leakage query for Financial Audit Hub."""
+    return FinancialAuditService.get_margin_leakage_records(
+        db=db,
+        start_date=start_date,
+        end_date=end_date,
+        search=search
+    )
+
 @router.post("/financial-audit/resolve-duplicate")
 def resolve_phantom_duplicate_payment(
     payload: ResolveDuplicatePaymentRequest,

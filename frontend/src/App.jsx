@@ -34,6 +34,7 @@ export const App = () => {
 
   const [selectedCustomerIdForDossier, setSelectedCustomerIdForDossier] = useState(null);
   const [auditInitialParams, setAuditInitialParams] = useState(null);
+  const [financialAuditInitialParams, setFinancialAuditInitialParams] = useState(null);
 
   const handleNavigate = (target, payload = null) => {
     const dashboardSubPages = ['overview', 'forecast', 'targets', 'receivables', 'products', 'activity'];
@@ -48,6 +49,9 @@ export const App = () => {
       }
       if (target === 'audit' && payload) {
         setAuditInitialParams(payload);
+      }
+      if (target === 'financial-audit' && payload) {
+        setFinancialAuditInitialParams(payload);
       }
       setActiveTab(target);
     }
@@ -314,10 +318,19 @@ export const App = () => {
           {activeTab === 'ai' && <AIAssistantPage />}
 
           {activeTab === 'financial-audit' && (
-            <FinancialAuditPage key={dataRefreshKey} onNavigate={handleNavigate} />
+            <FinancialAuditPage 
+              key={dataRefreshKey} 
+              onNavigate={handleNavigate} 
+              initialParams={financialAuditInitialParams} 
+            />
           )}
 
-          {activeTab === 'audit' && <AuditPage initialParams={auditInitialParams} />}
+          {activeTab === 'audit' && (
+            <AuditPage 
+              initialParams={auditInitialParams} 
+              onNavigate={handleNavigate} 
+            />
+          )}
         </main>
       </div>
 

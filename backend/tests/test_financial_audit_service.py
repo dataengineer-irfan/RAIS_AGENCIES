@@ -160,3 +160,10 @@ def test_financial_audit_resolve_duplicate_payment(db, audit_test_data):
     # Verify payment is deleted from DB
     deleted = db.query(Payment).filter(Payment.payment_number == p_dup2.payment_number).first()
     assert deleted is None
+
+def test_financial_audit_margin_leakage_records(db, audit_test_data):
+    leakage = FinancialAuditService.get_margin_leakage_records(db)
+    assert "summary" in leakage
+    assert "items" in leakage
+    assert isinstance(leakage["summary"]["total_loss"], float)
+    assert isinstance(leakage["items"], list)

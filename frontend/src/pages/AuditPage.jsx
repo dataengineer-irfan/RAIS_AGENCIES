@@ -32,7 +32,7 @@ import {
 import { auditApi, backupApi } from '../services/api';
 import { copyToClipboard } from '../utils/mobileHelpers';
 
-export const AuditPage = ({ initialParams = null }) => {
+export const AuditPage = ({ initialParams = null, onNavigate }) => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [entityFilter, setEntityFilter] = useState(() => initialParams?.entity || initialParams?.entity_name || '');
@@ -413,6 +413,37 @@ export const AuditPage = ({ initialParams = null }) => {
       {activeMainTab === 'leakage' ? (
         /* ─── TAB 2: COMMERCIAL MARGIN LEAKAGE DASHBOARD ─── */
         <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
+          {/* Prominent Hub Redirection Hero Card */}
+          <div className="bg-gradient-to-r from-rose-950/60 via-slate-900 to-amber-950/40 border border-rose-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 shrink-0">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black text-white">
+                    Margin Leakage Has Moved to Financial Audit Hub
+                  </h3>
+                  <span className="text-[10px] font-black px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30 uppercase tracking-wider">
+                    PRO AUDIT
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Complete margin leak forensics, 1-click customer dossier drilldowns, and multi-tab Excel workbooks are now unified inside the Financial Audit Hub.
+                </p>
+              </div>
+            </div>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('financial-audit', { tab: 'leakage' })}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition shadow-lg shadow-rose-950/50 shrink-0 active:scale-95 cursor-pointer"
+              >
+                <span>Open in Financial Audit Hub</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
           {/* Leakage Filter Toolbar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
             <div className="flex items-center gap-2.5">
