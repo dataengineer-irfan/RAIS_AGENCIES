@@ -108,8 +108,12 @@ class RecommendationService:
             # Extract specific product category purchase flags on CURRENT / SETTLED transaction
             tx_combined_text = " ".join(all_transaction_descs).upper()
 
-            has_pizza_box = "PIZZA BOX" in tx_combined_text
-            has_burger_box = "BURGER BOX" in tx_combined_text
+            has_pizza_box = "PIZZA BOX" in tx_combined_text or any(
+                "BOX" in d.upper() and "PIZZA" in d.upper() for d in all_transaction_descs
+            )
+            has_burger_box = "BURGER BOX" in tx_combined_text or any(
+                "BOX" in d.upper() and "BURGER" in d.upper() for d in all_transaction_descs
+            )
             has_chicken_bucket = any(w in tx_combined_text for w in ["BUCKET", "CHICKEN BOX"])
             has_butter_paper = any(w in tx_combined_text for w in ["BUTTER PAPER", "GREASEPROOF"])
             has_ketchup = "KETCHUP" in tx_combined_text
@@ -124,10 +128,32 @@ class RecommendationService:
             has_patty = any(w in tx_combined_text for w in ["PATTY", "PATTIES"])
             has_momos_nuggets = any(w in tx_combined_text for w in ["MOMO", "NUGGET", "POPS", "POPCORN"])
 
+            # Collect any "BOX"-category items already on the transaction to block ALL box variants
+            # This is the airtight guard: if ANY box was bought, block ALL box SKUs (RAIS-BOX-*)
+            # Also block by exact/partial name: catch "pizza box colour", "pizza box laminated", etc.
+            has_any_box = has_pizza_box or has_burger_box or has_chicken_bucket or "BOX" in tx_combined_text
+
+            # SKU-prefix-level exclusion: collect prefix families the customer already bought
+            excluded_sku_prefixes: set = set()
+            for ep in excluded_prods:
+                ep_sku = (ep.sku or "").upper().strip()
+                # e.g. RAIS-BOX-01 → prefix "RAIS-BOX"
+                parts = ep_sku.rsplit("-", 1)
+                if len(parts) == 2:
+                    excluded_sku_prefixes.add(parts[0])  # e.g. "RAIS-BOX"
+
+            # Also flag box-family by description when product_id mapping is missing
+            if has_any_box:
+                excluded_sku_prefixes.add("RAIS-BOX")
+
             # Strict Negative Disqualification Keywords: Any product containing these is DISALLOWED
             blacklisted_keywords = set()
             if has_pizza_box:
                 blacklisted_keywords.add("PIZZA BOX")
+                blacklisted_keywords.add("PIZZA BOX COLOUR")
+                blacklisted_keywords.add("PIZZA BOX LAMINATED")
+                blacklisted_keywords.add("PIZZA BOX CORUGATED")
+                blacklisted_keywords.add("PIZZA BOX CORRUGATED")
             if has_burger_box:
                 blacklisted_keywords.add("BURGER BOX")
             if has_chicken_bucket:
@@ -169,10 +195,25 @@ class RecommendationService:
                 p_sku = (prod.sku or "").upper().strip()
                 if p_sku in exclude_skus:
                     return True
+                # SKU-prefix family exclusion (e.g. block ALL RAIS-BOX-* if any box was on invoice)
+                for pfx in excluded_sku_prefixes:
+                    if p_sku.startswith(pfx + "-") or p_sku == pfx:
+                        return True
                 p_name = (prod.name or "").upper()
                 for b_kw in blacklisted_keywords:
                     if b_kw in p_name:
                         return True
+                # Final safety net: block any product whose name shares a significant keyword
+                # with any item already on this transaction (catches name variations / typos)
+                for desc in all_transaction_descs:
+                    desc_up = desc.upper()
+                    # Extract meaningful tokens (>4 chars, not generic units)
+                    generic = {"PRINTED", "LAMINATED", "CORUGATED", "CORRUGATED", "COLOUR",
+                               "PACKET", "PIECES", "BUNDLE", "INCHES", "SHEET", "PACK"}
+                    tokens = [w for w in desc_up.split() if len(w) > 4 and w not in generic]
+                    for tok in tokens:
+                        if tok in p_name and tok not in {"RAIS", "AGENCIES", "FROZEN", "FOODS"}:
+                            return True
                 return False
 
             # Build prioritized cross-sell ladders with TRUE complementary affinity
