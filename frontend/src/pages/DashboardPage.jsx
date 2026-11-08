@@ -2385,12 +2385,25 @@ export const DashboardPage = ({
               <span className="text-xs text-slate-400">
                 Total Loss: <strong className="text-rose-400 font-mono">₹{(kpis?.margin_leakage_alerts || []).reduce((s, a) => s + (a.loss_amount || 0), 0).toFixed(2)}</strong>
               </span>
-              <button
-                onClick={() => setShowMarginLeakageModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                {onNavigate && (
+                  <button
+                    onClick={() => {
+                      setShowMarginLeakageModal(false);
+                      onNavigate('financial-audit', { tab: 'leakage' });
+                    }}
+                    className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Audit Hub →</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowMarginLeakageModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -195,11 +195,6 @@ def get_printable_payment(
                     "image_url": "https://rais-frontend.onrender.com/assets/products/vkl_peri_peri_sprinkler.jpg",
                     "telugu_note": "ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్"
                 }
-                    "packaging_unit": "100 NOS",
-                    "context_note": "In Stock for your Kitchen",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/boxes_display_pizza_burger.jpg",
-                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
-                }
             else:
                 suggestion = {
                     "name": "VKL PERI PERI SPRINKLER",

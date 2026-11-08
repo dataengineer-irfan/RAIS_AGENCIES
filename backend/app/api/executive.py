@@ -1312,6 +1312,48 @@ def get_executive_briefing(
         except Exception:
             memo_data["memo"] = memo_setting.value
 
+    # ─── FINANCIAL AUDIT & RECONCILIATION WATCHDOG TELEMETRY ───
+    financial_audit_telemetry = {
+        "anomalies_count": 0,
+        "high_severity_count": 0,
+        "total_at_risk_amount": 0.0,
+        "margin_leakage_loss": 0.0,
+        "margin_leakage_items_count": 0,
+        "worst_sku": "",
+        "worst_sku_name": "",
+        "worst_sku_loss": 0.0,
+        "top_outlet": "",
+        "top_outlet_loss": 0.0,
+        "top_anomalies": [],
+        "top_leakages": []
+    }
+    try:
+        from app.services.financial_audit_service import FinancialAuditService
+        audit_scan = FinancialAuditService.scan_anomalies(db)
+        audit_summary = audit_scan.get("summary", {})
+        top_anomalies = audit_scan.get("anomalies", [])[:5]
+        
+        leakage_records = FinancialAuditService.get_margin_leakage_records(db)
+        leakage_summary = leakage_records.get("summary", {})
+        top_leakages = leakage_records.get("items", [])[:5]
+        
+        financial_audit_telemetry = {
+            "anomalies_count": int(audit_summary.get("anomalies_count", 0)),
+            "high_severity_count": int(audit_summary.get("high_severity_count", 0)),
+            "total_at_risk_amount": float(audit_summary.get("total_at_risk_amount", 0.0)),
+            "margin_leakage_loss": float(leakage_summary.get("total_loss", 0.0)),
+            "margin_leakage_items_count": int(leakage_summary.get("total_items", 0)),
+            "worst_sku": str(leakage_summary.get("worst_sku", "") or ""),
+            "worst_sku_name": str(leakage_summary.get("worst_sku_name", "") or ""),
+            "worst_sku_loss": float(leakage_summary.get("worst_sku_loss", 0.0)),
+            "top_outlet": str(leakage_summary.get("top_outlet", "") or ""),
+            "top_outlet_loss": float(leakage_summary.get("top_outlet_loss", 0.0)),
+            "top_anomalies": top_anomalies,
+            "top_leakages": top_leakages
+        }
+    except Exception as e:
+        logger.warning(f"Financial audit telemetry failed gracefully: {e}")
+
     # Build final executive briefing payload
     briefing_payload = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -1343,6 +1385,7 @@ def get_executive_briefing(
         "basket_gaps": final_basket_gaps,
         "demand_trends": final_demand_trends,
         "route_strategies": final_route_strategies,
+        "financial_audit": financial_audit_telemetry,
         "handover_memo": memo_data
     }
     return briefing_payload

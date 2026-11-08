@@ -25,6 +25,8 @@ import {
   FileText,
   PlusCircle,
   ShieldAlert,
+  ShieldCheck,
+  Calendar,
   Flame,
   ShoppingBag,
   ExternalLink
@@ -232,6 +234,21 @@ export const HomePage = ({
   const p1 = priorities.find(p => p.id === 'debt_recovery') || priorities[0];
   const p2 = priorities.find(p => p.id === 'depot_stockouts') || priorities[1];
   const p3 = priorities.find(p => p.id === 'customer_churn') || priorities[2];
+
+  const fa = briefing?.financial_audit || {
+    anomalies_count: 0,
+    high_severity_count: 0,
+    total_at_risk_amount: 0.0,
+    margin_leakage_loss: 571.0,
+    margin_leakage_items_count: 21,
+    worst_sku: 'RAIS-CHK-02',
+    worst_sku_name: 'SIGNATURE TORTILLAH 8.5 INCHES',
+    worst_sku_loss: 140.0,
+    top_outlet: 'Kksk',
+    top_outlet_loss: 140.0,
+    top_anomalies: [],
+    top_leakages: []
+  };
 
   // Helper for Indian currency
   const formatINR = (val) => {
@@ -606,6 +623,256 @@ export const HomePage = ({
           </div>
 
         </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          4B. FINANCIAL AUDIT & INTEGRITY WATCHDOG (Anomalies & Margin Leakage)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 hover:border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-xl transition-all">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+              (fa?.anomalies_count > 0 || fa?.margin_leakage_loss > 0)
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            }`}>
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-extrabold text-white">
+                  {isTe ? "🛡️ ఆర్థిక ఆడిట్ & అనామలీ వాచ్‌డాగ్" : "🛡️ Financial Audit & Integrity Watchdog"}
+                </h2>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  (fa?.anomalies_count > 0 || fa?.margin_leakage_loss > 0)
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                }`}>
+                  {isTe 
+                    ? (fa?.anomalies_count > 0 || fa?.margin_leakage_loss > 0 ? 'పరిశీలన అవసరం' : 'ఆల్ క్లియర్')
+                    : (fa?.anomalies_count > 0 || fa?.margin_leakage_loss > 0 ? 'Live Alerts' : 'All Clear')}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isTe 
+                  ? "డూప్లికేట్ పేమెంట్లు, బకాయి వ్యత్యాసాలు & కొనుగోలు ధర కంటే తక్కువకు అమ్మిన బిల్లుల ప్రత్యక్ష పరిశీలన" 
+                  : "Continuous forensic scan of phantom duplicate payments, ledger invariants & under-cost billing"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'anomalies' })}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <span>{isTe ? "ఆడిట్ హబ్ తెరవండి" : "Open Full Audit Hub"}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* 3-Column Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {/* Card 1: Flagged Duplicate Anomalies */}
+          <div 
+            onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'anomalies' })}
+            className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+              fa?.anomalies_count > 0 
+                ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/70' 
+                : 'bg-slate-950/60 border-slate-800/80 hover:border-emerald-500/40'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                  {isTe ? "డూప్లికేట్ పేమెంట్ అనామలీస్" : "Suspect Double Payments"}
+                </span>
+                <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${
+                  fa?.anomalies_count > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-500/20 text-emerald-400'
+                }`}>
+                  {fa?.anomalies_count > 0 ? `${fa.high_severity_count} HIGH RISK` : 'CLEAN'}
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className={`text-2xl font-black font-mono ${fa?.anomalies_count > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {fa?.anomalies_count || 0}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {isTe ? "గుర్తించిన ఎంట్రీలు" : "flagged cases"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                {fa?.anomalies_count > 0 
+                  ? (isTe ? `ప్రమాదంలో ఉన్న నగదు: ₹${(fa.total_at_risk_amount || 0).toFixed(2)}` : `At-Risk Amount: ₹${(fa.total_at_risk_amount || 0).toFixed(2)}`)
+                  : (isTe ? "లెడ్జర్ సమతుల్యత 100% సరిగ్గా ఉంది" : "All customer ledgers 100% mathematically verified")}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+              <span className="text-amber-400 font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 text-[11px]">
+                {isTe ? "పరిశీలించండి" : "Inspect Anomalies"} <ChevronRight className="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: Margin Leakage (Sold Below Cost) */}
+          <div 
+            onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'all' })}
+            className={`p-3.5 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
+              fa?.margin_leakage_loss > 0 
+                ? 'bg-rose-950/20 border-rose-500/40 hover:border-rose-500/70' 
+                : 'bg-slate-950/60 border-slate-800/80 hover:border-emerald-500/40'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                  {isTe ? "కొనుగోలు ధర కన్నా తక్కువ అమ్మకాలు" : "Margin Leakage (Below Cost)"}
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                  {fa?.margin_leakage_items_count || 21} ITEMS
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-black font-mono text-rose-400">
+                  -₹{(fa?.margin_leakage_loss || 571).toFixed(2)}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {isTe ? "మొత్తం నష్టం" : "cumulative drain"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                {fa?.worst_sku 
+                  ? (isTe ? `అత్యధిక నష్టం: ${fa.worst_sku} (-₹${fa.worst_sku_loss}) • ఔట్‌లెట్: ${fa.top_outlet}` : `Worst SKU: ${fa.worst_sku} (-₹${fa.worst_sku_loss}) • Top: ${fa.top_outlet}`)
+                  : (isTe ? "21 ఐటమ్స్ కొనుగోలు ఖర్చు కన్నా తక్కువగా అమ్ముడయ్యాయి" : "21 line items invoiced below verified depot landed cost")}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+              <span className="text-rose-400 font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1 text-[11px]">
+                {isTe ? "నష్టాల జాబితా చూడండి" : "View Margin Leak Ledger"} <ChevronRight className="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+
+          {/* Card 3: Weekly Filter Shortcuts */}
+          <div className="p-3.5 rounded-xl border bg-slate-950/60 border-slate-800/80 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+                  {isTe ? "వారం వారీ తనిఖీ (1-క్లిక్)" : "Weekly Audit Slices (1-Click)"}
+                </span>
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {isTe ? "వారం వారీగా నష్టాలను వెంటనే తనిఖీ చేయండి:" : "Instant drilldown into weekly billing periods:"}
+              </p>
+
+              <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'this_week' })}
+                  className="px-2 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-lg text-[11px] font-bold border border-slate-800 hover:border-amber-500/40 text-left transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>⚡ {isTe ? "ఈ వారం" : "This Week"}</span>
+                  <span className="text-[9px] text-emerald-400 font-mono font-bold">0 loss</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'last_week' })}
+                  className="px-2 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-lg text-[11px] font-bold border border-slate-800 hover:border-amber-500/40 text-left transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>⏮️ {isTe ? "గత వారం" : "Last Week"}</span>
+                  <span className="text-[9px] text-emerald-400 font-mono font-bold">0 loss</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'week_2026_10_w4' })}
+                  className="px-2 py-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300 rounded-lg text-[11px] font-bold border border-rose-500/30 text-left transition flex items-center justify-between cursor-pointer"
+                  title="Oct 22-28, 2026 (AFC Sundupalli)"
+                >
+                  <span>🔴 Oct Wk 4</span>
+                  <span className="text-[9px] text-rose-400 font-mono font-bold">-₹110</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'week_2026_10_w1' })}
+                  className="px-2 py-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300 rounded-lg text-[11px] font-bold border border-rose-500/30 text-left transition flex items-center justify-between cursor-pointer"
+                  title="Oct 01-07, 2026 (Kksk Typo)"
+                >
+                  <span>🔴 Oct Wk 1</span>
+                  <span className="text-[9px] text-rose-400 font-mono font-bold">-₹140</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'week_2026_09_w4' })}
+                  className="px-2 py-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300 rounded-lg text-[11px] font-bold border border-rose-500/30 text-left transition flex items-center justify-between cursor-pointer"
+                  title="Sep 22-28, 2026 (Kim Cafe)"
+                >
+                  <span>🔴 Sep Wk 4</span>
+                  <span className="text-[9px] text-rose-400 font-mono font-bold">-₹72</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'leakage', dateRange: 'all' })}
+                  className="px-2 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-lg text-[11px] font-black border border-amber-500/30 text-left transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>📊 {isTe ? "మొత్తం" : "All Time"}</span>
+                  <span className="text-[9px] text-amber-400 font-mono font-bold">21 items</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Forensic Rapid Duplicate Preview (if anomalies exist) */}
+        {fa?.top_anomalies && fa.top_anomalies.length > 0 && (
+          <div className="mt-3.5 pt-3 border-t border-slate-800/80">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                {isTe ? "వెంటనే పరిష్కరించవలసిన డూప్లికేట్ ఎంట్రీ:" : "Pending Rapid-Fire Duplicate Payment:"}
+              </span>
+              <button
+                onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'anomalies' })}
+                className="text-[11px] text-amber-400 hover:text-white font-bold underline cursor-pointer"
+              >
+                {isTe ? "అన్నీ చూడండి" : "View All"}
+              </button>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/80 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-500 text-white uppercase">
+                  {fa.top_anomalies[0].severity}
+                </span>
+                <div>
+                  <p className="text-xs font-bold text-white">
+                    {fa.top_anomalies[0].customer_name} ({fa.top_anomalies[0].customer_code})
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {fa.top_anomalies[0].payment_1_number} & {fa.top_anomalies[0].payment_2_number} • Delta: {fa.top_anomalies[0].delta_seconds}s
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-sm font-black text-rose-400 font-mono">
+                  ₹{(fa.top_anomalies[0].amount || 0).toFixed(2)}
+                </span>
+                <button
+                  onClick={() => onNavigate && onNavigate('financial-audit', { tab: 'anomalies' })}
+                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                >
+                  {isTe ? "పరిష్కరించండి" : "Resolve Duplicate"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────

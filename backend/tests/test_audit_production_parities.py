@@ -373,6 +373,9 @@ def test_executive_briefing_and_dynamic_stockout(test_db):
     assert "traffic_lights" in briefing1
     assert "priorities" in briefing1
     assert "market_intelligence" in briefing1
+    assert "financial_audit" in briefing1
+    assert "margin_leakage_loss" in briefing1["financial_audit"]
+    assert "anomalies_count" in briefing1["financial_audit"]
     assert len(briefing1["priorities"]) == 3
 
     # Priority 2 must be depot_stockouts and include Delmonte

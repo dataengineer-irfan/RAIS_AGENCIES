@@ -83,16 +83,26 @@ class FinancialAuditService:
                 delta = get_seconds_delta(p1.created_at, p2.created_at)
                 if delta <= 60:
                     cust_obj = p1.customer
+                    p1_date_str = str(p1.payment_date) if p1.payment_date else (p1.created_at.strftime('%Y-%m-%d') if p1.created_at else None)
+                    p2_date_str = str(p2.payment_date) if p2.payment_date else (p2.created_at.strftime('%Y-%m-%d') if p2.created_at else None)
                     anomaly = {
                         "id": f"DUP-{p1.payment_number}-{p2.payment_number}",
                         "type": "RAPID_FIRE_DUPLICATE_PAYMENT",
                         "customer_id": p1.customer_id,
                         "customer_name": cust_obj.business_name if cust_obj else "Customer",
                         "customer_code": cust_obj.customer_code if cust_obj else "CUST",
+                        "customer_phone": cust_obj.phone if cust_obj else "",
+                        "customer_city": cust_obj.city if cust_obj else "",
                         "payment_1_number": p1.payment_number,
                         "payment_1_created_at": to_ist_str(p1.created_at),
+                        "payment_1_time_ist": to_ist_str(p1.created_at),
+                        "payment_1_date": p1_date_str,
+                        "payment_1_iso": p1.created_at.isoformat() if p1.created_at else None,
                         "payment_2_number": p2.payment_number,
                         "payment_2_created_at": to_ist_str(p2.created_at),
+                        "payment_2_time_ist": to_ist_str(p2.created_at),
+                        "payment_2_date": p2_date_str,
+                        "payment_2_iso": p2.created_at.isoformat() if p2.created_at else None,
                         "amount": float(p1.amount),
                         "payment_method": p1.payment_method,
                         "delta_seconds": round(delta, 1),

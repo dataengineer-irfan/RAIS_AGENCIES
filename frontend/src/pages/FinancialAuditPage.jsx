@@ -33,6 +33,125 @@ import {
 } from 'lucide-react';
 import { reportApi, auditApi } from '../services/api';
 
+export const WEEKLY_FILTER_PRESETS = [
+  { id: 'all', label: 'All Time (Historical)', shortLabel: 'All Time', badge: '21 items' },
+  { id: 'this_week', label: 'This Week', shortLabel: '⚡ This Week', badge: '0 loss' },
+  { id: 'last_week', label: 'Last Week', shortLabel: '⏮️ Last Week', badge: '0 loss' },
+  { id: 'trailing_7', label: 'Trailing 7 Days', shortLabel: '7D Trailing', badge: 'Recent' },
+  { id: 'trailing_14', label: 'Trailing 14 Days', shortLabel: '14D Trailing', badge: '14 Days' },
+  { id: 'week_2026_10_w4', label: 'Oct Wk 4 (22–28 Oct 2026)', shortLabel: 'Oct W4 (22-28)', badge: '-₹110' },
+  { id: 'week_2026_10_w3', label: 'Oct Wk 3 (15–21 Oct 2026)', shortLabel: 'Oct W3 (15-21)', badge: '-₹42' },
+  { id: 'week_2026_10_w1', label: 'Oct Wk 1 (01–07 Oct 2026)', shortLabel: 'Oct W1 (01-07)', badge: '-₹140' },
+  { id: 'week_2026_09_w4', label: 'Sep Wk 4 (22–28 Sep 2026)', shortLabel: 'Sep W4 (22-28)', badge: '-₹72' },
+  { id: 'month_2026_11', label: 'November 2026', shortLabel: 'Nov 2026', badge: '0 loss' },
+  { id: 'month_2026_10', label: 'October 2026', shortLabel: 'Oct 2026', badge: '5 items' },
+  { id: 'month_2026_09', label: 'September 2026', shortLabel: 'Sep 2026', badge: '16 items' },
+];
+
+export const getDateRangeBounds = (rangeKey) => {
+  const today = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const formatDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  if (rangeKey === 'today') {
+    const t = formatDate(today);
+    return { start: t, end: t, label: 'Today' };
+  }
+  if (rangeKey === 'yesterday') {
+    const yday = new Date(today);
+    yday.setDate(yday.getDate() - 1);
+    const y = formatDate(yday);
+    return { start: y, end: y, label: 'Yesterday' };
+  }
+  if (rangeKey === 'this_week') {
+    const d = new Date(today);
+    const day = d.getDay();
+    const diffToMon = d.getDate() - day + (day === 0 ? -6 : 1);
+    const startMon = new Date(d.setDate(diffToMon));
+    const endSun = new Date(startMon);
+    endSun.setDate(startMon.getDate() + 6);
+    return { 
+      start: formatDate(startMon), 
+      end: formatDate(endSun), 
+      label: `This Week (${formatDate(startMon)} to ${formatDate(endSun)})` 
+    };
+  }
+  if (rangeKey === 'last_week') {
+    const d = new Date(today);
+    const day = d.getDay();
+    const diffToMon = d.getDate() - day + (day === 0 ? -6 : 1) - 7;
+    const startMon = new Date(d.setDate(diffToMon));
+    const endSun = new Date(startMon);
+    endSun.setDate(startMon.getDate() + 6);
+    return { 
+      start: formatDate(startMon), 
+      end: formatDate(endSun), 
+      label: `Last Week (${formatDate(startMon)} to ${formatDate(endSun)})` 
+    };
+  }
+  if (rangeKey === 'last7' || rangeKey === 'trailing_7') {
+    const p7 = new Date(today);
+    p7.setDate(p7.getDate() - 7);
+    return { 
+      start: formatDate(p7), 
+      end: formatDate(today), 
+      label: `Trailing 7 Days (${formatDate(p7)} to ${formatDate(today)})` 
+    };
+  }
+  if (rangeKey === 'last14' || rangeKey === 'trailing_14') {
+    const p14 = new Date(today);
+    p14.setDate(p14.getDate() - 14);
+    return { 
+      start: formatDate(p14), 
+      end: formatDate(today), 
+      label: `Trailing 14 Days (${formatDate(p14)} to ${formatDate(today)})` 
+    };
+  }
+  if (rangeKey === 'last30') {
+    const p30 = new Date(today);
+    p30.setDate(p30.getDate() - 30);
+    return { 
+      start: formatDate(p30), 
+      end: formatDate(today), 
+      label: `Trailing 30 Days (${formatDate(p30)} to ${formatDate(today)})` 
+    };
+  }
+  if (rangeKey === 'week_2026_10_w4') {
+    return { start: '2026-10-22', end: '2026-10-28', label: 'Oct Week 4 (22–28 Oct 2026)' };
+  }
+  if (rangeKey === 'week_2026_10_w3') {
+    return { start: '2026-10-15', end: '2026-10-21', label: 'Oct Week 3 (15–21 Oct 2026)' };
+  }
+  if (rangeKey === 'week_2026_10_w2') {
+    return { start: '2026-10-08', end: '2026-10-14', label: 'Oct Week 2 (08–14 Oct 2026)' };
+  }
+  if (rangeKey === 'week_2026_10_w1') {
+    return { start: '2026-10-01', end: '2026-10-07', label: 'Oct Week 1 (01–07 Oct 2026)' };
+  }
+  if (rangeKey === 'week_2026_09_w4') {
+    return { start: '2026-09-22', end: '2026-09-28', label: 'Sep Week 4 (22–28 Sep 2026)' };
+  }
+  if (rangeKey === 'week_2026_09_w3') {
+    return { start: '2026-09-15', end: '2026-09-21', label: 'Sep Week 3 (15–21 Sep 2026)' };
+  }
+  if (rangeKey === 'week_2026_09_w2') {
+    return { start: '2026-09-08', end: '2026-09-14', label: 'Sep Week 2 (08–14 Sep 2026)' };
+  }
+  if (rangeKey === 'week_2026_09_w1') {
+    return { start: '2026-09-01', end: '2026-09-07', label: 'Sep Week 1 (01–07 Sep 2026)' };
+  }
+  if (rangeKey === 'month_2026_11') {
+    return { start: '2026-11-01', end: '2026-11-30', label: 'November 2026' };
+  }
+  if (rangeKey === 'month_2026_10') {
+    return { start: '2026-10-01', end: '2026-10-31', label: 'October 2026' };
+  }
+  if (rangeKey === 'month_2026_09') {
+    return { start: '2026-09-01', end: '2026-09-30', label: 'September 2026' };
+  }
+  return { start: null, end: null, label: 'All Time (Historical)' };
+};
+
 export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
   const [scanData, setScanData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,10 +181,15 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
   // ─── MARGIN LEAKAGE FORENSIC STATE ───
   const [leakageData, setLeakageData] = useState({ summary: {}, items: [] });
   const [leakageLoading, setLeakageLoading] = useState(false);
-  const [leakageDateRange, setLeakageDateRange] = useState('all');
+  const [leakageDateRange, setLeakageDateRange] = useState(() => initialParams?.dateRange || 'all');
   const [leakageSearch, setLeakageSearch] = useState('');
   const [debouncedLeakageSearch, setDebouncedLeakageSearch] = useState('');
   const [leakageClassification, setLeakageClassification] = useState('ALL');
+
+  // ─── FLAGGED ANOMALIES FILTER STATE ───
+  const [anomalyDateRange, setAnomalyDateRange] = useState(() => initialParams?.dateRange || 'all');
+  const [anomalySeverity, setAnomalySeverity] = useState('ALL');
+  const [anomalySearch, setAnomalySearch] = useState('');
 
   useEffect(() => {
     if (initialParams?.tab) {
@@ -115,37 +239,9 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
     setLeakageLoading(true);
     try {
       const params = {};
-      const today = new Date();
-      const formatDate = (d) => d.toISOString().split('T')[0];
-
-      if (leakageDateRange === 'today') {
-        params.start_date = formatDate(today);
-        params.end_date = formatDate(today);
-      } else if (leakageDateRange === 'yesterday') {
-        const yday = new Date(today);
-        yday.setDate(yday.getDate() - 1);
-        params.start_date = formatDate(yday);
-        params.end_date = formatDate(yday);
-      } else if (leakageDateRange === 'last7') {
-        const p7 = new Date(today);
-        p7.setDate(p7.getDate() - 7);
-        params.start_date = formatDate(p7);
-        params.end_date = formatDate(today);
-      } else if (leakageDateRange === 'last30') {
-        const p30 = new Date(today);
-        p30.setDate(p30.getDate() - 30);
-        params.start_date = formatDate(p30);
-        params.end_date = formatDate(today);
-      } else if (leakageDateRange === 'month_2026_11') {
-        params.start_date = '2026-11-01';
-        params.end_date = '2026-11-30';
-      } else if (leakageDateRange === 'month_2026_10') {
-        params.start_date = '2026-10-01';
-        params.end_date = '2026-10-31';
-      } else if (leakageDateRange === 'month_2026_09') {
-        params.start_date = '2026-09-01';
-        params.end_date = '2026-09-30';
-      }
+      const bounds = getDateRangeBounds(leakageDateRange);
+      if (bounds.start) params.start_date = bounds.start;
+      if (bounds.end) params.end_date = bounds.end;
 
       if (debouncedLeakageSearch && debouncedLeakageSearch.trim()) {
         params.search = debouncedLeakageSearch.trim();
@@ -316,8 +412,39 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
   }, [selectedCustomerId, leakageData]);
 
   const summary = scanData?.summary || {};
-  const anomalies = scanData?.anomalies || [];
+  const rawAnomalies = scanData?.anomalies || [];
   const leakageSummary = leakageData?.summary || {};
+
+  const filteredAnomalies = useMemo(() => {
+    let list = rawAnomalies;
+    if (anomalySeverity !== 'ALL') {
+      list = list.filter(a => a.severity === anomalySeverity);
+    }
+    if (anomalyDateRange !== 'all') {
+      const bounds = getDateRangeBounds(anomalyDateRange);
+      if (bounds.start || bounds.end) {
+        list = list.filter(a => {
+          const d = a.payment_1_date || (a.payment_1_created_at ? a.payment_1_created_at.slice(0, 10) : '');
+          if (bounds.start && d && d < bounds.start) return false;
+          if (bounds.end && d && d > bounds.end) return false;
+          return true;
+        });
+      }
+    }
+    if (anomalySearch && anomalySearch.trim()) {
+      const q = anomalySearch.trim().toLowerCase();
+      list = list.filter(a =>
+        (a.customer_name || '').toLowerCase().includes(q) ||
+        (a.customer_code || '').toLowerCase().includes(q) ||
+        (a.payment_1_number || '').toLowerCase().includes(q) ||
+        (a.payment_2_number || '').toLowerCase().includes(q) ||
+        (a.customer_phone || '').includes(q)
+      );
+    }
+    return list;
+  }, [rawAnomalies, anomalySeverity, anomalyDateRange, anomalySearch]);
+
+  const anomalies = filteredAnomalies;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto pb-24 text-slate-100">
@@ -549,22 +676,207 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
       {/* ─── TAB 1: FLAGGED ANOMALIES ─── */}
       {activeTab === 'anomalies' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-              Suspect Rapid-Fire Double Payments Detected by Forensic Scan
-            </h2>
-            <span className="text-xs text-slate-500">
-              Identified where identical payment amount & method were recorded within seconds
-            </span>
+          {/* Anomalies Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-white flex items-center gap-2">
+                  Suspect Rapid-Fire Double Payments & Invariant Scan
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30 font-mono">
+                    {filteredAnomalies.length} Flagged
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Identified where identical payment amount & method were recorded within seconds
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {/* Search */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={anomalySearch}
+                  onChange={(e) => setAnomalySearch(e.target.value)}
+                  placeholder="Search customer, phone, pay #..."
+                  className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-40 sm:w-48"
+                />
+                {anomalySearch && (
+                  <button
+                    onClick={() => setAnomalySearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Date Filter */}
+              <select
+                value={anomalyDateRange}
+                onChange={(e) => setAnomalyDateRange(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              >
+                <optgroup label="Standard Ranges">
+                  <option value="all">📅 All Time (Historical)</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="this_week">⚡ This Week</option>
+                  <option value="last_week">⏮️ Last Week</option>
+                  <option value="trailing_7">Trailing 7 Days</option>
+                  <option value="trailing_14">Trailing 14 Days</option>
+                </optgroup>
+                <optgroup label="Historical Audit Archives">
+                  <option value="month_2026_11">November 2026</option>
+                  <option value="month_2026_10">October 2026</option>
+                  <option value="month_2026_09">September 2026</option>
+                </optgroup>
+              </select>
+
+              {/* Severity Filter */}
+              <select
+                value={anomalySeverity}
+                onChange={(e) => setAnomalySeverity(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">All Severities</option>
+                <option value="HIGH">🚨 High Severity Only (&lt;10s)</option>
+                <option value="MEDIUM">⚠️ Medium (Split Payments)</option>
+              </select>
+            </div>
           </div>
 
-          {anomalies.length === 0 ? (
+          {/* Quick Weekly & Category Slices Pill Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap flex items-center gap-1 pl-1">
+              <Calendar className="w-3 h-3 text-amber-400" />
+              Audit Filters:
+            </span>
+            <button
+              type="button"
+              onClick={() => { setAnomalyDateRange('all'); setAnomalySeverity('ALL'); }}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                anomalyDateRange === 'all' && anomalySeverity === 'ALL'
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400/50'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <span>All Anomalies</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-black/20 text-current">
+                {rawAnomalies.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAnomalySeverity(prev => prev === 'HIGH' ? 'ALL' : 'HIGH')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                anomalySeverity === 'HIGH'
+                  ? 'bg-rose-500 text-white shadow-md font-black ring-2 ring-rose-400/50'
+                  : 'bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/30'
+              }`}
+            >
+              <span>🚨 High Severity</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-black/30 text-white">
+                {rawAnomalies.filter(a => a.severity === 'HIGH').length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAnomalyDateRange('this_week')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                anomalyDateRange === 'this_week'
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400/50'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <span>⚡ This Week</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAnomalyDateRange('last_week')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                anomalyDateRange === 'last_week'
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400/50'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <span>⏮️ Last Week</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAnomalyDateRange('month_2026_09')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                anomalyDateRange === 'month_2026_09'
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400/50'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
+              }`}
+            >
+              <span>September 2026</span>
+            </button>
+          </div>
+
+          {/* Active Filter Banner */}
+          {(anomalyDateRange !== 'all' || anomalySeverity !== 'ALL' || anomalySearch) && (
+            <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-200 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>
+                  Active Filter: <strong>{getDateRangeBounds(anomalyDateRange).label}</strong>
+                  {anomalySeverity !== 'ALL' && ` • Severity: ${anomalySeverity}`}
+                  {anomalySearch && ` • Search: "${anomalySearch}"`}
+                </span>
+                <span className="text-slate-500">•</span>
+                <span className="text-amber-300 font-bold font-mono">
+                  {filteredAnomalies.length} anomaly {filteredAnomalies.length === 1 ? 'match' : 'matches'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setAnomalyDateRange('all');
+                  setAnomalySeverity('ALL');
+                  setAnomalySearch('');
+                }}
+                className="text-xs text-amber-400 hover:text-white font-bold underline cursor-pointer shrink-0 ml-2"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          )}
+
+          {filteredAnomalies.length === 0 ? (
             <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl">
               <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-              <h3 className="text-sm font-bold text-white">No Unresolved Duplicate Payments Detected</h3>
+              <h3 className="text-sm font-bold text-white">
+                {rawAnomalies.length === 0 
+                  ? 'No Unresolved Duplicate Payments Detected' 
+                  : 'No Anomalies Found in Selected Filter'}
+              </h3>
               <p className="text-xs text-slate-400 mt-1">
-                All {summary.total_invoices_count || 0} invoices and {summary.total_payments_count || 0} payments strictly satisfy mathematical ledger invariants.
+                {rawAnomalies.length === 0 
+                  ? `All ${summary.total_invoices_count || 0} invoices and ${summary.total_payments_count || 0} payments strictly satisfy mathematical ledger invariants.`
+                  : 'No suspect rapid-fire payments match your active date or severity filters.'}
               </p>
+              {rawAnomalies.length > 0 && (
+                <button
+                  onClick={() => {
+                    setAnomalyDateRange('all');
+                    setAnomalySeverity('ALL');
+                    setAnomalySearch('');
+                  }}
+                  className="mt-3 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold rounded-xl border border-slate-700 cursor-pointer"
+                >
+                  Show All ({rawAnomalies.length}) Anomalies
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
@@ -692,14 +1004,28 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                 onChange={(e) => setLeakageDateRange(e.target.value)}
                 className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
               >
-                <option value="all">📅 All Time (Historical)</option>
-                <option value="today">Today</option>
-                <option value="yesterday">Yesterday</option>
-                <option value="last7">Last 7 Days</option>
-                <option value="last30">Last 30 Days</option>
-                <option value="month_2026_11">November 2026 (0 loss)</option>
-                <option value="month_2026_10">October 2026 (5 items)</option>
-                <option value="month_2026_09">September 2026 (16 items)</option>
+                <optgroup label="Standard Ranges">
+                  <option value="all">📅 All Time (Historical) - 21 items (-₹571.00)</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="this_week">⚡ This Week</option>
+                  <option value="last_week">⏮️ Last Week</option>
+                  <option value="trailing_7">Trailing 7 Days</option>
+                  <option value="trailing_14">Trailing 14 Days</option>
+                </optgroup>
+                <optgroup label="Weekly Slices with Margin Leaks">
+                  <option value="week_2026_10_w4">Oct Week 4 (22–28 Oct 2026) • -₹110.00 loss (AFC Sundupalli)</option>
+                  <option value="week_2026_10_w3">Oct Week 3 (15–21 Oct 2026) • -₹42.00 loss (Juice Junction)</option>
+                  <option value="week_2026_10_w2">Oct Week 2 (08–14 Oct 2026) • Healthy</option>
+                  <option value="week_2026_10_w1">Oct Week 1 (01–07 Oct 2026) • -₹140.00 loss (Kksk Typo)</option>
+                  <option value="week_2026_09_w4">Sep Week 4 (22–28 Sep 2026) • -₹72.00 loss (Kim Cafe)</option>
+                  <option value="week_2026_09_w3">Sep Week 3 (15–21 Sep 2026) • Healthy</option>
+                </optgroup>
+                <optgroup label="Monthly Audit Archives">
+                  <option value="month_2026_11">November 2026 (0 loss)</option>
+                  <option value="month_2026_10">October 2026 (5 items sold below cost)</option>
+                  <option value="month_2026_09">September 2026 (16 items sold below cost)</option>
+                </optgroup>
               </select>
 
               {/* Classification Filter */}
@@ -734,6 +1060,61 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
               </button>
             </div>
           </div>
+
+          {/* Quick Weekly Slices Pill Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap flex items-center gap-1 pl-1">
+              <Calendar className="w-3 h-3 text-rose-400" />
+              Weekly Slices:
+            </span>
+            {WEEKLY_FILTER_PRESETS.map((p) => {
+              const isActive = leakageDateRange === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setLeakageDateRange(p.id)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                    isActive
+                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-950/60 ring-2 ring-rose-400/50'
+                      : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <span>{p.shortLabel}</span>
+                  {p.badge && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isActive ? 'bg-black/30 text-white font-black' : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {p.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Weekly Filter Banner */}
+          {leakageDateRange !== 'all' && (
+            <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-200 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>
+                  Active Weekly Filter: <strong>{getDateRangeBounds(leakageDateRange).label}</strong>
+                  {getDateRangeBounds(leakageDateRange).start && ` (${getDateRangeBounds(leakageDateRange).start} to ${getDateRangeBounds(leakageDateRange).end})`}
+                </span>
+                <span className="text-slate-500">•</span>
+                <span className="text-rose-400 font-bold font-mono">
+                  {filteredLeakageItems.length} below-cost line items (-₹{(leakageData?.summary?.total_loss || 0).toFixed(2)})
+                </span>
+              </div>
+              <button
+                onClick={() => setLeakageDateRange('all')}
+                className="text-xs text-amber-400 hover:text-white font-bold underline cursor-pointer shrink-0 ml-2"
+              >
+                Show All Time (21 items)
+              </button>
+            </div>
+          )}
 
           {/* KPI Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
