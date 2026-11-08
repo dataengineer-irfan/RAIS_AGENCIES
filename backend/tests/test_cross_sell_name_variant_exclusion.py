@@ -42,24 +42,18 @@ def cross_sell_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    # Categories
-    cat_pkg = db.query(Category).filter_by(code="PKG-X").first()
-    if not cat_pkg:
-        cat_pkg = Category(code="PKG-X", name="Packaging", display_order=1, is_active=True)
-        db.add(cat_pkg)
-        db.flush()
+    # Use seeded categories if present to avoid category count drift
+    def get_cat(code, name, order):
+        c = db.query(Category).filter_by(code=code).first()
+        if not c:
+            c = Category(code=code, name=name, display_order=order, is_active=True)
+            db.add(c)
+            db.flush()
+        return c
 
-    cat_sau = db.query(Category).filter_by(code="SAU-X").first()
-    if not cat_sau:
-        cat_sau = Category(code="SAU-X", name="Sauces", display_order=2, is_active=True)
-        db.add(cat_sau)
-        db.flush()
-
-    cat_brd = db.query(Category).filter_by(code="BRD-X").first()
-    if not cat_brd:
-        cat_brd = Category(code="BRD-X", name="Seasonings", display_order=3, is_active=True)
-        db.add(cat_brd)
-        db.flush()
+    cat_pkg = get_cat("PACKAGING", "Packaging", 1)
+    cat_sau = get_cat("SAUCES", "Sauces", 2)
+    cat_brd = get_cat("BREADING", "Seasonings", 3)
 
     def mkprod(sku, cat_id, name, pack, price, stock):
         p = db.query(Product).filter_by(sku=sku).first()
@@ -139,7 +133,16 @@ def cross_sell_db():
         "p_mayo": p_mayo,
         "p_peri": p_peri,
     }
-    db.close()
+    # Teardown: Clean up test SKUs and test customer to prevent state contamination
+    try:
+        test_skus = ["RAIS-BOX-X1", "RAIS-BOX-X2", "RAIS-BRD-X1", "RAIS-SAU-X1", "RAIS-BRD-X2"]
+        db.query(Product).filter(Product.sku.in_(test_skus)).delete(synchronize_session=False)
+        db.query(Customer).filter_by(customer_code="CUST-ALBEK-X").delete(synchronize_session=False)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
@@ -21,8 +21,7 @@ class QuotationItemResponse(BaseModel):
     tax_amount: Decimal
     line_total: Decimal
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class QuotationCreate(BaseModel):
     customer_id: str
@@ -51,5 +50,4 @@ class QuotationResponse(BaseModel):
     created_at: datetime
     items: List[QuotationItemResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

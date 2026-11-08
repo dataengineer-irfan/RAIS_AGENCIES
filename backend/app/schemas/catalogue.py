@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
@@ -18,8 +18,7 @@ class CategoryResponse(CategoryBase):
     product_count: int = 0
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProductBase(BaseModel):
     category_id: str
@@ -62,5 +61,4 @@ class ProductResponse(ProductBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

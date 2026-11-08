@@ -54,8 +54,7 @@ class CustomerResponse(CustomerBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class CustomerSummary(BaseModel):
     id: str
@@ -67,5 +66,4 @@ class CustomerSummary(BaseModel):
     outstanding_balance: Decimal = Decimal("0.00")
     status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

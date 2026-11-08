@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models.customer import Customer
 from app.models.invoice import Invoice
 from app.models.payment import Payment, PaymentAllocation
@@ -47,7 +47,7 @@ def audit_test_data(db):
     db.refresh(cust2)
 
     # Invoices
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     inv1 = Invoice(
         invoice_number="INV-AUDIT-001",
         customer_id=cust1.id,
@@ -65,7 +65,7 @@ def audit_test_data(db):
     db.commit()
 
     # Payments: 1 legitimate, and 1 pair of rapid-fire duplicates for cust1
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     p_orig = Payment(
         payment_number="PAY-AUDIT-001",
         customer_id=cust1.id,

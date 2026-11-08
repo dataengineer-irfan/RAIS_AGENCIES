@@ -262,7 +262,7 @@ class InventoryService:
 
     @staticmethod
     def get_stock_movements(db: Session, product_id: Optional[str] = None, limit: int = 100) -> List[dict]:
-        query = db.query(StockMovement).options(joinedload(StockMovement.product)).order_by(StockMovement.created_at.desc())
+        query = db.query(StockMovement).options(joinedload(StockMovement.product)).order_by(StockMovement.created_at.desc(), StockMovement.id.desc())
         if product_id:
             query = query.filter(StockMovement.product_id == product_id)
         

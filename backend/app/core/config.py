@@ -1,5 +1,5 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
@@ -33,9 +33,7 @@ class Settings(BaseSettings):
     AI_PROVIDER: str = "semantic_engine"
     GEMINI_API_KEY: str = ""
 
-    class Config:
-        env_file = ".env"
-        extra = "allow"
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
 @lru_cache()
 def get_settings() -> Settings:

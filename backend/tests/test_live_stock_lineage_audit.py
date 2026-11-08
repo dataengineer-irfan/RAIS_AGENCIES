@@ -73,6 +73,11 @@ def test_live_stock_lineage_audit_and_price_integrity():
         prod.base_price = Decimal("910.00")
         db.commit()
 
+    # Clean up prior stock movements for this product so test starts with isolated lineage
+    from app.models.inventory import StockMovement
+    db.query(StockMovement).filter(StockMovement.product_id == prod.id).delete()
+    db.commit()
+
     original_base_price = prod.base_price
 
     # 1. Inward Intake: 10 pk received

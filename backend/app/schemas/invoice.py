@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
@@ -29,8 +29,7 @@ class InvoiceItemResponse(BaseModel):
     gross_profit: Optional[Decimal] = None
     gross_margin_pct: Optional[Decimal] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class InvoiceCreate(BaseModel):
     customer_id: str
@@ -111,8 +110,7 @@ class InvoiceResponse(BaseModel):
     items: List[InvoiceItemResponse] = []
     allocations: List[InvoiceAllocationItem] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class InvoiceSummary(BaseModel):
     id: str
@@ -131,5 +129,4 @@ class InvoiceSummary(BaseModel):
     gross_profit: Optional[Decimal] = None
     gross_margin_pct: Optional[Decimal] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

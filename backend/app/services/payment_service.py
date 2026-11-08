@@ -41,7 +41,7 @@ class PaymentService:
 
         # Anti-Duplicate / Rapid-Fire Double Submission Guard (10-second window)
         from datetime import timedelta
-        now_naive = datetime.utcnow()
+        now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
         ten_seconds_ago = now_naive - timedelta(seconds=10)
         recent_duplicate = db.query(Payment).filter(
             Payment.customer_id == customer.id,

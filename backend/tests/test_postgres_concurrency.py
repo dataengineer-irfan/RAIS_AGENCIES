@@ -14,6 +14,28 @@ POSTGRES_STAGING_URL = "postgresql://rais_staging_admin@127.0.0.1:5433/rais_stag
 # Safety assertion: Must never contain production Supabase host
 assert "supabase" not in POSTGRES_STAGING_URL.lower()
 
+# ── Skip guard: these tests require a LOCAL PostgreSQL 18 staging cluster
+# on port 5433. Skip cleanly when that server is not reachable so the
+# suite does not ERROR in CI / local dev without a staging DB running.
+def _postgres_staging_available() -> bool:
+    try:
+        import psycopg2
+        conn = psycopg2.connect(
+            host="127.0.0.1", port=5433,
+            dbname="rais_staging", user="rais_staging_admin",
+            connect_timeout=2
+        )
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+_STAGING_AVAILABLE = _postgres_staging_available()
+pytestmark = pytest.mark.skipif(
+    not _STAGING_AVAILABLE,
+    reason="Local PostgreSQL 18 staging cluster not running on port 5433 — skipping concurrency tests"
+)
+
 # Configure SQLAlchemy engine targeting isolated PostgreSQL 18
 pg_engine = create_engine(
     POSTGRES_STAGING_URL,

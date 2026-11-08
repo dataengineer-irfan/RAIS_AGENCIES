@@ -113,7 +113,8 @@ class CatalogueService:
         )
         db.add(product)
         db.flush()
-        AuditService.log(db, AuditAction.CREATE, "Product", product.id, user_id=user_id, after_state=data.dict())
+        after_state = data.model_dump() if hasattr(data, "model_dump") else data.dict()
+        AuditService.log(db, AuditAction.CREATE, "Product", product.id, user_id=user_id, after_state=after_state)
         db.commit()
         db.refresh(product)
         return product
@@ -129,7 +130,7 @@ class CatalogueService:
             "current_stock": str(product.current_stock)
         }
 
-        update_dict = data.dict(exclude_unset=True)
+        update_dict = data.model_dump(exclude_unset=True) if hasattr(data, "model_dump") else data.dict(exclude_unset=True)
         for key, value in update_dict.items():
             setattr(product, key, value)
 

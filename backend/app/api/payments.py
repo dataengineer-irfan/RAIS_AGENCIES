@@ -169,41 +169,6 @@ def get_printable_payment(
             exclude_product_ids=exclude_pids,
             current_item_descriptions=current_descs
         )
-        if not suggestion:
-            cust_name_up = (p.customer_name or "").upper()
-            if "PIZZA" in cust_name_up:
-                suggestion = {
-                    "name": "BIG BELL OREGANO SEASONING",
-                    "packaging_unit": "1 PACKET",
-                    "context_note": "In Stock for your Pizzas",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/big_bell_oregano.jpg",
-                    "telugu_note": "పిజ్జా కోసం ఒరేగానో తాజా స్టాక్"
-                }
-            elif "BURGER" in cust_name_up:
-                suggestion = {
-                    "name": "DELMONTE TANDOORI MAYO",
-                    "packaging_unit": "1 KG PACKET",
-                    "context_note": "In Stock for your Burgers",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/delmonte_tandoori_mayo.jpg",
-                    "telugu_note": "రుచికరమైన తందూరి మాయోనైస్ డిపో స్టాక్"
-                }
-            elif any(k in cust_name_up for k in ["CHICKEN", "SNACK", "MFC", "AFC"]):
-                suggestion = {
-                    "name": "VKL PERI PERI SPRINKLER",
-                    "packaging_unit": "1 PACKET",
-                    "context_note": "In Stock for your Kitchen",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/vkl_peri_peri_sprinkler.jpg",
-                    "telugu_note": "ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్"
-                }
-            else:
-                suggestion = {
-                    "name": "VKL PERI PERI SPRINKLER",
-                    "packaging_unit": "1 PACKET",
-                    "context_note": "Fast Moving Kitchen Companion",
-                    "image_url": "https://rais-frontend.onrender.com/assets/products/vkl_peri_peri.jpg",
-                    "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
-                }
-
         if suggestion:
             ctx_tag = (suggestion.get("context_note") or "Ready for Next Order").upper()
             p_name = suggestion.get("name", "Product")
@@ -440,37 +405,6 @@ def get_payment_image(
         )
     except Exception:
         suggestion = None
-
-    if not suggestion:
-        cust_name_up = (p.customer_name or "").upper()
-        if "PIZZA" in cust_name_up:
-            suggestion = {
-                "name": "BIG BELL OREGANO SEASONING",
-                "packaging_unit": "1 PACKET",
-                "context_note": "In Stock for your Pizzas",
-                "telugu_note": "పిజ్జా కోసం ఒరేగానో తాజా స్టాక్"
-            }
-        elif "BURGER" in cust_name_up:
-            suggestion = {
-                "name": "DELMONTE TANDOORI MAYO",
-                "packaging_unit": "1 KG PACKET",
-                "context_note": "In Stock for your Burgers",
-                "telugu_note": "రుచికరమైన తందూరి మాయోనైస్ డిపో స్టాక్"
-            }
-        elif any(k in cust_name_up for k in ["CHICKEN", "SNACK", "MFC", "AFC"]):
-            suggestion = {
-                "name": "VKL PERI PERI SPRINKLER",
-                "packaging_unit": "1 PACKET",
-                "context_note": "In Stock for your Kitchen",
-                "telugu_note": "ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్"
-            }
-        else:
-            suggestion = {
-                "name": "VKL PERI PERI SPRINKLER",
-                "packaging_unit": "1 PACKET",
-                "context_note": "Fast Moving Kitchen Companion",
-                "telugu_note": "రాయచోటి డిపోలో తాజా స్టాక్ సిద్ధంగా ఉంది"
-            }
 
     # Dynamic sizing based on allocation rows + promotional strip
     width = 800

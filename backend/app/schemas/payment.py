@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import date, datetime
@@ -32,8 +32,7 @@ class PaymentAllocationResponse(BaseModel):
     allocated_amount: Decimal
     allocated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PaymentResponse(BaseModel):
     id: str
@@ -58,5 +57,4 @@ class PaymentResponse(BaseModel):
     settled_items: List[Dict[str, Any]] = []
     restock_suggestion: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

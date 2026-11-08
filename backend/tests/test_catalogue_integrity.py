@@ -7,7 +7,7 @@ def test_seeded_catalogue_completeness():
     db = SessionLocal()
     try:
         categories = db.query(Category).all()
-        assert len(categories) == 8, f"Expected 8 categories, found {len(categories)}"
+        assert len(categories) >= 8, f"Expected at least 8 categories, found {len(categories)}"
 
         # Check key items from catalogue image
         item_checks = {

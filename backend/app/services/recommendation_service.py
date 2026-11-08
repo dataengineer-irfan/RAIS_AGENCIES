@@ -350,19 +350,19 @@ class RecommendationService:
         if "OREGANO" in uname:
             context_note = "In Stock for your Pizzas"
         elif "MOZZARELLA" in uname or "CHEESE" in uname:
-            context_note = "Premium Pizza Mozzarella"
+            context_note = "Premium Pizza Mozzarella in Stock"
         elif "PIZZA SAUCE" in uname or "PASTA SAUCE" in uname:
             context_note = "Rich Pizza Sauce in Stock"
         elif "MAYO" in uname:
             context_note = "In Stock for your Burgers & Rolls"
         elif "FRIES" in uname:
-            context_note = "Best-Selling Burger Side"
+            context_note = "Best-Selling Burger Side in Stock"
         elif "PERI PERI" in uname:
-            context_note = "Top Seasoning for Fries & Chicken"
+            context_note = "Top Seasoning for Fries (In Stock)"
         elif "BUTTER PAPER" in uname:
-            context_note = "Greaseproof Wrapping Paper"
+            context_note = "Greaseproof Wrapping Paper in Stock"
         elif "BUCKET" in uname:
-            context_note = "Fried Chicken Takeaway Buckets"
+            context_note = "Fried Chicken Buckets in Stock"
         elif "BREADING" in uname or "MARINADE" in uname:
             context_note = "Crispy Broasted Breading in Stock"
         elif "PIZZA BOX" in uname:

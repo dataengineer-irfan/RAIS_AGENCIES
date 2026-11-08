@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, Any
 from datetime import datetime
 
@@ -14,8 +14,7 @@ class AuditLogResponse(BaseModel):
     ip_address: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SystemSettingResponse(BaseModel):
     key: str
@@ -23,8 +22,7 @@ class SystemSettingResponse(BaseModel):
     description: Optional[str] = None
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SystemSettingUpdate(BaseModel):
     value: str
