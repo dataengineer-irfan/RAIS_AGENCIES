@@ -227,6 +227,23 @@ class BillingService:
                         }
                     )
 
+            # Resolve point-in-time landed cost to permanently freeze onto invoice line
+            landed_cost_raw = db.query(StockMovement.purchase_cost)\
+                .filter(StockMovement.product_id == product.id, StockMovement.purchase_cost.isnot(None))\
+                .order_by(StockMovement.created_at.desc()).limit(1).scalar()
+            if landed_cost_raw is not None:
+                frozen_cost = Decimal(str(landed_cost_raw))
+                cost_src = "INWARD_RECEIPT"
+            elif product.purchase_cost and product.purchase_cost > Decimal("0.00"):
+                frozen_cost = Decimal(str(product.purchase_cost))
+                cost_src = "PRODUCT_MASTER"
+            elif product.base_price and product.base_price > Decimal("0.00"):
+                frozen_cost = (product.base_price * Decimal("0.80")).quantize(Decimal("0.01"))
+                cost_src = "ESTIMATED_80PCT"
+            else:
+                frozen_cost = (unit_price * Decimal("0.80")).quantize(Decimal("0.01"))
+                cost_src = "ESTIMATED_80PCT"
+
             prepared_items.append({
                 "product_id": product.id,
                 "item_description": product.name,
@@ -236,7 +253,9 @@ class BillingService:
                 "quantity": qty,
                 "unit_price": unit_price,
                 "discount_rate": itm.discount_rate,
-                "tax_rate": product.tax_rate
+                "tax_rate": product.tax_rate,
+                "landed_cost": frozen_cost,
+                "cost_source": cost_src
             })
 
         calc = BillingService.calculate_invoice_totals(prepared_items, data.discount_amount)
@@ -286,7 +305,9 @@ class BillingService:
                 taxable_amount=itm["taxable_amount"],
                 tax_rate=itm["tax_rate"],
                 tax_amount=itm["tax_amount"],
-                line_total=itm["line_total"]
+                line_total=itm["line_total"],
+                landed_cost=itm.get("landed_cost"),
+                cost_source=itm.get("cost_source")
             )
             db.add(inv_item)
             
@@ -301,6 +322,22 @@ class BillingService:
                     invoice_number=invoice.invoice_number,
                     user_id=user_id
                 )
+
+        # ─── DOUBLE-ENTRY CUSTOMER LEDGER: Post Debit Entry for Issued Invoice ───
+        if invoice.status == InvoiceStatus.ISSUED.value and invoice.total_amount > Decimal("0.00"):
+            from app.services.customer_service import CustomerService
+            CustomerService.record_ledger_entry(
+                db=db,
+                customer_id=customer.id,
+                entry_date=invoice.invoice_date,
+                entry_type="INVOICE",
+                reference_id=invoice.id,
+                reference_number=invoice.invoice_number,
+                description=f"Tax Invoice issued - {len(calc['items'])} items",
+                debit=invoice.total_amount,
+                credit=Decimal("0.00"),
+                created_by_id=user_id
+            )
 
         # ─── AUTOMATIC IMMEDIATE COUNTER PAYMENT & CASH SETTLEMENT ───
         # Supports:
@@ -629,8 +666,9 @@ class BillingService:
                 raise InvalidFinancialOperationException("An invoice cannot have an empty list of line items.")
             from app.services.inventory_service import InventoryService
 
-            # 1. Build previous items dict: product_id → quantity
+            # 1. Build previous items dict: product_id → quantity and product_id -> (landed_cost, cost_source)
             prev_items = {itm.product_id: itm.quantity for itm in invoice.items}
+            prev_costs = {itm.product_id: (itm.landed_cost, itm.cost_source) for itm in invoice.items if itm.landed_cost is not None}
 
             # 2. Validate and prepare new items
             prepared_items = []
@@ -671,6 +709,26 @@ class BillingService:
                             }
                         )
 
+                # Preserve frozen landed cost if product was already on invoice, else resolve
+                if product.id in prev_costs:
+                    frozen_cost, cost_src = prev_costs[product.id]
+                else:
+                    landed_cost_raw = db.query(StockMovement.purchase_cost)\
+                        .filter(StockMovement.product_id == product.id, StockMovement.purchase_cost.isnot(None))\
+                        .order_by(StockMovement.created_at.desc()).limit(1).scalar()
+                    if landed_cost_raw is not None:
+                        frozen_cost = Decimal(str(landed_cost_raw))
+                        cost_src = "INWARD_RECEIPT"
+                    elif product.purchase_cost and product.purchase_cost > Decimal("0.00"):
+                        frozen_cost = Decimal(str(product.purchase_cost))
+                        cost_src = "PRODUCT_MASTER"
+                    elif product.base_price and product.base_price > Decimal("0.00"):
+                        frozen_cost = (product.base_price * Decimal("0.80")).quantize(Decimal("0.01"))
+                        cost_src = "ESTIMATED_80PCT"
+                    else:
+                        frozen_cost = (unit_price * Decimal("0.80")).quantize(Decimal("0.01"))
+                        cost_src = "ESTIMATED_80PCT"
+
                 prepared_items.append({
                     "product_id": product.id,
                     "item_description": product.name,
@@ -680,7 +738,9 @@ class BillingService:
                     "quantity": qty,
                     "unit_price": unit_price,
                     "discount_rate": itm.discount_rate,
-                    "tax_rate": product.tax_rate
+                    "tax_rate": product.tax_rate,
+                    "landed_cost": frozen_cost,
+                    "cost_source": cost_src
                 })
 
             # 3. Calculate new totals
@@ -737,7 +797,9 @@ class BillingService:
                     taxable_amount=itm["taxable_amount"],
                     tax_rate=itm["tax_rate"],
                     tax_amount=itm["tax_amount"],
-                    line_total=itm["line_total"]
+                    line_total=itm["line_total"],
+                    landed_cost=itm.get("landed_cost"),
+                    cost_source=itm.get("cost_source")
                 )
                 db.add(inv_item)
 
@@ -754,6 +816,45 @@ class BillingService:
             # Only discount changed, no items replacement
             invoice.discount_amount = data.discount_amount
             invoice.outstanding_amount = invoice.total_amount - invoice.paid_amount
+
+        # ─── DOUBLE-ENTRY CUSTOMER LEDGER: Post Adjustment if Total Amount Changed ───
+        old_total = Decimal(str(before_state["total_amount"]))
+        new_total = invoice.total_amount
+        valid_active_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+        if invoice.status in valid_active_statuses and new_total != old_total:
+            from app.services.customer_service import CustomerService
+            diff = new_total - old_total
+            if diff > Decimal("0.00"):
+                CustomerService.record_ledger_entry(
+                    db=db,
+                    customer_id=invoice.customer_id,
+                    entry_date=get_ist_today(),
+                    entry_type="ADJUSTMENT",
+                    reference_id=invoice.id,
+                    reference_number=invoice.invoice_number,
+                    description=f"Tax Invoice #{invoice.invoice_number} edited - bill amount increased by ₹{diff:,.2f}",
+                    debit=diff,
+                    credit=Decimal("0.00"),
+                    created_by_id=user_id
+                )
+            else:
+                CustomerService.record_ledger_entry(
+                    db=db,
+                    customer_id=invoice.customer_id,
+                    entry_date=get_ist_today(),
+                    entry_type="ADJUSTMENT",
+                    reference_id=invoice.id,
+                    reference_number=invoice.invoice_number,
+                    description=f"Tax Invoice #{invoice.invoice_number} edited - bill amount reduced by ₹{abs(diff):,.2f}",
+                    debit=Decimal("0.00"),
+                    credit=abs(diff),
+                    created_by_id=user_id
+                )
 
         db.flush()
         AuditService.log(
@@ -786,6 +887,23 @@ class BillingService:
         
         invoice.status = InvoiceStatus.ISSUED.value
         db.flush()
+
+        # Post Double-Entry Ledger Debit Entry
+        if invoice.total_amount > Decimal("0.00"):
+            from app.services.customer_service import CustomerService
+            CustomerService.record_ledger_entry(
+                db=db,
+                customer_id=invoice.customer_id,
+                entry_date=invoice.invoice_date,
+                entry_type="INVOICE",
+                reference_id=invoice.id,
+                reference_number=invoice.invoice_number,
+                description=f"Tax Invoice issued - {len(invoice.items)} items",
+                debit=invoice.total_amount,
+                credit=Decimal("0.00"),
+                created_by_id=user_id
+            )
+
         AuditService.log(db, AuditAction.STATUS_CHANGE, "Invoice", invoice.id, user_id=user_id, after_state={"status": invoice.status})
         db.commit()
         BillingService.invalidate_cache()
@@ -823,6 +941,28 @@ class BillingService:
         invoice.notes = (invoice.notes or "") + f"\n[{target_status.upper()}: {reason or 'No reason provided'}]"
         invoice.outstanding_amount = Decimal("0.00")
         
+        # Post Double-Entry Ledger Reversal Entry
+        valid_active_statuses = [
+            InvoiceStatus.ISSUED.value,
+            InvoiceStatus.PARTIALLY_PAID.value,
+            InvoiceStatus.PAID.value,
+            InvoiceStatus.OVERDUE.value
+        ]
+        if before_status in valid_active_statuses and invoice.total_amount > Decimal("0.00"):
+            from app.services.customer_service import CustomerService
+            CustomerService.record_ledger_entry(
+                db=db,
+                customer_id=invoice.customer_id,
+                entry_date=get_ist_today(),
+                entry_type="INVOICE_REVERSAL",
+                reference_id=invoice.id,
+                reference_number=f"REV-{invoice.invoice_number}",
+                description=f"Invoice {invoice.invoice_number} {target_status.lower()} reversal ({reason or 'No reason provided'})",
+                debit=Decimal("0.00"),
+                credit=invoice.total_amount,
+                created_by_id=user_id
+            )
+
         # Restore warehouse inventory for all items in the cancelled/voided invoice
         from app.services.inventory_service import InventoryService
         for itm in invoice.items:

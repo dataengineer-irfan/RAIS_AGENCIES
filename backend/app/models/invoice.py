@@ -70,6 +70,8 @@ class InvoiceItem(Base):
     tax_rate = Column(Numeric(5, 2), default=0.00, nullable=False)
     tax_amount = Column(Numeric(12, 2), default=0.00, nullable=False)
     line_total = Column(Numeric(12, 2), nullable=False)
+    landed_cost = Column(Numeric(12, 2), nullable=True) # Frozen procurement landed cost at issuance
+    cost_source = Column(String(30), nullable=True) # INWARD_RECEIPT, PRODUCT_MASTER, ESTIMATED_80PCT
 
     invoice = relationship("Invoice", back_populates="items")
     product = relationship("Product")

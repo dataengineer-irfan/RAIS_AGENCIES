@@ -1,8 +1,10 @@
 from typing import List, Optional
 from decimal import Decimal
 from datetime import date, datetime, timezone
+import uuid
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from app.models.payment import Payment, PaymentAllocation
 from app.models.invoice import Invoice
 from app.models.customer import Customer
@@ -39,6 +41,23 @@ class PaymentService:
         if data.payment_method not in valid_methods:
             raise InvalidFinancialOperationException(f"Invalid payment method '{data.payment_method}'. Must be one of {valid_methods}.")
 
+        # ─── DATABASE-LEVEL IDEMPOTENCY GUARD ───
+        idempotency_key = getattr(data, "idempotency_key", None)
+        if idempotency_key:
+            idempotency_key = idempotency_key.strip()
+            if not idempotency_key:
+                idempotency_key = None
+
+        if idempotency_key:
+            existing_payment = db.query(Payment).filter(Payment.idempotency_key == idempotency_key).first()
+            if existing_payment:
+                return existing_payment
+        else:
+            # Safe Fallback: When caller omits idempotency_key, generate a fresh unique UUID key.
+            # Documented Behavior: A fresh UUID ensures that two legitimate identical payments
+            # (same customer, amount, date) without caller-provided keys are NEVER incorrectly classified as duplicates.
+            idempotency_key = f"PAY-AUTO-{uuid.uuid4().hex}"
+
         # Anti-Duplicate / Rapid-Fire Double Submission Guard (10-second window)
         from datetime import timedelta
         now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -47,6 +66,7 @@ class PaymentService:
             Payment.customer_id == customer.id,
             Payment.amount == data.amount,
             Payment.payment_method == data.payment_method,
+            Payment.status != "CANCELLED",
             Payment.created_at >= ten_seconds_ago
         ).first()
         if recent_duplicate and not (data.notes and "__ALLOW_RAPID_DUPLICATE__" in data.notes):
@@ -66,15 +86,44 @@ class PaymentService:
             customer_id=customer.id,
             payment_date=pay_date,
             amount=data.amount,
+            idempotency_key=idempotency_key,
             allocated_amount=Decimal("0.00"),
             unallocated_amount=data.amount,
             payment_method=data.payment_method,
             reference_number=data.reference_number,
             notes=data.notes,
+            created_by_id=user_id,
+            status="COMPLETED"
+        )
+
+        # ─── SAFE SAVEPOINT EXECUTION: Catch concurrent unique constraint collisions gracefully ───
+        savepoint = db.begin_nested()
+        try:
+            db.add(payment)
+            db.flush()
+            savepoint.commit()
+        except IntegrityError:
+            savepoint.rollback()
+            # Retrieve existing payment inserted by concurrent winning transaction
+            existing_payment = db.query(Payment).filter(Payment.idempotency_key == idempotency_key).first()
+            if existing_payment:
+                return existing_payment
+            raise
+
+        # ─── DOUBLE-ENTRY CUSTOMER LEDGER: Post Credit Entry for Payment Received ───
+        from app.services.customer_service import CustomerService
+        CustomerService.record_ledger_entry(
+            db=db,
+            customer_id=customer.id,
+            entry_date=pay_date,
+            entry_type="PAYMENT",
+            reference_id=payment.id,
+            reference_number=pay_number,
+            description=f"Payment received via {data.payment_method}" + (f" (Ref: {data.reference_number})" if data.reference_number else ""),
+            debit=Decimal("0.00"),
+            credit=data.amount,
             created_by_id=user_id
         )
-        db.add(payment)
-        db.flush()
 
         AuditService.log(
             db=db,
@@ -536,13 +585,17 @@ class PaymentService:
         username: Optional[str] = None,
         user_role: Optional[str] = None
     ) -> dict:
-        payment = db.query(Payment).options(
-            joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
-        ).filter(Payment.id == payment_id).with_for_update().first()
+        payment = db.query(Payment).filter(Payment.id == payment_id).with_for_update().first()
         if not payment:
             raise EntityNotFoundException("Payment", payment_id)
 
         cust_id = payment.customer_id
+
+        # Guard: Cannot cancel or reverse an already cancelled payment
+        if payment.status in ["CANCELLED", "VOID"]:
+            raise InvalidFinancialOperationException(
+                f"Payment voucher '{payment.payment_number}' is already {payment.status}. Cannot cancel or reverse again."
+            )
 
         # 1. Reverse all allocations on invoices
         for alloc in list(payment.allocations):
@@ -556,12 +609,33 @@ class PaymentService:
                 else:
                     inv.status = InvoiceStatus.PARTIALLY_PAID.value
 
+        # 2. Mark payment as CANCELLED (Soft Cancellation: Preserves physical database row)
+        payment.status = "CANCELLED"
+        payment.cancelled_at = get_utc_now()
+        payment.cancellation_reason = f"Cancelled/reversed by user {username or 'admin'}"
+        payment.allocated_amount = Decimal("0.00")
+        payment.unallocated_amount = Decimal("0.00")
         db.flush()
 
-        # 2. Log audit event
+        # 3. Post Double-Entry Ledger Reversal Entry (Debit Customer Receivables)
+        from app.services.customer_service import CustomerService
+        CustomerService.record_ledger_entry(
+            db=db,
+            customer_id=cust_id,
+            entry_date=get_ist_today(),
+            entry_type="PAYMENT_REVERSAL",
+            reference_id=payment.id,
+            reference_number=f"REV-{payment.payment_number}",
+            description=f"Payment {payment.payment_number} cancelled / reversed",
+            debit=payment.amount,
+            credit=Decimal("0.00"),
+            created_by_id=user_id
+        )
+
+        # 4. Log audit event
         AuditService.log(
             db=db,
-            action=AuditAction.DELETE,
+            action=AuditAction.STATUS_CHANGE,
             entity_name="Payment",
             entity_id=payment.id,
             user_id=user_id,
@@ -569,15 +643,18 @@ class PaymentService:
             user_role=user_role,
             before_state={
                 "payment_number": payment.payment_number,
+                "status": "COMPLETED",
                 "customer_id": payment.customer_id,
-                "amount": str(payment.amount),
-                "allocated_amount": str(payment.allocated_amount)
+                "amount": str(payment.amount)
+            },
+            after_state={
+                "payment_number": payment.payment_number,
+                "status": "CANCELLED"
             }
         )
 
-        # 3. Delete payment record and commit first so session is clean
+        # 5. Commit soft cancellation (Physical row is preserved)
         pay_number = payment.payment_number
-        db.delete(payment)
         db.commit()
 
         # 4. Re-reconcile customer FIFO in a clean transaction
@@ -598,12 +675,17 @@ class PaymentService:
         today = get_ist_today()
         month_start = date(today.year, today.month, 1)
 
-        total_all_time = db.query(func.coalesce(func.sum(Payment.amount), 0)).scalar() or Decimal("0.00")
+        total_all_time = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+            Payment.status != "CANCELLED"
+        ).scalar() or Decimal("0.00")
         total_month = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
             Payment.payment_date >= month_start,
-            Payment.payment_date <= today
+            Payment.payment_date <= today,
+            Payment.status != "CANCELLED"
         ).scalar() or Decimal("0.00")
-        count_all = db.query(func.count(Payment.id)).scalar() or 0
+        count_all = db.query(func.count(Payment.id)).filter(
+            Payment.status != "CANCELLED"
+        ).scalar() or 0
 
         return {
             "total_collected_all_time": float(total_all_time),

@@ -1,0 +1,4755 @@
+[
+  {
+    "id": "3402ac4d-04c1-4eae-ae80-9b695c107640",
+    "allocated_amount": "228.00",
+    "allocated_at": "2026-11-08T07:13:31.684040",
+    "payment_id": "c3f278f0-269a-47e3-a9b7-cdda618b2b3f",
+    "invoice_id": "f51fa50d-8761-4631-ac46-72058269e6cf"
+  },
+  {
+    "id": "6611d706-8fd3-4ca7-ac79-e29876305905",
+    "allocated_amount": "700.00",
+    "allocated_at": "2026-11-08T08:08:41.854708",
+    "payment_id": "08d6801b-9573-4358-b0d7-3cb4652cb76b",
+    "invoice_id": "9be06163-53ef-48f3-b6fc-3e43d45e15f8"
+  },
+  {
+    "id": "895bbbcc-3ef1-4c5d-9ab9-50f1e85d5377",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-08T08:08:41.854708",
+    "payment_id": "40a2a724-c42c-411d-a9e3-59b231a90b1b",
+    "invoice_id": "9be06163-53ef-48f3-b6fc-3e43d45e15f8"
+  },
+  {
+    "id": "7dcfcac4-ea53-4cb3-8342-0a8a9a5cb16e",
+    "allocated_amount": "395.00",
+    "allocated_at": "2026-11-08T10:21:37.895170",
+    "payment_id": "63df146d-6c96-4cf1-8b91-9320d92d147f",
+    "invoice_id": "143910d6-e855-447d-8e95-f843eb65677a"
+  },
+  {
+    "id": "4290e58e-000f-48e9-a973-8f3fcc7515d9",
+    "allocated_amount": "4388.80",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "c33800b2-adf2-4b9f-b488-a7bf84f5370a",
+    "invoice_id": "8b254d3b-df21-4cad-8128-84a63b333813"
+  },
+  {
+    "id": "937faa20-b47a-4fd6-b711-ae2cb15dd682",
+    "allocated_amount": "1172.00",
+    "allocated_at": "2026-11-08T08:12:36.378583",
+    "payment_id": "2efa2651-7287-4166-a434-037704ed42b4",
+    "invoice_id": "d4682f43-a2c9-4347-9088-02b1a5a84ffb"
+  },
+  {
+    "id": "10554bb3-8643-40c2-93d2-cd2862aa1ab9",
+    "allocated_amount": "1044.00",
+    "allocated_at": "2026-11-08T14:16:54.029237",
+    "payment_id": "76f1e68c-9974-4703-84a0-6cb026058ce3",
+    "invoice_id": "c0c4c9f0-9c77-40e2-a58e-61172869d9f2"
+  },
+  {
+    "id": "4e77292d-c25e-4874-abfc-440eaea51f62",
+    "allocated_amount": "3115.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "ab874c16-8dc9-4071-9b55-4badf6baed9f",
+    "invoice_id": "b7daedb7-b206-4615-b940-f6d6dd06b59e"
+  },
+  {
+    "id": "695748ef-6169-4c17-a9f5-0ce37b33d3a5",
+    "allocated_amount": "4815.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "c93bf156-90a1-4252-b43f-1b5a7abaaeb6",
+    "invoice_id": "2b814edf-8a26-4fec-b349-e8c901958f9c"
+  },
+  {
+    "id": "b7aabc2a-8b4c-4662-9f2e-0c6ba889c966",
+    "allocated_amount": "1630.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "c1ad7dda-1f50-4c72-89e8-ad86a195eaca",
+    "invoice_id": "d5601b8b-b4bc-4cf9-928d-27642fb1e1d9"
+  },
+  {
+    "id": "8bf06342-9cf7-4972-97ad-c692e4162c7d",
+    "allocated_amount": "5881.40",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "212571eb-f053-408b-8d43-323d86e9b02c",
+    "invoice_id": "76c8d080-392a-4793-958d-557b158b1da5"
+  },
+  {
+    "id": "0398389e-949b-4ded-8b2b-d785ed8be39a",
+    "allocated_amount": "2382.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "a8ddce71-d888-41c4-b759-6661dae88c76",
+    "invoice_id": "13a8d0a5-e058-4d98-8eb3-a7ec9868b5b4"
+  },
+  {
+    "id": "5fffce32-029b-40f1-9d53-1e61573a8da0",
+    "allocated_amount": "6855.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "ccbb46c5-d72d-45ec-93ee-62b765b2f8a0",
+    "invoice_id": "f140329b-c863-4029-84d0-943f162a58eb"
+  },
+  {
+    "id": "722b2a0b-db2f-4583-bbb2-d3ef44bc3cb1",
+    "allocated_amount": "1140.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "64921717-77ef-489f-ba84-653ebe4dc4bd",
+    "invoice_id": "4e09e6cf-9ba8-457c-bc02-6fd5807d4d27"
+  },
+  {
+    "id": "101988b9-5319-4bac-ac78-86d4a2ef1693",
+    "allocated_amount": "4741.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "6b938246-79dd-4f66-a734-45f1043bae68",
+    "invoice_id": "33f65719-3d62-44b5-b2ca-feb8f8d0af6a"
+  },
+  {
+    "id": "db9444d2-abcf-4320-b678-059ffdb4753e",
+    "allocated_amount": "2176.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "2e53a8e8-ec1d-4a7e-b136-e178d84dd935",
+    "invoice_id": "43979699-1308-449c-9e64-f1fc5d12e9b7"
+  },
+  {
+    "id": "e2537781-14c4-424a-a20a-bd11621c3c21",
+    "allocated_amount": "895.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "084eec19-2611-4a83-9fe8-9624481455c5",
+    "invoice_id": "6ec2158b-7b45-4d5a-b050-012b5f65379d"
+  },
+  {
+    "id": "c8291f7b-0f5e-455e-9932-4216708821ba",
+    "allocated_amount": "4.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "d84541a8-28cd-445d-8d52-fdd6bceee8cc",
+    "invoice_id": "b476b5e9-176a-4ad6-994a-ee35ea65ef96"
+  },
+  {
+    "id": "13b96362-ba33-40a4-86a1-69940aad8e43",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "e80647a3-6496-4564-98e0-e8a306b2d080",
+    "invoice_id": "b476b5e9-176a-4ad6-994a-ee35ea65ef96"
+  },
+  {
+    "id": "e281ba20-2137-48a4-86ee-4b7e94c21988",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "a91522fd-c2e5-4191-99e2-f12190d35ccc",
+    "invoice_id": "b476b5e9-176a-4ad6-994a-ee35ea65ef96"
+  },
+  {
+    "id": "b5c5a638-7d5f-4082-a6a1-02ceff56696c",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "7264ef9a-dd00-4e75-89a8-ef1daf7c972f",
+    "invoice_id": "b476b5e9-176a-4ad6-994a-ee35ea65ef96"
+  },
+  {
+    "id": "a13669ad-ac06-42aa-97a0-094b4da3cbe6",
+    "allocated_amount": "561.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "a9789fa3-268a-4b14-b6e0-5226a94c268d",
+    "invoice_id": "b476b5e9-176a-4ad6-994a-ee35ea65ef96"
+  },
+  {
+    "id": "e10555ff-e055-4f94-a154-ac3062ff6d1b",
+    "allocated_amount": "439.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "a9789fa3-268a-4b14-b6e0-5226a94c268d",
+    "invoice_id": "f026c375-bd96-4c05-904a-2079c8830556"
+  },
+  {
+    "id": "7a8d5589-665d-4ad8-90c7-eafd66e1f5ae",
+    "allocated_amount": "997.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "28ac23b8-7368-4dbc-8f7c-a9de27ccaab0",
+    "invoice_id": "f026c375-bd96-4c05-904a-2079c8830556"
+  },
+  {
+    "id": "aed7b461-773b-4cac-b3f1-302961a5e17d",
+    "allocated_amount": "503.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "28ac23b8-7368-4dbc-8f7c-a9de27ccaab0",
+    "invoice_id": "58de34ca-12d9-46fb-b152-72592f9d22ef"
+  },
+  {
+    "id": "69645121-e09d-4d31-9e36-c7608c45d6dd",
+    "allocated_amount": "1392.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "e81620ca-b66c-4b97-acb0-fa9865361478",
+    "invoice_id": "58de34ca-12d9-46fb-b152-72592f9d22ef"
+  },
+  {
+    "id": "c3fee730-bca8-49ac-a23c-8dbd7aef6d10",
+    "allocated_amount": "108.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "e81620ca-b66c-4b97-acb0-fa9865361478",
+    "invoice_id": "eadd0635-9f38-4365-b054-3d3ba1380185"
+  },
+  {
+    "id": "d7ab7e78-0c36-401b-8055-e36e47c848c2",
+    "allocated_amount": "2000.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "ec1b2834-64ef-4db5-bbfa-a9fc71dda078",
+    "invoice_id": "eadd0635-9f38-4365-b054-3d3ba1380185"
+  },
+  {
+    "id": "853f5f6d-1ce1-46ca-a854-de73e7d541ad",
+    "allocated_amount": "488.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "494082ca-6b42-40fd-9740-baaff748d538",
+    "invoice_id": "eadd0635-9f38-4365-b054-3d3ba1380185"
+  },
+  {
+    "id": "812ef3c6-feb9-4180-aa8f-bb84bc4b8a14",
+    "allocated_amount": "1012.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "494082ca-6b42-40fd-9740-baaff748d538",
+    "invoice_id": "ae717d01-fdd8-4f0a-8c19-d968dd0db92c"
+  },
+  {
+    "id": "56139c7f-39bc-47c8-8abf-89de76c357e2",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "2460edd5-dda7-43a3-9fc2-9d474e48b5d3",
+    "invoice_id": "ae717d01-fdd8-4f0a-8c19-d968dd0db92c"
+  },
+  {
+    "id": "b0866c8c-8f72-4efc-aaef-e490bff8a2cf",
+    "allocated_amount": "108.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "aaaffc57-7ff4-45d4-9106-a9687a539d83",
+    "invoice_id": "ae717d01-fdd8-4f0a-8c19-d968dd0db92c"
+  },
+  {
+    "id": "f31cbb4d-371e-4c34-be7d-a1d932255bc1",
+    "allocated_amount": "1392.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "aaaffc57-7ff4-45d4-9106-a9687a539d83",
+    "invoice_id": "58fe826c-90a4-4960-86c6-7e93d4efce51"
+  },
+  {
+    "id": "8d6ec51a-dd86-4e1d-8cb7-97ad0656f263",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "05dbc247-065a-4cc3-957a-bb6b7ffa8a8b",
+    "invoice_id": "58fe826c-90a4-4960-86c6-7e93d4efce51"
+  },
+  {
+    "id": "4554524a-2ab6-46e8-8642-2560f1bcab8b",
+    "allocated_amount": "249.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "711ac4e1-9200-4aeb-acbf-33aa26ed97fc",
+    "invoice_id": "58fe826c-90a4-4960-86c6-7e93d4efce51"
+  },
+  {
+    "id": "ef3d7b8d-9efb-4c82-86a8-835815b5bd52",
+    "allocated_amount": "1251.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "711ac4e1-9200-4aeb-acbf-33aa26ed97fc",
+    "invoice_id": "6d8f3f3f-1c5d-4843-8176-24f7d0eff2d0"
+  },
+  {
+    "id": "4c52448b-7993-49a1-ae1c-6d3158e3206f",
+    "allocated_amount": "942.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "cd2be483-451f-4be2-9a40-0621526b57f1",
+    "invoice_id": "6d8f3f3f-1c5d-4843-8176-24f7d0eff2d0"
+  },
+  {
+    "id": "808e55f8-c0ba-4fa1-b66e-ab9e60966395",
+    "allocated_amount": "558.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "cd2be483-451f-4be2-9a40-0621526b57f1",
+    "invoice_id": "dd1b4490-5799-477d-987c-92cfc4e4381b"
+  },
+  {
+    "id": "36990c5d-bac7-47ae-8d96-dfc56a6efbc7",
+    "allocated_amount": "612.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "5a883b11-ee39-4e14-9159-b3554a396e5e",
+    "invoice_id": "dd1b4490-5799-477d-987c-92cfc4e4381b"
+  },
+  {
+    "id": "fa46cc69-cf45-4ac8-9cac-9b169448f237",
+    "allocated_amount": "888.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "5a883b11-ee39-4e14-9159-b3554a396e5e",
+    "invoice_id": "54022139-acef-43af-82e6-d13dcc3c74d7"
+  },
+  {
+    "id": "cfd27001-34b9-45a8-a4de-6246215d39cf",
+    "allocated_amount": "587.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "2fe668ee-bd75-4518-bd91-ca89a2bb9ec7",
+    "invoice_id": "54022139-acef-43af-82e6-d13dcc3c74d7"
+  },
+  {
+    "id": "b0fcee71-aa9c-410e-a9fb-4d01892eba45",
+    "allocated_amount": "413.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "2fe668ee-bd75-4518-bd91-ca89a2bb9ec7",
+    "invoice_id": "8fc6c6c8-982d-4301-8582-5e54463967bb"
+  },
+  {
+    "id": "0e0b32ad-ab6e-402e-a08d-01ab1266e627",
+    "allocated_amount": "517.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "457b1db7-ca85-472e-ab2c-26f04a187aab",
+    "invoice_id": "8fc6c6c8-982d-4301-8582-5e54463967bb"
+  },
+  {
+    "id": "7e70759d-875a-416d-8fca-10551f528e46",
+    "allocated_amount": "1483.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "457b1db7-ca85-472e-ab2c-26f04a187aab",
+    "invoice_id": "7e2ccdc7-469a-4c70-adbe-0b27c9b688a5"
+  },
+  {
+    "id": "74fe0a5f-d814-4ae1-90c8-499b8f8831ae",
+    "allocated_amount": "50.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "16ab927d-fd51-461a-b8e4-5e57aec7d2d2",
+    "invoice_id": "7e2ccdc7-469a-4c70-adbe-0b27c9b688a5"
+  },
+  {
+    "id": "c4ceb386-ca80-4567-8ee4-d1fdaa1fa240",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "bfad44ed-ee41-49f1-8663-39c855237913",
+    "invoice_id": "7e2ccdc7-469a-4c70-adbe-0b27c9b688a5"
+  },
+  {
+    "id": "054a88d5-1660-4bd2-a81e-e65bec817023",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "c4f6b361-4aec-47d8-a5c5-1c44a86143b8",
+    "invoice_id": "7e2ccdc7-469a-4c70-adbe-0b27c9b688a5"
+  },
+  {
+    "id": "4096bff3-59aa-4f9c-be7e-0a68b0748c40",
+    "allocated_amount": "67.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "de001458-b241-41ee-9306-94075f67a021",
+    "invoice_id": "7e2ccdc7-469a-4c70-adbe-0b27c9b688a5"
+  },
+  {
+    "id": "3b2d1284-f337-4e04-9518-a860c1461092",
+    "allocated_amount": "1433.00",
+    "allocated_at": "2026-11-05T17:21:30.757109",
+    "payment_id": "de001458-b241-41ee-9306-94075f67a021",
+    "invoice_id": "b00521a7-5bf7-4a52-870c-d0443b922c8f"
+  },
+  {
+    "id": "10f353e9-a1ab-4ca2-b40c-a2c4fa7361ac",
+    "allocated_amount": "180.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "15deefed-4d12-4389-8180-3e321b6b6fca",
+    "invoice_id": "41a66b45-e888-4e7e-8a99-ad1abaeff994"
+  },
+  {
+    "id": "2304ce03-42ba-49f2-a0bd-87d5f9b346a6",
+    "allocated_amount": "890.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "a1f59ca5-3df8-4ef4-aac2-acb6dabd7c45",
+    "invoice_id": "41a66b45-e888-4e7e-8a99-ad1abaeff994"
+  },
+  {
+    "id": "94c1ec22-b041-4604-948b-74c411435556",
+    "allocated_amount": "140.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "a1f59ca5-3df8-4ef4-aac2-acb6dabd7c45",
+    "invoice_id": "576d116d-e9cc-4102-a4ba-bb04a1f72e1d"
+  },
+  {
+    "id": "78bd8db0-d7b0-40da-bada-3adc810e076e",
+    "allocated_amount": "100.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "e6e35e6d-0ce2-4f45-bd3e-8123dc316285",
+    "invoice_id": "576d116d-e9cc-4102-a4ba-bb04a1f72e1d"
+  },
+  {
+    "id": "1c23d641-7b58-4e25-be92-dcdc6acd3c55",
+    "allocated_amount": "320.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "d07f2ae9-ea71-457b-ad93-8def28ca95cf",
+    "invoice_id": "576d116d-e9cc-4102-a4ba-bb04a1f72e1d"
+  },
+  {
+    "id": "623caf58-d001-4dc2-ade1-984a4e27b18e",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "d07f2ae9-ea71-457b-ad93-8def28ca95cf",
+    "invoice_id": "59a86163-1c98-4f6a-9bce-1afd92241f43"
+  },
+  {
+    "id": "0c132d48-9b73-4cfa-a659-b61f36e51a05",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "d07f2ae9-ea71-457b-ad93-8def28ca95cf",
+    "invoice_id": "8277dedf-2085-42d9-9a48-2755bf3c78a2"
+  },
+  {
+    "id": "b80b046d-727a-46e5-a7cf-0075b190b140",
+    "allocated_amount": "180.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "db497216-dba7-4c30-b9a6-086e54bd40eb",
+    "invoice_id": "8277dedf-2085-42d9-9a48-2755bf3c78a2"
+  },
+  {
+    "id": "74e2a279-3b32-4904-ac6a-bd788f93a7cd",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "db497216-dba7-4c30-b9a6-086e54bd40eb",
+    "invoice_id": "b32e04eb-7b8b-4f13-a10d-1d2aa0f46c51"
+  },
+  {
+    "id": "7ae59084-8e90-48b4-b8cb-81b4324fbfda",
+    "allocated_amount": "400.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "db497216-dba7-4c30-b9a6-086e54bd40eb",
+    "invoice_id": "3ee1b671-6423-4c99-bbc3-c4b8a89379a4"
+  },
+  {
+    "id": "46537db3-18ef-441e-81eb-e0e6c02a3efa",
+    "allocated_amount": "140.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "db497216-dba7-4c30-b9a6-086e54bd40eb",
+    "invoice_id": "d02f64b0-9d86-4789-848e-256d89b9e8d4"
+  },
+  {
+    "id": "dd467d0c-a4aa-40d0-9cca-e80052cf9714",
+    "allocated_amount": "605.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "9f265263-5e50-499a-acbc-66a1e0dcab83",
+    "invoice_id": "d02f64b0-9d86-4789-848e-256d89b9e8d4"
+  },
+  {
+    "id": "60973d43-a6d4-4bad-932d-2c0c510a48c9",
+    "allocated_amount": "285.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "34278e98-006d-4521-b8e0-9e970da6ae23",
+    "invoice_id": "d02f64b0-9d86-4789-848e-256d89b9e8d4"
+  },
+  {
+    "id": "1d24e3a3-9a97-49bb-a948-36b042577f2b",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "34278e98-006d-4521-b8e0-9e970da6ae23",
+    "invoice_id": "f3759933-acb2-447f-a43a-f9da8bbf18ac"
+  },
+  {
+    "id": "ecf91b2d-537f-4a3d-89d1-5a11a68c7993",
+    "allocated_amount": "1260.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "34278e98-006d-4521-b8e0-9e970da6ae23",
+    "invoice_id": "1d432c90-4bc6-46dd-8a8a-d91c700cedab"
+  },
+  {
+    "id": "304eef77-a8ff-4084-9421-29ab4c25c222",
+    "allocated_amount": "5.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "3d3e5244-9473-406d-8fd1-8b98122ed749",
+    "invoice_id": "1d432c90-4bc6-46dd-8a8a-d91c700cedab"
+  },
+  {
+    "id": "c1663d3f-e95c-478c-8d19-198e7a36c804",
+    "allocated_amount": "305.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "3d3e5244-9473-406d-8fd1-8b98122ed749",
+    "invoice_id": "052937c9-c8ed-430e-a024-5b63557be96a"
+  },
+  {
+    "id": "441a6895-47e6-4caa-a502-94ee58ba906c",
+    "allocated_amount": "1580.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "f374cea9-4df8-447c-9f97-e1a1a395d96c",
+    "invoice_id": "052937c9-c8ed-430e-a024-5b63557be96a"
+  },
+  {
+    "id": "fd8095d3-351c-4f0c-8b47-f1aa672a3cfa",
+    "allocated_amount": "250.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "f374cea9-4df8-447c-9f97-e1a1a395d96c",
+    "invoice_id": "11a18ac2-7327-479d-a566-96246d1070f3"
+  },
+  {
+    "id": "a22595e7-5d6d-4036-9b1e-2c9b8f631128",
+    "allocated_amount": "60.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "f374cea9-4df8-447c-9f97-e1a1a395d96c",
+    "invoice_id": "ebe085d3-9e9e-4fd2-8e1d-2dabe4bd2d5c"
+  },
+  {
+    "id": "ea5156d7-07f5-47f8-a117-eb6dc6277feb",
+    "allocated_amount": "1890.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "34a94bd3-b3f3-485a-8e9d-802ebef0fc33",
+    "invoice_id": "ebe085d3-9e9e-4fd2-8e1d-2dabe4bd2d5c"
+  },
+  {
+    "id": "99b1c9cc-10d0-4ff7-a160-c239ac4cdb0d",
+    "allocated_amount": "570.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "2a101afb-e758-4cdc-9c44-9ea9c5a2e737",
+    "invoice_id": "d823f890-0cd6-4e91-b416-575b1dcb32eb"
+  },
+  {
+    "id": "598df3b0-6618-43c8-b247-cc4c8c02633c",
+    "allocated_amount": "1205.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "2a101afb-e758-4cdc-9c44-9ea9c5a2e737",
+    "invoice_id": "4a6489b2-3e34-4916-be30-e736ace836f3"
+  },
+  {
+    "id": "2a6cb34c-25d1-4bbf-a64d-d895fdaa1a97",
+    "allocated_amount": "725.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "2a101afb-e758-4cdc-9c44-9ea9c5a2e737",
+    "invoice_id": "29ce4a09-8eaa-4d53-9d55-328c1a42701a"
+  },
+  {
+    "id": "abc6d6e7-5091-4fda-8159-e9c91db5950c",
+    "allocated_amount": "1805.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "49b1f259-1a1b-4350-9b01-a1d23b6a77f6",
+    "invoice_id": "29ce4a09-8eaa-4d53-9d55-328c1a42701a"
+  },
+  {
+    "id": "3e7d8b38-4c08-4307-94ac-591898d3efda",
+    "allocated_amount": "1684.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "49b1f259-1a1b-4350-9b01-a1d23b6a77f6",
+    "invoice_id": "6770b562-7b9b-449a-8f3c-d7c6f54a296f"
+  },
+  {
+    "id": "a9ee61ca-d9ed-4dc7-b857-5895d2f192b0",
+    "allocated_amount": "890.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "038ac112-27a3-4542-a18b-6d453acc19b3",
+    "invoice_id": "94e2236f-405b-4831-8353-1c2904f1d79b"
+  },
+  {
+    "id": "f07316f1-1f36-4f9c-ae50-b66be8e7cc64",
+    "allocated_amount": "790.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "038ac112-27a3-4542-a18b-6d453acc19b3",
+    "invoice_id": "9fc9ebd9-85c4-426d-a66f-da241d7e86c4"
+  },
+  {
+    "id": "f6b11876-5c9a-4ad4-9340-a160437184ba",
+    "allocated_amount": "2004.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "038ac112-27a3-4542-a18b-6d453acc19b3",
+    "invoice_id": "2938414a-871b-4649-856b-d2e0201700f8"
+  },
+  {
+    "id": "84d7defa-5fcf-4fbe-8d67-132b4eb3fc61",
+    "allocated_amount": "316.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "038ac112-27a3-4542-a18b-6d453acc19b3",
+    "invoice_id": "c403852e-6794-46c3-abc8-9dd29b040025"
+  },
+  {
+    "id": "ab4c7db2-98df-4a07-8b80-0c0b19224896",
+    "allocated_amount": "209.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "c527d911-7d47-4792-a7ec-d4b612781db8",
+    "invoice_id": "c403852e-6794-46c3-abc8-9dd29b040025"
+  },
+  {
+    "id": "38741fcb-a374-4580-b422-198a044ccffb",
+    "allocated_amount": "790.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "c527d911-7d47-4792-a7ec-d4b612781db8",
+    "invoice_id": "f9c2e97c-87a6-4910-bff0-6ef2335e4afd"
+  },
+  {
+    "id": "655c5a4e-129c-4ce8-aed7-f59c60ab2e99",
+    "allocated_amount": "401.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "c527d911-7d47-4792-a7ec-d4b612781db8",
+    "invoice_id": "5ae581fe-6194-4bd1-b8b3-bbd6630e62c5"
+  },
+  {
+    "id": "926c9cd5-fbef-4742-9986-a5fa6f50fb12",
+    "allocated_amount": "389.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "be54bc16-eda4-488e-8e8b-552a102a1d80",
+    "invoice_id": "5ae581fe-6194-4bd1-b8b3-bbd6630e62c5"
+  },
+  {
+    "id": "a2d08941-2e9d-40fb-8076-950841409575",
+    "allocated_amount": "830.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "be54bc16-eda4-488e-8e8b-552a102a1d80",
+    "invoice_id": "d78838f4-2f33-470e-bed9-e16339bec828"
+  },
+  {
+    "id": "ab3d37fa-df23-4ce8-94a9-6baa950fa8cd",
+    "allocated_amount": "1225.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "be54bc16-eda4-488e-8e8b-552a102a1d80",
+    "invoice_id": "875c5646-bf3b-4206-8b0b-b1819f15fa04"
+  },
+  {
+    "id": "c4867df4-c9d5-4776-97a1-bf6d8419bd7f",
+    "allocated_amount": "320.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "be54bc16-eda4-488e-8e8b-552a102a1d80",
+    "invoice_id": "f9923205-4ad3-43c8-a681-cc1cf9ea6a1f"
+  },
+  {
+    "id": "a0fee525-5486-4d4e-8974-f727c21c0fe6",
+    "allocated_amount": "620.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "be54bc16-eda4-488e-8e8b-552a102a1d80",
+    "invoice_id": "f18b9383-f7e9-4cd3-b7ea-4596411ac30b"
+  },
+  {
+    "id": "79b00272-ad05-4b95-8808-2fb07f89a0f8",
+    "allocated_amount": "1410.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "be54bc16-eda4-488e-8e8b-552a102a1d80",
+    "invoice_id": "1e555af6-08d8-4341-9f75-5668598526e3"
+  },
+  {
+    "id": "847a242f-b6ff-4ea1-88da-8cafc06422ab",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "063716c1-cc25-439e-afbc-9ed7bfd268df",
+    "invoice_id": "5ca5f4ad-69e3-4d58-bec1-4a2c796105b0"
+  },
+  {
+    "id": "fd478757-14c5-421c-ab67-34bda5898491",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-08T10:52:06.521395",
+    "payment_id": "879be7d8-8037-4465-b888-39d60b69fbf5",
+    "invoice_id": "686caa8b-2826-4105-adcd-e14cc683861e"
+  },
+  {
+    "id": "63962493-f3f7-4f80-92dc-94615d70432d",
+    "allocated_amount": "1900.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "8cf1152c-f222-4034-bd58-469a8e084656",
+    "invoice_id": "76718ace-3d21-4b5e-8a69-2707412cbc23"
+  },
+  {
+    "id": "592b85e3-59b4-46de-a0fd-c4e98ce016b8",
+    "allocated_amount": "1020.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "766a0ee6-11cf-4425-9cc3-fc7d1f44fa7f",
+    "invoice_id": "c3c95730-2aa9-4a8a-a971-4d17146fadd5"
+  },
+  {
+    "id": "218846a8-00d7-4c42-ac5a-cc959a8023df",
+    "allocated_amount": "720.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "fb5f39da-b7f2-4ed0-a586-31b4c6e15a5c",
+    "invoice_id": "c2f300d7-32fd-4302-b73a-ab7ce841b624"
+  },
+  {
+    "id": "2750027f-0bf8-431f-a5ad-4b0dd6adc79c",
+    "allocated_amount": "1010.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "fb5f39da-b7f2-4ed0-a586-31b4c6e15a5c",
+    "invoice_id": "5bdc85f4-c7c5-4a3a-aaab-5c48fa2d2f1f"
+  },
+  {
+    "id": "81ef2443-e8e4-4efa-b237-ea40234f4c16",
+    "allocated_amount": "900.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "4fc4cc85-325c-4c40-a051-fe0fffa11175",
+    "invoice_id": "cde09297-27b8-43dd-957e-a1721261ec86"
+  },
+  {
+    "id": "88452f57-cc8f-485d-b150-77e214cb75f8",
+    "allocated_amount": "795.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "b6f55b0f-dac8-4ded-8323-7aabe5483640",
+    "invoice_id": "ee48ae8e-a846-429c-bdfb-c5e83b1830a3"
+  },
+  {
+    "id": "39430620-46c8-4fcc-bb1c-8e5845ef00b6",
+    "allocated_amount": "720.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "f08deb42-22ed-48e7-945e-1d82eec9f43f",
+    "invoice_id": "9744f403-474d-407d-b2c5-13e836a59000"
+  },
+  {
+    "id": "88419275-bd9c-44a6-8b1a-d939960d8cab",
+    "allocated_amount": "900.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "f08deb42-22ed-48e7-945e-1d82eec9f43f",
+    "invoice_id": "6eec6e1e-d81b-4171-be04-8d7fd44a040f"
+  },
+  {
+    "id": "8c9c5ded-c448-4afa-a712-3a14d2caf4ab",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "a1296ef7-ebbd-43f9-9e9a-433a9cb43ff9",
+    "invoice_id": "e24fec9e-c621-429a-b379-12c6c1438d65"
+  },
+  {
+    "id": "e9d811d4-0295-498a-884a-ea8c758bc365",
+    "allocated_amount": "902.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "a6823301-f4f3-479e-b8ae-8bf05bbfdd5f",
+    "invoice_id": "7e685c81-9ab0-402d-aed2-fa80d98f0f46"
+  },
+  {
+    "id": "9a6d22c5-deff-497d-ace8-b1c5a22c7974",
+    "allocated_amount": "1515.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "d8dfed45-c797-43f6-87a7-a97d46a52171",
+    "invoice_id": "701c4a2a-f3b4-4843-9b8c-914158713210"
+  },
+  {
+    "id": "25c09722-4841-41c3-a964-72403135cc16",
+    "allocated_amount": "745.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "e8bde076-6283-4022-9b0e-1444afebb0a0",
+    "invoice_id": "140f6268-3c75-4275-8fec-dcab35e4fd12"
+  },
+  {
+    "id": "0f16b6b5-e31f-49cb-88f1-fee404b9f177",
+    "allocated_amount": "1260.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "81c12d06-ebf2-4d88-a14e-c91d30f59929",
+    "invoice_id": "4fde8484-868f-45e2-bce9-8e277d0da54c"
+  },
+  {
+    "id": "a5edcea9-df78-41fd-ae34-b43042a2b1d8",
+    "allocated_amount": "720.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "22e15e8f-11fd-427e-96d4-9d701799bcd3",
+    "invoice_id": "be884d42-8874-4bd9-b03c-d21185880759"
+  },
+  {
+    "id": "3116ea3c-54d6-40e2-8335-e37afd955158",
+    "allocated_amount": "1950.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "64eabda1-b8a2-4d20-9287-fec9c0546800",
+    "invoice_id": "deaded2f-6e55-4ed3-b854-24201dc87b4e"
+  },
+  {
+    "id": "9ee21fa0-9f3c-46b6-afa8-6929a6858df0",
+    "allocated_amount": "1930.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "64eabda1-b8a2-4d20-9287-fec9c0546800",
+    "invoice_id": "dd18f454-d9ff-487f-b2e6-d317f295397a"
+  },
+  {
+    "id": "0f049419-b9b9-4bee-b23d-2838a9e32005",
+    "allocated_amount": "1950.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "270939cd-192e-4dec-81d1-211eb21bd6f6",
+    "invoice_id": "dd18f454-d9ff-487f-b2e6-d317f295397a"
+  },
+  {
+    "id": "321f8453-48f5-47e8-8a25-bcdcb4a6b5c7",
+    "allocated_amount": "49.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "e110d35b-8292-4d28-be3d-0ff91fb6ab77",
+    "invoice_id": "dd18f454-d9ff-487f-b2e6-d317f295397a"
+  },
+  {
+    "id": "786f37e9-3735-4e4e-a37a-41e0d41b3e42",
+    "allocated_amount": "850.40",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "e110d35b-8292-4d28-be3d-0ff91fb6ab77",
+    "invoice_id": "2dfcd3a0-7dab-4d88-a499-2b7eae87b3eb"
+  },
+  {
+    "id": "c51e4ccf-2f10-4728-b38b-57272cd1319b",
+    "allocated_amount": "49.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "e638a406-3bc2-498e-8410-9ec20d553ad5",
+    "invoice_id": "2dfcd3a0-7dab-4d88-a499-2b7eae87b3eb"
+  },
+  {
+    "id": "0babe3a9-0a70-48b0-a4ec-de9fbb209e09",
+    "allocated_amount": "910.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "e638a406-3bc2-498e-8410-9ec20d553ad5",
+    "invoice_id": "8fb0f610-ba69-47d3-bb1f-bbfccb11aab0"
+  },
+  {
+    "id": "ae7eb20c-8ef2-49a6-a9c8-9490920299c4",
+    "allocated_amount": "50.40",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "e638a406-3bc2-498e-8410-9ec20d553ad5",
+    "invoice_id": "52d08090-ed41-4693-a02b-9fbd4f68adcb"
+  },
+  {
+    "id": "1951af5e-af58-496f-8a10-df3f9fc09169",
+    "allocated_amount": "49.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "c8775ab4-ce17-4dba-8256-5714dbdb42aa",
+    "invoice_id": "52d08090-ed41-4693-a02b-9fbd4f68adcb"
+  },
+  {
+    "id": "5cae7a4f-5a93-4ef2-b96e-e21ba7795d00",
+    "allocated_amount": "1105.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "c8775ab4-ce17-4dba-8256-5714dbdb42aa",
+    "invoice_id": "e29908c6-eb38-4795-ae69-a7f9ffbd630f"
+  },
+  {
+    "id": "bca7b807-54d7-47d5-ac2b-814f7260c8b9",
+    "allocated_amount": "345.40",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "c8775ab4-ce17-4dba-8256-5714dbdb42aa",
+    "invoice_id": "11b6b124-65c7-4064-9a8f-94250204bedf"
+  },
+  {
+    "id": "4f39a867-a8af-4caa-87bb-eb1c1f8f8f1f",
+    "allocated_amount": "666.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "f81a4933-e317-43ce-b9a7-11ba4c81981c",
+    "invoice_id": "11b6b124-65c7-4064-9a8f-94250204bedf"
+  },
+  {
+    "id": "502f400e-c79a-4542-a4b6-73a93f41a6eb",
+    "allocated_amount": "860.40",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "f81a4933-e317-43ce-b9a7-11ba4c81981c",
+    "invoice_id": "2f6390ce-ad4e-49ef-9659-e9589543593d"
+  },
+  {
+    "id": "5e084f1a-a4d0-4574-b77b-faee285188a9",
+    "allocated_amount": "49.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "4ca7934e-a8af-499e-bc50-e36d4dd69291",
+    "invoice_id": "2f6390ce-ad4e-49ef-9659-e9589543593d"
+  },
+  {
+    "id": "7cc70609-1b44-4c1c-92d3-8d4dee8ba4b7",
+    "allocated_amount": "1300.40",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "4ca7934e-a8af-499e-bc50-e36d4dd69291",
+    "invoice_id": "2546d740-3bdf-41eb-9677-f09607c39a70"
+  },
+  {
+    "id": "4b95e31e-1363-4d6c-ab5e-be5fbad31437",
+    "allocated_amount": "312.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "5dd796fb-524b-47fb-aa87-9c47aafa5352",
+    "invoice_id": "2546d740-3bdf-41eb-9677-f09607c39a70"
+  },
+  {
+    "id": "a59344ad-19f0-4c74-9c9a-9e76475d3a64",
+    "allocated_amount": "1300.40",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "5dd796fb-524b-47fb-aa87-9c47aafa5352",
+    "invoice_id": "4df9d357-761e-4a66-b848-8952e82f9c5d"
+  },
+  {
+    "id": "b60c11c1-0851-46dc-a4cb-bb0e974f7dec",
+    "allocated_amount": "49.60",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "033457e6-4b68-44c7-bbda-77158f4c62e7",
+    "invoice_id": "4df9d357-761e-4a66-b848-8952e82f9c5d"
+  },
+  {
+    "id": "9af30335-86db-4da5-b6af-a125214a4acf",
+    "allocated_amount": "732.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "515a552e-2bd8-4bb1-b325-170834fe937f",
+    "invoice_id": "bf35f19d-b4d9-41c7-a869-aa34cf0625e0"
+  },
+  {
+    "id": "0ea16f3f-cb7d-44be-8c68-98cd482054ff",
+    "allocated_amount": "888.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "515a552e-2bd8-4bb1-b325-170834fe937f",
+    "invoice_id": "f7dd55d1-8080-4edf-a41c-e9e3c85edab0"
+  },
+  {
+    "id": "2850c999-5f55-4c92-95a8-eaeb4e434832",
+    "allocated_amount": "7.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "5d1e57e3-78c3-4e6c-82cd-7d8e8ff4fdab",
+    "invoice_id": "f7dd55d1-8080-4edf-a41c-e9e3c85edab0"
+  },
+  {
+    "id": "49315fc7-9736-4d58-80c9-1511c546dd9c",
+    "allocated_amount": "1180.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "5d1e57e3-78c3-4e6c-82cd-7d8e8ff4fdab",
+    "invoice_id": "3426d95a-60dd-46c9-9eab-6915c9868eaa"
+  },
+  {
+    "id": "6477ad5e-acea-4637-a6fb-0eeec24116ef",
+    "allocated_amount": "313.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "5d1e57e3-78c3-4e6c-82cd-7d8e8ff4fdab",
+    "invoice_id": "66ddf42d-2c0c-48a0-bba3-41e94c586887"
+  },
+  {
+    "id": "74bea936-7a1b-4c3f-b52a-125c79a7b1e6",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "4bc8368f-5edb-4aab-913e-4a3964102321",
+    "invoice_id": "66ddf42d-2c0c-48a0-bba3-41e94c586887"
+  },
+  {
+    "id": "ac02920b-828c-437d-978b-f26025a58599",
+    "allocated_amount": "87.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "4fcedd52-9792-44be-bd8f-580e93aab6c9",
+    "invoice_id": "66ddf42d-2c0c-48a0-bba3-41e94c586887"
+  },
+  {
+    "id": "19016c97-bebd-4c6a-b555-fa945c547802",
+    "allocated_amount": "1090.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "4fcedd52-9792-44be-bd8f-580e93aab6c9",
+    "invoice_id": "fef7b229-16a1-47c3-8062-815a65c7d869"
+  },
+  {
+    "id": "6c58d908-9559-4d93-a1b4-cfbcd785ac0c",
+    "allocated_amount": "90.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "9a294ccf-d3c4-4425-930a-635080206388",
+    "invoice_id": "fef7b229-16a1-47c3-8062-815a65c7d869"
+  },
+  {
+    "id": "18a4468a-e890-4c8e-8cb9-6f205d3fbe56",
+    "allocated_amount": "365.00",
+    "allocated_at": "2026-11-08T12:44:11.218799",
+    "payment_id": "24807638-22c4-4188-8972-a0f5f36135d7",
+    "invoice_id": "a901f87e-c83c-49f3-9e8a-2cfcee1a01b9"
+  },
+  {
+    "id": "f5b6f3e9-a264-475a-8499-9f25c1cdc9c0",
+    "allocated_amount": "135.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "f027151b-127f-4f4c-9313-12083c0da753",
+    "invoice_id": "eb042abb-670c-485b-bb94-138542ae0867"
+  },
+  {
+    "id": "ce94a4a7-09ca-473a-a440-80dfdb3cc526",
+    "allocated_amount": "1050.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "033d4008-cd5f-4448-960b-1e1a0c39985f",
+    "invoice_id": "eb042abb-670c-485b-bb94-138542ae0867"
+  },
+  {
+    "id": "15af5d9f-51a6-4f4d-95e6-f1cba1c6049d",
+    "allocated_amount": "1450.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "033d4008-cd5f-4448-960b-1e1a0c39985f",
+    "invoice_id": "71285027-011d-4b22-ace9-153c70abaabf"
+  },
+  {
+    "id": "6b770d65-0ef9-4261-906e-c29930787f10",
+    "allocated_amount": "55.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "7d3248a7-4b31-4490-8497-c8fe0892cd98",
+    "invoice_id": "71285027-011d-4b22-ace9-153c70abaabf"
+  },
+  {
+    "id": "76f0a307-ce09-41cc-9b21-8ccdaa52f243",
+    "allocated_amount": "380.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "7d3248a7-4b31-4490-8497-c8fe0892cd98",
+    "invoice_id": "4f6aff43-dab2-44dd-977d-9962ff408a15"
+  },
+  {
+    "id": "37861179-2178-4002-81f8-ca0217024f71",
+    "allocated_amount": "135.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "7d3248a7-4b31-4490-8497-c8fe0892cd98",
+    "invoice_id": "45cb5e3f-b8ab-4134-a083-2aedb22850a5"
+  },
+  {
+    "id": "944b769e-867b-4eba-a79b-e1f3e95fc67b",
+    "allocated_amount": "2430.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "7d3248a7-4b31-4490-8497-c8fe0892cd98",
+    "invoice_id": "489f4956-da75-4930-9283-a037cc79d6c8"
+  },
+  {
+    "id": "30c7fc5c-7c2d-4105-8269-1b41cff7c6b4",
+    "allocated_amount": "665.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "0ae9c128-957d-416c-a6d8-a052a454b8a9",
+    "invoice_id": "489f4956-da75-4930-9283-a037cc79d6c8"
+  },
+  {
+    "id": "b70db397-4001-43fa-971b-f059b1d09a66",
+    "allocated_amount": "910.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "9a294ccf-d3c4-4425-930a-635080206388",
+    "invoice_id": "b4c84279-f9d2-460c-be98-3611a0bf748f"
+  },
+  {
+    "id": "ca1353fd-ff69-43cb-8e76-629f1f0a14be",
+    "allocated_amount": "100.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "9a294ccf-d3c4-4425-930a-635080206388",
+    "invoice_id": "e2054a1b-4187-40c4-852d-909c08ae90c6"
+  },
+  {
+    "id": "a044711c-4679-4946-965b-da71d9a68f46",
+    "allocated_amount": "266.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "16c7d598-750f-44ab-b02b-565f70e6520f",
+    "invoice_id": "e2054a1b-4187-40c4-852d-909c08ae90c6"
+  },
+  {
+    "id": "5d6b1627-9537-4d1a-8eab-7474922ed9ae",
+    "allocated_amount": "734.00",
+    "allocated_at": "2026-11-07T11:50:35.294931",
+    "payment_id": "16c7d598-750f-44ab-b02b-565f70e6520f",
+    "invoice_id": "2ca7b3ce-ce16-4236-ac79-5aa85897e0cc"
+  },
+  {
+    "id": "31cf9381-d715-4241-8009-b3289123ecb0",
+    "allocated_amount": "1335.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "0ae9c128-957d-416c-a6d8-a052a454b8a9",
+    "invoice_id": "185fe6f2-d151-47e4-a51a-02af10feed47"
+  },
+  {
+    "id": "bfa5d313-b20d-4338-bffb-7bca41967b9d",
+    "allocated_amount": "330.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d652505d-af18-4614-adc8-54c6109ca4e4",
+    "invoice_id": "185fe6f2-d151-47e4-a51a-02af10feed47"
+  },
+  {
+    "id": "66b20b1b-619c-4cce-bdef-1c7c9273de88",
+    "allocated_amount": "100.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d652505d-af18-4614-adc8-54c6109ca4e4",
+    "invoice_id": "97746e44-f20b-4060-96e5-0508b9c927dd"
+  },
+  {
+    "id": "846b2c08-1002-434c-8381-11ffbce698ad",
+    "allocated_amount": "630.00",
+    "allocated_at": "2026-11-07T11:53:30.342622",
+    "payment_id": "a40cee23-ea00-4581-9fe1-06f03c8b9501",
+    "invoice_id": "cb2e0671-5b6c-40ce-af43-e0231622aec5"
+  },
+  {
+    "id": "cc89ee88-98fd-4b80-896e-76d90f9664d5",
+    "allocated_amount": "870.00",
+    "allocated_at": "2026-11-07T11:53:30.342622",
+    "payment_id": "a40cee23-ea00-4581-9fe1-06f03c8b9501",
+    "invoice_id": "ce773d79-235b-483f-883a-e3619f6576d4"
+  },
+  {
+    "id": "f4522151-bd5d-47f1-8432-15486f13e9b5",
+    "allocated_amount": "1377.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d652505d-af18-4614-adc8-54c6109ca4e4",
+    "invoice_id": "c77bf25c-c7dd-4b55-b606-2a83edb0a293"
+  },
+  {
+    "id": "60e25770-05b2-46ca-9284-850e46486c5b",
+    "allocated_amount": "470.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d652505d-af18-4614-adc8-54c6109ca4e4",
+    "invoice_id": "b1c87230-670a-4c57-be68-f65dd2943254"
+  },
+  {
+    "id": "71141a3f-8e44-4b0d-892b-ec730f271fc9",
+    "allocated_amount": "623.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d652505d-af18-4614-adc8-54c6109ca4e4",
+    "invoice_id": "b3c4d41d-41bb-4918-925c-00db2e86a50d"
+  },
+  {
+    "id": "c2bbe54d-7d89-462f-8666-9f1ba944abb3",
+    "allocated_amount": "927.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "559d9dc1-754a-423d-a421-c59061212f8f",
+    "invoice_id": "b3c4d41d-41bb-4918-925c-00db2e86a50d"
+  },
+  {
+    "id": "cff8fe65-e5b8-4626-bd67-8c03661d5aa1",
+    "allocated_amount": "1325.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "559d9dc1-754a-423d-a421-c59061212f8f",
+    "invoice_id": "994af828-a8b2-4ea3-8b4c-3b4e2283d80e"
+  },
+  {
+    "id": "915206fd-5c05-49c5-afbb-8769e5cc5d5c",
+    "allocated_amount": "740.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "559d9dc1-754a-423d-a421-c59061212f8f",
+    "invoice_id": "5fe1a1db-f065-46aa-8056-797fb742871b"
+  },
+  {
+    "id": "327c3cfd-fa63-4001-9af5-faa19cc24fbb",
+    "allocated_amount": "8.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "559d9dc1-754a-423d-a421-c59061212f8f",
+    "invoice_id": "0366bd6e-69d1-4973-b2c7-9f4bcc612103"
+  },
+  {
+    "id": "08ae3943-177f-471c-a37d-0cc742fc3136",
+    "allocated_amount": "2696.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "9862463d-579c-4cde-9154-4841bc262f97",
+    "invoice_id": "0366bd6e-69d1-4973-b2c7-9f4bcc612103"
+  },
+  {
+    "id": "425d4683-742f-42b6-8e5e-c9a55583bc49",
+    "allocated_amount": "304.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "9862463d-579c-4cde-9154-4841bc262f97",
+    "invoice_id": "37cd10f4-9a55-45fc-9b3c-703e6b4c1cae"
+  },
+  {
+    "id": "ceb7b508-e6f4-4ab4-9d39-0f0d1cac4f6f",
+    "allocated_amount": "1786.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3825e3fb-8dd7-4482-9802-a15bdd38cda9",
+    "invoice_id": "37cd10f4-9a55-45fc-9b3c-703e6b4c1cae"
+  },
+  {
+    "id": "d078da33-f4a1-4586-a6af-d4e7249f5375",
+    "allocated_amount": "214.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3825e3fb-8dd7-4482-9802-a15bdd38cda9",
+    "invoice_id": "b89e93fe-f011-495a-8b6b-325d167a4a04"
+  },
+  {
+    "id": "56757713-e4c1-4f70-a76c-406e2b3f6ad6",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "b1167cd7-3a1f-4ef8-b9f6-a09daa4b814e",
+    "invoice_id": "b89e93fe-f011-495a-8b6b-325d167a4a04"
+  },
+  {
+    "id": "f1bb09cf-3602-423b-abe5-fdfd2ace64e4",
+    "allocated_amount": "561.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "50720232-63c6-4a1e-a44c-b74bec00896e",
+    "invoice_id": "b89e93fe-f011-495a-8b6b-325d167a4a04"
+  },
+  {
+    "id": "f0426fbb-b37e-4be3-aaef-f9a2f308b8b6",
+    "allocated_amount": "1439.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "50720232-63c6-4a1e-a44c-b74bec00896e",
+    "invoice_id": "9e8a826f-f64b-4725-9d73-464cb0fa89e0"
+  },
+  {
+    "id": "fa52fdc7-82f2-49a6-9dd4-00909c958db7",
+    "allocated_amount": "1666.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "1306876a-ce7b-46cf-b8bb-e2e804c51e7f",
+    "invoice_id": "9e8a826f-f64b-4725-9d73-464cb0fa89e0"
+  },
+  {
+    "id": "24d8f96a-da84-4b23-ad2b-c59181d32e16",
+    "allocated_amount": "834.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "1306876a-ce7b-46cf-b8bb-e2e804c51e7f",
+    "invoice_id": "a0a02353-e90c-4699-a312-3c29eec520d1"
+  },
+  {
+    "id": "b397d678-9f22-4055-923b-ff2cbcdda6e6",
+    "allocated_amount": "536.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "136a2e48-58c0-4af5-a321-a0a044b8eef7",
+    "invoice_id": "a0a02353-e90c-4699-a312-3c29eec520d1"
+  },
+  {
+    "id": "9c043fd7-38b5-4f03-9189-977964184a84",
+    "allocated_amount": "1964.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "136a2e48-58c0-4af5-a321-a0a044b8eef7",
+    "invoice_id": "c6bc0f03-1cba-48ff-9d0b-e7ac5edeae72"
+  },
+  {
+    "id": "05975e49-4d42-47f5-b0be-c6e12fec249e",
+    "allocated_amount": "951.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "23a221e2-6df1-4cca-a826-bbde145ca512",
+    "invoice_id": "c6bc0f03-1cba-48ff-9d0b-e7ac5edeae72"
+  },
+  {
+    "id": "b14bb3e1-8512-4889-bc90-b9b1e9187112",
+    "allocated_amount": "2049.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "23a221e2-6df1-4cca-a826-bbde145ca512",
+    "invoice_id": "4fee0916-5a1f-4541-a532-f61efcde16d1"
+  },
+  {
+    "id": "eef2d9ae-04a6-4e1d-a009-4689923ae3b2",
+    "allocated_amount": "311.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "a285abf4-d6ed-4f57-8b9a-97eeac78631e",
+    "invoice_id": "4fee0916-5a1f-4541-a532-f61efcde16d1"
+  },
+  {
+    "id": "dfa721cf-bc49-4740-8e3a-c3d5aba09871",
+    "allocated_amount": "1689.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "a285abf4-d6ed-4f57-8b9a-97eeac78631e",
+    "invoice_id": "76c4888d-689d-4460-bda9-183e5a03c5a0"
+  },
+  {
+    "id": "d78842bb-e348-44f8-9528-65c60a761301",
+    "allocated_amount": "1145.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2de4ba64-43bb-4ea2-8dcc-6d8db5452151",
+    "invoice_id": "76c4888d-689d-4460-bda9-183e5a03c5a0"
+  },
+  {
+    "id": "f1b1ea86-d0cb-4561-81f6-57936c1e4064",
+    "allocated_amount": "795.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2de4ba64-43bb-4ea2-8dcc-6d8db5452151",
+    "invoice_id": "36fca878-37c5-485d-8115-5edfd43533bc"
+  },
+  {
+    "id": "b8aa3234-a056-4c4d-ab86-4ee2bc09192d",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2de4ba64-43bb-4ea2-8dcc-6d8db5452151",
+    "invoice_id": "4f7ecd34-1cee-4796-a53d-1466f17bed6d"
+  },
+  {
+    "id": "db37ef49-f473-4f8e-887b-5603f0aad4ca",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d0f856af-5dc5-4648-adb4-452324dd55af",
+    "invoice_id": "4f7ecd34-1cee-4796-a53d-1466f17bed6d"
+  },
+  {
+    "id": "64fa5719-2d6c-4ff7-ac66-5eeff65ae24f",
+    "allocated_amount": "1660.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "d0f856af-5dc5-4648-adb4-452324dd55af",
+    "invoice_id": "c2ef46c6-cc5b-4575-97de-2ee0f68f9614"
+  },
+  {
+    "id": "4380c490-7111-4b76-b2d4-17ad652fcba3",
+    "allocated_amount": "1210.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "cdc10f1d-3608-4882-922e-a474246ba2a8",
+    "invoice_id": "c2ef46c6-cc5b-4575-97de-2ee0f68f9614"
+  },
+  {
+    "id": "ad3dd886-7d85-41e0-855b-d3966f4e186d",
+    "allocated_amount": "380.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "cdc10f1d-3608-4882-922e-a474246ba2a8",
+    "invoice_id": "15bd242d-99bb-4155-87ac-1222f916d337"
+  },
+  {
+    "id": "4d16d266-4daa-4a5d-9507-948554808d5d",
+    "allocated_amount": "1410.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "cdc10f1d-3608-4882-922e-a474246ba2a8",
+    "invoice_id": "e812a76e-acc7-42ed-9e55-f036fdef782c"
+  },
+  {
+    "id": "2b148734-de1e-462c-8a98-53b1b15a59b0",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6c709784-c611-4078-b159-4049e4a67fe1",
+    "invoice_id": "e812a76e-acc7-42ed-9e55-f036fdef782c"
+  },
+  {
+    "id": "ce0e5168-0853-4e91-a0d5-aa70177be9f5",
+    "allocated_amount": "1605.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6c709784-c611-4078-b159-4049e4a67fe1",
+    "invoice_id": "0a2ccc38-1ccf-47b4-9df5-d3ed1882b0e2"
+  },
+  {
+    "id": "0c6009ce-236b-40ff-8542-22376dd8fb17",
+    "allocated_amount": "945.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6c709784-c611-4078-b159-4049e4a67fe1",
+    "invoice_id": "cebeeb5c-759e-4548-b80f-588d5e581da7"
+  },
+  {
+    "id": "9bf586b1-4422-489c-b7a1-1ffbf6a9d939",
+    "allocated_amount": "809.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2198ee45-6cd3-428f-ac71-dd3592ad13ef",
+    "invoice_id": "cebeeb5c-759e-4548-b80f-588d5e581da7"
+  },
+  {
+    "id": "3196350b-3a16-4cf6-a0a7-263e98526eac",
+    "allocated_amount": "685.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2198ee45-6cd3-428f-ac71-dd3592ad13ef",
+    "invoice_id": "f5a6721b-944d-4931-8dfd-6aff692fdb65"
+  },
+  {
+    "id": "c4cf52b1-3172-4f89-bb90-54602cdfe914",
+    "allocated_amount": "1298.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "ad1bd2ca-028c-44ed-b9fb-35ee2def0d58",
+    "invoice_id": "0f440584-56f0-4515-8cb8-aa75805a8b54"
+  },
+  {
+    "id": "df6ebf2a-0046-4608-9df5-905f21708293",
+    "allocated_amount": "989.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "798998b4-e479-40b4-aa22-44d9295a4848",
+    "invoice_id": "153b7574-f50e-4cc8-b9ec-df6c9b6926af"
+  },
+  {
+    "id": "dd7d1e8c-fc53-4bcc-a307-1fde5b86eabf",
+    "allocated_amount": "21.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "798998b4-e479-40b4-aa22-44d9295a4848",
+    "invoice_id": "aa64980a-cfc3-49f4-ae5d-80e0a046872e"
+  },
+  {
+    "id": "c89c1a6e-66fe-4644-89f6-6ded41927aa5",
+    "allocated_amount": "664.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "72216a3a-2888-429d-9e21-33f3676bae9a",
+    "invoice_id": "aa64980a-cfc3-49f4-ae5d-80e0a046872e"
+  },
+  {
+    "id": "1e063956-f6e7-47b2-a102-38a8174a2e2a",
+    "allocated_amount": "929.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "730b8dea-1857-464d-afd7-22dc65af51df",
+    "invoice_id": "9e6477d6-9639-4346-85ec-34674b84a362"
+  },
+  {
+    "id": "9826978a-98f7-429a-b32a-d7fdede0736d",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "f0b8fc27-7ef1-4a49-9c7c-21da3744b08c",
+    "invoice_id": "4d26022a-6dee-472e-85a0-46b99717fe9f"
+  },
+  {
+    "id": "02931aeb-04a7-4b37-ad5d-a64fee790fce",
+    "allocated_amount": "440.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "f0b8fc27-7ef1-4a49-9c7c-21da3744b08c",
+    "invoice_id": "0af77cf7-a82c-4e2d-ae61-65dd15e45786"
+  },
+  {
+    "id": "c9cd387a-e23f-4ee1-b985-b9632a4dc83f",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "3ad8f379-c121-416d-91f0-d596b99dec51",
+    "invoice_id": "0af77cf7-a82c-4e2d-ae61-65dd15e45786"
+  },
+  {
+    "id": "2b95df95-8c71-4f1d-bfa9-f0c69361b423",
+    "allocated_amount": "228.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "8c9ce7dd-c341-45b4-a778-be6fdcbef317",
+    "invoice_id": "0af77cf7-a82c-4e2d-ae61-65dd15e45786"
+  },
+  {
+    "id": "fd1f8d24-ad0c-445a-b8d5-70762713f3c7",
+    "allocated_amount": "355.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "8c9ce7dd-c341-45b4-a778-be6fdcbef317",
+    "invoice_id": "693a070e-faf1-4976-9f33-f5c986f3831a"
+  },
+  {
+    "id": "2e312044-f0f3-4c02-9bed-d8c001e29c53",
+    "allocated_amount": "3.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "8c9ce7dd-c341-45b4-a778-be6fdcbef317",
+    "invoice_id": "a751f818-9a42-444c-b970-700c1d9ee0ec"
+  },
+  {
+    "id": "7e1768a7-cad7-41f0-85a9-b67fc7303f53",
+    "allocated_amount": "350.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "387a118c-9b80-49af-a263-3553f3d4179f",
+    "invoice_id": "a751f818-9a42-444c-b970-700c1d9ee0ec"
+  },
+  {
+    "id": "35e836cd-df6c-40d9-ac3a-1b7653cabdb0",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "a1cb772f-c92d-4739-bbee-a91f79480a65",
+    "invoice_id": "a751f818-9a42-444c-b970-700c1d9ee0ec"
+  },
+  {
+    "id": "c0bbc1e4-c137-4800-90ec-52043ecd1c55",
+    "allocated_amount": "225.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "5efae2e9-31af-410f-99cf-c85381780125",
+    "invoice_id": "a751f818-9a42-444c-b970-700c1d9ee0ec"
+  },
+  {
+    "id": "43ccb460-9033-41a3-b77b-d88b5024131b",
+    "allocated_amount": "3.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "3e5506c8-e49b-4bb1-9edb-4004d71ea6c9",
+    "invoice_id": "a751f818-9a42-444c-b970-700c1d9ee0ec"
+  },
+  {
+    "id": "48500640-0a21-4504-9bbe-0a1472731565",
+    "allocated_amount": "350.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "3e5506c8-e49b-4bb1-9edb-4004d71ea6c9",
+    "invoice_id": "a8964d10-8be2-4acc-9a19-c89fee229909"
+  },
+  {
+    "id": "f0c4504a-0bec-4372-bad0-e32e39415a18",
+    "allocated_amount": "225.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "3e5506c8-e49b-4bb1-9edb-4004d71ea6c9",
+    "invoice_id": "af08fb36-faa4-4c4f-b773-80f312232373"
+  },
+  {
+    "id": "1ecdd7a5-4e26-4d57-a36e-e0a64f4b2217",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "3e5506c8-e49b-4bb1-9edb-4004d71ea6c9",
+    "invoice_id": "2f5d0164-fecf-494e-b049-83a841119ff1"
+  },
+  {
+    "id": "2224f7a7-2398-4c8f-8a2a-42308c1db6e6",
+    "allocated_amount": "142.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "3e5506c8-e49b-4bb1-9edb-4004d71ea6c9",
+    "invoice_id": "da5a442a-b497-42d6-8894-a9801442eae2"
+  },
+  {
+    "id": "a698b1b8-e3cd-4cac-938c-84f6daaf802f",
+    "allocated_amount": "83.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "d7341468-c2be-4ee0-9a5f-a96c474a0e7e",
+    "invoice_id": "da5a442a-b497-42d6-8894-a9801442eae2"
+  },
+  {
+    "id": "afd9855c-632e-46b2-860e-3cb02ddccc28",
+    "allocated_amount": "917.00",
+    "allocated_at": "2026-11-06T09:39:21.061633",
+    "payment_id": "d7341468-c2be-4ee0-9a5f-a96c474a0e7e",
+    "invoice_id": "33f5e38f-d960-41c5-b074-fff528c2abba"
+  },
+  {
+    "id": "3e9cc6b4-ce4c-45f4-9a52-fd8ea9da688a",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-07T12:16:32.175276",
+    "payment_id": "6ceee463-a5f2-473f-b1e8-00e83bea37a3",
+    "invoice_id": "5e651121-764f-4d35-80e4-a740678eabc6"
+  },
+  {
+    "id": "2354505e-c8ae-4082-9d0a-c392dc4cfe0c",
+    "allocated_amount": "100.00",
+    "allocated_at": "2026-11-07T13:11:05.302696",
+    "payment_id": "85e0e0b0-8ce7-4ed8-b098-219b2ff6ad6d",
+    "invoice_id": "22656a79-fbcb-4a4c-8fc3-282ad71121b0"
+  },
+  {
+    "id": "6eadfa12-78c6-4aeb-a80f-bb551c92186c",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-07T13:11:05.302696",
+    "payment_id": "476c8ad9-0536-4b4e-85e6-fb59883e1f1d",
+    "invoice_id": "22656a79-fbcb-4a4c-8fc3-282ad71121b0"
+  },
+  {
+    "id": "585efd09-47ee-4adf-9295-626820d66871",
+    "allocated_amount": "995.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2198ee45-6cd3-428f-ac71-dd3592ad13ef",
+    "invoice_id": "850d9b0b-4392-4bb8-bd4f-6acbdd6e4351"
+  },
+  {
+    "id": "74e8c5e0-1c1d-4665-8004-a7f941b56714",
+    "allocated_amount": "6894.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "30072476-fcd0-4f90-80a8-3821180a9dfe",
+    "invoice_id": "915873ba-7733-4a2d-a032-9d7c2a660118"
+  },
+  {
+    "id": "a766318b-7f03-4a34-ba5a-bddf6eabbf4a",
+    "allocated_amount": "511.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "2198ee45-6cd3-428f-ac71-dd3592ad13ef",
+    "invoice_id": "ab2652c6-6544-474a-8328-1c7d245e69aa"
+  },
+  {
+    "id": "00e9a2ba-b3d7-4e68-99e3-fe2b8b1b4daa",
+    "allocated_amount": "2314.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "ab2652c6-6544-474a-8328-1c7d245e69aa"
+  },
+  {
+    "id": "0abdd31f-a4a3-4c72-b7d9-b1ac01adc763",
+    "allocated_amount": "2280.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "e3131b97-2ce9-42d8-824e-3e337abd37e5"
+  },
+  {
+    "id": "a86d92fb-cd1b-4783-8a0f-29f929362878",
+    "allocated_amount": "1870.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "aba824d1-9ecf-492e-9025-078393b24863"
+  },
+  {
+    "id": "7627b7ba-0432-47d4-a252-18009c1d2957",
+    "allocated_amount": "785.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "f2d2ae1f-ca2a-4e28-8153-0231c95d16bf"
+  },
+  {
+    "id": "42c37a05-bb89-4101-bce3-e245baeb3814",
+    "allocated_amount": "930.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "04d26a7a-acb1-4a32-9e23-eeb6146251c3"
+  },
+  {
+    "id": "8fcc6c1f-ef52-4d74-ba0e-3f998dc8a913",
+    "allocated_amount": "1105.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "c5e347d1-d0fb-4a97-8137-3c1c4a740c1b"
+  },
+  {
+    "id": "82003c5f-193a-4aab-b98e-5121adbb9e27",
+    "allocated_amount": "716.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "384f2029-6928-4cbd-aa72-bd191ce7d714",
+    "invoice_id": "0c998da3-d850-44f3-ba23-a3edebaffbef"
+  },
+  {
+    "id": "a409a476-7313-4498-9c6c-846e10409142",
+    "allocated_amount": "895.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "556486a1-8c85-4ddd-9eed-e40100af366c",
+    "invoice_id": "90aa357f-ff58-43bf-b7f3-9b3acdb935ba"
+  },
+  {
+    "id": "8605b216-9b4c-4d2b-b310-229fba84ff27",
+    "allocated_amount": "2706.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "dba9a5c4-832d-4c2a-b174-714676e61624",
+    "invoice_id": "f0cad100-1d13-481d-a95f-0e9cfdeed4bc"
+  },
+  {
+    "id": "44fd8909-ecc0-4c06-8f7f-8d955694a5e3",
+    "allocated_amount": "700.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "533bfe92-6487-4e6a-b5c0-3ff22c174113",
+    "invoice_id": "44e8127b-cf98-4df1-bb66-a01fad9d1cb1"
+  },
+  {
+    "id": "62ce5e96-2e60-4b8f-b99b-fdc7241a3b6b",
+    "allocated_amount": "1232.40",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "8b0e0875-29ba-406f-9fb2-5aa3ff8c7332",
+    "invoice_id": "44e8127b-cf98-4df1-bb66-a01fad9d1cb1"
+  },
+  {
+    "id": "66a9f6f0-43a5-4b57-aece-d5e797135fbc",
+    "allocated_amount": "3303.60",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "8b0e0875-29ba-406f-9fb2-5aa3ff8c7332",
+    "invoice_id": "f4729c81-0998-4ad9-be90-074e2803f03f"
+  },
+  {
+    "id": "a8d06a32-25f8-488a-a417-f354262ae00f",
+    "allocated_amount": "0.40",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "5684cd5b-a479-453f-b799-c0d650fa15ac",
+    "invoice_id": "f4729c81-0998-4ad9-be90-074e2803f03f"
+  },
+  {
+    "id": "3f67e9f7-3639-4381-ba31-d17ae14d8ee2",
+    "allocated_amount": "3531.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "bb57b7b0-f8ae-482c-bca2-ca4137a0359c",
+    "invoice_id": "07af0e13-23d3-4a1b-8e4e-0eb9193505e1"
+  },
+  {
+    "id": "ec73f3cf-ddeb-4c53-b442-1ad8671691a7",
+    "allocated_amount": "895.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "15bfcd70-4f27-4357-8d14-2fc663ffebcf",
+    "invoice_id": "e21337f4-8f39-4de7-8b51-060632a39bc0"
+  },
+  {
+    "id": "bddfb3db-7680-41bd-9be3-a4b384f92310",
+    "allocated_amount": "6444.40",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "cf6e8cd8-e034-4530-bca8-6e4a94d08173",
+    "invoice_id": "2b6263b0-e59f-49c0-8c24-fe75a13d2319"
+  },
+  {
+    "id": "b8fe79d0-ac47-4525-b29a-0df9e49904db",
+    "allocated_amount": "2070.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "fc3d2dc3-3785-42b1-8809-5c309a38f20e",
+    "invoice_id": "a13e0846-47ca-478b-ac99-994e511afa12"
+  },
+  {
+    "id": "1d0c1a2d-8be4-4843-b49c-4099253bc530",
+    "allocated_amount": "5544.40",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "b7802e21-10ce-4de8-8cf6-2b809cab8140",
+    "invoice_id": "e540d658-0ffd-4dc0-ba6f-60daa518cf03"
+  },
+  {
+    "id": "a69cfc60-0482-4538-9574-192f274f7da6",
+    "allocated_amount": "645.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "ba43aa47-998f-42c9-b248-aa92d811ab89",
+    "invoice_id": "f1465504-6435-48e5-aea2-01a40fb9a595"
+  },
+  {
+    "id": "d9bb1ed9-3786-4d10-ae3b-972939859f40",
+    "allocated_amount": "785.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "1ea5a2e9-e5bb-4594-b742-2f376284ac9c",
+    "invoice_id": "0d09b775-77da-4fcd-8414-91422e53ec0a"
+  },
+  {
+    "id": "92339d87-8942-4e28-b39d-268e47bfb30f",
+    "allocated_amount": "785.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "1acaa647-e8f8-4eae-8903-f3c133b92561",
+    "invoice_id": "1048f4a0-7934-41e3-ad31-2d5b0a5b4748"
+  },
+  {
+    "id": "bdd0669a-dcb9-4821-a3fe-6ba1c743d04e",
+    "allocated_amount": "442.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "09d1d129-6397-42b0-b0d7-2793f683062f",
+    "invoice_id": "c6bd54f7-ece5-485b-ab6c-c95b352dfa86"
+  },
+  {
+    "id": "c03759af-eb07-427a-9a87-e3573a9411bb",
+    "allocated_amount": "905.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "c19ab5ad-9f00-42aa-ade0-e8bf0feca657",
+    "invoice_id": "7be5f9e6-e956-4a82-a26b-ef8396fb66c1"
+  },
+  {
+    "id": "2e77b9b9-2e6c-4142-ad03-fd5ae4b64a14",
+    "allocated_amount": "827.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "b413be9e-f589-413e-a6e6-940e42c1f61b",
+    "invoice_id": "fe2513a0-821c-4834-9aa1-5643d9f40de7"
+  },
+  {
+    "id": "2fadd9fd-56e8-40bd-97d0-cf7e47b53873",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-06T10:13:15.092004",
+    "payment_id": "834ef4f9-f2f2-4464-87a6-d88f83eeea3a",
+    "invoice_id": "8a2b29e8-bd42-4507-8dd8-75033be104a2"
+  },
+  {
+    "id": "29744517-b062-4243-a850-6c4e3ec531b1",
+    "allocated_amount": "1360.00",
+    "allocated_at": "2026-11-07T13:01:54.737434",
+    "payment_id": "bef9b787-8ae3-4aeb-92ba-bde6c5545e07",
+    "invoice_id": "dcfa1f01-f15d-4a71-89d5-9e539fbaa8e4"
+  },
+  {
+    "id": "3b83c5b4-911c-4c51-91e9-1368f346265b",
+    "allocated_amount": "3270.00",
+    "allocated_at": "2026-11-07T13:58:35.259178",
+    "payment_id": "436ace3d-6e8a-46e8-a275-98901097e202",
+    "invoice_id": "7bdab946-1cf5-40f1-95fc-90ed608af20c"
+  },
+  {
+    "id": "5cda9b7d-61da-4438-a823-f53020e709b1",
+    "allocated_amount": "28.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "0ec81a49-1654-4a4f-a63f-bf2af7ed8159",
+    "invoice_id": "0c998da3-d850-44f3-ba23-a3edebaffbef"
+  },
+  {
+    "id": "f04f6584-79e4-4252-8a3d-4bd2cd2cd79a",
+    "allocated_amount": "740.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "0ec81a49-1654-4a4f-a63f-bf2af7ed8159",
+    "invoice_id": "2d48da50-f84c-4bee-afd6-6e106666c52e"
+  },
+  {
+    "id": "03b0fc6d-d22a-4435-8c36-9c901aa9a1f2",
+    "allocated_amount": "1810.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "0ec81a49-1654-4a4f-a63f-bf2af7ed8159",
+    "invoice_id": "aa48eb00-d014-4183-aca7-5917ee453852"
+  },
+  {
+    "id": "b8f0b822-dea9-49c1-b5b0-127373f74f99",
+    "allocated_amount": "552.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "0ec81a49-1654-4a4f-a63f-bf2af7ed8159",
+    "invoice_id": "88ad0386-c608-4c1d-af1d-aefb5f477735"
+  },
+  {
+    "id": "304f3785-4b42-40ea-82ff-c7cd312e1e50",
+    "allocated_amount": "2000.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "bf30a575-f808-4aea-b98d-d61ecd9a4ddc",
+    "invoice_id": "88ad0386-c608-4c1d-af1d-aefb5f477735"
+  },
+  {
+    "id": "7e9043f6-fa60-471b-a019-cd50249572b5",
+    "allocated_amount": "883.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6d3ec8a1-6ac1-4fbd-9c73-b4e28a73ef74",
+    "invoice_id": "88ad0386-c608-4c1d-af1d-aefb5f477735"
+  },
+  {
+    "id": "039fb971-95e7-4270-bdfe-a38d51612f6b",
+    "allocated_amount": "1280.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6d3ec8a1-6ac1-4fbd-9c73-b4e28a73ef74",
+    "invoice_id": "757a8759-e18d-47dc-ad5f-50c21cbdecb0"
+  },
+  {
+    "id": "a278405f-fb51-426e-a11d-8aafd0416b21",
+    "allocated_amount": "502.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6d3ec8a1-6ac1-4fbd-9c73-b4e28a73ef74",
+    "invoice_id": "bf2f852a-373a-47d7-bb32-d5a3a7118004"
+  },
+  {
+    "id": "3668c9eb-3862-437b-b6b6-98e2d63ecf36",
+    "allocated_amount": "668.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "a3f655dc-074f-4fb8-9f45-ee680da67f59",
+    "invoice_id": "bf2f852a-373a-47d7-bb32-d5a3a7118004"
+  },
+  {
+    "id": "a25dca71-9646-425d-ab0f-139a73460be9",
+    "allocated_amount": "2310.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "a3f655dc-074f-4fb8-9f45-ee680da67f59",
+    "invoice_id": "9b9d434e-9cc6-4476-af01-f68edfec1d11"
+  },
+  {
+    "id": "5cdb89c0-fa2c-48eb-8687-ddd90c27f6af",
+    "allocated_amount": "22.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "a3f655dc-074f-4fb8-9f45-ee680da67f59",
+    "invoice_id": "c104e75a-5d26-47f7-8d6f-a3f8414ee793"
+  },
+  {
+    "id": "0e1509af-b9ff-4398-9795-bdfc9263bc76",
+    "allocated_amount": "2000.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "12cd2308-03ff-4229-9780-41ebfdc93d6e",
+    "invoice_id": "c104e75a-5d26-47f7-8d6f-a3f8414ee793"
+  },
+  {
+    "id": "68a9807a-5f26-4688-9c1b-a8d28a2f5d88",
+    "allocated_amount": "1425.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6e46d944-a75c-405e-b2d9-62a78569634f",
+    "invoice_id": "c104e75a-5d26-47f7-8d6f-a3f8414ee793"
+  },
+  {
+    "id": "77488026-8e53-4bc6-bdad-76d93a84af5c",
+    "allocated_amount": "130.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6e46d944-a75c-405e-b2d9-62a78569634f",
+    "invoice_id": "b66f2702-547a-46ef-aff3-022e72686d33"
+  },
+  {
+    "id": "91ee9ee4-f00a-4d2d-a88c-2c1b7b53e8c3",
+    "allocated_amount": "245.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6e46d944-a75c-405e-b2d9-62a78569634f",
+    "invoice_id": "abb3d43c-ec59-4d13-894e-716e5809589d"
+  },
+  {
+    "id": "0d039365-b27d-47e8-b659-5bee132603eb",
+    "allocated_amount": "200.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6e46d944-a75c-405e-b2d9-62a78569634f",
+    "invoice_id": "89f7e666-9740-45e8-bc65-a9bbf8996550"
+  },
+  {
+    "id": "ff3e18cd-dcfa-4f67-8077-a9094db4311e",
+    "allocated_amount": "1335.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "b1a1c937-cea1-456c-a314-bafd9ee90e2e",
+    "invoice_id": "89f7e666-9740-45e8-bc65-a9bbf8996550"
+  },
+  {
+    "id": "afdf6b63-e855-4f91-a061-18d201c350b3",
+    "allocated_amount": "760.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "b1a1c937-cea1-456c-a314-bafd9ee90e2e",
+    "invoice_id": "31ab7030-0e37-41ca-a41d-7cc8908cb53d"
+  },
+  {
+    "id": "5675dd40-e9b0-4515-8cf8-1bea94bf2fe7",
+    "allocated_amount": "405.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "b1a1c937-cea1-456c-a314-bafd9ee90e2e",
+    "invoice_id": "6097d366-da68-4b40-9b7a-34778c72cc83"
+  },
+  {
+    "id": "5b817cf5-971c-4e49-aac9-24f2c35d8205",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "8af5a9c6-a170-419a-a3b2-c3ded52d4dfa",
+    "invoice_id": "6097d366-da68-4b40-9b7a-34778c72cc83"
+  },
+  {
+    "id": "6c841e21-aaf3-467f-84f2-4339020497ec",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "8af5a9c6-a170-419a-a3b2-c3ded52d4dfa",
+    "invoice_id": "99d4086a-4f91-42d2-9120-24af99349c5f"
+  },
+  {
+    "id": "5e2bec3a-8fd9-400c-8ee7-bc64f242dfb6",
+    "allocated_amount": "410.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "fc9a2340-c36b-4fd0-bcb9-dcbbc72f9856",
+    "invoice_id": "99d4086a-4f91-42d2-9120-24af99349c5f"
+  },
+  {
+    "id": "a7cadf2e-68e9-4425-bbf0-05c47f528264",
+    "allocated_amount": "2090.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "fc9a2340-c36b-4fd0-bcb9-dcbbc72f9856",
+    "invoice_id": "4bb2a4da-b6f6-4a1f-a381-89a60746ca61"
+  },
+  {
+    "id": "60d3e066-5179-4e89-82dc-c6a71fa10dc3",
+    "allocated_amount": "1296.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "9cf0f44c-4fb5-46ce-8a23-75ac54f3e608",
+    "invoice_id": "4bb2a4da-b6f6-4a1f-a381-89a60746ca61"
+  },
+  {
+    "id": "04f9bc70-b51c-4247-bb62-5830184cd0cd",
+    "allocated_amount": "204.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "9cf0f44c-4fb5-46ce-8a23-75ac54f3e608",
+    "invoice_id": "f88923d4-14dc-4f08-a975-1280cf79f392"
+  },
+  {
+    "id": "4679af44-dbf6-4345-8ad1-b5dfc5b34c98",
+    "allocated_amount": "1706.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "822ef6d1-6ea2-4eb0-b3f6-d84aa264140d",
+    "invoice_id": "f88923d4-14dc-4f08-a975-1280cf79f392"
+  },
+  {
+    "id": "960b8eb8-9601-426a-a0c0-1ff8c9010037",
+    "allocated_amount": "1294.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "822ef6d1-6ea2-4eb0-b3f6-d84aa264140d",
+    "invoice_id": "1508dce3-8298-471d-a01d-d37e6db063f7"
+  },
+  {
+    "id": "aff2c62e-109f-4530-8813-2afa4a2476c7",
+    "allocated_amount": "1211.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "876ef19b-4ebd-4878-9ac9-8f886b80285e",
+    "invoice_id": "1508dce3-8298-471d-a01d-d37e6db063f7"
+  },
+  {
+    "id": "205b9f82-0c43-4a9b-a748-1a947de63c2b",
+    "allocated_amount": "789.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "876ef19b-4ebd-4878-9ac9-8f886b80285e",
+    "invoice_id": "8019fb75-8847-4f60-ba32-b858f3ef5c9f"
+  },
+  {
+    "id": "a382c249-88d5-46cf-8d84-c85183acfa22",
+    "allocated_amount": "1135.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "e6e10971-a161-4ae1-afa4-efe799ad9e30",
+    "invoice_id": "8019fb75-8847-4f60-ba32-b858f3ef5c9f"
+  },
+  {
+    "id": "c88271f2-812f-4c9f-802c-376894669c62",
+    "allocated_amount": "865.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "e6e10971-a161-4ae1-afa4-efe799ad9e30",
+    "invoice_id": "d60bde30-8477-46b2-9746-715852f8d0b6"
+  },
+  {
+    "id": "e553620e-ab48-480e-9739-649ce41a400e",
+    "allocated_amount": "865.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3b1350ce-417c-4d35-a9dc-6ffea68ba596",
+    "invoice_id": "d60bde30-8477-46b2-9746-715852f8d0b6"
+  },
+  {
+    "id": "08ac0c48-0c43-4551-8389-91e4159a8c75",
+    "allocated_amount": "1051.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3b1350ce-417c-4d35-a9dc-6ffea68ba596",
+    "invoice_id": "18a5600d-fe37-4ba1-ae10-848a35f5a138"
+  },
+  {
+    "id": "ed4a5dab-f1bf-4b63-83e1-4c7923e83c62",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3b1350ce-417c-4d35-a9dc-6ffea68ba596",
+    "invoice_id": "3d2a8a4a-23fc-40ce-80be-309f609ffed1"
+  },
+  {
+    "id": "243e130d-8b16-4915-836c-b900dd930a24",
+    "allocated_amount": "524.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3b1350ce-417c-4d35-a9dc-6ffea68ba596",
+    "invoice_id": "33ed7a26-6636-4aac-a824-7c48e389be98"
+  },
+  {
+    "id": "5075595e-82af-4f97-843c-60e7488fd1ad",
+    "allocated_amount": "2396.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3504ff55-a4c3-4221-a51a-2d66cb67582c",
+    "invoice_id": "33ed7a26-6636-4aac-a824-7c48e389be98"
+  },
+  {
+    "id": "3bb34364-39a6-4cc9-8ec1-50d58af073f0",
+    "allocated_amount": "580.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3504ff55-a4c3-4221-a51a-2d66cb67582c",
+    "invoice_id": "1869bac7-96f4-472d-99f8-c46298ecc6ae"
+  },
+  {
+    "id": "64d4e15b-3861-4e1e-affb-bc6f0d033ecb",
+    "allocated_amount": "24.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "3504ff55-a4c3-4221-a51a-2d66cb67582c",
+    "invoice_id": "a7458255-17bb-420e-8ef7-b5a267c6a62f"
+  },
+  {
+    "id": "f281f55d-d15c-4116-9f19-cf0dfc210b8a",
+    "allocated_amount": "1471.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "574b3297-df94-41b3-9c0f-83b6da4bce23",
+    "invoice_id": "a7458255-17bb-420e-8ef7-b5a267c6a62f"
+  },
+  {
+    "id": "2c2b8218-b4cc-4c15-bfe0-f411f9527c70",
+    "allocated_amount": "529.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "574b3297-df94-41b3-9c0f-83b6da4bce23",
+    "invoice_id": "1cf3923b-4ce7-43e6-bc8e-3e2a14e6683c"
+  },
+  {
+    "id": "f78e6d38-0c17-4849-89dd-05241a5db5db",
+    "allocated_amount": "701.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6f088018-6a95-420c-83d7-570f75629cf4",
+    "invoice_id": "1cf3923b-4ce7-43e6-bc8e-3e2a14e6683c"
+  },
+  {
+    "id": "6df2d84d-9b37-4f2d-a7aa-95622600442f",
+    "allocated_amount": "1240.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6f088018-6a95-420c-83d7-570f75629cf4",
+    "invoice_id": "e9aab6f6-dbd5-4798-af61-fa8de5a08207"
+  },
+  {
+    "id": "455594d9-f521-44f7-80f2-bd51c988d61f",
+    "allocated_amount": "59.00",
+    "allocated_at": "2026-11-08T14:24:05.141610",
+    "payment_id": "6f088018-6a95-420c-83d7-570f75629cf4",
+    "invoice_id": "3e35b6f7-19bf-493d-9d3b-92781fb2601b"
+  },
+  {
+    "id": "06422963-57df-4315-a3e2-8d9e8e31cd1a",
+    "allocated_amount": "792.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "f0e8c8ef-4034-402e-9335-ad9ef828ef85",
+    "invoice_id": "40b87a53-ebdb-4af7-8ea0-b75f40b88e9f"
+  },
+  {
+    "id": "32402685-d32f-4ad3-ba6b-1560432ba2a4",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "10cc8208-446a-43a6-a5fb-2ee8e04e6a5c",
+    "invoice_id": "abf5299b-db45-444f-b1ec-8e0138c8d738"
+  },
+  {
+    "id": "c831541c-48b1-4d95-9846-3a3e866b1fec",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "39d230a3-4b22-409b-8bd5-c61b409e1a36",
+    "invoice_id": "8e697e42-8349-4f86-b6bc-95ce86673fe0"
+  },
+  {
+    "id": "18e11dd7-0302-41a6-9ab1-69bba4169f63",
+    "allocated_amount": "149.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "62c68ceb-c911-4519-b7a0-546cdeb09d28",
+    "invoice_id": "8e697e42-8349-4f86-b6bc-95ce86673fe0"
+  },
+  {
+    "id": "1ced70e0-bf0d-466e-81ec-4f8867e182ed",
+    "allocated_amount": "1040.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "b020e611-52a3-4429-b69f-dd5285e53472",
+    "invoice_id": "40196ee1-7398-4605-81a3-749f912ce2bf"
+  },
+  {
+    "id": "6c359140-aa9e-4c4e-8873-43cd4c9607c0",
+    "allocated_amount": "455.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "70c9b56a-cd58-4f8e-a5a8-39d58ab5d17a",
+    "invoice_id": "dc629972-aba8-43f3-b434-b5cdc3f6561c"
+  },
+  {
+    "id": "4897650e-4954-4f79-a62c-868e6c770a81",
+    "allocated_amount": "455.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "423e1551-c9fb-4de2-94cd-b54a38fc371c",
+    "invoice_id": "dc629972-aba8-43f3-b434-b5cdc3f6561c"
+  },
+  {
+    "id": "8d61718e-46af-4fd2-906e-1f161f94e7b5",
+    "allocated_amount": "350.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "af9b7ffa-1c78-4b86-803c-0b2654508514",
+    "invoice_id": "9aa5ebca-306a-49af-baee-46537fd41c89"
+  },
+  {
+    "id": "0150ea58-386d-4591-ae32-5a11d10a4c59",
+    "allocated_amount": "700.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "4f4dde16-a089-4191-93f7-5088f9ade11f",
+    "invoice_id": "9aa5ebca-306a-49af-baee-46537fd41c89"
+  },
+  {
+    "id": "2e260739-ae48-4621-8cc5-8a624c1c7f92",
+    "allocated_amount": "260.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "9ee196fd-7ac2-40da-ac5f-8dddff31fb64",
+    "invoice_id": "9aa5ebca-306a-49af-baee-46537fd41c89"
+  },
+  {
+    "id": "caddefe1-8faa-487a-8bb4-765cadad0701",
+    "allocated_amount": "124.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "9ee196fd-7ac2-40da-ac5f-8dddff31fb64",
+    "invoice_id": "6f109220-58e4-4735-a3eb-5a921564f3a5"
+  },
+  {
+    "id": "909e354f-9949-48bd-bc15-761234d3499e",
+    "allocated_amount": "128.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "07416544-b568-469a-a185-1619689d547a",
+    "invoice_id": "383d15a6-ae3e-4b53-9267-e4027e351904"
+  },
+  {
+    "id": "f1828bb3-58de-460c-9327-57476d6625b4",
+    "allocated_amount": "615.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "9ba56afb-3667-4e59-bbb3-f37986bdf0e6",
+    "invoice_id": "03ba960c-7cdc-4ff6-ba8a-c2992d3e327f"
+  },
+  {
+    "id": "2213a46b-2e6c-4e6a-aa80-b23d67da1e85",
+    "allocated_amount": "1170.50",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "0ff7f373-1f53-49df-95b3-c3f852f9a3af",
+    "invoice_id": "be316131-c481-43cd-9b97-850189690626"
+  },
+  {
+    "id": "dc6986a2-74b2-426b-a786-ca60b7188b67",
+    "allocated_amount": "850.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "05eee174-9259-4e1c-b554-2255e9ddd9a7",
+    "invoice_id": "b94ddedd-51a5-4a83-8b21-89b596703e08"
+  },
+  {
+    "id": "51a2e398-adf5-418c-9c87-ad8ca6bdea5c",
+    "allocated_amount": "720.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "37219828-41a1-4aa2-9cf7-b34f50b63b71",
+    "invoice_id": "a4ac5c77-18d0-4333-8d83-9eafc0caad35"
+  },
+  {
+    "id": "bf5d74ca-6168-444c-a6a8-050010503dfd",
+    "allocated_amount": "350.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "804b2166-4ffa-493d-944f-4d884a08b749",
+    "invoice_id": "a4ac5c77-18d0-4333-8d83-9eafc0caad35"
+  },
+  {
+    "id": "5198f72c-bd97-4c11-9960-b6c8643ea786",
+    "allocated_amount": "150.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "804b2166-4ffa-493d-944f-4d884a08b749",
+    "invoice_id": "dacaad73-3e1f-4085-a16b-8999075f727d"
+  },
+  {
+    "id": "1aae4f2b-3276-416a-a087-6deb19294d7d",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "5950c0d3-e745-4e91-bc3e-090f3744838a",
+    "invoice_id": "4a13aa46-b593-47bc-ac81-9c8a0be83130"
+  },
+  {
+    "id": "2278fa1c-304c-4050-95d5-3e2fd7cb19e1",
+    "allocated_amount": "188.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "e96f40dd-1c42-400d-8248-bec66ee943a9",
+    "invoice_id": "4a13aa46-b593-47bc-ac81-9c8a0be83130"
+  },
+  {
+    "id": "293c56f5-36d5-4a97-899f-c2a1c69ee88a",
+    "allocated_amount": "845.00",
+    "allocated_at": "2026-11-06T17:11:13.723103",
+    "payment_id": "fca4aac5-6080-456c-8ebe-03cfadb11aaf",
+    "invoice_id": "72c7e759-3c28-47b6-a70b-8da44190c521"
+  },
+  {
+    "id": "8fa58364-57d4-46cb-aca3-430f3025c4f5",
+    "allocated_amount": "1949.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "3bfaa224-0b85-45da-a864-ef9ba687ef19",
+    "invoice_id": "f5845a85-8e85-4a1f-bd36-faf5a00edc73"
+  },
+  {
+    "id": "3cc48619-8b21-4238-846e-c63105fe4f3e",
+    "allocated_amount": "771.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6653f3c0-5159-47a4-ab4b-26deb52be6eb",
+    "invoice_id": "f5845a85-8e85-4a1f-bd36-faf5a00edc73"
+  },
+  {
+    "id": "0a0894f7-c82e-414a-8bac-b19620f36da3",
+    "allocated_amount": "1490.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6653f3c0-5159-47a4-ab4b-26deb52be6eb",
+    "invoice_id": "52981749-cb3f-477c-b8ea-adc019012184"
+  },
+  {
+    "id": "becc36eb-5f81-4f55-9084-3f9f2248a73f",
+    "allocated_amount": "293.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6653f3c0-5159-47a4-ab4b-26deb52be6eb",
+    "invoice_id": "21adbe9b-2d94-4414-aa00-2e6f5accc441"
+  },
+  {
+    "id": "49921933-02d2-4391-a595-4b54505024de",
+    "allocated_amount": "1072.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "aa8dddca-b2a6-45ab-8b12-aa2235cd6d27",
+    "invoice_id": "21adbe9b-2d94-4414-aa00-2e6f5accc441"
+  },
+  {
+    "id": "9529ef23-6797-425d-b949-1d14b3d78c8a",
+    "allocated_amount": "553.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "aa8dddca-b2a6-45ab-8b12-aa2235cd6d27",
+    "invoice_id": "af6ba5a0-5549-40d1-9fb5-6cf1fa5ba1db"
+  },
+  {
+    "id": "7b26044c-2402-442f-a264-1e57fad4f967",
+    "allocated_amount": "1820.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "a9656962-3881-4efa-925a-1c60190bd822",
+    "invoice_id": "af6ba5a0-5549-40d1-9fb5-6cf1fa5ba1db"
+  },
+  {
+    "id": "347c8546-e3da-420a-b156-2c4a0610571d",
+    "allocated_amount": "181.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "e07ea9d5-7568-4808-9295-f1ca1f7e0a69",
+    "invoice_id": "af6ba5a0-5549-40d1-9fb5-6cf1fa5ba1db"
+  },
+  {
+    "id": "b252fb7b-5c2e-4466-a63e-fcb37d9a4145",
+    "allocated_amount": "1625.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "e07ea9d5-7568-4808-9295-f1ca1f7e0a69",
+    "invoice_id": "95214aaa-058a-4832-aefe-f179c2011e51"
+  },
+  {
+    "id": "ad40cb4f-c1cc-4356-a74c-de95a6a7f562",
+    "allocated_amount": "590.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "e07ea9d5-7568-4808-9295-f1ca1f7e0a69",
+    "invoice_id": "daeeb07f-7b47-4812-98a7-e3f96aff7cdd"
+  },
+  {
+    "id": "f8e9b5b6-e0b2-4dd1-b0f6-b67329dea3c5",
+    "allocated_amount": "160.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "b413be9e-f589-413e-a6e6-940e42c1f61b",
+    "invoice_id": "6408f7b0-72eb-4c57-b18c-c863890306e7"
+  },
+  {
+    "id": "3302ab3b-b91e-4076-9e1f-b99098ea6a8b",
+    "allocated_amount": "945.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "040da8da-2b5b-4142-91ee-41a24558cfd6",
+    "invoice_id": "ada56356-aa21-4cfa-bb18-5005592931d8"
+  },
+  {
+    "id": "ffd7a33b-d297-423b-af79-6ae411ee517c",
+    "allocated_amount": "385.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "070db5ea-2fed-40ce-8c32-0e92664da236",
+    "invoice_id": "ebedfacc-72cf-41a7-9745-3a14041e1e9a"
+  },
+  {
+    "id": "2bcd57c2-dc78-4766-a4e4-a23167b513b4",
+    "allocated_amount": "785.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "433be908-7379-46fa-b4c7-41c026dce908",
+    "invoice_id": "7d759541-30e5-4f4b-a864-14b279afb369"
+  },
+  {
+    "id": "71547bcb-3f37-4729-8cd5-921145a0c85e",
+    "allocated_amount": "890.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "2d929782-3c7f-4ef4-a987-ec4c1d2a5e70",
+    "invoice_id": "fe084a58-b0ef-417c-828b-7f4556696e53"
+  },
+  {
+    "id": "be5b8b11-614f-409a-bf96-f17405f63557",
+    "allocated_amount": "534.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "ad7923e1-9c17-4483-af55-e5496af9ca41",
+    "invoice_id": "ca61df8a-ae75-4912-9fd0-82edacffe3f8"
+  },
+  {
+    "id": "1d1254e4-61b6-48b9-8fb8-5367424fb3ec",
+    "allocated_amount": "1557.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "d3b6d13e-7532-49d7-8f4d-0561be420b76",
+    "invoice_id": "89c2eaec-909e-4b91-8679-9f6db4bd076a"
+  },
+  {
+    "id": "4d43d652-f9b7-4728-8faf-2573b4ea7925",
+    "allocated_amount": "845.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "d7c2bdfe-a413-4951-be86-9ac633ee1caf",
+    "invoice_id": "16faa4ef-0626-4d43-99d9-cbc5be57d0dd"
+  },
+  {
+    "id": "3ba15512-ee72-499c-b045-801c61b46ba2",
+    "allocated_amount": "400.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "318f5412-3204-4ee6-96fd-bafc4b586e5b",
+    "invoice_id": "bda7f49d-fb96-495e-8ffc-20fd88254c01"
+  },
+  {
+    "id": "fac4e57d-e144-430d-b713-8fff60e56524",
+    "allocated_amount": "910.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "4fdcaac4-9347-4185-93ef-14062665ee74",
+    "invoice_id": "71f3f943-3ae1-433d-be9f-62a3c2a3d4af"
+  },
+  {
+    "id": "f0e3eb1b-00de-48eb-8179-947d42909b50",
+    "allocated_amount": "835.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "aa10aac0-e81a-45cd-9216-11756e748f1d",
+    "invoice_id": "3e733be6-12dc-42a2-99ca-268478d259a7"
+  },
+  {
+    "id": "83a7ec24-032c-4711-b2f8-8fcf86cb994f",
+    "allocated_amount": "505.00",
+    "allocated_at": "2026-11-05T15:03:02.928860",
+    "payment_id": "9f35054a-7511-4040-99c1-cc9793ca4bae",
+    "invoice_id": "a9cfdcb9-4ac8-4b94-a160-44cad2db80a9"
+  },
+  {
+    "id": "eddc32d4-8ffb-482e-a840-cc1466948f4b",
+    "allocated_amount": "900.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "53b0589b-eb1c-45b9-8de8-39cc4ab8eac7",
+    "invoice_id": "74029092-c0a8-430a-b89a-96351b1deac4"
+  },
+  {
+    "id": "e29890cc-cf44-476d-b554-2d5ef8f1bc8d",
+    "allocated_amount": "600.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "96459342-ad79-41f7-9fe3-d372a9c33300",
+    "invoice_id": "3457ac9a-29a7-4c1e-9a39-3bb5c34604d5"
+  },
+  {
+    "id": "4289ef9c-2aae-479e-8444-4f533a4d918d",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "ae97d9aa-92fc-4785-a5c1-d5e3876197f5",
+    "invoice_id": "eba03299-5c3f-49b7-a25e-ee6404843667"
+  },
+  {
+    "id": "70f9fac8-833a-4bb0-8726-82672145da1f",
+    "allocated_amount": "230.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "af50f4df-9146-4002-94b6-227ef29d2c02",
+    "invoice_id": "b6ca9d37-e40f-49c3-8178-8bc329181e66"
+  },
+  {
+    "id": "c5162eb7-43e9-4390-b7f3-e077a7da38dd",
+    "allocated_amount": "430.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "af50f4df-9146-4002-94b6-227ef29d2c02",
+    "invoice_id": "ed222cc1-dc89-429d-baa0-4e1ae23f4072"
+  },
+  {
+    "id": "00c1ebd3-cb74-43bd-bf6b-45c04a282aea",
+    "allocated_amount": "580.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "7ea7b198-4a4a-4300-867b-0eef515158ec",
+    "invoice_id": "683cddb7-ad51-4bab-a2b4-459ad8974b8d"
+  },
+  {
+    "id": "4b80056f-b58c-4505-9d6e-b57a03702829",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:03:03.293525",
+    "payment_id": "29fb1783-a215-451c-97b0-8fc54674cd2f",
+    "invoice_id": "2373542b-4a59-4b8b-a6ea-729e280b73e5"
+  },
+  {
+    "id": "f9731398-8643-4d33-b936-325098f7dc74",
+    "allocated_amount": "815.00",
+    "allocated_at": "2026-11-05T15:03:03.661852",
+    "payment_id": "c3f138d7-8132-45e0-8783-d3e31ccf1782",
+    "invoice_id": "d5dcdaf4-213c-4391-9ab7-4eacc97dc190"
+  },
+  {
+    "id": "c925940d-04c0-4b89-b1e0-1d9c69b0a268",
+    "allocated_amount": "620.00",
+    "allocated_at": "2026-11-05T15:03:03.661852",
+    "payment_id": "a9af8b7c-c46a-4c3d-8c85-3c84566e3af2",
+    "invoice_id": "af233f4e-d9b1-4905-9c48-f2762fdc82db"
+  },
+  {
+    "id": "557ac1d9-acf4-4164-83ff-6f3f2c63743e",
+    "allocated_amount": "1440.00",
+    "allocated_at": "2026-11-07T06:56:22.191247",
+    "payment_id": "fc4d4812-e2a3-45ae-bd77-532b8b039dc4",
+    "invoice_id": "655d6952-70d6-47ea-8a10-b3f531a2370d"
+  },
+  {
+    "id": "b2303f37-5836-4458-a586-578c0c220f83",
+    "allocated_amount": "620.00",
+    "allocated_at": "2026-11-05T15:03:03.661852",
+    "payment_id": "9ebaed67-cfb0-4812-abc2-8368400949e6",
+    "invoice_id": "ef760ddb-c0a5-4028-bca0-c83237e9f7d9"
+  },
+  {
+    "id": "61b196c6-989f-4981-a985-926ffe298750",
+    "allocated_amount": "425.00",
+    "allocated_at": "2026-11-05T15:03:03.661852",
+    "payment_id": "31313bf7-6a05-40be-a408-53f898243678",
+    "invoice_id": "83c8bca6-7134-469b-8876-b74ba95bd15e"
+  },
+  {
+    "id": "312314a9-293c-46d5-9c4a-9d5f46dd338d",
+    "allocated_amount": "700.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "c687b7d0-47ff-4f7d-b034-18a724150e0c",
+    "invoice_id": "339fb734-489e-47c2-9871-471c836765b1"
+  },
+  {
+    "id": "ae54b251-83bb-4b4c-807f-3bc3e6241db2",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "e55fa809-6286-4c5c-9255-369bf4ac4110",
+    "invoice_id": "339fb734-489e-47c2-9871-471c836765b1"
+  },
+  {
+    "id": "b94f2bcf-7451-49f7-aad4-a0114b21adbd",
+    "allocated_amount": "5.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "84a73797-b3ce-4306-acfc-f15b0b2acc49",
+    "invoice_id": "339fb734-489e-47c2-9871-471c836765b1"
+  },
+  {
+    "id": "56066317-3345-4a60-a8d4-7210a322e8ea",
+    "allocated_amount": "390.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "84a73797-b3ce-4306-acfc-f15b0b2acc49",
+    "invoice_id": "c5ab628d-f387-4d97-ac5d-bf663132dd88"
+  },
+  {
+    "id": "aa143732-c495-4ed3-9821-b8ea410dedb9",
+    "allocated_amount": "1175.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "f94b7a06-529d-490f-8961-94f838d6e04f",
+    "invoice_id": "4adaeec2-0ad9-4ce9-8479-5a518ef26318"
+  },
+  {
+    "id": "c6560e5a-bdce-4fb3-888d-e127aea394fe",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "332716e4-b6a4-49c8-b484-bf167778e26f",
+    "invoice_id": "938d68a1-de6f-4d0c-8812-a20091ad7069"
+  },
+  {
+    "id": "cb572c11-8dbc-44cd-8060-00db6610b911",
+    "allocated_amount": "1230.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "dcb7eccb-a808-4425-b221-f0504ea0e492",
+    "invoice_id": "daeeb07f-7b47-4812-98a7-e3f96aff7cdd"
+  },
+  {
+    "id": "cb59e86f-bc38-4b51-bc05-cbcb996af77f",
+    "allocated_amount": "35.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "2af13cdc-e8f2-49aa-8a01-f0ec43e81d54",
+    "invoice_id": "938d68a1-de6f-4d0c-8812-a20091ad7069"
+  },
+  {
+    "id": "90ab7e6b-c8a6-4961-b4f3-daf95b8a7e3d",
+    "allocated_amount": "1165.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "2af13cdc-e8f2-49aa-8a01-f0ec43e81d54",
+    "invoice_id": "a16163cc-4ce4-4a67-9123-0e9852ccc6b3"
+  },
+  {
+    "id": "52db57de-2be7-411d-b819-748e235629ac",
+    "allocated_amount": "60.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "95c6c333-a5b9-47bb-87bf-2c8e7de429f3",
+    "invoice_id": "a16163cc-4ce4-4a67-9123-0e9852ccc6b3"
+  },
+  {
+    "id": "d81e6dc9-c9b6-4603-a659-e0ea7afdac2c",
+    "allocated_amount": "1140.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "95c6c333-a5b9-47bb-87bf-2c8e7de429f3",
+    "invoice_id": "790c4c61-c1aa-422a-a531-694017ecca49"
+  },
+  {
+    "id": "e3703836-035e-47aa-8d6d-9c9d6f074c18",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "d88dc127-92f2-4dc8-a858-8c421812282c",
+    "invoice_id": "790c4c61-c1aa-422a-a531-694017ecca49"
+  },
+  {
+    "id": "9e1b7ab9-15f1-468a-bf77-24d73c753b71",
+    "allocated_amount": "68.50",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "a8613826-9454-4ec9-b19b-b535cb935861",
+    "invoice_id": "790c4c61-c1aa-422a-a531-694017ecca49"
+  },
+  {
+    "id": "480e73da-ca8a-47a9-b8f5-63f0cb05d6fa",
+    "allocated_amount": "1540.00",
+    "allocated_at": "2026-11-05T15:03:04.022656",
+    "payment_id": "a8613826-9454-4ec9-b19b-b535cb935861",
+    "invoice_id": "c3558046-a9e8-43ef-90af-8a2af0e3de80"
+  },
+  {
+    "id": "159fadb1-5b3b-4243-a8e1-99ae964bcd45",
+    "allocated_amount": "1440.00",
+    "allocated_at": "2026-11-05T15:03:04.383309",
+    "payment_id": "9d9262ae-16ed-404e-a20d-3e91a06e457f",
+    "invoice_id": "c55c2864-06ec-4c71-b566-e5ab38de1bdf"
+  },
+  {
+    "id": "fdcf31b0-a746-413b-b9f7-ec08e0feff1b",
+    "allocated_amount": "910.00",
+    "allocated_at": "2026-11-05T15:03:04.743989",
+    "payment_id": "b79c5e6f-0f18-4266-8e3a-e1cd60e90b2b",
+    "invoice_id": "ab2761ce-f3c9-4b5a-9e44-25530cef8c76"
+  },
+  {
+    "id": "70ab2cf9-083e-46f3-a4ce-5ca33e8103d5",
+    "allocated_amount": "1800.00",
+    "allocated_at": "2026-11-05T15:03:04.743989",
+    "payment_id": "6d120f7d-3800-49d3-b6fb-3c24e3754bc4",
+    "invoice_id": "610b9c1b-91f0-4e7f-bc7c-dac1b80fc50d"
+  },
+  {
+    "id": "39afc30f-b804-4553-826c-b8d92cd54c90",
+    "allocated_amount": "380.00",
+    "allocated_at": "2026-11-05T15:03:04.743989",
+    "payment_id": "05169902-86c9-452d-90cf-0d75c604234b",
+    "invoice_id": "e3e3c493-de4e-4aa3-b00d-c2fd91df25a9"
+  },
+  {
+    "id": "f97d3593-dea8-4165-a99f-a6addbb7db4c",
+    "allocated_amount": "920.00",
+    "allocated_at": "2026-11-05T15:03:04.743989",
+    "payment_id": "fba585f4-aff4-4a0f-8ae4-411c71204a4e",
+    "invoice_id": "6ce1d27f-a6ef-4237-94be-ac394be6db88"
+  },
+  {
+    "id": "cf4c35c3-9170-4fbc-8c67-d1d5321b35f8",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:03:05.103535",
+    "payment_id": "d2a01e59-9a6a-44c7-8d2a-fabe4d09eb0d",
+    "invoice_id": "1073626e-f4a8-42fb-917e-b21af2707bcd"
+  },
+  {
+    "id": "52f36444-6d1f-4242-9a26-d93134f116a4",
+    "allocated_amount": "130.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "dcb7eccb-a808-4425-b221-f0504ea0e492",
+    "invoice_id": "901ed731-e8e9-4e5e-a973-43910b2dbd3d"
+  },
+  {
+    "id": "01de1b62-6491-4a16-9208-5883d855f244",
+    "allocated_amount": "2260.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "23869afc-4fe4-4b27-9997-b8257763544c",
+    "invoice_id": "901ed731-e8e9-4e5e-a973-43910b2dbd3d"
+  },
+  {
+    "id": "e2cad81a-54d0-4ab5-95d5-53e3f4f66d66",
+    "allocated_amount": "6.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7869d5c2-e556-4a98-90ec-044e16f99563",
+    "invoice_id": "901ed731-e8e9-4e5e-a973-43910b2dbd3d"
+  },
+  {
+    "id": "982ca499-aaf9-46ff-a843-0442fb29e1a9",
+    "allocated_amount": "1360.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7869d5c2-e556-4a98-90ec-044e16f99563",
+    "invoice_id": "a16cc3b1-c317-4acf-bbdb-e2c3d62786db"
+  },
+  {
+    "id": "45b426f5-a175-4d74-9596-3d3349170f98",
+    "allocated_amount": "479.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7869d5c2-e556-4a98-90ec-044e16f99563",
+    "invoice_id": "879b209c-cb8e-4fb0-924c-43f2b1c3606f"
+  },
+  {
+    "id": "dd4965e7-77cc-4402-93e9-2acfe7df8b72",
+    "allocated_amount": "1781.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "be15b195-70c4-4679-a8db-9c092a90418d",
+    "invoice_id": "879b209c-cb8e-4fb0-924c-43f2b1c3606f"
+  },
+  {
+    "id": "960d8198-5944-47f2-9bf5-526b2afa8677",
+    "allocated_amount": "1349.50",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "be15b195-70c4-4679-a8db-9c092a90418d",
+    "invoice_id": "7b0683b6-14f6-48b6-a964-17ed3f526206"
+  },
+  {
+    "id": "f2f97ca9-dfe8-474c-b1bd-c4cdf7f021d1",
+    "allocated_amount": "345.50",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "e4e7b613-5fbb-4e08-b58d-17ac64a8fe4a",
+    "invoice_id": "7b0683b6-14f6-48b6-a964-17ed3f526206"
+  },
+  {
+    "id": "273822ac-d728-4172-9091-c246d0e7f30f",
+    "allocated_amount": "150.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "e4e7b613-5fbb-4e08-b58d-17ac64a8fe4a",
+    "invoice_id": "e3f041d2-d0ca-45cf-b30e-fddbf94d202b"
+  },
+  {
+    "id": "b9b59c85-e789-4ab8-ae77-1b50c9aa7f54",
+    "allocated_amount": "675.50",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "e4e7b613-5fbb-4e08-b58d-17ac64a8fe4a",
+    "invoice_id": "3ec04d8d-2d5c-4f67-adc1-4ee7872bdfbd"
+  },
+  {
+    "id": "5d85fe8e-6225-405a-a731-7ebcf1befba6",
+    "allocated_amount": "1500.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "c6140dd2-bfb0-420e-97e5-45f4a4c8cc59",
+    "invoice_id": "3ec04d8d-2d5c-4f67-adc1-4ee7872bdfbd"
+  },
+  {
+    "id": "66e6bda2-a9d2-4726-993e-8571149e1de3",
+    "allocated_amount": "955.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6f2398ef-776d-4c63-ba3f-f67b7097712e",
+    "invoice_id": "3ec04d8d-2d5c-4f67-adc1-4ee7872bdfbd"
+  },
+  {
+    "id": "f1d55e40-800b-48e4-9763-63c9f3230820",
+    "allocated_amount": "1045.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6f2398ef-776d-4c63-ba3f-f67b7097712e",
+    "invoice_id": "8518adee-51f8-4d61-b66a-701ba3edcf09"
+  },
+  {
+    "id": "50bfcffd-82fd-4ad7-afbd-b80eb86fe49f",
+    "allocated_amount": "126.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "1c7006b3-1f67-4330-903b-45192561f12b",
+    "invoice_id": "8518adee-51f8-4d61-b66a-701ba3edcf09"
+  },
+  {
+    "id": "f980512c-c71c-4adb-a666-9e03ac75eb49",
+    "allocated_amount": "540.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "1c7006b3-1f67-4330-903b-45192561f12b",
+    "invoice_id": "46e2db23-c277-4976-aa4b-6bcdaaeb3e1d"
+  },
+  {
+    "id": "358a5cae-53e4-4a41-ac15-7ca63ae25044",
+    "allocated_amount": "1060.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "1c7006b3-1f67-4330-903b-45192561f12b",
+    "invoice_id": "7472054b-cedf-4c65-adce-bf55911e319f"
+  },
+  {
+    "id": "a2b21da0-f8d4-4073-b3c1-288d8cac5bbf",
+    "allocated_amount": "854.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "1c7006b3-1f67-4330-903b-45192561f12b",
+    "invoice_id": "0d27b5d4-a06c-49ed-8d3b-ba9f09c62354"
+  },
+  {
+    "id": "5b0b7c35-80c7-4bbb-bfee-30b7fbd89f0c",
+    "allocated_amount": "1511.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7e06819f-9277-46cf-b393-44cf3c422275",
+    "invoice_id": "0d27b5d4-a06c-49ed-8d3b-ba9f09c62354"
+  },
+  {
+    "id": "8855ec98-6c69-4bad-b30d-b5ad79b2b7b1",
+    "allocated_amount": "755.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7e06819f-9277-46cf-b393-44cf3c422275",
+    "invoice_id": "80d48465-35b9-47d0-bad4-0b1f15b6fade"
+  },
+  {
+    "id": "7e69c73a-4ab3-4b47-b70e-23def7feea19",
+    "allocated_amount": "1365.00",
+    "allocated_at": "2026-11-05T15:03:05.825555",
+    "payment_id": "3e9a6aea-87fb-45af-9a16-1611c54b99ba",
+    "invoice_id": "8680c6d6-1c2b-4cfb-bd84-acb446a184ec"
+  },
+  {
+    "id": "4d56dc70-62df-4267-bd5a-12bf0be87fe9",
+    "allocated_amount": "736.00",
+    "allocated_at": "2026-11-05T15:03:05.825555",
+    "payment_id": "45c76e3d-016f-4bf0-8577-ab5ea4aea9d1",
+    "invoice_id": "27c98bd6-8b1a-4529-9896-42bf71524900"
+  },
+  {
+    "id": "0cb266ba-b4ca-4e13-b23e-fcdf6b2e9418",
+    "allocated_amount": "105.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "c6e0c042-10c6-4706-a55b-3e38415c499a",
+    "invoice_id": "279eeb1c-89da-47aa-91b5-458fe2b435a0"
+  },
+  {
+    "id": "d3714f9f-8a49-4edd-a52f-c9079cee851c",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "aea17488-8c57-4b27-914f-36137ecd8647",
+    "invoice_id": "a8db36e1-e391-4c65-a8ce-d491387f79f2"
+  },
+  {
+    "id": "09c4a4e4-cdda-48d6-bb9f-69f717eaa51b",
+    "allocated_amount": "285.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "1a40adc3-7e9a-4f5b-9070-9bf3b21774fe",
+    "invoice_id": "2d4d5b74-1dda-478c-ac91-3eb090036146"
+  },
+  {
+    "id": "4fc1cf6f-9e23-47c2-bb49-0ff82db93a5c",
+    "allocated_amount": "310.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "4a70678a-4624-440f-88ac-73afb65a4c40",
+    "invoice_id": "0a726afe-9e59-4faf-a41e-32e1fcd41fd2"
+  },
+  {
+    "id": "da5872e3-b30f-47a2-8e4d-04f5ad5126f7",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "4a70678a-4624-440f-88ac-73afb65a4c40",
+    "invoice_id": "c3071a44-6ee7-4a11-bb1a-730623f7564c"
+  },
+  {
+    "id": "bbd94b26-11ef-4ebe-b212-c2e071a4a0c9",
+    "allocated_amount": "410.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "35008093-9402-4387-8f4a-700e5976d251",
+    "invoice_id": "b19ef5bd-b349-4c77-b729-9ede88530b33"
+  },
+  {
+    "id": "f210c4fb-788c-4555-8fa7-a95002d563c7",
+    "allocated_amount": "130.00",
+    "allocated_at": "2026-11-05T15:03:06.186498",
+    "payment_id": "35008093-9402-4387-8f4a-700e5976d251",
+    "invoice_id": "cd921bdb-c6a3-4266-b52b-d55a697c0d20"
+  },
+  {
+    "id": "2c5a26b2-19ec-4c67-84a7-f437d740e6a0",
+    "allocated_amount": "255.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7e06819f-9277-46cf-b393-44cf3c422275",
+    "invoice_id": "3cf87bfc-2c5a-4980-8574-b25383206a9c"
+  },
+  {
+    "id": "171f3cea-a030-45d4-b5d1-9dc6d49f2fa2",
+    "allocated_amount": "740.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "d2410dd8-65c9-4d0d-b8ff-c71474490ac1",
+    "invoice_id": "c9c9b4c3-a1dc-47c6-bf13-c678cd4bfa56"
+  },
+  {
+    "id": "f95cdba5-ef30-4309-a885-f88c892deccf",
+    "allocated_amount": "430.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "5a72de29-668b-4495-97ae-823b55899230",
+    "invoice_id": "c9c9b4c3-a1dc-47c6-bf13-c678cd4bfa56"
+  },
+  {
+    "id": "026fd276-da85-40b7-83b8-3a97d448a18e",
+    "allocated_amount": "1105.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "7e06819f-9277-46cf-b393-44cf3c422275",
+    "invoice_id": "fe14cd2d-4998-403c-847b-c6c4fcd726d3"
+  },
+  {
+    "id": "97d1253c-5f53-4ada-b3a6-b6540365600a",
+    "allocated_amount": "6.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "8432f7b5-8c38-4616-b956-13a74572a2c8",
+    "invoice_id": "fe14cd2d-4998-403c-847b-c6c4fcd726d3"
+  },
+  {
+    "id": "8d2d0ee8-fd21-4848-ad51-3e7ffc78f4ec",
+    "allocated_amount": "960.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "8432f7b5-8c38-4616-b956-13a74572a2c8",
+    "invoice_id": "b6273951-f0c3-4762-acd4-96c9b7986655"
+  },
+  {
+    "id": "9dfe5269-006d-4870-a11d-c8e6dd651735",
+    "allocated_amount": "495.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "8432f7b5-8c38-4616-b956-13a74572a2c8",
+    "invoice_id": "3d1213b4-6e6d-42aa-89fc-89bb0511ec8d"
+  },
+  {
+    "id": "84467c5d-15b9-4d52-906a-1f7d6c6e3b61",
+    "allocated_amount": "2165.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "8432f7b5-8c38-4616-b956-13a74572a2c8",
+    "invoice_id": "09664031-77d9-4e29-96a1-6728974bb591"
+  },
+  {
+    "id": "c9ab05a7-10a1-464d-a4ea-9ee5262826f5",
+    "allocated_amount": "2108.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6fe43aa0-e205-46a9-9a22-980266d9cb2a",
+    "invoice_id": "ad1aae38-033e-4a18-ac48-82ee2c866688"
+  },
+  {
+    "id": "adbcbaf9-fcb9-4761-9474-2ff6d9fca63f",
+    "allocated_amount": "2050.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "2d751a89-d065-4d79-8631-70857f004ec2",
+    "invoice_id": "512d03bd-f117-4ed2-a8e8-06c076d2e105"
+  },
+  {
+    "id": "93753bc4-cae0-48ff-86a1-501456f70da3",
+    "allocated_amount": "2365.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "862d8e7e-9d57-4631-858d-43432b6a28da",
+    "invoice_id": "3dd80bfb-6aaf-453f-bc61-20b609ed1ddf"
+  },
+  {
+    "id": "f00e4f22-e508-4bfd-b8f7-79dcd735be60",
+    "allocated_amount": "240.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "5a72de29-668b-4495-97ae-823b55899230",
+    "invoice_id": "5602769a-0d21-4c9e-b6c8-918366b49d68"
+  },
+  {
+    "id": "60c9b6f8-e77c-4218-ba0c-39ff62285227",
+    "allocated_amount": "455.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "5a72de29-668b-4495-97ae-823b55899230",
+    "invoice_id": "864f8ff1-c874-4d1b-a553-e150760940a9"
+  },
+  {
+    "id": "b2f4d289-75d4-4d2c-98e6-c74602441b78",
+    "allocated_amount": "225.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "36c66d56-3350-403d-9980-2c101efac53f",
+    "invoice_id": "3dd80bfb-6aaf-453f-bc61-20b609ed1ddf"
+  },
+  {
+    "id": "90ce68a1-87fd-4b2e-a2f6-45b1c5ac139e",
+    "allocated_amount": "3213.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "36c66d56-3350-403d-9980-2c101efac53f",
+    "invoice_id": "67c19984-d765-4b85-b10e-d783e1a1af3b"
+  },
+  {
+    "id": "20301859-9dce-4da7-8ce4-8a8e8063573b",
+    "allocated_amount": "225.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "0e3a78e0-9734-4c25-816f-1ac22b94bcd7",
+    "invoice_id": "67c19984-d765-4b85-b10e-d783e1a1af3b"
+  },
+  {
+    "id": "9081b5ec-f3d5-4151-8285-d1ec0ab11084",
+    "allocated_amount": "3495.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "9d768223-61db-43a4-aac1-60cd767b6531",
+    "invoice_id": "b83a8680-4c67-43cb-a285-fa26fe533482"
+  },
+  {
+    "id": "8ef5c9dc-db96-487e-865d-44dca9b9df0c",
+    "allocated_amount": "1539.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "eee9ad0d-b88e-40c1-be27-8c76a39ac340",
+    "invoice_id": "128bb2a8-9b46-4acd-b358-b1e3273d7d88"
+  },
+  {
+    "id": "241f0437-934f-4d31-8a56-545b8a146afa",
+    "allocated_amount": "175.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "eee9ad0d-b88e-40c1-be27-8c76a39ac340",
+    "invoice_id": "cb5ebc31-b39c-40f8-a6bf-0d3abf048fae"
+  },
+  {
+    "id": "dd6acbba-6416-4ca4-b041-9533db209836",
+    "allocated_amount": "2543.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "a53e78a3-696e-4603-844a-978614d68aed",
+    "invoice_id": "886e5214-a38a-4133-ab89-56ef16473e65"
+  },
+  {
+    "id": "c2767c86-b180-47ae-bbaa-d2639e18b902",
+    "allocated_amount": "1703.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "ff4059c4-7030-4800-b4ba-3ba519bc9280",
+    "invoice_id": "a28d8ec6-14e4-4ba2-bf4b-c899abddf2b4"
+  },
+  {
+    "id": "90cdb88f-cc15-402b-bcef-37a84747a56e",
+    "allocated_amount": "2312.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "6b6e7b28-c7de-4c55-b2b4-608665a398ac",
+    "invoice_id": "f23ca3af-8d8f-444c-b790-5b22cafc024c"
+  },
+  {
+    "id": "074aed7a-7583-4c21-86a5-f2f62bf29d3b",
+    "allocated_amount": "320.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "68721cbe-06a0-43cf-9900-1d2f51b6a7bf",
+    "invoice_id": "82fdf277-d1f9-47c5-9dc3-cbf8276ddeb5"
+  },
+  {
+    "id": "db95614c-de13-4ac6-a1b0-7f680de02374",
+    "allocated_amount": "130.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "3c4a7294-3cdb-4624-9fa8-13511cd53317",
+    "invoice_id": "82fdf277-d1f9-47c5-9dc3-cbf8276ddeb5"
+  },
+  {
+    "id": "a69ca491-6ff3-4740-a6f7-72153c05d71c",
+    "allocated_amount": "2772.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "3c4a7294-3cdb-4624-9fa8-13511cd53317",
+    "invoice_id": "577eeddb-ef8a-415b-a4ef-fd4058c2e61b"
+  },
+  {
+    "id": "68d79e85-f022-4bf0-980e-db4fdfcc1b6f",
+    "allocated_amount": "1417.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "bfab7249-c3d9-404c-9704-248d6a22981e",
+    "invoice_id": "d4540aae-5471-41c7-b3b6-eaeb886622a0"
+  },
+  {
+    "id": "0826e659-8f57-42a2-884e-e6aa2dcc6394",
+    "allocated_amount": "2250.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "bfab7249-c3d9-404c-9704-248d6a22981e",
+    "invoice_id": "6173edbd-b784-4d87-926a-a8cf1c2b14b9"
+  },
+  {
+    "id": "e8c72f2d-639b-4912-b9e3-cd3e48d9892f",
+    "allocated_amount": "640.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "bfab7249-c3d9-404c-9704-248d6a22981e",
+    "invoice_id": "fd59e9c6-deb8-4ff5-85d4-364f4e53e01d"
+  },
+  {
+    "id": "57439c0c-ec31-4b8d-b893-d00774a1a951",
+    "allocated_amount": "1450.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "18dedf97-37db-443e-8f05-f42d03557f9c",
+    "invoice_id": "f7f090da-684f-4441-8f5f-0bf88cb7e8d1"
+  },
+  {
+    "id": "5a32abf4-a1df-42be-86ff-a5f8944bc268",
+    "allocated_amount": "190.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "18dedf97-37db-443e-8f05-f42d03557f9c",
+    "invoice_id": "8009d594-559a-4496-84f6-0f893fbbedb0"
+  },
+  {
+    "id": "260393e4-f292-4756-a907-c37b8b6b3c19",
+    "allocated_amount": "1450.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "11a1d696-d85f-4435-ab54-3479cc230576",
+    "invoice_id": "8009d594-559a-4496-84f6-0f893fbbedb0"
+  },
+  {
+    "id": "5446ac07-08ff-435b-9b6c-74d060233c24",
+    "allocated_amount": "1050.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "11a1d696-d85f-4435-ab54-3479cc230576",
+    "invoice_id": "b510eae2-33a0-41a0-8492-312bd41b45af"
+  },
+  {
+    "id": "a45af2a3-3418-49ef-8799-18fe3383d908",
+    "allocated_amount": "623.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "b7a43d39-8dce-4cf9-8e2a-2f0fe2dc82f9",
+    "invoice_id": "b510eae2-33a0-41a0-8492-312bd41b45af"
+  },
+  {
+    "id": "94f12752-fa31-4fc9-8ab6-c6f147b8651a",
+    "allocated_amount": "2255.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "c2417ddb-1782-4800-8bd8-ae6ddd27293a",
+    "invoice_id": "2e901dae-cbda-4912-8ee5-1cb237645a5d"
+  },
+  {
+    "id": "c84f2c15-d0b8-42a3-95d2-90f0cbd15284",
+    "allocated_amount": "1368.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "d1d0827a-25ec-4ec5-accc-61e45e93a2ba",
+    "invoice_id": "f62dc254-e21b-477e-8d5d-3646a8310859"
+  },
+  {
+    "id": "a2fe41ba-89f7-4b46-8ced-49e7df9db9a6",
+    "allocated_amount": "175.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "da52341c-a183-4e40-b770-ac857c4a5ea2",
+    "invoice_id": "dea28e15-4ee7-457d-8323-a8b1323483c1"
+  },
+  {
+    "id": "e8a8df69-96a6-47e2-a67b-38f587b0e52a",
+    "allocated_amount": "2860.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "889153a7-c193-4b50-baaf-1770a620d71e",
+    "invoice_id": "f1ca7345-4ee3-45c8-86d3-83937c80e99f"
+  },
+  {
+    "id": "fc99431f-4b16-461f-9ac5-201a39bfb10c",
+    "allocated_amount": "2609.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "d256f73c-f49a-4ad1-b968-401c43104746",
+    "invoice_id": "977114ba-1db6-4472-b643-c7227885698d"
+  },
+  {
+    "id": "aff44bad-062d-492e-85d8-c866fff1c48f",
+    "allocated_amount": "2749.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "603bba57-95f7-4f51-871c-a68692100d91",
+    "invoice_id": "eea07234-bea0-497b-bb90-49ba8188694f"
+  },
+  {
+    "id": "6e175586-8faf-4a79-a61a-cacb04b1bc63",
+    "allocated_amount": "730.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "603bba57-95f7-4f51-871c-a68692100d91",
+    "invoice_id": "6d04481e-76df-4326-926c-8b7fdf56e811"
+  },
+  {
+    "id": "0d91b397-1564-4cff-9e1e-b3656abd3101",
+    "allocated_amount": "1745.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "a997938d-c5de-4221-84ba-411af3c6e9db",
+    "invoice_id": "7c41af06-cd1d-4e58-a1bc-4c0bb9deaefb"
+  },
+  {
+    "id": "fe82feda-f027-4d31-908a-c143b43686ac",
+    "allocated_amount": "1525.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "a997938d-c5de-4221-84ba-411af3c6e9db",
+    "invoice_id": "2f3e5503-c32a-4d26-a445-f217ecea7460"
+  },
+  {
+    "id": "3084b5b9-230f-4a12-8484-b99daaca2c9f",
+    "allocated_amount": "1949.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "707ba858-2068-4058-abbc-f4e73df6cd07",
+    "invoice_id": "fe082e96-6b14-4ddd-ae94-cd747a2bf1d3"
+  },
+  {
+    "id": "7d44b216-4783-4738-bee6-cc7fe6d7f8c2",
+    "allocated_amount": "505.00",
+    "allocated_at": "2026-11-07T16:31:02.881476",
+    "payment_id": "707ba858-2068-4058-abbc-f4e73df6cd07",
+    "invoice_id": "72d4b05c-c2d1-4b3c-8f74-2b5bb07371ac"
+  },
+  {
+    "id": "4d66d070-504e-470d-bdcb-dbe68f7fa897",
+    "allocated_amount": "2718.00",
+    "allocated_at": "2026-11-08T18:20:46.888400",
+    "payment_id": "a5c7f33f-62f0-4bb9-a6de-a64ba13c5b51",
+    "invoice_id": "87195c65-4a74-4752-81fa-6aa3e6684d13"
+  },
+  {
+    "id": "a455c97d-31c7-4dd0-9ab7-79ed4f4c61e9",
+    "allocated_amount": "405.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "d0d1a5b9-b8ac-486d-a097-9a2e507d4ec9",
+    "invoice_id": "864f8ff1-c874-4d1b-a553-e150760940a9"
+  },
+  {
+    "id": "a0d384a2-5eef-43e9-8b94-232fd31d2b79",
+    "allocated_amount": "195.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "d0d1a5b9-b8ac-486d-a097-9a2e507d4ec9",
+    "invoice_id": "b75e71cf-94d2-494f-a4bf-98f59f76cc8c"
+  },
+  {
+    "id": "065555a2-0ac2-4761-b951-ce22bcea19e0",
+    "allocated_amount": "650.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "7a83a76e-6c8a-4d00-b44e-e435df3b856b",
+    "invoice_id": "b75e71cf-94d2-494f-a4bf-98f59f76cc8c"
+  },
+  {
+    "id": "a3b5f4b6-b332-4576-b442-a0ff0f67686e",
+    "allocated_amount": "145.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "58b87b08-99c7-4e27-9247-1112d0b4c86c",
+    "invoice_id": "b75e71cf-94d2-494f-a4bf-98f59f76cc8c"
+  },
+  {
+    "id": "01a73279-65d0-4990-bf52-b178d23836a0",
+    "allocated_amount": "355.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "58b87b08-99c7-4e27-9247-1112d0b4c86c",
+    "invoice_id": "2b7a137b-c448-4d9f-83cc-ad4938d95008"
+  },
+  {
+    "id": "e8fd1b67-64db-44e7-9122-753f6213e986",
+    "allocated_amount": "119.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "58b87b08-99c7-4e27-9247-1112d0b4c86c",
+    "invoice_id": "38e77280-4287-40a3-82c3-f64c23b84ee2"
+  },
+  {
+    "id": "e4ab7172-0130-4cd3-8db4-daa365325e64",
+    "allocated_amount": "131.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "a6ff5760-2696-45bc-b224-57625133946c",
+    "invoice_id": "38e77280-4287-40a3-82c3-f64c23b84ee2"
+  },
+  {
+    "id": "845f44a8-79cb-431e-9835-62cea6fc312f",
+    "allocated_amount": "370.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "a6ff5760-2696-45bc-b224-57625133946c",
+    "invoice_id": "7ffd14f9-72aa-402c-8b9b-f157891ed780"
+  },
+  {
+    "id": "8e2b2ae9-ceb1-42a8-82b0-2830b34293c5",
+    "allocated_amount": "255.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "a6ff5760-2696-45bc-b224-57625133946c",
+    "invoice_id": "5097e67c-eeef-44b7-a62e-9f3582be4147"
+  },
+  {
+    "id": "3c9d1656-d6a2-4cbf-b262-c64fcbe75ce0",
+    "allocated_amount": "279.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "a6ff5760-2696-45bc-b224-57625133946c",
+    "invoice_id": "94cb1d6e-ce29-47fd-937a-b5e6256296e2"
+  },
+  {
+    "id": "c987f617-e454-4e0e-bedc-800c23da91f6",
+    "allocated_amount": "265.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "bad3bad7-6c93-4a26-ba97-9b6ee42a4306",
+    "invoice_id": "94cb1d6e-ce29-47fd-937a-b5e6256296e2"
+  },
+  {
+    "id": "e71385f8-8587-4a27-9773-28bac2ee4653",
+    "allocated_amount": "5.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "bad3bad7-6c93-4a26-ba97-9b6ee42a4306",
+    "invoice_id": "5b9f47a7-c2f3-48b5-b684-0ff6d5df0d62"
+  },
+  {
+    "id": "ce8354f1-554c-4d31-8c11-92640cad8b97",
+    "allocated_amount": "80.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "c447cd69-46a3-4e57-9e18-16cfd22cef72",
+    "invoice_id": "5b9f47a7-c2f3-48b5-b684-0ff6d5df0d62"
+  },
+  {
+    "id": "bd74bde4-0226-4239-a59b-522fde87db3d",
+    "allocated_amount": "250.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "c447cd69-46a3-4e57-9e18-16cfd22cef72",
+    "invoice_id": "a5c43c19-faf4-4f7a-bff8-faadf8c2743b"
+  },
+  {
+    "id": "8c95fd2a-a66c-4940-bc92-406f79bd08e6",
+    "allocated_amount": "1020.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "c447cd69-46a3-4e57-9e18-16cfd22cef72",
+    "invoice_id": "043d64a0-1cf8-4924-8ae2-f0e6e0edf899"
+  },
+  {
+    "id": "a1354757-62bb-42ea-9e2f-d9fad89e068a",
+    "allocated_amount": "30.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "bc3d2f0f-bb6f-42af-8a2b-9971d6647677",
+    "invoice_id": "043d64a0-1cf8-4924-8ae2-f0e6e0edf899"
+  },
+  {
+    "id": "be4409d6-e5a1-40ab-99e1-09c48577ffc5",
+    "allocated_amount": "645.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "bc3d2f0f-bb6f-42af-8a2b-9971d6647677",
+    "invoice_id": "dd16fb18-d203-4de4-943e-fdea49990e48"
+  },
+  {
+    "id": "81ca96b4-a720-479a-bab1-81688f402bc2",
+    "allocated_amount": "135.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "bc3d2f0f-bb6f-42af-8a2b-9971d6647677",
+    "invoice_id": "3a79558f-a722-4e85-a121-f7b399ab39d1"
+  },
+  {
+    "id": "8b7555ed-5799-425c-80e8-b68ecb4c0384",
+    "allocated_amount": "390.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "bc3d2f0f-bb6f-42af-8a2b-9971d6647677",
+    "invoice_id": "1a3b8d56-b1aa-4764-aa41-f1a796f64e0f"
+  },
+  {
+    "id": "70917865-0675-422f-a30a-7e3b18376a88",
+    "allocated_amount": "310.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "1c6e2f44-3735-48eb-b4f2-754af6c638fd",
+    "invoice_id": "1a3b8d56-b1aa-4764-aa41-f1a796f64e0f"
+  },
+  {
+    "id": "9504fdd8-50b6-48c6-a726-c9c740ebf5f0",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "1c6e2f44-3735-48eb-b4f2-754af6c638fd",
+    "invoice_id": "8e08cb68-0604-4d7a-a585-bbd730f1f588"
+  },
+  {
+    "id": "18a53224-23df-42ba-8d5a-83c884630880",
+    "allocated_amount": "390.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "1c6e2f44-3735-48eb-b4f2-754af6c638fd",
+    "invoice_id": "da234418-eb6c-451b-bf90-f3ff5b1d7a89"
+  },
+  {
+    "id": "a4b62eee-a0fe-4b77-9980-678d4e5cb015",
+    "allocated_amount": "540.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "1c6e2f44-3735-48eb-b4f2-754af6c638fd",
+    "invoice_id": "65cfcd9e-6a14-4e90-a213-8203947f1478"
+  },
+  {
+    "id": "b5e239b0-0814-451b-a6d5-848cb18c95df",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "81911b51-6880-4d4a-b32a-52308378d17b",
+    "invoice_id": "65cfcd9e-6a14-4e90-a213-8203947f1478"
+  },
+  {
+    "id": "14f0be40-6cf1-4ce0-9afd-6690df3501c5",
+    "allocated_amount": "310.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "36790c52-a5b4-4eaa-af26-24a2474ca0e0",
+    "invoice_id": "65cfcd9e-6a14-4e90-a213-8203947f1478"
+  },
+  {
+    "id": "ed30cc49-9256-4d63-a437-3326cd66e0e9",
+    "allocated_amount": "250.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "36790c52-a5b4-4eaa-af26-24a2474ca0e0",
+    "invoice_id": "845d549c-f177-4f2f-9b58-520bd3327d72"
+  },
+  {
+    "id": "82c1e06b-16d1-4a9c-9bd7-5f3075730974",
+    "allocated_amount": "155.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "36790c52-a5b4-4eaa-af26-24a2474ca0e0",
+    "invoice_id": "e5e194dc-fae3-4fdf-a77b-d503cdd83f1d"
+  },
+  {
+    "id": "444b0b9e-72bf-4f2d-9469-6ae62cdee5c3",
+    "allocated_amount": "35.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "36790c52-a5b4-4eaa-af26-24a2474ca0e0",
+    "invoice_id": "9fa7ec7d-d2a1-4f62-be5c-e7574b01ccc4"
+  },
+  {
+    "id": "0c1a86f7-21ea-48ec-9740-3bc488ec11bc",
+    "allocated_amount": "825.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "93e215f8-0a31-4bc0-ac0d-ba8bba68cc4b",
+    "invoice_id": "9fa7ec7d-d2a1-4f62-be5c-e7574b01ccc4"
+  },
+  {
+    "id": "24137535-5a96-4849-bf4d-d8f926eb907d",
+    "allocated_amount": "75.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "93e215f8-0a31-4bc0-ac0d-ba8bba68cc4b",
+    "invoice_id": "e1e19cf4-b549-471b-9cbd-d54cde4ee143"
+  },
+  {
+    "id": "eecb6e95-c8d7-409c-957c-726c2673ab5a",
+    "allocated_amount": "545.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "95bbf86f-e486-41aa-8bd7-aac5ded5f019",
+    "invoice_id": "e1e19cf4-b549-471b-9cbd-d54cde4ee143"
+  },
+  {
+    "id": "a356435b-8906-4c70-a0ac-c0de0fb32aab",
+    "allocated_amount": "455.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "95bbf86f-e486-41aa-8bd7-aac5ded5f019",
+    "invoice_id": "1c448503-5ff2-4bc4-b5a0-d472af1edbb3"
+  },
+  {
+    "id": "ab995663-2d5a-45f9-b7ba-6571ff3e0849",
+    "allocated_amount": "95.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "85079f3b-683b-470a-b161-08e1781f57fd",
+    "invoice_id": "1c448503-5ff2-4bc4-b5a0-d472af1edbb3"
+  },
+  {
+    "id": "00ef7dc4-19c0-429b-8bb1-a7ddb8d333ee",
+    "allocated_amount": "405.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "85079f3b-683b-470a-b161-08e1781f57fd",
+    "invoice_id": "fcca863f-dd1d-43e3-9348-04cc4bf89697"
+  },
+  {
+    "id": "349bec3a-b9d4-441d-a54f-b84901813111",
+    "allocated_amount": "420.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "172ad647-302d-46b9-8fbc-3981139899a4",
+    "invoice_id": "fcca863f-dd1d-43e3-9348-04cc4bf89697"
+  },
+  {
+    "id": "a8a05263-7500-4405-982d-4d70626a3a9d",
+    "allocated_amount": "80.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "172ad647-302d-46b9-8fbc-3981139899a4",
+    "invoice_id": "9beb43e6-f808-4f30-8f28-bccf46df600e"
+  },
+  {
+    "id": "2f36c42b-2703-43c6-9e92-b63f79d77065",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "ca447fa8-6638-430e-8172-8dd92ff6ced0",
+    "invoice_id": "9beb43e6-f808-4f30-8f28-bccf46df600e"
+  },
+  {
+    "id": "33cfd69b-c71d-4cce-9776-bdc57a0fa1c5",
+    "allocated_amount": "123.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "ee6f3177-ab8a-4e61-8c9e-fad23eb84265",
+    "invoice_id": "9beb43e6-f808-4f30-8f28-bccf46df600e"
+  },
+  {
+    "id": "fa879d32-0c27-4224-80b6-9bebd1e746e4",
+    "allocated_amount": "65.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "ee6f3177-ab8a-4e61-8c9e-fad23eb84265",
+    "invoice_id": "04a49c1a-ee78-48a5-9f9f-aea9b1f7f32c"
+  },
+  {
+    "id": "195a682f-a6e3-4b3a-840c-8f6d4dbc6150",
+    "allocated_amount": "312.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "ee6f3177-ab8a-4e61-8c9e-fad23eb84265",
+    "invoice_id": "81acc1b4-cfbc-4c67-9357-ae28e59de1f0"
+  },
+  {
+    "id": "7c38702d-5215-4f22-ad9f-3119eefbde7e",
+    "allocated_amount": "328.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9eb805c0-c7c2-44e8-ae36-e7b7c42330e9",
+    "invoice_id": "81acc1b4-cfbc-4c67-9357-ae28e59de1f0"
+  },
+  {
+    "id": "26b0ee44-b2b8-4b39-8282-2fbc758d1d20",
+    "allocated_amount": "22.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9eb805c0-c7c2-44e8-ae36-e7b7c42330e9",
+    "invoice_id": "ab1dab52-a383-4c92-aad0-2bc25ea351d3"
+  },
+  {
+    "id": "e48b3a32-b450-4c66-9d1e-b03b25b78353",
+    "allocated_amount": "63.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9ba4ed3d-922d-4e87-a4d1-9434152ec5d7",
+    "invoice_id": "ab1dab52-a383-4c92-aad0-2bc25ea351d3"
+  },
+  {
+    "id": "7a33fae4-7e2f-473b-8cf1-fe7c61caeab0",
+    "allocated_amount": "525.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9ba4ed3d-922d-4e87-a4d1-9434152ec5d7",
+    "invoice_id": "8f4a0f8a-e672-409a-b848-b5fd6aeec592"
+  },
+  {
+    "id": "ba377371-0720-4fd9-bdbc-331ef41ae45b",
+    "allocated_amount": "412.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9ba4ed3d-922d-4e87-a4d1-9434152ec5d7",
+    "invoice_id": "46522bd8-e874-4673-9245-b33d771d6419"
+  },
+  {
+    "id": "6ee6f027-5704-43c9-90fa-6411983abc17",
+    "allocated_amount": "23.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "b945ffdb-9f29-466a-b7c6-4062bc9657de",
+    "invoice_id": "46522bd8-e874-4673-9245-b33d771d6419"
+  },
+  {
+    "id": "263c52f2-2d61-498c-851c-fdcfbe89569a",
+    "allocated_amount": "395.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "b945ffdb-9f29-466a-b7c6-4062bc9657de",
+    "invoice_id": "92d98d7a-b02c-446b-a7e5-4ea204c1f553"
+  },
+  {
+    "id": "e4fdc68f-2dea-4a67-87d4-5760f4ff48ce",
+    "allocated_amount": "182.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "b945ffdb-9f29-466a-b7c6-4062bc9657de",
+    "invoice_id": "ae9dfee5-ed0c-42c0-a656-1916fad664c2"
+  },
+  {
+    "id": "392f79ee-db40-4df4-970a-61fc47c104c9",
+    "allocated_amount": "409.40",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9c2a1798-a183-404f-94e7-a18d09e2e6d2",
+    "invoice_id": "ae9dfee5-ed0c-42c0-a656-1916fad664c2"
+  },
+  {
+    "id": "f3d5fc7c-aa7b-405a-bfa8-21808b024d8e",
+    "allocated_amount": "245.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9c2a1798-a183-404f-94e7-a18d09e2e6d2",
+    "invoice_id": "2ff9c342-5569-4117-a7b9-c5bf13b34b1d"
+  },
+  {
+    "id": "a087a2fd-93ae-4886-8d31-08bf1f55b2bf",
+    "allocated_amount": "150.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9c2a1798-a183-404f-94e7-a18d09e2e6d2",
+    "invoice_id": "057c30ec-4ff1-4f29-8861-5c6491b2c084"
+  },
+  {
+    "id": "317bf634-9ad6-4845-96eb-de4c517a3696",
+    "allocated_amount": "50.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9c2a1798-a183-404f-94e7-a18d09e2e6d2",
+    "invoice_id": "1314bf45-426c-408f-b282-47064f2154da"
+  },
+  {
+    "id": "b2461b39-e6b6-4491-a3d1-360ab2a778a2",
+    "allocated_amount": "545.60",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "9c2a1798-a183-404f-94e7-a18d09e2e6d2",
+    "invoice_id": "28c73f52-8cf5-418d-a9a8-3689206d5b83"
+  },
+  {
+    "id": "b4e81d76-67a2-46e6-93aa-12b9d46f91dd",
+    "allocated_amount": "86.40",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "66df1422-d142-4b76-b285-a086d800ade7",
+    "invoice_id": "28c73f52-8cf5-418d-a9a8-3689206d5b83"
+  },
+  {
+    "id": "3e945450-6eb6-431f-ad9c-94aeaa326ace",
+    "allocated_amount": "800.00",
+    "allocated_at": "2026-11-09T08:53:11.219046",
+    "payment_id": "b493b260-f39f-4f13-a663-965167a12402",
+    "invoice_id": "ac643ac6-f4ce-45a0-9442-0317ac6c659a"
+  },
+  {
+    "id": "56e5c467-43c0-4750-9df2-4c6376e00a46",
+    "allocated_amount": "150.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "66df1422-d142-4b76-b285-a086d800ade7",
+    "invoice_id": "5d0b63b5-ac1a-4ebf-b304-afa7f06cd8bd"
+  },
+  {
+    "id": "346fd11d-78ec-4bd5-b003-96f7aad72229",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "66df1422-d142-4b76-b285-a086d800ade7",
+    "invoice_id": "adfb1618-72d9-48d0-8808-34c31ab22f04"
+  },
+  {
+    "id": "a8e037e9-6e19-40fd-8d62-a5b59814499a",
+    "allocated_amount": "733.60",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "66df1422-d142-4b76-b285-a086d800ade7",
+    "invoice_id": "06c3e76f-680d-4964-8dad-79d48fb17192"
+  },
+  {
+    "id": "f551a494-9f25-4693-8d08-8d934ce1a23a",
+    "allocated_amount": "651.40",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "1b4ae285-1269-437c-93fb-0c18499ed9fd",
+    "invoice_id": "06c3e76f-680d-4964-8dad-79d48fb17192"
+  },
+  {
+    "id": "aac4460a-c3b7-453c-ac9e-425293eefaaa",
+    "allocated_amount": "48.60",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "1b4ae285-1269-437c-93fb-0c18499ed9fd",
+    "invoice_id": "67e4ce9d-4cd8-4c8a-bd5d-ac4cec637f04"
+  },
+  {
+    "id": "88dcae2e-d665-42e4-ba63-da52b4e94f1a",
+    "allocated_amount": "600.00",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "2f081445-e106-4803-98e7-abcdc500d162",
+    "invoice_id": "67e4ce9d-4cd8-4c8a-bd5d-ac4cec637f04"
+  },
+  {
+    "id": "410b75ea-bb04-44c2-8593-f9ad95236ca4",
+    "allocated_amount": "391.40",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "c75d765f-ed1d-415b-9d33-b2f372892625",
+    "invoice_id": "67e4ce9d-4cd8-4c8a-bd5d-ac4cec637f04"
+  },
+  {
+    "id": "9d992979-1d38-4fee-8180-f6a7ceb97334",
+    "allocated_amount": "308.60",
+    "allocated_at": "2026-11-07T07:58:49.189768",
+    "payment_id": "c75d765f-ed1d-415b-9d33-b2f372892625",
+    "invoice_id": "e9a8dbb9-4ad5-4f14-8424-a1d4b85fe6df"
+  },
+  {
+    "id": "4dad4c38-aca3-433b-a93a-fe28697dd64b",
+    "allocated_amount": "200.00",
+    "allocated_at": "2026-11-09T10:05:09.880629",
+    "payment_id": "111fa7df-3098-4a4c-aa76-f5d82ff1be70",
+    "invoice_id": "8bdc8784-8b65-48a0-b658-6080620e1bb2"
+  },
+  {
+    "id": "d4770d25-e56d-4308-b8ab-e534288c6b9f",
+    "allocated_amount": "290.00",
+    "allocated_at": "2026-11-09T12:38:47.962776",
+    "payment_id": "9a9f2dd6-ed67-4432-9a3e-301b5290167c",
+    "invoice_id": "3d455092-78eb-417f-95da-438685e9db40"
+  },
+  {
+    "id": "ddb1e8b3-82d4-4a42-a905-c551b7a17a6b",
+    "allocated_amount": "2116.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "6177d95d-bdc4-44fc-a291-fe39c2215238",
+    "invoice_id": "6ecdc994-0431-4fee-8b8b-f5b80d38d24d"
+  },
+  {
+    "id": "3a841c54-27d2-45ec-aaf8-0592dc54e076",
+    "allocated_amount": "786.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "8c587c56-cba7-40d3-a296-25fadbf282f5",
+    "invoice_id": "a523a94f-5547-4715-84fe-99be571f141d"
+  },
+  {
+    "id": "535d8e57-7e35-4c4a-a7c7-64c4ea7cfdf1",
+    "allocated_amount": "2185.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "be9b72c4-7348-4947-bc93-899bf02bd080",
+    "invoice_id": "da3c19d5-460a-41dc-993a-838ebed259f4"
+  },
+  {
+    "id": "26b868c5-f927-49c2-a26a-b1f76e331dd1",
+    "allocated_amount": "1276.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "0f4138f1-047b-4468-996c-cb24cbd01309",
+    "invoice_id": "24f50ade-a609-4cd2-ac63-9587c9dcfe6b"
+  },
+  {
+    "id": "44645204-d059-471b-8933-34cb5783f1d1",
+    "allocated_amount": "1387.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "b0e20bd5-a343-4449-82a2-ae0dc305d4db",
+    "invoice_id": "f5bb8253-4d66-4c06-b2aa-10277dad7e57"
+  },
+  {
+    "id": "179fdec0-bf02-4224-b529-1ae39a6e215a",
+    "allocated_amount": "125.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "b0e20bd5-a343-4449-82a2-ae0dc305d4db",
+    "invoice_id": "5e1a49f5-e2ea-495f-853a-ceca9e8fd339"
+  },
+  {
+    "id": "65b27f72-73ae-4253-881f-a6654c166208",
+    "allocated_amount": "2060.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "5dd99087-0519-436b-bc28-794994f2e155",
+    "invoice_id": "f9e93003-1b43-4111-bce8-f90b5e466b26"
+  },
+  {
+    "id": "c8074605-bda6-420c-9942-c0bb62441b06",
+    "allocated_amount": "1775.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "e4de3ef4-bb60-4b1a-aa8b-242437486271",
+    "invoice_id": "0c965e54-1c03-4b58-9879-594d6b0cb5cf"
+  },
+  {
+    "id": "331799ce-587b-4425-8bbc-51c34891d68b",
+    "allocated_amount": "425.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "e4de3ef4-bb60-4b1a-aa8b-242437486271",
+    "invoice_id": "f0d1f8e4-1a81-4fd5-a001-11048b6208c0"
+  },
+  {
+    "id": "bdfce4f0-6142-4f20-90d6-4b40cf0a51d5",
+    "allocated_amount": "24.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "0fbc299b-aaab-4c49-a0e3-c97a5d995965",
+    "invoice_id": "f0d1f8e4-1a81-4fd5-a001-11048b6208c0"
+  },
+  {
+    "id": "45ae7170-53cd-44f6-b492-5832b43cbe44",
+    "allocated_amount": "2209.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "0fbc299b-aaab-4c49-a0e3-c97a5d995965",
+    "invoice_id": "eb0f67d8-4651-4188-9484-e9dd39407d4d"
+  },
+  {
+    "id": "23eec10a-e5de-404a-bc69-7a499f596af4",
+    "allocated_amount": "567.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "0fbc299b-aaab-4c49-a0e3-c97a5d995965",
+    "invoice_id": "202c6f7a-c526-4c1a-a2de-c0aa04d480e7"
+  },
+  {
+    "id": "e7cfc5c7-5e85-4cf9-9457-d14fca283c92",
+    "allocated_amount": "741.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "ed4735aa-2177-41bd-a8d0-eb36f3c3a0e4",
+    "invoice_id": "202c6f7a-c526-4c1a-a2de-c0aa04d480e7"
+  },
+  {
+    "id": "9055f559-c5cc-440b-a50f-e7dd64516c74",
+    "allocated_amount": "1705.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "6da6430b-0fa7-406d-b984-375c48f34f7b",
+    "invoice_id": "697efcaf-ab63-4ca2-98e4-46c0c3c4b71e"
+  },
+  {
+    "id": "608cb3fa-ef37-4951-b78e-d5751cd3d2fa",
+    "allocated_amount": "1380.00",
+    "allocated_at": "2026-11-07T07:59:04.607811",
+    "payment_id": "c0122771-208c-4d24-80f1-42aa9ffc3dff",
+    "invoice_id": "aadcd194-eeff-4c65-887d-480be9ddb481"
+  },
+  {
+    "id": "a7c9b054-29f2-4840-9658-61590c4c8ae0",
+    "allocated_amount": "600.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "6da6430b-0fa7-406d-b984-375c48f34f7b",
+    "invoice_id": "01a086f8-e55c-4117-8e26-a4f710e85b02"
+  },
+  {
+    "id": "11066311-deb4-4c87-b3f7-40dcd2c3d277",
+    "allocated_amount": "1150.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "6da6430b-0fa7-406d-b984-375c48f34f7b",
+    "invoice_id": "7a6e521d-681c-45d8-8566-24a650a136cb"
+  },
+  {
+    "id": "218304da-6e71-4f3f-a6e5-dc14ca1149a5",
+    "allocated_amount": "2163.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "b765ea69-c772-4152-849a-147b6d39526a",
+    "invoice_id": "ecb8c52c-3789-428d-81e2-7e27d32e8aa9"
+  },
+  {
+    "id": "d53dbb32-d536-4159-8ee8-fa4c75ed2efb",
+    "allocated_amount": "837.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "b765ea69-c772-4152-849a-147b6d39526a",
+    "invoice_id": "dd12a743-1ae3-4c99-8fcc-4bcf73f1a497"
+  },
+  {
+    "id": "b454b32c-87ef-43b7-b9e9-c7807944e32b",
+    "allocated_amount": "73.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "c8d8b4e9-f9b9-4c99-8f7b-8bf114bfcf0b",
+    "invoice_id": "dd12a743-1ae3-4c99-8fcc-4bcf73f1a497"
+  },
+  {
+    "id": "ec94dde8-80af-4ef8-b177-f4bba83b5258",
+    "allocated_amount": "2125.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "c8d8b4e9-f9b9-4c99-8f7b-8bf114bfcf0b",
+    "invoice_id": "dbe9fb1c-37eb-439f-8eb3-b0169bb56d10"
+  },
+  {
+    "id": "5acce23a-c357-4f28-aed8-a726d4e2c180",
+    "allocated_amount": "2.00",
+    "allocated_at": "2026-11-05T15:02:59.452666",
+    "payment_id": "c8d8b4e9-f9b9-4c99-8f7b-8bf114bfcf0b",
+    "invoice_id": "0ae94bdb-e4a0-4bd7-995c-d35fdc27f12f"
+  },
+  {
+    "id": "34b2a0cf-a37b-41c1-8518-ea95361e8598",
+    "allocated_amount": "400.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "f94cb6eb-78fd-4d29-b6c4-a288fd5cfc27",
+    "invoice_id": "3d47bf08-7903-4d4c-8537-de8dcb163679"
+  },
+  {
+    "id": "43c20016-d6c7-44c1-b895-e2c9fc092392",
+    "allocated_amount": "360.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "effd15e1-0c34-416c-8a45-2578d487126d",
+    "invoice_id": "3d47bf08-7903-4d4c-8537-de8dcb163679"
+  },
+  {
+    "id": "9196c879-3ae3-47ac-980b-cec9ba443348",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "5529e381-bb17-4dcd-b957-598e5e4fab8a",
+    "invoice_id": "3b3e5605-6522-45f6-b4f8-32bb39e9dc29"
+  },
+  {
+    "id": "82c7c5f8-2e53-43df-959a-4a6777f6a0c0",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "069e49f8-dee0-4c36-816a-604d325f4ff6",
+    "invoice_id": "8783687c-d7ea-4036-a291-458a3c529291"
+  },
+  {
+    "id": "e0db5112-9129-4b30-8667-efdc34e7c4e5",
+    "allocated_amount": "285.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "40b68547-1200-43f8-bad8-fc6c45691275",
+    "invoice_id": "36c0f993-7f51-4ec3-8f36-03763282e98b"
+  },
+  {
+    "id": "c3ec49c4-9409-4056-8d15-57f471a4e212",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "03a33e64-fd8b-49bd-a366-da36d1f01a77",
+    "invoice_id": "36c0f993-7f51-4ec3-8f36-03763282e98b"
+  },
+  {
+    "id": "dfc87ffb-0dd5-46cf-a1ed-688d3f7e8036",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:02:59.818246",
+    "payment_id": "a992ff00-9c3a-4189-9662-6388a16a600f",
+    "invoice_id": "36c0f993-7f51-4ec3-8f36-03763282e98b"
+  },
+  {
+    "id": "f57db0bf-33ff-4495-874e-9548b9a2e702",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-09T11:00:29.619449",
+    "payment_id": "e3fd5b27-3080-4320-9b88-2a8bd27b4c70",
+    "invoice_id": "0b673e17-f51f-49b4-b537-777589695925"
+  },
+  {
+    "id": "4d973e75-09cc-49e8-9171-a0f946a5969c",
+    "allocated_amount": "440.00",
+    "allocated_at": "2026-11-09T11:00:29.619449",
+    "payment_id": "e3fd5b27-3080-4320-9b88-2a8bd27b4c70",
+    "invoice_id": "831f5ffa-638e-4470-8ed5-6fcafae4ec30"
+  },
+  {
+    "id": "6398993d-555f-4048-a32a-123db0932483",
+    "allocated_amount": "370.00",
+    "allocated_at": "2026-11-05T15:03:01.049915",
+    "payment_id": "7561e263-bfb7-4d86-ad79-92bbb8d6341d",
+    "invoice_id": "65e317ec-ecb6-4857-8708-ecc21214179b"
+  },
+  {
+    "id": "18cdab6a-e833-4890-9fc1-4fd69b40df0d",
+    "allocated_amount": "1015.00",
+    "allocated_at": "2026-11-05T15:03:01.049915",
+    "payment_id": "169c4cbb-f43a-4b93-8493-9aeb23051fe3",
+    "invoice_id": "1c81944b-e986-4d71-8cef-9e35ab3dca4f"
+  },
+  {
+    "id": "edfd1024-eca8-46ce-a321-23fbb7f67dcc",
+    "allocated_amount": "302.00",
+    "allocated_at": "2026-11-05T15:03:01.049915",
+    "payment_id": "3c9c33c3-b7b5-4d11-be36-32565e323b5b",
+    "invoice_id": "a49e8d0b-a15f-4e2f-8857-654e3d6f6b39"
+  },
+  {
+    "id": "9af6df06-d964-4304-b57a-faeeb47dd46b",
+    "allocated_amount": "600.00",
+    "allocated_at": "2026-11-05T15:03:01.049915",
+    "payment_id": "e943d7e2-b754-4d2b-8644-013024cc4621",
+    "invoice_id": "d8eece07-0b10-4970-adf3-7143613e553e"
+  },
+  {
+    "id": "3b388994-6cfe-41e2-a9de-6a01c753cd28",
+    "allocated_amount": "900.00",
+    "allocated_at": "2026-11-05T15:03:01.049915",
+    "payment_id": "3d3797ee-93b1-4993-ad59-1fac95c5357c",
+    "invoice_id": "82320289-12e8-4f48-8e04-e30c21cf689f"
+  },
+  {
+    "id": "9d43d7dd-2b6c-48e6-90ae-6244bbb7bf5c",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "9a0b2539-4f2c-4368-aefa-c873028e1230",
+    "invoice_id": "27fbc9e4-f124-4620-a9c3-90dfc631ccaf"
+  },
+  {
+    "id": "1bdff68f-e345-45bc-9141-2f9f06e52625",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "0079af93-18c9-48a9-971f-73eeb1ca1bc8",
+    "invoice_id": "fa54cdfc-3a6e-48e5-ba58-18417ed08d38"
+  },
+  {
+    "id": "0c229874-0d1a-4fa5-bc6d-651c8be08f91",
+    "allocated_amount": "490.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "0079af93-18c9-48a9-971f-73eeb1ca1bc8",
+    "invoice_id": "70ed2ea5-d775-4f9b-9455-d88dded7080d"
+  },
+  {
+    "id": "05c3edbf-4b5f-4827-a761-ea7a1c3ea0bb",
+    "allocated_amount": "320.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "d4ede9b9-a3ea-4d41-8f7e-8ef70569a5bf",
+    "invoice_id": "70ed2ea5-d775-4f9b-9455-d88dded7080d"
+  },
+  {
+    "id": "eab97098-4572-45d8-911b-a62c12aef39a",
+    "allocated_amount": "810.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "d4ede9b9-a3ea-4d41-8f7e-8ef70569a5bf",
+    "invoice_id": "0db87e1a-6803-44f8-a023-0812f670307e"
+  },
+  {
+    "id": "e092126b-9e1b-4987-b75d-fcc962ca31c1",
+    "allocated_amount": "240.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "d4ede9b9-a3ea-4d41-8f7e-8ef70569a5bf",
+    "invoice_id": "a58f6bfa-c63d-48ff-81ca-45a8460009f8"
+  },
+  {
+    "id": "846c9608-78b3-4d87-9a3c-e617cefa3a49",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "3e2ae419-ee04-4beb-bbae-b741ef80d52e",
+    "invoice_id": "3bb1c907-0d47-4f9f-b384-1e99b784cb72"
+  },
+  {
+    "id": "785aeab0-f206-44e4-9c58-fa7ffb0ca898",
+    "allocated_amount": "1050.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "3e2ae419-ee04-4beb-bbae-b741ef80d52e",
+    "invoice_id": "94c02cd2-b390-40ca-a6e2-6d1be7f1776b"
+  },
+  {
+    "id": "42a0c1c6-c60b-4e2a-b5b8-5d02963a187a",
+    "allocated_amount": "30.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "061ba72d-66fe-48a0-837d-126d671b8c53",
+    "invoice_id": "94c02cd2-b390-40ca-a6e2-6d1be7f1776b"
+  },
+  {
+    "id": "f0571edd-e81a-477c-8473-3a05b039f8d8",
+    "allocated_amount": "520.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "061ba72d-66fe-48a0-837d-126d671b8c53",
+    "invoice_id": "4a968ed6-86a6-4e71-8487-13d4eb47c2fb"
+  },
+  {
+    "id": "4658b87f-8ce5-4ded-bc26-508758a6f054",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "993cc912-de5a-4916-afc5-d4128f8dc9af",
+    "invoice_id": "4a968ed6-86a6-4e71-8487-13d4eb47c2fb"
+  },
+  {
+    "id": "fa72dafa-3157-404a-87c5-abfe9184a3dd",
+    "allocated_amount": "20.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "460eb591-f04d-4082-9016-3ec03e718b50",
+    "invoice_id": "4a968ed6-86a6-4e71-8487-13d4eb47c2fb"
+  },
+  {
+    "id": "0316ae20-a411-403e-8d43-027a2043d600",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "460eb591-f04d-4082-9016-3ec03e718b50",
+    "invoice_id": "72a2a468-d5ea-497d-9456-fcf5eb32890a"
+  },
+  {
+    "id": "f82dd1f7-512e-4560-bbcc-cd7c44d695c7",
+    "allocated_amount": "470.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "460eb591-f04d-4082-9016-3ec03e718b50",
+    "invoice_id": "0c962fe7-4551-4087-9046-a1b1b2f2f537"
+  },
+  {
+    "id": "75840c66-953f-47cc-a3c0-971520e8f708",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "fa818d49-df0a-418a-825d-7c8a176f66df",
+    "invoice_id": "0c962fe7-4551-4087-9046-a1b1b2f2f537"
+  },
+  {
+    "id": "e35b59dd-1a63-48bb-8b3d-55e65aeb27c3",
+    "allocated_amount": "760.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "fa818d49-df0a-418a-825d-7c8a176f66df",
+    "invoice_id": "47fb122a-82ad-4fa9-bdc1-c1eb7ebd7b7c"
+  },
+  {
+    "id": "25265028-11e1-4cc7-b298-ec83ed42d7bc",
+    "allocated_amount": "50.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "042483c1-112a-4e22-95b7-6dcf508cf28c",
+    "invoice_id": "47fb122a-82ad-4fa9-bdc1-c1eb7ebd7b7c"
+  },
+  {
+    "id": "36c36efa-0f33-4bd6-8047-8f101765a8c9",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "042483c1-112a-4e22-95b7-6dcf508cf28c",
+    "invoice_id": "e5ea682d-eb33-4a66-800d-561e41c549af"
+  },
+  {
+    "id": "23ea355c-52cc-4790-98b6-ee91923a669a",
+    "allocated_amount": "1060.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "042483c1-112a-4e22-95b7-6dcf508cf28c",
+    "invoice_id": "0369be17-3128-4691-8bdc-a38741f5c831"
+  },
+  {
+    "id": "b2904c31-ee43-423b-9f19-533544bf5f67",
+    "allocated_amount": "880.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "042483c1-112a-4e22-95b7-6dcf508cf28c",
+    "invoice_id": "a80ebe3c-32e5-446b-88ad-09fae7511fd5"
+  },
+  {
+    "id": "4667e2f6-e82e-4708-b034-abcf115e0588",
+    "allocated_amount": "50.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "7f8b1846-66ef-4792-bbd9-5dedcae7099d",
+    "invoice_id": "a80ebe3c-32e5-446b-88ad-09fae7511fd5"
+  },
+  {
+    "id": "71a851c1-cc40-44de-9606-3e6b16d76835",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "7f8b1846-66ef-4792-bbd9-5dedcae7099d",
+    "invoice_id": "70236d36-4654-48e9-8a4d-8d8ef286652a"
+  },
+  {
+    "id": "a2b5efb0-a7e8-4504-982a-19b6595ba270",
+    "allocated_amount": "250.00",
+    "allocated_at": "2026-11-05T15:03:01.412214",
+    "payment_id": "7f8b1846-66ef-4792-bbd9-5dedcae7099d",
+    "invoice_id": "809baaaf-9495-48c1-a387-c7ed4919c2df"
+  },
+  {
+    "id": "69f8eaec-34ab-4260-b9fa-d6f2ada11c28",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-05T15:03:02.178386",
+    "payment_id": "b90dd3fe-c3ab-4be3-adeb-8d371a1b3d45",
+    "invoice_id": "36db6701-2e7e-46be-bc5f-eced4e035130"
+  },
+  {
+    "id": "29967d90-b227-4c4e-b55f-f826e3757dc0",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-05T15:03:02.178386",
+    "payment_id": "a772e4a9-0680-4431-ac6f-6d4472c67c0d",
+    "invoice_id": "b1e566ac-8b4d-46c2-a126-741dd1a90266"
+  },
+  {
+    "id": "ef270920-e69c-4aae-9e45-c1bd561b05b1",
+    "allocated_amount": "4505.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "eaf2d4f8-625a-43fc-b62a-09951ce79f31",
+    "invoice_id": "9a7004e1-171c-4bfa-b636-62bef5f752f7"
+  },
+  {
+    "id": "6ce1d1f2-9412-4529-be08-47d6e91c0bae",
+    "allocated_amount": "75.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "bb78e2fa-3739-40cb-928c-70517fb0bb71",
+    "invoice_id": "9a7004e1-171c-4bfa-b636-62bef5f752f7"
+  },
+  {
+    "id": "ea3d8933-579d-4365-abd0-5e38f09a9a33",
+    "allocated_amount": "285.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "bb78e2fa-3739-40cb-928c-70517fb0bb71",
+    "invoice_id": "4eae2699-05e4-416f-a1bf-ed569c511c75"
+  },
+  {
+    "id": "cfdccd02-6895-4f4a-9d68-72aa971b909c",
+    "allocated_amount": "135.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "bb78e2fa-3739-40cb-928c-70517fb0bb71",
+    "invoice_id": "d3071a9b-cab5-47c4-9404-2adf66d88331"
+  },
+  {
+    "id": "80b588d5-fd8d-461b-8da3-7ed9aa88b387",
+    "allocated_amount": "3405.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "31898204-b76f-49ea-9d2a-bd430cb24e64",
+    "invoice_id": "24628397-9124-4fcc-b4f7-c3ea4e54041d"
+  },
+  {
+    "id": "aaf0eaf2-35bd-4eda-af20-a050940df9b7",
+    "allocated_amount": "1036.00",
+    "allocated_at": "2026-11-05T15:03:02.548507",
+    "payment_id": "4fc63c84-9cfe-4366-aa99-5e723ffada04",
+    "invoice_id": "aee348a7-aabe-4ef3-b946-06f1807f3694"
+  },
+  {
+    "id": "196d6a27-652a-4735-8023-2d6a61b4bdab",
+    "allocated_amount": "510.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "4cceca68-ca17-44e4-9e04-4d97be9176f2",
+    "invoice_id": "28aa57e4-f39d-47c3-b0a0-226bc282fef0"
+  },
+  {
+    "id": "2519ddad-76f2-4c3b-9521-13d9d22b7cc9",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "0914631e-6f14-456b-82bc-34b4087174be",
+    "invoice_id": "af7075f4-6f51-4610-969a-b5b674f9a6be"
+  },
+  {
+    "id": "fe66e948-84ec-4554-bdcd-d52c3cbd2fe4",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "5c77656a-19fb-4d38-8275-9c15debf2751",
+    "invoice_id": "8f9f4a96-6ba7-4a24-9201-531db4120ae2"
+  },
+  {
+    "id": "5dfc9a7a-1afa-453b-b763-0a3dfc1f7da9",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "d58953ea-bdda-4a92-9986-01dd9bcd0015",
+    "invoice_id": "47201d87-f1d3-4d8f-8b8f-1c30a8dbb2fa"
+  },
+  {
+    "id": "1244eed5-b7e7-4b14-931c-c2523e5b1f9a",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "e43d3602-5933-47bd-be7c-17b3d98aaded",
+    "invoice_id": "db9145e4-c2c8-490f-8cc0-64756e802d40"
+  },
+  {
+    "id": "765facb7-e019-4a9f-bf47-7943ff1bf7da",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "75f22352-d238-49f8-9493-3f25ccf2cf28",
+    "invoice_id": "4042c0e6-f12d-4058-9e9c-755d95a68918"
+  },
+  {
+    "id": "c926b52e-98e1-4416-b949-01f84a24aaf5",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "e4dd5a62-c83c-496f-ab7d-4f48796d9e6f",
+    "invoice_id": "df501493-5db0-4c54-b735-27a03a276891"
+  },
+  {
+    "id": "210f10c0-03cf-47fb-b60f-ad5493b19fb3",
+    "allocated_amount": "280.00",
+    "allocated_at": "2026-11-05T15:03:06.916473",
+    "payment_id": "38e12bf5-0824-42dd-bf10-ce20f17e74ec",
+    "invoice_id": "86ef02fa-a1c7-44e6-b8a2-0755f61f1bb0"
+  },
+  {
+    "id": "21a0b3b2-9cfc-46b9-8a69-26e7fdc624da",
+    "allocated_amount": "769.00",
+    "allocated_at": "2026-11-05T15:03:07.276655",
+    "payment_id": "ed432b2a-7a2c-43e3-8a10-47694798f3af",
+    "invoice_id": "85f5bf58-0070-4820-813a-cd1e43d725fa"
+  },
+  {
+    "id": "9fe926ea-797f-452e-b26a-66e33fb022d2",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:07.276655",
+    "payment_id": "cb91cb7d-51ba-4f89-8313-a2ccf870d49d",
+    "invoice_id": "38ca0b64-e77c-4b93-8c9d-541023006d02"
+  },
+  {
+    "id": "d405449c-3661-42b5-9416-e4018af36bcb",
+    "allocated_amount": "640.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "b4324873-0c16-4a94-9e3b-707c5e090ed1",
+    "invoice_id": "c6cdb58d-0dcc-4705-ab54-1e9e6c334e5a"
+  },
+  {
+    "id": "6c5ec5f8-77f6-49e3-92fe-f9d6a07d3437",
+    "allocated_amount": "290.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "2ee1fff0-9f35-4238-b625-6cf55b74d653",
+    "invoice_id": "c82c4a47-5335-4351-9ac5-6686ce1bda8f"
+  },
+  {
+    "id": "20b18dc2-0e49-4f20-bf22-8e7638027ab7",
+    "allocated_amount": "1480.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "80ff527b-0780-47cf-b3de-b9c420d5a842",
+    "invoice_id": "8240017e-bf72-47a5-bf40-f05c7b44bbaf"
+  },
+  {
+    "id": "216e661a-556a-4e2b-9508-45bbba65f2ff",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "344379d1-c451-49f0-bd28-d0d96dbcd21d",
+    "invoice_id": "343e848b-74bd-4d32-917a-ebd16301439e"
+  },
+  {
+    "id": "6143851c-6153-46b7-8247-a7360254c611",
+    "allocated_amount": "600.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "e6c85b92-d91e-4d1a-bda8-554d29d38095",
+    "invoice_id": "8fd706c1-5cba-49ca-b97e-3889520bad2c"
+  },
+  {
+    "id": "a2141f42-79a0-45d3-b516-62ce8defc372",
+    "allocated_amount": "1050.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "a7bb6ce1-f1d7-45d0-ad8d-ca9308f0a6a2",
+    "invoice_id": "76b8c678-2df3-40c3-b027-a2270e9444c5"
+  },
+  {
+    "id": "b90d6a1d-4732-4d0e-8d39-39707347d592",
+    "allocated_amount": "680.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "e7e3023d-7e06-4562-bf08-ff7ba8ce35c9",
+    "invoice_id": "43b7e57b-2cfc-446f-85d3-5ee1076717f1"
+  },
+  {
+    "id": "3743ecab-50bc-4346-b50e-07db9290b688",
+    "allocated_amount": "3298.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "50ac302d-f322-44fc-a953-163780b9522f",
+    "invoice_id": "91032ec3-01cc-4951-8a07-258880a30178"
+  },
+  {
+    "id": "c26b0f6a-565d-4a53-a6fe-0b16f61d2d7f",
+    "allocated_amount": "1510.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "18757799-8aed-4d12-ac25-e623b9ce7496",
+    "invoice_id": "b8bd237e-4161-414a-a769-fe255dd28e03"
+  },
+  {
+    "id": "76f00181-778e-4265-91fd-f03317ed3d47",
+    "allocated_amount": "200.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "ab243d57-7bff-40ab-81b4-f73f81b47131",
+    "invoice_id": "522b9e8d-64d2-45b3-ba40-3244dbfc2c1e"
+  },
+  {
+    "id": "adfbc54d-0622-4c9e-b449-ddea76ae4ebf",
+    "allocated_amount": "180.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "ff44fba2-3458-41c3-b691-3da721210c6c",
+    "invoice_id": "708d44d0-681c-42dc-9c0c-1d17c4ef290b"
+  },
+  {
+    "id": "a07d54d0-43c3-4b99-a76b-8901b0703069",
+    "allocated_amount": "520.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "aa219045-e520-4828-9d7d-289f605eb004",
+    "invoice_id": "e503c2cf-db01-4529-8392-f6ff545a5e9f"
+  },
+  {
+    "id": "8c226a2f-742c-496d-94d7-2cbef0648ba7",
+    "allocated_amount": "355.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "75ed48b4-dbb0-4c50-bd50-113d424d85c7",
+    "invoice_id": "84ed5171-34cf-44dc-94b7-1a3ccf3c9909"
+  },
+  {
+    "id": "179e1bd8-d16d-42df-b2b5-b93a6d8a45cc",
+    "allocated_amount": "660.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "4e5a04ca-dc7a-4447-91a9-1b3901a70ea3",
+    "invoice_id": "43ff5d9d-32d0-47ad-9f66-20e379b9a71a"
+  },
+  {
+    "id": "e7df2b71-a11f-4804-8806-69ddcf7ff00a",
+    "allocated_amount": "781.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "ae7213ca-7974-447d-ae6f-1c7fadf49b1c",
+    "invoice_id": "5364cb33-ac01-42ab-9918-f1600855e0af"
+  },
+  {
+    "id": "3fda422d-6974-469a-8785-95bbfb10e816",
+    "allocated_amount": "650.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "b1ea9a99-c323-4105-af23-2d0b1daeffcd",
+    "invoice_id": "169c2af0-bb49-4a29-b199-a18279a6fcfc"
+  },
+  {
+    "id": "6bfdedaf-ebd0-4988-a84f-2e1d59f81dc7",
+    "allocated_amount": "700.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "46bce306-74eb-4ef5-95bb-f2b55b31d99e",
+    "invoice_id": "52a54c97-01d9-4279-9db9-e4311d7b26ba"
+  },
+  {
+    "id": "3b36e75f-b72a-4af3-9b81-9c14077b6277",
+    "allocated_amount": "470.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "6216278b-03dd-427f-b9f8-73c265921f20",
+    "invoice_id": "64e04cd2-6e8e-4d9d-9db3-e732bc52c4d7"
+  },
+  {
+    "id": "02e080bd-b4b5-42fd-b493-6e9b0ec5f778",
+    "allocated_amount": "480.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "ca9eef5d-7c4c-4f88-8a4f-ae8c231f7d10",
+    "invoice_id": "b3b61172-d04f-4033-a55a-bbdbbcad5a03"
+  },
+  {
+    "id": "19d1f288-9e6b-4b40-9714-2eb59ab0fa9e",
+    "allocated_amount": "87.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "1cfface7-7574-42a3-a52a-a818d9f7ce35",
+    "invoice_id": "20a6274c-6acd-4a12-8ff4-d666a66d2874"
+  },
+  {
+    "id": "eaa92d14-2aec-4426-819d-7be5582bffd5",
+    "allocated_amount": "65.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "2154b500-4e17-4b4b-a7f3-98b9575dbca9",
+    "invoice_id": "3cc84bbe-afb7-41a4-bc3f-d7299c895186"
+  },
+  {
+    "id": "cfb8aaef-7a51-4d68-bfbb-075ee8f669c8",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "eac23c0f-eb96-4c5b-b54d-c47b5380b3c7",
+    "invoice_id": "e35bd62b-2d78-479b-841d-6bf732ff5f0b"
+  },
+  {
+    "id": "253296bf-bd67-4039-8268-063bdc76c6d2",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "6166ecf5-5b6e-44cc-8f66-afefdf4c7c20",
+    "invoice_id": "a87bba68-d1a2-48a1-a718-2e78cd409b66"
+  },
+  {
+    "id": "46c82ce3-51be-4a7a-948b-4546fba9daaa",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "143e6f70-973e-44d9-bb0a-8d9769fbe49c",
+    "invoice_id": "3844f180-0d17-4b1d-bd73-aed0aba0899b"
+  },
+  {
+    "id": "59fad92a-7685-4a3d-ad4a-493a2cb8a988",
+    "allocated_amount": "180.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "a348ee94-5cb2-43b2-92e9-35fb5de486ef",
+    "invoice_id": "ca4f6b84-50e7-4c2a-8f0f-07104347c645"
+  },
+  {
+    "id": "442394e0-25c3-4d0a-827e-ff11e05b9cbf",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "1a2b0597-dc1b-429e-90f5-bb3e7c4cf542",
+    "invoice_id": "ba4757c0-6110-4580-b8c8-cab7b5a9ed60"
+  },
+  {
+    "id": "9ba0928b-4003-4a8b-bb7e-f8cdbd39bdfd",
+    "allocated_amount": "420.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "71f9d798-43b0-47b5-963f-6030e791a7fb",
+    "invoice_id": "fba3b55d-b3e8-4a7a-9057-178cfc1ab568"
+  },
+  {
+    "id": "9b3fbade-5da1-4abd-ad69-498ab4e4497f",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "bd885bcb-57f3-4183-8305-ec66bd7fea8a",
+    "invoice_id": "5fba734c-b0bb-4d89-9f71-35e4452ac26c"
+  },
+  {
+    "id": "764120f6-a5e7-448e-b706-0f10c9522c9f",
+    "allocated_amount": "140.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "111a6069-af0c-41fa-9f91-3520e43eee77",
+    "invoice_id": "2b47ce5b-548b-4d18-8181-880b1dc9c221"
+  },
+  {
+    "id": "850157e2-ead0-4ca9-9907-8bcd3df39196",
+    "allocated_amount": "160.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "df397a9b-6cee-40bd-8658-91ce779ad41d",
+    "invoice_id": "8a699032-614a-4127-b49b-c719d844bc42"
+  },
+  {
+    "id": "fc93bf06-41ba-49bb-b453-6eae8b7fba48",
+    "allocated_amount": "170.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "4fec58e0-3fa9-4f3e-93fc-d272ac7519b9",
+    "invoice_id": "54a33139-dc7f-42f4-ad23-a2c91edd2163"
+  },
+  {
+    "id": "d5169de9-0aae-4db5-b814-d86156f3bf92",
+    "allocated_amount": "1230.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "00e4cc7a-d660-41cb-af13-70e97b368701",
+    "invoice_id": "6fca2072-2bdf-4260-ba2e-a0fa876670bb"
+  },
+  {
+    "id": "996e2e0d-25c8-4136-8990-8f4132311637",
+    "allocated_amount": "450.00",
+    "allocated_at": "2026-11-05T15:03:08.007577",
+    "payment_id": "6d048494-6506-46bd-81d6-236a018f782b",
+    "invoice_id": "bd884081-3ef5-4523-b37f-11331f079f67"
+  },
+  {
+    "id": "a89a8d84-375e-4014-9024-ce1a204b5d7c",
+    "allocated_amount": "3340.00",
+    "allocated_at": "2026-11-05T15:03:08.373769",
+    "payment_id": "7f6fe0ee-e6a8-4565-9bb5-603417e06463",
+    "invoice_id": "abd3e6a6-9ba9-45ce-9d34-230f1ca8a27c"
+  },
+  {
+    "id": "1365d3f0-3de2-4c37-82e3-3a2768e2320f",
+    "allocated_amount": "855.00",
+    "allocated_at": "2026-11-05T15:03:08.373769",
+    "payment_id": "7a1b0970-262c-460b-838c-4144af6f00cc",
+    "invoice_id": "624eff02-ff5e-4a45-9646-0e45f37090b3"
+  },
+  {
+    "id": "fa8937b0-33ef-4cda-9cf4-aa2e03aa5f4e",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "7834b7f9-f4dc-4faf-8bc3-21595bbf0b0e",
+    "invoice_id": "fe6fd31e-ac9b-4c62-bcc9-8d61b58c7665"
+  },
+  {
+    "id": "dd3ecd3c-f7eb-4b30-9397-c609637aae81",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "18cb4bb6-5d18-4aa2-9de9-5f0a115bd0a6",
+    "invoice_id": "1a9be32d-8d94-4dc4-b806-9fdb0035d24d"
+  },
+  {
+    "id": "4df5c6de-50a1-4b1e-8cb8-56c75f8b7960",
+    "allocated_amount": "550.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "f2a9fb48-7fea-4abb-a94e-5fdbe6bd7e38",
+    "invoice_id": "44ba930a-a263-4af6-a23d-be6389fda69c"
+  },
+  {
+    "id": "a228a8fa-41d4-45a5-abb6-e842613321a6",
+    "allocated_amount": "800.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "ba32c15c-bcdc-4dd3-b37a-967d1048c987",
+    "invoice_id": "5c941748-1c44-45c0-8f11-ef163853eeed"
+  },
+  {
+    "id": "6a8e7ab0-e120-4ba4-ad81-c45bac57c714",
+    "allocated_amount": "470.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "5945e8bd-4c5c-4d32-a646-8324424a4719",
+    "invoice_id": "34505446-f887-4dd9-85aa-0ab726ad4b31"
+  },
+  {
+    "id": "24868792-1ede-4a9a-a504-27e897d8e97b",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "84732e68-d8ad-4b16-a281-bf73891af881",
+    "invoice_id": "bb02c7fa-de8a-4075-b8b4-b87ca77bcd47"
+  },
+  {
+    "id": "548f5a89-c4db-406e-8ded-3adadcb7598d",
+    "allocated_amount": "40.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "b4f1d6c5-4fbb-4426-94c6-0f26412dfb01",
+    "invoice_id": "bb02c7fa-de8a-4075-b8b4-b87ca77bcd47"
+  },
+  {
+    "id": "cdd58ff4-7805-4f4c-88d6-506fcdc2136d",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "b4f1d6c5-4fbb-4426-94c6-0f26412dfb01",
+    "invoice_id": "b4817721-b298-4a1d-a6ac-e2c6d1ac5b4a"
+  },
+  {
+    "id": "ef42fb22-71f9-40e0-906d-04dabe9a9ad3",
+    "allocated_amount": "470.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "5bc0c870-1844-45e7-b908-e97c8564844e",
+    "invoice_id": "43618b47-8e0b-4f56-a66a-8fd58719529b"
+  },
+  {
+    "id": "3acb1a09-7cc5-429f-9116-908e73ae433a",
+    "allocated_amount": "470.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "e08abaa8-e7e6-4414-9b23-6b57e15fd384",
+    "invoice_id": "d0c0af40-8ee4-4e40-bd21-a6bbede50f19"
+  },
+  {
+    "id": "22b46502-c24a-41a0-89ee-4fbd2431fc27",
+    "allocated_amount": "640.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "a41e21dd-6ef2-4d4e-8420-f3b312e1cc2f",
+    "invoice_id": "8bb34906-f196-4874-8097-e0419966a70b"
+  },
+  {
+    "id": "842831c1-86aa-48f1-a487-0fe20f12c094",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "e54d8dcc-a25d-48c1-9f02-325e0aae7237",
+    "invoice_id": "f527da2c-8c4e-4b7d-9b63-35e654ff4710"
+  },
+  {
+    "id": "75c02279-e7bd-4160-b310-107660c078ad",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "b4e11ba0-99a5-48ec-9288-794480fcc7b8",
+    "invoice_id": "e6508e39-8706-45aa-a8e3-eb5296018071"
+  },
+  {
+    "id": "5954b40c-f0dc-4fab-b27d-5ba43c68046f",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "fe300f0c-a285-401e-b01b-28406c1130b0",
+    "invoice_id": "c84b846c-b9a2-45cc-b1ed-e61ff652096d"
+  },
+  {
+    "id": "a88034d1-6cb0-453e-8776-ba82fb9f526f",
+    "allocated_amount": "300.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "5acd9578-3199-41cb-9ff0-59eeea2afc2f",
+    "invoice_id": "2c1c3958-df24-42be-b275-ce69dac28b70"
+  },
+  {
+    "id": "7258f050-55dd-4a34-8917-961540ebe1a9",
+    "allocated_amount": "965.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "24898a77-1faf-46b3-9aaa-9163be2ae2a2",
+    "invoice_id": "ce900160-21da-4f37-9461-cf809228a933"
+  },
+  {
+    "id": "7494f9be-edb2-469d-a167-a924ad0695a3",
+    "allocated_amount": "1055.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "af90d92b-de1b-4611-97de-ebf66cfdb09d",
+    "invoice_id": "de2c5b3c-6c20-4e23-8b2b-b804c1849f18"
+  },
+  {
+    "id": "60873168-70eb-4002-b225-f7e47e947131",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "f4cb2795-a0c4-4a8e-b5c1-152769c388b6",
+    "invoice_id": "aa39f896-3ffc-427f-933b-774a0e61b344"
+  },
+  {
+    "id": "1d18ed48-089c-4d34-8594-a4624f22ec14",
+    "allocated_amount": "30.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "f4cb2795-a0c4-4a8e-b5c1-152769c388b6",
+    "invoice_id": "baa07b08-6ed2-4b05-97f2-dc9ea84e94f0"
+  },
+  {
+    "id": "549d97cf-f37c-48e9-a253-3e7cd6b02b78",
+    "allocated_amount": "265.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "52455754-7479-494b-bf33-9f732899c2cc",
+    "invoice_id": "2e79771d-e144-4fbf-8373-86ebf865d102"
+  },
+  {
+    "id": "14fd0281-e5f3-4ba9-818f-651d9c278ed5",
+    "allocated_amount": "418.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "48a669bd-1ffb-4030-9093-78877e07ab2b",
+    "invoice_id": "6b48e2cb-a9e7-42b2-869f-053ccfad2009"
+  },
+  {
+    "id": "d3a3dbd2-a152-4cf6-848a-19ac11435fcf",
+    "allocated_amount": "745.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "63bdeede-18dc-4341-bcb5-e7af7e822495",
+    "invoice_id": "6ec8af17-3128-4171-9106-c8a1ae9c0d61"
+  },
+  {
+    "id": "34955daa-2c1f-4d56-96a3-ff778c09ebbe",
+    "allocated_amount": "400.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "df358e3d-ee87-465d-b68c-7a70288cb287",
+    "invoice_id": "d908005c-a8bc-49a3-af1d-25459f4bf846"
+  },
+  {
+    "id": "0f19d86c-723b-4baf-b584-9ed82160647b",
+    "allocated_amount": "690.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "29bf6e7f-8a9e-42e7-84e1-dedc2a6b985f",
+    "invoice_id": "7eba35c2-7243-4974-88ed-29182d8ccc22"
+  },
+  {
+    "id": "228f7953-d48f-4300-ac49-6c101753c2aa",
+    "allocated_amount": "150.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "8bb7775c-a07a-43f7-a58b-215a28d28be8",
+    "invoice_id": "5b731e2f-0ad3-41d8-9195-ee8abe70caee"
+  },
+  {
+    "id": "61038f0f-d814-4646-8664-bfa9dc9d1c43",
+    "allocated_amount": "440.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "cb783c77-d14f-48cf-9232-f922cfb4e1f8",
+    "invoice_id": "5addcc3d-3e57-4da9-b8d2-693180245b5c"
+  },
+  {
+    "id": "aaf286c0-65b9-4040-b5e4-c9747a87ff5d",
+    "allocated_amount": "90.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "cb783c77-d14f-48cf-9232-f922cfb4e1f8",
+    "invoice_id": "08af38eb-d74a-4dc1-9f27-a8285b471e4d"
+  },
+  {
+    "id": "801e6afd-4570-473f-b623-c70fdc5193c3",
+    "allocated_amount": "620.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "f8a606c2-0287-4d6e-bc1d-9943fb12d26b",
+    "invoice_id": "e7ff60ce-6f4e-42cb-aada-ff56377766c6"
+  },
+  {
+    "id": "b7a6b87f-f017-4713-baf0-98635780dd0b",
+    "allocated_amount": "50.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "b061c65a-b2e1-4627-8678-97cb5b948caa",
+    "invoice_id": "3815b31c-5a8e-48bf-a7ba-81e1a0886a60"
+  },
+  {
+    "id": "d5bd19b3-a189-45ff-bf1c-eff58d704c09",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "95bdf16c-9184-4265-adfc-1215f1c58317",
+    "invoice_id": "d9f9e037-6d50-4e97-a571-1e0138649102"
+  },
+  {
+    "id": "bed36bcb-db31-479d-a9a9-bd26d08fb514",
+    "allocated_amount": "350.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "1e391f3e-4c00-4d99-8cc0-36c20c88f877",
+    "invoice_id": "52655c4a-bbac-4cee-935a-26da8aec594b"
+  },
+  {
+    "id": "32afd95e-a7b4-417c-879b-90287f8e016d",
+    "allocated_amount": "248.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "471fa0fd-bd0d-4bc1-a276-067081809680",
+    "invoice_id": "a3c7903d-57a0-4e7d-958f-92c33f518e4b"
+  },
+  {
+    "id": "e9534556-5147-43a8-9c4f-faa346f48141",
+    "allocated_amount": "390.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "0074bc40-e3c9-421c-a554-e9ccf2342d25",
+    "invoice_id": "62d0de86-3632-4051-8442-e057d708d3cb"
+  },
+  {
+    "id": "f88ad8ef-7858-4bfa-a973-86bcfd995dbb",
+    "allocated_amount": "20.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "a4d0cd5a-1850-426e-9dc4-f9da172f41bb",
+    "invoice_id": "db940456-eac5-4cfc-9be8-0a47e0597f81"
+  },
+  {
+    "id": "56c8e4d8-9252-45c7-b915-c1e196403a0f",
+    "allocated_amount": "650.00",
+    "allocated_at": "2026-11-05T15:03:08.736392",
+    "payment_id": "5fe1029f-e0ad-4ad9-a20d-6f90652b7f3c",
+    "invoice_id": "db940456-eac5-4cfc-9be8-0a47e0597f81"
+  },
+  {
+    "id": "b737c4a1-cd60-405e-8850-3ac9a31bbf5e",
+    "allocated_amount": "1700.00",
+    "allocated_at": "2026-11-05T15:03:09.111368",
+    "payment_id": "ccc8dffd-81e2-42e0-8fed-4ef92c979d30",
+    "invoice_id": "065c2f13-1416-49c2-b1c4-af189cb492f4"
+  },
+  {
+    "id": "6a0a597c-a1a7-467f-ac1f-dfdb2ce18c78",
+    "allocated_amount": "220.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "d8c4530c-3711-4a56-a680-e07abca31a6c",
+    "invoice_id": "731ae398-bcf1-47e2-a7a4-7736612d4aed"
+  },
+  {
+    "id": "fb8d4cc4-5197-4420-93f4-33af1da229df",
+    "allocated_amount": "340.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "dacf9142-295e-4351-9d4f-1fa1aa49923f",
+    "invoice_id": "731ae398-bcf1-47e2-a7a4-7736612d4aed"
+  },
+  {
+    "id": "e9285a11-12c7-4fa7-b9b5-947b5766a05c",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "dacf9142-295e-4351-9d4f-1fa1aa49923f",
+    "invoice_id": "b60e0bfe-f95a-478f-b68e-216e50eeb944"
+  },
+  {
+    "id": "25535050-894c-4848-9234-48764427a68c",
+    "allocated_amount": "100.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "dacf9142-295e-4351-9d4f-1fa1aa49923f",
+    "invoice_id": "83ef2545-334f-4f32-a1bc-47f359068abe"
+  },
+  {
+    "id": "7c2e523e-3bbb-44af-9d74-2d3cdc674ebf",
+    "allocated_amount": "1055.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "ce034244-e06c-413c-ad21-88c56043fcb3",
+    "invoice_id": "83ef2545-334f-4f32-a1bc-47f359068abe"
+  },
+  {
+    "id": "73591648-c6cb-4b71-b66b-3e4efe37b927",
+    "allocated_amount": "245.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "ce034244-e06c-413c-ad21-88c56043fcb3",
+    "invoice_id": "fac2144b-c9b1-4c42-8f96-3d6008ab7dff"
+  },
+  {
+    "id": "c1728781-f8a5-4f2d-856e-399a89ce774b",
+    "allocated_amount": "500.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "a0ef6bfd-2e51-4a6c-a3b6-e8fb62b94ecf",
+    "invoice_id": "fac2144b-c9b1-4c42-8f96-3d6008ab7dff"
+  },
+  {
+    "id": "243907d9-b4b9-4e6d-947e-a6ac2a448ec7",
+    "allocated_amount": "495.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "abaef713-48df-4488-9803-0bc1bb854e80",
+    "invoice_id": "fac2144b-c9b1-4c42-8f96-3d6008ab7dff"
+  },
+  {
+    "id": "99029e2a-b581-4eb7-a0e9-068e0d8a57a8",
+    "allocated_amount": "505.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "abaef713-48df-4488-9803-0bc1bb854e80",
+    "invoice_id": "79941561-8877-47f6-bd3e-a4a44a0b9c5c"
+  },
+  {
+    "id": "853c35c7-058f-4923-9081-bc816baa167d",
+    "allocated_amount": "395.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "214254a6-91b7-4a6b-b41d-fd20d4b19df7",
+    "invoice_id": "79941561-8877-47f6-bd3e-a4a44a0b9c5c"
+  },
+  {
+    "id": "1191b6e1-f5f7-4af9-ac92-8bff3811a125",
+    "allocated_amount": "55.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "214254a6-91b7-4a6b-b41d-fd20d4b19df7",
+    "invoice_id": "bc08cdb2-7956-4b28-9fa3-473f8e6d156f"
+  },
+  {
+    "id": "d607e743-615b-4949-bba2-ad1c14635f64",
+    "allocated_amount": "1000.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "ae23a68e-aaf7-4372-bd34-9a18c3dc8faa",
+    "invoice_id": "bc08cdb2-7956-4b28-9fa3-473f8e6d156f"
+  },
+  {
+    "id": "b4e20fc9-835f-41a5-a0fb-211e2801ad17",
+    "allocated_amount": "400.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "93ca641e-4442-45b5-a5cc-d3d40f0ea965",
+    "invoice_id": "bc08cdb2-7956-4b28-9fa3-473f8e6d156f"
+  },
+  {
+    "id": "3c63657e-e7a9-40ab-839e-7b3059ec6286",
+    "allocated_amount": "5.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "1418d462-08bf-4cc1-bd1f-ab2e85fa9ad2",
+    "invoice_id": "bc08cdb2-7956-4b28-9fa3-473f8e6d156f"
+  },
+  {
+    "id": "f5d5ce35-d6a9-47ee-aa82-08a20c257377",
+    "allocated_amount": "773.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "1418d462-08bf-4cc1-bd1f-ab2e85fa9ad2",
+    "invoice_id": "2c9ccab4-e657-40b2-be0c-cdeaac84eede"
+  },
+  {
+    "id": "9d183188-83f7-4213-8c33-393f4263a0af",
+    "allocated_amount": "560.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "1418d462-08bf-4cc1-bd1f-ab2e85fa9ad2",
+    "invoice_id": "4b75a1f1-05cd-40d9-9af5-9ac72fafdee4"
+  },
+  {
+    "id": "775cbe15-bbdf-45c4-8074-d29d25ce50d2",
+    "allocated_amount": "162.00",
+    "allocated_at": "2026-11-05T15:03:10.423187",
+    "payment_id": "1418d462-08bf-4cc1-bd1f-ab2e85fa9ad2",
+    "invoice_id": "831f5ffa-638e-4470-8ed5-6fcafae4ec30"
+  },
+  {
+    "id": "f291d98a-b0c9-4b62-85bd-34ea73a70c85",
+    "allocated_amount": "2615.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "537f96b5-ed98-429e-afac-502c7fea107f",
+    "invoice_id": "62cb0415-ee31-4acc-9ee9-332fdecb543e"
+  },
+  {
+    "id": "376400e3-c465-445d-b146-06caedc8975d",
+    "allocated_amount": "2135.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "4e403e6b-5153-420c-9306-97038e7e637b",
+    "invoice_id": "36978035-d72c-4224-bdfc-929ba3338ee1"
+  },
+  {
+    "id": "30006ebe-e45c-4714-b5fa-fbe0fb6ff740",
+    "allocated_amount": "760.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "4e403e6b-5153-420c-9306-97038e7e637b",
+    "invoice_id": "4cf854f3-0a2e-482c-9b85-968a2d7fe5ec"
+  },
+  {
+    "id": "be52efbd-15e6-438d-b3d5-7909d458e361",
+    "allocated_amount": "660.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "4e403e6b-5153-420c-9306-97038e7e637b",
+    "invoice_id": "43ad23a3-1027-4a4f-86e5-b1943c6266ad"
+  },
+  {
+    "id": "fe704380-0d36-4645-af13-d1c32c55ce04",
+    "allocated_amount": "1220.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "4e403e6b-5153-420c-9306-97038e7e637b",
+    "invoice_id": "8f718820-5a24-46fc-bc5f-7d0c908f656a"
+  },
+  {
+    "id": "c505ddff-1470-4506-9774-7d7346c14443",
+    "allocated_amount": "1025.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "4e403e6b-5153-420c-9306-97038e7e637b",
+    "invoice_id": "095c0456-92d0-4e94-b03f-bdd59c1c14c0"
+  },
+  {
+    "id": "c28bf3ba-e3ee-4690-a567-d9708e3edf28",
+    "allocated_amount": "635.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "b0c5f023-7a0e-4a13-aa9a-4e43a6b1ce33",
+    "invoice_id": "095c0456-92d0-4e94-b03f-bdd59c1c14c0"
+  },
+  {
+    "id": "b45ef528-0768-4c46-9d95-d4484c7aabdc",
+    "allocated_amount": "565.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "b0c5f023-7a0e-4a13-aa9a-4e43a6b1ce33",
+    "invoice_id": "9c9b942b-b7a6-472d-a758-3f1c1ae6e79f"
+  },
+  {
+    "id": "221942ee-f6f3-431c-93c6-39c68a7d8f0b",
+    "allocated_amount": "505.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "f3c94956-6b5f-42ce-81d3-069fc2e2b8c4",
+    "invoice_id": "9c9b942b-b7a6-472d-a758-3f1c1ae6e79f"
+  },
+  {
+    "id": "97b228dc-f35c-4091-be22-9eaf55a94a7d",
+    "allocated_amount": "1320.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "f3c94956-6b5f-42ce-81d3-069fc2e2b8c4",
+    "invoice_id": "d368e3f8-83b6-4eca-9bb5-2412d7aa1dd2"
+  },
+  {
+    "id": "a13ac1a9-ab47-440e-9707-2e27d0305e1f",
+    "allocated_amount": "2595.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "f3c94956-6b5f-42ce-81d3-069fc2e2b8c4",
+    "invoice_id": "d3d2b0df-9e87-44b2-ac41-6bcd8b4112d1"
+  },
+  {
+    "id": "0aa82e61-640c-4677-ad6f-85c357fb9d46",
+    "allocated_amount": "1620.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "56700e93-12ec-46cd-ace1-0a3f2159ded8",
+    "invoice_id": "d3d2b0df-9e87-44b2-ac41-6bcd8b4112d1"
+  },
+  {
+    "id": "61cc8ad1-66b0-4df6-b5ba-2e9326e0d96b",
+    "allocated_amount": "920.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "56700e93-12ec-46cd-ace1-0a3f2159ded8",
+    "invoice_id": "52260303-c6d3-41c2-9e9d-da6eb0e2ae81"
+  },
+  {
+    "id": "e78d538c-018f-4347-a821-c403c5648b6b",
+    "allocated_amount": "460.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "56700e93-12ec-46cd-ace1-0a3f2159ded8",
+    "invoice_id": "e4fb092f-dc59-4c8a-b607-33ab87e11288"
+  },
+  {
+    "id": "aefaeb87-392a-411d-b83c-ddc54165e8f6",
+    "allocated_amount": "1635.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "5df057c4-ac17-4031-813b-e98dd566c2cb",
+    "invoice_id": "af43ce28-4d5d-4874-a1f1-cb238e220e7d"
+  },
+  {
+    "id": "ae93ca85-a6c2-4988-acd4-1b838713c841",
+    "allocated_amount": "1520.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "5df057c4-ac17-4031-813b-e98dd566c2cb",
+    "invoice_id": "2d08138d-baaf-4cbf-8f99-515993233436"
+  },
+  {
+    "id": "f3906562-ecdd-4b9b-af86-f249c635aabd",
+    "allocated_amount": "2025.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "5df057c4-ac17-4031-813b-e98dd566c2cb",
+    "invoice_id": "18ade1cc-047e-4d2f-8d25-a3a16a8c674a"
+  },
+  {
+    "id": "192fe5ca-576f-46cd-8e7d-0a69ed6bac25",
+    "allocated_amount": "1540.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "5df057c4-ac17-4031-813b-e98dd566c2cb",
+    "invoice_id": "36be7cad-60ed-4797-aede-e20bc86154db"
+  },
+  {
+    "id": "4a2d2ec9-87d4-4538-9021-2f0bff6427b9",
+    "allocated_amount": "950.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "f7c55a17-d7ab-4930-9203-1f0cda83465a",
+    "invoice_id": "40acb79b-7461-4222-bed6-19744901da5a"
+  },
+  {
+    "id": "7bd4c475-e077-423e-bb40-b6bbdd7ca667",
+    "allocated_amount": "2050.00",
+    "allocated_at": "2026-11-05T15:03:10.785204",
+    "payment_id": "f7c55a17-d7ab-4930-9203-1f0cda83465a",
+    "invoice_id": "46b0eaf6-f6b8-43e1-b92b-5125626fcde8"
+  }
+]

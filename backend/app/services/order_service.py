@@ -127,7 +127,16 @@ class OrderService:
 
     @staticmethod
     def convert_order_to_invoice(db: Session, order_id: str, user_id: Optional[str] = None) -> Invoice:
-        order = OrderService.get_order_by_id(db, order_id)
+        # Acquire row-level lock on Order to prevent concurrent double-conversion race conditions
+        order = db.query(Order).filter(Order.id == order_id).with_for_update().first()
+        if not order:
+            raise EntityNotFoundException("Order", order_id)
+            
+        if order.status == "COMPLETED":
+            existing_inv = db.query(Invoice).filter(Invoice.order_id == order.id).first()
+            if existing_inv:
+                return existing_inv
+            raise InvalidFinancialOperationException(f"Order {order.order_number} is already completed.")
         
         # Build invoice line items from order items
         invoice_items_payload = []

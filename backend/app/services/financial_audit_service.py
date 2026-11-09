@@ -63,16 +63,16 @@ class FinancialAuditService:
         # 1. Platform Totals
         valid_statuses = [InvoiceStatus.ISSUED.value, InvoiceStatus.PARTIALLY_PAID.value, InvoiceStatus.PAID.value, InvoiceStatus.OVERDUE.value]
         total_invoiced_query = db.query(func.coalesce(func.sum(Invoice.total_amount), 0)).filter(Invoice.status.in_(valid_statuses)).scalar()
-        total_collected_query = db.query(func.coalesce(func.sum(Payment.amount), 0)).scalar()
+        total_collected_query = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(Payment.status != "CANCELLED").scalar()
         total_invoices_count = db.query(func.count(Invoice.id)).filter(Invoice.status.in_(valid_statuses)).scalar() or 0
-        total_payments_count = db.query(func.count(Payment.id)).scalar() or 0
+        total_payments_count = db.query(func.count(Payment.id)).filter(Payment.status != "CANCELLED").scalar() or 0
         
         total_invoiced = Decimal(str(total_invoiced_query or "0.00"))
         total_collected = Decimal(str(total_collected_query or "0.00"))
         total_outstanding = sum(balances_map.values(), Decimal("0.00"))
 
         # 2. Rapid-Fire Duplicate Payment Detection (window <= 60s)
-        payments = db.query(Payment).options(joinedload(Payment.customer)).order_by(Payment.customer_id, Payment.created_at).all()
+        payments = db.query(Payment).options(joinedload(Payment.customer)).filter(Payment.status != "CANCELLED").order_by(Payment.customer_id, Payment.created_at).all()
         suspect_anomalies = []
         suspect_by_cust: Dict[str, List[Dict[str, Any]]] = {}
 
@@ -169,10 +169,12 @@ class FinancialAuditService:
         db: Session,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        include_estimated: bool = False
     ) -> Dict[str, Any]:
         """
         Detects historical margin leakages where products were billed below procurement landed cost.
+        Excludes ESTIMATED_80PCT fallback records unless explicitly requested.
         """
         from app.models.inventory import StockMovement
         from app.models.user import User
@@ -215,6 +217,10 @@ class FinancialAuditService:
 
         leakage_items = []
         total_loss = Decimal("0.00")
+        verified_loss = Decimal("0.00")
+        estimated_loss = Decimal("0.00")
+        verified_count = 0
+        estimated_count = 0
         affected_invoices = set()
         customer_loss_map: Dict[str, Decimal] = {}
         sku_loss_map: Dict[str, Dict[str, Any]] = {}
@@ -222,13 +228,17 @@ class FinancialAuditService:
         term = search.strip().lower() if (isinstance(search, str) and search.strip()) else None
 
         for item, inv, cust, prod, user in rows:
-            cost = cost_map.get(item.product_id)
+            # Use frozen landed cost locked at invoice issuance; fallback to cost_map only if null
+            cost = Decimal(str(item.landed_cost)) if item.landed_cost is not None else cost_map.get(item.product_id)
             if cost is None:
                 continue
 
             unit_price = Decimal(str(item.unit_price or "0"))
             if unit_price >= cost:
                 continue
+
+            cost_source = item.cost_source or ("INWARD_RECEIPT" if cost_map.get(item.product_id) else "ESTIMATED_80PCT")
+            is_verified = (cost_source in ["INWARD_RECEIPT", "PRODUCT_MASTER"])
 
             qty = Decimal(str(item.quantity or "0"))
             unit_loss = cost - unit_price
@@ -238,6 +248,18 @@ class FinancialAuditService:
                 searchable = f"{inv.invoice_number} {cust.business_name} {prod.sku} {prod.name} {user.username if user else ''}".lower()
                 if term not in searchable:
                     continue
+
+            # Track verification categories
+            if is_verified:
+                verified_loss += item_total_loss
+                verified_count += 1
+            else:
+                estimated_loss += item_total_loss
+                estimated_count += 1
+
+            if not include_estimated and not is_verified:
+                # Exclude unverified catalogue estimates from verified procurement leakage
+                continue
 
             total_loss += item_total_loss
             affected_invoices.add(inv.id)
@@ -264,6 +286,8 @@ class FinancialAuditService:
                 "quantity": float(qty),
                 "unit_price": float(unit_price),
                 "landed_cost": float(cost),
+                "cost_source": cost_source,
+                "is_verified": is_verified,
                 "unit_loss": float(unit_loss),
                 "total_loss": float(item_total_loss),
                 "loss_pct": round(float((unit_loss / cost) * 100), 1) if cost > 0 else 0.0,
@@ -282,6 +306,11 @@ class FinancialAuditService:
             "total_loss": round(float(total_loss), 2),
             "total_items": len(leakage_items),
             "total_invoices": len(affected_invoices),
+            "verified_items_count": verified_count,
+            "verified_loss": round(float(verified_loss), 2),
+            "estimated_items_count": estimated_count,
+            "estimated_loss": round(float(estimated_loss), 2),
+            "include_estimated": include_estimated,
             "worst_customer": worst_customer,
             "worst_customer_loss": round(worst_customer_loss, 2),
             "worst_sku": worst_sku[0] if worst_sku else None,
@@ -923,15 +952,15 @@ class FinancialAuditService:
             }
         )
 
-        db.delete(payment)
-        db.commit()
+        from app.services.payment_service import PaymentService
+        PaymentService.delete_payment(db, payment.id, user_id=user_id)
 
         # Recalculate customer balance
         inv_tot, pay_tot, bal = CustomerService.get_customer_balances(db, c_id)
 
         return {
             "success": True,
-            "message": f"Phantom duplicate payment {payment_number} (₹{amount:.2f}) was successfully removed.",
+            "message": f"Phantom duplicate payment {payment_number} (₹{amount:.2f}) was successfully cancelled.",
             "customer_id": c_id,
             "customer_name": customer.business_name,
             "new_balance": float(bal)

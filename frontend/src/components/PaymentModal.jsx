@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, CreditCard, CheckCircle2, Tag, RotateCcw } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
@@ -16,6 +16,16 @@ export const PaymentModal = ({
 }) => {
   const activeCustomer = preselectedCustomer || initialCustomer;
   const activeInvoice = preselectedInvoice || initialInvoice;
+
+  // Stable client-side idempotency key for network retry protection
+  const submissionKeyRef = useRef(null);
+
+  const getOrGenerateSubmissionKey = () => {
+    if (!submissionKeyRef.current) {
+      submissionKeyRef.current = `PAY-CLIENT-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
+    return submissionKeyRef.current;
+  };
 
   const [customers, setCustomers] = useState([]);
   const [openInvoices, setOpenInvoices] = useState([]);
@@ -39,6 +49,7 @@ export const PaymentModal = ({
   }, [isOpen, activeCustomer, activeInvoice]);
 
   const loadInitialData = async () => {
+    submissionKeyRef.current = null;
     setLoading(true);
     setError('');
     setSuccessMsg('');
@@ -149,10 +160,12 @@ export const PaymentModal = ({
         payment_method: paymentMethod,
         reference_number: referenceNumber.trim() || undefined,
         notes: notes.trim() || undefined,
-        allocations: allocations
+        allocations: allocations,
+        idempotency_key: getOrGenerateSubmissionKey()
       };
 
       const result = await paymentApi.record(payload);
+      submissionKeyRef.current = null; // Successfully processed, clear submission key
       emitDataUpdated('payment-recorded', { payment: result });
       const discText = discNum > 0 ? ` (with ₹${discNum.toFixed(2)} cash discount)` : '';
       setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${amtNum.toFixed(2)}${discText} recorded successfully!`);

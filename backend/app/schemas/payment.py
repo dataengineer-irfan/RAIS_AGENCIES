@@ -15,6 +15,7 @@ class PaymentCreate(BaseModel):
     payment_method: str = "CASH" # CASH, UPI, NEFT_RTGS, CHEQUE, CARD
     reference_number: Optional[str] = None
     notes: Optional[str] = None
+    idempotency_key: Optional[str] = None # Double-click & retry protection
     allocations: List[PaymentAllocationCreate] = [] # Optional direct invoice allocations at payment creation
 
 class PaymentUpdate(BaseModel):
@@ -51,7 +52,11 @@ class PaymentResponse(BaseModel):
     unallocated_amount: Decimal
     payment_method: str
     reference_number: Optional[str] = None
+    idempotency_key: Optional[str] = None
     notes: Optional[str] = None
+    status: str = "COMPLETED"
+    cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = None
     created_at: datetime
     allocations: List[PaymentAllocationResponse] = []
     settled_items: List[Dict[str, Any]] = []

@@ -42,9 +42,10 @@ class CustomerService:
         ).scalar()
         total_invoiced = Decimal(str(invoiced_query or "0.00"))
 
-        # Paid total across payments
+        # Paid total across active payments
         paid_query = db.query(func.sum(Payment.amount)).filter(
-            Payment.customer_id == customer_id
+            Payment.customer_id == customer_id,
+            Payment.status != "CANCELLED"
         ).scalar()
         total_paid = Decimal(str(paid_query or "0.00"))
 
@@ -85,7 +86,8 @@ class CustomerService:
             Payment.customer_id,
             func.coalesce(func.sum(Payment.amount), 0)
         ).filter(
-            Payment.customer_id.in_(customer_ids)
+            Payment.customer_id.in_(customer_ids),
+            Payment.status != "CANCELLED"
         ).group_by(Payment.customer_id).all()
         pay_map = {cid: Decimal(str(tot)) for cid, tot in pay_rows}
 
@@ -127,7 +129,8 @@ class CustomerService:
             InvoiceItem.quantity,
             InvoiceItem.line_total,
             Product.base_price,
-            Product.purchase_cost
+            Product.purchase_cost,
+            InvoiceItem.landed_cost
         ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
          .outerjoin(Product, Product.id == InvoiceItem.product_id)\
          .filter(
@@ -142,8 +145,9 @@ class CustomerService:
             ltotal = Decimal(str(row[2] or "0"))
             base_p = Decimal(str(row[3] or "0")) if row[3] is not None else Decimal("0")
             prod_cost = Decimal(str(row[4] or "0")) if row[4] is not None else Decimal("0")
+            frozen_cost = Decimal(str(row[5])) if len(row) > 5 and row[5] is not None else None
 
-            pcost = cost_map.get(pid) or (prod_cost if prod_cost > Decimal("0") else None)
+            pcost = frozen_cost or cost_map.get(pid) or (prod_cost if prod_cost > Decimal("0") else None)
             if pcost and pcost > Decimal("0"):
                 cogs = pcost * qty
             elif base_p > Decimal("0"):
@@ -207,7 +211,8 @@ class CustomerService:
             Payment.customer_id,
             func.sum(Payment.amount).label("total_paid")
         ).filter(
-            Payment.customer_id.in_(cust_ids)
+            Payment.customer_id.in_(cust_ids),
+            Payment.status != "CANCELLED"
         ).group_by(Payment.customer_id).all()
 
         paid_map = {row[0]: Decimal(str(row[1] or "0.00")) for row in pay_stats}
@@ -560,10 +565,76 @@ class CustomerService:
         return customer
 
     @staticmethod
+    def record_ledger_entry(
+        db: Session,
+        customer_id: str,
+        entry_date: date,
+        entry_type: str,
+        reference_id: Optional[str],
+        reference_number: Optional[str],
+        description: str,
+        debit: Decimal,
+        credit: Decimal,
+        created_by_id: Optional[str] = None
+    ):
+        """
+        Appends an immutable balanced double-entry record to customer_ledger_entries.
+        """
+        from app.models.customer_ledger import CustomerLedgerEntry as ModelLedgerEntry
+        last_entry = db.query(ModelLedgerEntry).filter(
+            ModelLedgerEntry.customer_id == customer_id
+        ).order_by(ModelLedgerEntry.entry_date.desc(), ModelLedgerEntry.created_at.desc()).first()
+
+        if last_entry:
+            prev_balance = Decimal(str(last_entry.running_balance))
+        else:
+            cust = db.query(Customer).filter(Customer.id == customer_id).first()
+            prev_balance = Decimal(str(cust.opening_balance or "0.00")) if cust else Decimal("0.00")
+
+        new_balance = prev_balance + debit - credit
+        entry = ModelLedgerEntry(
+            customer_id=customer_id,
+            entry_date=entry_date,
+            entry_type=entry_type,
+            reference_id=reference_id,
+            reference_number=reference_number,
+            description=description,
+            debit=debit,
+            credit=credit,
+            running_balance=new_balance,
+            created_by_id=created_by_id,
+            is_locked=True
+        )
+        db.add(entry)
+        db.flush()
+        return entry
+
+    @staticmethod
     def get_customer_ledger(db: Session, customer_id: str) -> List[CustomerLedgerEntry]:
         customer = db.query(Customer).filter(Customer.id == customer_id).first()
         if not customer:
             raise EntityNotFoundException("Customer", customer_id)
+
+        from app.models.customer_ledger import CustomerLedgerEntry as ModelLedgerEntry
+        persisted_entries = db.query(ModelLedgerEntry).filter(
+            ModelLedgerEntry.customer_id == customer_id
+        ).order_by(ModelLedgerEntry.entry_date.asc(), ModelLedgerEntry.created_at.asc()).all()
+
+        if persisted_entries:
+            return [
+                CustomerLedgerEntry(
+                    date=e.entry_date,
+                    type=e.entry_type,
+                    reference=e.reference_number or "",
+                    description=e.description or "",
+                    debit=e.debit,
+                    credit=e.credit,
+                    running_balance=e.running_balance,
+                    created_at=e.created_at,
+                    is_locked=e.is_locked
+                )
+                for e in persisted_entries
+            ]
             
         # Invoices
         invoices = db.query(Invoice).filter(

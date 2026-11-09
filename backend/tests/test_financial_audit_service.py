@@ -157,9 +157,10 @@ def test_financial_audit_resolve_duplicate_payment(db, audit_test_data):
     assert res["success"] is True
     assert p_dup2.payment_number in res["message"]
 
-    # Verify payment is deleted from DB
-    deleted = db.query(Payment).filter(Payment.payment_number == p_dup2.payment_number).first()
-    assert deleted is None
+    # Verify payment is soft-deleted (status CANCELLED, physical row preserved)
+    cancelled_pay = db.query(Payment).filter(Payment.payment_number == p_dup2.payment_number).first()
+    assert cancelled_pay is not None
+    assert cancelled_pay.status == "CANCELLED"
 
 def test_financial_audit_margin_leakage_records(db, audit_test_data):
     leakage = FinancialAuditService.get_margin_leakage_records(db)

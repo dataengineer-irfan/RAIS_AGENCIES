@@ -6,6 +6,7 @@ from app.models.quotation import Quotation, QuotationItem
 from app.models.order import Order, OrderItem
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment, PaymentAllocation
+from app.models.customer_ledger import CustomerLedgerEntry
 from app.models.inventory import StockMovement
 from app.models.system import AuditLog, SystemSetting, DocumentSequence, AITelemetry
 from app.models.analytics import (
@@ -31,6 +32,7 @@ __all__ = [
     "InvoiceItem",
     "Payment",
     "PaymentAllocation",
+    "CustomerLedgerEntry",
     "AuditLog",
     "SystemSetting",
     "DocumentSequence",

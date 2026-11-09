@@ -80,6 +80,7 @@ def test_live_stock_lineage_audit_and_price_integrity():
 
     original_base_price = prod.base_price
 
+    import time
     # 1. Inward Intake: 10 pk received
     InventoryService.receive_stock(db, ReceiveStockRequest(
         product_id=prod.id,
@@ -89,6 +90,7 @@ def test_live_stock_lineage_audit_and_price_integrity():
         batch_number="MM-OCT-26",
         expiry_date=date(2026, 12, 31)
     ))
+    time.sleep(0.02)
 
     # 2. Sales Invoice 1: Walid buys 3 pk @ 910
     inv1 = BillingService.create_invoice(db, InvoiceCreate(
@@ -98,6 +100,7 @@ def test_live_stock_lineage_audit_and_price_integrity():
         auto_issue=True,
         items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("3.00"), unit_price=Decimal("910.00"))]
     ))
+    time.sleep(0.02)
 
     # 3. Sales Invoice 2: Hot Spot Cafe buys 4 pk @ 910 (drops stock to 3 pk, below 5 pk threshold)
     inv2 = BillingService.create_invoice(db, InvoiceCreate(
@@ -107,6 +110,7 @@ def test_live_stock_lineage_audit_and_price_integrity():
         auto_issue=True,
         items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("4.00"), unit_price=Decimal("910.00"))]
     ))
+    time.sleep(0.02)
 
     # 4. Manual Adjustment: 1 pk damaged
     InventoryService.adjust_stock(db, AdjustStockRequest(

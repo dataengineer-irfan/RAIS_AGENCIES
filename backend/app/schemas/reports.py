@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import date, datetime
@@ -69,10 +69,13 @@ class ProductPerformanceItem(BaseModel):
 
 class CustomerLedgerEntry(BaseModel):
     date: date
-    type: str # INVOICE, PAYMENT, ADJUSTMENT
+    type: str # INVOICE, PAYMENT, ADJUSTMENT, OPENING_BALANCE, INVOICE_REVERSAL, PAYMENT_REVERSAL
     reference: str # Invoice number or Payment number
     description: str
     debit: Decimal # Amount billed
     credit: Decimal # Amount paid
     running_balance: Decimal
     created_at: Optional[datetime] = None
+    is_locked: Optional[bool] = True
+
+    model_config = ConfigDict(from_attributes=True)

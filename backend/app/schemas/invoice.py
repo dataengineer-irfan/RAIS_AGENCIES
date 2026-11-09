@@ -24,6 +24,8 @@ class InvoiceItemResponse(BaseModel):
     tax_rate: Decimal
     tax_amount: Decimal
     line_total: Decimal
+    landed_cost: Optional[Decimal] = None
+    cost_source: Optional[str] = None
     unit_cost: Optional[Decimal] = None
     cogs: Optional[Decimal] = None
     gross_profit: Optional[Decimal] = None

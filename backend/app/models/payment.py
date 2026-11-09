@@ -17,12 +17,16 @@ class Payment(Base):
     customer_id = Column(String(36), ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False, index=True)
     payment_date = Column(Date, default=get_ist_today, nullable=False, index=True)
     amount = Column(Numeric(12, 2), nullable=False)
+    idempotency_key = Column(String(64), unique=True, nullable=True, index=True)
     allocated_amount = Column(Numeric(12, 2), default=0.00, nullable=False)
     unallocated_amount = Column(Numeric(12, 2), nullable=False)
     
     payment_method = Column(String(20), default=PaymentMethod.CASH.value, nullable=False)
     reference_number = Column(String(100), nullable=True, index=True) # UPI Transaction ID, Cheque number, etc.
     notes = Column(Text, nullable=True)
+    status = Column(String(20), default="COMPLETED", nullable=False, index=True) # COMPLETED, CANCELLED, VOID
+    cancelled_at = Column(DateTime, nullable=True)
+    cancellation_reason = Column(Text, nullable=True)
     
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=get_utc_now, nullable=False)

@@ -98,6 +98,7 @@ def get_financial_audit_margin_leakage(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     search: Optional[str] = Query(None, min_length=1, max_length=100),
+    include_estimated: bool = Query(False, description="Include estimated 80% catalogue costs"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):
@@ -106,7 +107,8 @@ def get_financial_audit_margin_leakage(
         db=db,
         start_date=start_date,
         end_date=end_date,
-        search=search
+        search=search,
+        include_estimated=include_estimated
     )
 
 @router.post("/financial-audit/resolve-duplicate")
