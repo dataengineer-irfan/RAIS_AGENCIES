@@ -127,7 +127,7 @@ export const Sidebar = ({
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+                <span className="whitespace-nowrap shrink-0 ml-auto px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
                   {item.badge}
                 </span>
               )}

@@ -250,7 +250,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               <h1 className="text-sm font-black text-white whitespace-nowrap">
                 Product Catalogue
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
                 {filteredProducts.length}/{products.length} SKUs
               </span>
             </div>
@@ -454,7 +454,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             }`}
           >
             <span>All Categories</span>
-            <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategory === 'ALL' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-amber-400'}`}>
+            <span className={`whitespace-nowrap shrink-0 font-mono text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategory === 'ALL' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-amber-400'}`}>
               {products.length}
             </span>
           </button>
@@ -472,7 +472,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                 }`}
               >
                 <span>{c.name}</span>
-                <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-amber-400'}`}>
+                <span className={`whitespace-nowrap shrink-0 font-mono text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-800 text-amber-400'}`}>
                   {count}
                 </span>
               </button>
@@ -676,7 +676,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                           <span className="font-bold text-white text-xs uppercase tracking-wider">
                             {group.category.name}
                           </span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-800 text-amber-400 font-mono">
+                          <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 font-mono">
                             {group.items.length}
                           </span>
                         </div>
@@ -845,7 +845,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                 <span className="font-bold text-white text-xs uppercase tracking-wider">
                                   {group.category.name}
                                 </span>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 font-mono">
+                                <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 font-mono">
                                   {group.items.length} SKUs
                                 </span>
                               </div>
@@ -907,7 +907,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
                                 </span>
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                                <span className={`whitespace-nowrap shrink-0 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                                   prod.is_active ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
                                 }`}>
                                   {prod.is_active ? 'ACTIVE' : 'INACTIVE'}

@@ -1240,7 +1240,7 @@ export const CustomersPage = ({
                             Account Profitability & Wholesale Economics
                           </h4>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        <span className={`whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           parseFloat(selectedCustomerMarginPct) >= 10
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                             : parseFloat(selectedCustomerMarginPct) >= 5

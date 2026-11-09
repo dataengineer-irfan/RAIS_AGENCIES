@@ -465,7 +465,7 @@ export const UploadInvoiceModal = ({
                 <h3 className="font-bold text-sm sm:text-base text-white">
                   Upload Supplier Purchase Invoice
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                   Smart OCR & SKU Matcher
                 </span>
               </div>

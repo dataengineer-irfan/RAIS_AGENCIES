@@ -226,7 +226,7 @@ export const CustomerHealthCard = ({ onSelectCustomer, onOpenPaymentModal }) => 
                     <span className="text-[10px] text-slate-400 font-mono">
                       {c?.code}
                     </span>
-                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full border ${
+                    <span className={`whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                       isAtRisk 
                         ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
                         : isWatch 

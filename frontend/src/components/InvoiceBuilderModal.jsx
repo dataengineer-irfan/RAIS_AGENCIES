@@ -797,7 +797,7 @@ export const InvoiceBuilderModal = ({
                       : 'New Invoice'}
                 </h2>
                 {isEditMode && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full font-mono border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                  <span className="whitespace-nowrap shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full font-mono border bg-blue-500/10 text-blue-400 border-blue-500/20">
                     EDIT
                   </span>
                 )}
@@ -2744,7 +2744,7 @@ export const InvoiceBuilderModal = ({
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
                   <span>Insufficient Stock Detected</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
+                  <span className="whitespace-nowrap shrink-0 text-[10px] px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono">
                     {autoInwardShortfallItems.length} ITEM(S)
                   </span>
                 </h4>

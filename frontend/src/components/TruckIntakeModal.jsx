@@ -147,7 +147,7 @@ export const TruckIntakeModal = ({ isOpen, onClose, products = [], onBatchReceiv
                 <h2 className="text-sm sm:text-base font-black text-white">
                   Truck Arrival Batch Intake
                 </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
+                <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
                   Fast Inward
                 </span>
               </div>

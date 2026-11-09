@@ -125,7 +125,7 @@ export const VoiceDictationModal = ({
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 Voice Assistant
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                <span className="whitespace-nowrap shrink-0 text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
                   {activeMode}
                 </span>
               </h3>
@@ -202,7 +202,7 @@ export const VoiceDictationModal = ({
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 Staged Entity Extraction
               </span>
-              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                 Ready for Review
               </span>
             </div>

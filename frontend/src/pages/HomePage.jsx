@@ -265,14 +265,14 @@ export const HomePage = ({
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+            <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-amber-400" />
               {isTe ? 'కార్యాచరణ ఉదయపు సమీక్ష' : 'Operations Command Cockpit'}
             </span>
             <span className="text-xs text-slate-400 font-mono">
               {briefing?.today_date} • Rayachoty Depot
             </span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+            <div className="whitespace-nowrap shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
               <span className={`w-1.5 h-1.5 rounded-full bg-emerald-400 ${refreshing ? 'animate-ping' : 'animate-pulse'}`} />
               <span>LIVE</span>
               {lastSyncTime && (
@@ -404,7 +404,7 @@ export const HomePage = ({
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1">
                   <ShieldAlert className="w-3 h-3" />
                   {isTe ? "ప్రాధాన్యత 1 • నగదు రికవరీ" : "Priority 1 • Cash Recovery"}
                 </span>
@@ -500,7 +500,7 @@ export const HomePage = ({
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1">
                   <Boxes className="w-3 h-3" />
                   {isTe ? "ప్రాధాన్యత 2 • డిపో ఇన్వెంటరీ" : "Priority 2 • Depot Inventory"}
                 </span>
@@ -555,7 +555,7 @@ export const HomePage = ({
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
             <div>
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center gap-1">
+                <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40 inline-flex items-center gap-1">
                   <Users className="w-3 h-3" />
                   {isTe ? "ప్రాధాన్యత 3 • కస్టమర్ రిటెన్షన్" : "Priority 3 • Retention Radar"}
                 </span>
@@ -644,7 +644,7 @@ export const HomePage = ({
                 <h2 className="text-base font-extrabold text-white">
                   {isTe ? "🛡️ ఆర్థిక ఆడిట్ & అనామలీ వాచ్‌డాగ్" : "🛡️ Financial Audit & Integrity Watchdog"}
                 </h2>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                <span className={`whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                   (fa?.anomalies_count > 0 || fa?.margin_leakage_loss > 0)
                     ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                     : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
@@ -887,7 +887,7 @@ export const HomePage = ({
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-950/80 text-amber-300 border border-slate-800 shadow-inner">
+            <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-950/80 text-amber-300 border border-slate-800 shadow-inner">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               <span>{isTe ? "ఆటో-స్క్రోలింగ్ • ఆపడానికి మౌస్ ఉంచండి" : "Auto-Scrolling Carousel • Hover to Pause"}</span>
             </span>
@@ -911,7 +911,7 @@ export const HomePage = ({
             <div>
               {/* Header with Rotation Controls */}
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   {isTe ? (currentBasketGap.tag_te || "రాయచోటి బాస్కెట్ గ్యాప్") : (currentBasketGap.tag_en || "Rayachoty Basket Gap")}
                 </span>
 
@@ -1009,7 +1009,7 @@ export const HomePage = ({
             <div>
               {/* Header with Rotation Controls */}
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
                   {isTe ? (currentTrend.tag_te || "డిమాండ్ ట్రెండ్") : (currentTrend.tag_en || "Demand Trend")}
                 </span>
 
@@ -1104,7 +1104,7 @@ export const HomePage = ({
             <div>
               {/* Header with Rotation Controls */}
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   {isTe ? (currentRoute.tag_te || "డెలివరీ రూట్ సమన్వయం") : (currentRoute.tag_en || "Dispatch Route Synergy")}
                 </span>
 

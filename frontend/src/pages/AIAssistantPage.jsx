@@ -118,7 +118,7 @@ export const AIAssistantPage = () => {
               <h1 className="text-sm sm:text-base font-black text-white">
                 RAIS AI Assistant & Semantic Knowledge Co-Pilot
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 font-mono">
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 font-mono">
                 Live DB Connected
               </span>
             </div>

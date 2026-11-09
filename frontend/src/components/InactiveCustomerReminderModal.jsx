@@ -109,7 +109,7 @@ export const InactiveCustomerReminderModal = ({ isOpen, onClose, onSelectCustome
                 <h3 className="text-base font-black text-white">
                   Inactive Outlet Re-Order Reminder
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
+                <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
                   {loading ? (
                     <span className="inline-flex items-center gap-1 font-mono">
                       <RefreshCw className="w-2.5 h-2.5 animate-spin" />

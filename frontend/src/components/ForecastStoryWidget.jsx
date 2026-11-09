@@ -348,7 +348,7 @@ export const ForecastStoryWidget = ({ onOpenDrilldown, onBackToOverview }) => {
                       </span>
                     </td>
                     <td className="py-2 px-2.5 text-center whitespace-nowrap">
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${
+                      <span className={`whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                         isDayAhead
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                           : 'bg-rose-500/10 text-rose-400 border-rose-500/30'

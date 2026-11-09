@@ -460,7 +460,7 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 Financial Audit & Reconciliation Hub
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
                 PRO AUDIT
               </span>
             </div>
@@ -607,7 +607,7 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
           <ShieldAlert className="w-4 h-4" />
           <span>Flagged Anomalies & Rapid Duplicates</span>
           {anomalies.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[9px] font-black">
+            <span className="whitespace-nowrap shrink-0 ml-1 px-1.5 py-0.2 bg-rose-500 text-white rounded-full text-[9px] font-black">
               {anomalies.length}
             </span>
           )}
@@ -624,7 +624,7 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
         >
           <AlertTriangle className="w-4 h-4 text-rose-400" />
           <span>Margin Leakage (Sold Below Cost)</span>
-          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+          <span className={`whitespace-nowrap shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-full ${
             activeTab === 'leakage' ? 'bg-black/30 text-white font-extrabold' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
           }`}>
             {leakageData?.summary?.total_items !== undefined ? leakageData.summary.total_items : '21'} Detected
@@ -1286,12 +1286,12 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                         </td>
                         <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           {item.classification === 'CRITICAL_TYPO' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                            <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
                               <AlertTriangle className="w-3 h-3" />
                               Typo / Fatal Rate
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               <ArrowDownRight className="w-3 h-3" />
                               Wholesale Discount
                             </span>
@@ -1400,11 +1400,11 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                       </td>
                       <td className="py-3 px-4 text-center font-sans">
                         {c.has_anomaly ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                          <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30">
                             Anomaly Flagged
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             Reconciled
                           </span>
                         )}

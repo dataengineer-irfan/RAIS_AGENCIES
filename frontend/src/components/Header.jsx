@@ -329,7 +329,7 @@ export const Header = ({
                   <div>
                     <h3 className="text-sm font-black text-white">{user?.full_name || 'Admin User'}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 uppercase tracking-wider">
+                      <span className="whitespace-nowrap shrink-0 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 uppercase tracking-wider">
                         {user?.role || 'ADMIN'}
                       </span>
                       <span className="text-[10px] text-slate-400">@{user?.username || 'admin'}</span>
@@ -368,7 +368,7 @@ export const Header = ({
                       <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
                       Data Vault & Backup
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="whitespace-nowrap shrink-0 text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                       30-Day Rolling
                     </span>
                   </div>
@@ -554,7 +554,7 @@ export const Header = ({
                     {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
                     <span className="text-white">Appearance Theme</span>
                   </div>
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                  <span className="whitespace-nowrap shrink-0 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
                     {theme === 'dark' ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
                   </span>
                 </button>

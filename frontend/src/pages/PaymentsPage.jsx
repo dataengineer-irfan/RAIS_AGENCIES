@@ -438,7 +438,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
               <h1 className="text-sm font-black text-white whitespace-nowrap">
                 Payments Ledger
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-full border border-slate-700 font-mono">
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-emerald-400 rounded-full border border-slate-700 font-mono">
                 {loading && payments.length === 0 ? 'Syncing...' : `${filteredPayments.length} of ${payments.length}`}
               </span>
             </div>

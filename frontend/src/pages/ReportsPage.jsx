@@ -257,7 +257,7 @@ export const ReportsPage = ({ onNavigate }) => {
             <h1 className="text-sm font-black text-white whitespace-nowrap">
               Financial Reports
             </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+            <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
               {filteredCustomerAging.length}/{customerAging.length} Outlets
             </span>
           </div>
@@ -519,7 +519,7 @@ export const ReportsPage = ({ onNavigate }) => {
               {selectedAgingBucket !== 'ALL' && (
                 <button
                   onClick={() => setSelectedAgingBucket('ALL')}
-                  className="text-[10px] text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 transition"
+                  className="whitespace-nowrap shrink-0 text-[10px] text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30 inline-flex items-center gap-1 transition"
                   title="Clear bucket filter"
                 >
                   <span>Reset</span>
@@ -742,7 +742,7 @@ export const ReportsPage = ({ onNavigate }) => {
 
             <button
               onClick={() => setDrillModal({ isOpen: true, metric: 'revenue', title: 'Product Category Sales Deep-Dive' })}
-              className="text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 transition active:scale-95 ml-auto sm:ml-0"
+              className="whitespace-nowrap shrink-0 text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30 inline-flex items-center gap-1 transition active:scale-95 ml-auto sm:ml-0"
               title="Drilldown into product categories and SKUs"
             >
               <span>Drill</span>

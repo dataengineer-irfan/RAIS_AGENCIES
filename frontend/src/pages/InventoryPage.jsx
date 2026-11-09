@@ -750,7 +750,7 @@ export const InventoryPage = () => {
               <h1 className="text-sm font-black text-white whitespace-nowrap">
                 Warehouse Inventory
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
                 {filteredItems.length}/{stockItems.length} SKUs
               </span>
             </div>
@@ -875,7 +875,7 @@ export const InventoryPage = () => {
                   <Target className="w-3.5 h-3.5 text-amber-400" />
                   <span className="hidden sm:inline">Demand Radar</span>
                   {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
-                    <span className="px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded-full text-[10px] font-black">
+                    <span className="whitespace-nowrap shrink-0 px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded-full text-[10px] font-black">
                       {demandRadarData.summary.identified_procurement_gaps}
                     </span>
                   )}
@@ -1246,7 +1246,7 @@ export const InventoryPage = () => {
                     <Target className="w-3.5 h-3.5 text-amber-400" />
                     <span>Demand Radar</span>
                     {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
-                      <span className="px-1.5 py-0.5 bg-slate-950 text-amber-400 rounded-full text-[9px] font-black border border-amber-400/30">
+                      <span className="whitespace-nowrap shrink-0 px-1.5 py-0.5 bg-slate-950 text-amber-400 rounded-full text-[9px] font-black border border-amber-400/30">
                         {demandRadarData.summary.identified_procurement_gaps}
                       </span>
                     )}
@@ -2202,7 +2202,7 @@ export const InventoryPage = () => {
                   Invoice Dispatch Audit: <span className="font-mono text-amber-400">{previewInvoiceData?.invoice_number || 'Loading...'}</span>
                 </h3>
                 {previewInvoiceData?.status && (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                  <span className={`whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                     previewInvoiceData.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
                     previewInvoiceData.status === 'PARTIALLY_PAID' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                     'bg-blue-500/20 text-blue-400 border border-blue-500/30'

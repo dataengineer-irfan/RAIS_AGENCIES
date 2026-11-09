@@ -208,37 +208,37 @@ export const ProductPerformanceMatrix = ({ onSelectProduct, dateRange = '30d', o
     switch (classification) {
       case 'WINNER':
         return (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+          <span className="whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
             ⭐ WINNER
           </span>
         );
       case 'STEADY':
         return (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-amber-500/20 text-amber-300 border-amber-500/40">
+          <span className="whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-500/20 text-amber-300 border-amber-500/40">
             📦 STEADY
           </span>
         );
       case 'DECLINING':
         return (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-orange-500/20 text-orange-300 border-orange-500/40">
+          <span className="whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-orange-500/20 text-orange-300 border-orange-500/40">
             📉 DECLINING
           </span>
         );
       case 'ZERO_MOVER':
         return (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-rose-500/20 text-rose-300 border-rose-500/40">
+          <span className="whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-rose-500/20 text-rose-300 border-rose-500/40">
             ❄️ DEAD STOCK
           </span>
         );
       case 'OUT_OF_STOCK':
         return (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-slate-700/40 text-slate-400 border-slate-700">
+          <span className="whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-slate-700/40 text-slate-400 border-slate-700">
             ⚪ UNSTOCKED
           </span>
         );
       default:
         return (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border bg-slate-800 text-slate-400 border-slate-700">
+          <span className="whitespace-nowrap shrink-0 inline-flex items-center text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border bg-slate-800 text-slate-400 border-slate-700">
             {classification?.replace('_', ' ') || 'ACTIVE'}
           </span>
         );

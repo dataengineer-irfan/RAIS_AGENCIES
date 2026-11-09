@@ -416,7 +416,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             <h1 className="text-sm font-black text-white whitespace-nowrap">
               Invoices Hub
             </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+            <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
               {loading && invoices.length === 0 ? 'Syncing...' : `${filteredInvoices.length}/${invoices.length}`}
             </span>
           </div>

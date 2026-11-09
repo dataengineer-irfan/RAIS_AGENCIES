@@ -20,7 +20,7 @@ export const GlobalFilterBar = ({
           <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
             Global Slicers
           </span>
-          <span className="text-[10px] font-semibold bg-slate-800 text-amber-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
+          <span className="whitespace-nowrap shrink-0 text-[10px] font-semibold bg-slate-800 text-amber-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
             Synced Dashboard View
           </span>
         </div>

@@ -379,7 +379,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
           >
             <ShieldCheck className="w-4 h-4" />
             <span>Activity Trail & Security</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+            <span className={`whitespace-nowrap shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-full ${
               activeMainTab === 'activity' ? 'bg-slate-950/20 text-slate-950 font-extrabold' : 'bg-slate-800 text-amber-400 border border-slate-700'
             }`}>
               2.6k+ Logs
@@ -396,7 +396,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
           >
             <AlertTriangle className="w-4 h-4" />
             <span>Margin Leakage (Sold Below Cost)</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+            <span className={`whitespace-nowrap shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-full ${
               activeMainTab === 'leakage' ? 'bg-black/30 text-white font-extrabold' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
             }`}>
               {leakageData?.summary?.total_items !== undefined ? leakageData.summary.total_items : '22'} Detected
@@ -424,7 +424,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
                   <h3 className="text-sm font-black text-white">
                     Margin Leakage Has Moved to Financial Audit Hub
                   </h3>
-                  <span className="text-[10px] font-black px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30 uppercase tracking-wider">
+                  <span className="whitespace-nowrap shrink-0 text-[10px] font-black px-2.5 py-0.5 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30 uppercase tracking-wider">
                     PRO AUDIT
                   </span>
                 </div>
@@ -445,19 +445,21 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
           </div>
 
           {/* Leakage Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:px-4 sm:py-3 shrink-0 shadow-md">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 shrink-0">
                 <TrendingDown className="w-4 h-4" />
               </div>
-              <div>
-                <h2 className="text-sm font-black text-white flex items-center gap-2">
-                  Historical Margin Leakage Audit
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-500/20 text-rose-400 rounded-full border border-rose-500/30 font-mono">
-                    {filteredLeakageItems.length} Line Items Sold Below Cost
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <h2 className="text-sm font-black text-white whitespace-nowrap">
+                    Historical Margin Leakage Audit
+                  </h2>
+                  <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2.5 py-0.5 bg-rose-500/20 text-rose-400 rounded-full border border-rose-500/30 font-mono">
+                    {filteredLeakageItems.length} {filteredLeakageItems.length === 1 ? 'Line Item' : 'Line Items'} Sold Below Cost
                   </span>
-                </h2>
-                <p className="text-[11px] text-slate-400">
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">
                   Cross-referenced line-item selling rates against verified warehouse inward landed costs
                 </p>
               </div>
@@ -689,12 +691,12 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
                         </td>
                         <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           {item.classification === 'CRITICAL_TYPO' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                            <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
                               <AlertTriangle className="w-3 h-3" />
                               Typo / Fatal Rate
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               <ArrowDownRight className="w-3 h-3" />
                               Wholesale Discount
                             </span>
@@ -746,7 +748,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
               <h1 className="text-sm sm:text-base font-black text-white">
                 System Audit & Security Trail
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
                 {debouncedSearch ? `Search: ${logs.length} found` : `Page ${page} (${logs.length} logs)`}
               </span>
             </div>
@@ -866,7 +868,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white text-sm">RAIS Data Vault & Rolling 30-Day Backup</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-[10px] border border-emerald-500/30">
+                <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-[10px] border border-emerald-500/30">
                   {backupStatus?.status === 'online' ? '● Database Online' : 'Connecting...'}
                 </span>
               </div>
@@ -1056,7 +1058,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
               <div className="flex items-start justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-black uppercase px-2.5 py-0.5 rounded-full border ${getActionBadgeClass(selectedLog.action)}`}>
+                    <span className={`whitespace-nowrap shrink-0 text-xs font-black uppercase px-2.5 py-0.5 rounded-full border ${getActionBadgeClass(selectedLog.action)}`}>
                       {selectedLog.action}
                     </span>
                     <span className="font-mono font-bold text-sm text-white">
@@ -1127,7 +1129,7 @@ export const AuditPage = ({ initialParams = null, onNavigate }) => {
                         <Trash2 className="w-4 h-4 text-rose-400" />
                         <span>Permanently Purged {selectedLog.entity_name} Record</span>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold">
+                      <span className="whitespace-nowrap shrink-0 text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold">
                         Stock Restored to Live Depot
                       </span>
                     </div>

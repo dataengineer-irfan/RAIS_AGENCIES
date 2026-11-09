@@ -996,11 +996,11 @@ export const DrillableMetricModal = ({
                             </td>
                             <td className="py-2 px-3 text-center">
                               {hasSale ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-sans">
+                                <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-sans">
                                   🔥 Active
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700 font-sans">
+                                <span className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700 font-sans">
                                   ❄️ Unsold
                                 </span>
                               )}
