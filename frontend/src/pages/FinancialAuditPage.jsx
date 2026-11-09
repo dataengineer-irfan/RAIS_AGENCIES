@@ -34,7 +34,7 @@ import {
 import { reportApi, auditApi } from '../services/api';
 
 export const WEEKLY_FILTER_PRESETS = [
-  { id: 'all', label: 'All Time (Historical)', shortLabel: 'All Time', badge: '21 items' },
+  { id: 'all', label: 'All Time (Historical)', shortLabel: 'All Time' },
   { id: 'this_week', label: 'This Week', shortLabel: '⚡ This Week', badge: '0 loss' },
   { id: 'last_week', label: 'Last Week', shortLabel: '⏮️ Last Week', badge: '0 loss' },
   { id: 'trailing_7', label: 'Trailing 7 Days', shortLabel: '7D Trailing', badge: 'Recent' },
@@ -44,8 +44,8 @@ export const WEEKLY_FILTER_PRESETS = [
   { id: 'week_2026_10_w1', label: 'Oct Wk 1 (01–07 Oct 2026)', shortLabel: 'Oct W1 (01-07)', badge: '-₹140' },
   { id: 'week_2026_09_w4', label: 'Sep Wk 4 (22–28 Sep 2026)', shortLabel: 'Sep W4 (22-28)', badge: '-₹72' },
   { id: 'month_2026_11', label: 'November 2026', shortLabel: 'Nov 2026', badge: '0 loss' },
-  { id: 'month_2026_10', label: 'October 2026', shortLabel: 'Oct 2026', badge: '5 items' },
-  { id: 'month_2026_09', label: 'September 2026', shortLabel: 'Sep 2026', badge: '16 items' },
+  { id: 'month_2026_10', label: 'October 2026', shortLabel: 'Oct 2026' },
+  { id: 'month_2026_09', label: 'September 2026', shortLabel: 'Sep 2026' },
 ];
 
 export const getDateRangeBounds = (rangeKey) => {
@@ -677,19 +677,21 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
       {activeTab === 'anomalies' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Anomalies Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:px-4 sm:py-3 shrink-0 shadow-md">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
                 <ShieldAlert className="w-4 h-4" />
               </div>
-              <div>
-                <h2 className="text-sm font-black text-white flex items-center gap-2">
-                  Suspect Rapid-Fire Double Payments & Invariant Scan
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30 font-mono">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <h2 className="text-sm font-black text-white whitespace-nowrap">
+                    Suspect Rapid-Fire Double Payments & Invariant Scan
+                  </h2>
+                  <span className="whitespace-nowrap text-[10px] font-bold px-2.5 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30 font-mono shrink-0">
                     {filteredAnomalies.length} Flagged
                   </span>
-                </h2>
-                <p className="text-[11px] text-slate-400">
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">
                   Identified where identical payment amount & method were recorded within seconds
                 </p>
               </div>
@@ -959,19 +961,21 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
       {activeTab === 'leakage' && (
         <div className="flex flex-col gap-3">
           {/* Leakage Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl px-4 py-2.5 shrink-0 shadow-md">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:px-4 sm:py-3 shrink-0 shadow-md">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 shrink-0">
                 <TrendingDown className="w-4 h-4" />
               </div>
-              <div>
-                <h2 className="text-sm font-black text-white flex items-center gap-2">
-                  Historical Margin Leakage Audit
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-500/20 text-rose-400 rounded-full border border-rose-500/30 font-mono">
-                    {filteredLeakageItems.length} Line Items Sold Below Cost
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <h2 className="text-sm font-black text-white whitespace-nowrap">
+                    Historical Margin Leakage Audit
+                  </h2>
+                  <span className="whitespace-nowrap text-[10px] font-bold px-2.5 py-0.5 bg-rose-500/20 text-rose-400 rounded-full border border-rose-500/30 font-mono shrink-0">
+                    {filteredLeakageItems.length} {filteredLeakageItems.length === 1 ? 'Line Item' : 'Line Items'} Sold Below Cost
                   </span>
-                </h2>
-                <p className="text-[11px] text-slate-400">
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">
                   Cross-referenced line-item selling rates against verified warehouse inward landed costs
                 </p>
               </div>
@@ -986,7 +990,7 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                   value={leakageSearch}
                   onChange={(e) => setLeakageSearch(e.target.value)}
                   placeholder="Search SKU, product, outlet..."
-                  className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500 w-36 sm:w-48"
+                  className="pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500 w-36 sm:w-44"
                 />
                 {leakageSearch && (
                   <button
@@ -1002,10 +1006,10 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
               <select
                 value={leakageDateRange}
                 onChange={(e) => setLeakageDateRange(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer max-w-[260px] truncate"
               >
                 <optgroup label="Standard Ranges">
-                  <option value="all">📅 All Time (Historical) - 21 items (-₹571.00)</option>
+                  <option value="all">📅 All Time (Historical)</option>
                   <option value="today">Today</option>
                   <option value="yesterday">Yesterday</option>
                   <option value="this_week">⚡ This Week</option>
@@ -1023,8 +1027,8 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                 </optgroup>
                 <optgroup label="Monthly Audit Archives">
                   <option value="month_2026_11">November 2026 (0 loss)</option>
-                  <option value="month_2026_10">October 2026 (5 items sold below cost)</option>
-                  <option value="month_2026_09">September 2026 (16 items sold below cost)</option>
+                  <option value="month_2026_10">October 2026</option>
+                  <option value="month_2026_09">September 2026</option>
                 </optgroup>
               </select>
 
@@ -1111,7 +1115,7 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                 onClick={() => setLeakageDateRange('all')}
                 className="text-xs text-amber-400 hover:text-white font-bold underline cursor-pointer shrink-0 ml-2"
               >
-                Show All Time (21 items)
+                Show All Time
               </button>
             </div>
           )}
