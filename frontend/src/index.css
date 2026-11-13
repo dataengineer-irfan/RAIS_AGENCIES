@@ -483,6 +483,90 @@ html.theme-light select option:hover {
   color: #b45309 !important;
 }
 
+/* ─── GRAY COLOR MAPPING (InvoiceBuilderModal & Utility Cards) ─── */
+html.theme-light .bg-gray-900,
+html.theme-light .bg-gray-950 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+html.theme-light .border-gray-800,
+html.theme-light .border-gray-700 {
+  border-color: #e2e8f0 !important;
+}
+html.theme-light .text-gray-400,
+html.theme-light .text-gray-300 {
+  color: #475569 !important;
+}
+
+/* ─── STATUS BADGE BORDER ENHANCEMENTS (Eliminate Muddy Dark Borders) ─── */
+html.theme-light [class*="border-emerald-800"],
+html.theme-light .border-emerald-800\/80 {
+  border-color: #bbf7d0 !important;
+}
+html.theme-light [class*="border-amber-800"],
+html.theme-light .border-amber-800\/80 {
+  border-color: #fde68a !important;
+}
+html.theme-light [class*="border-blue-800"],
+html.theme-light .border-blue-800\/80 {
+  border-color: #bae6fd !important;
+}
+html.theme-light [class*="border-rose-800"],
+html.theme-light .border-rose-800\/80 {
+  border-color: #fecaca !important;
+}
+
+/* ─── HOVER TEXT CONTRAST IN LIGHT MODE (Prevents White-on-White) ─── */
+html.theme-light .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+html.theme-light .hover\:text-slate-100:hover,
+html.theme-light .hover\:text-slate-200:hover,
+html.theme-light .hover\:text-slate-300:hover {
+  color: #0f172a !important;
+}
+html.theme-light .hover\:bg-slate-800\/60:hover,
+html.theme-light .hover\:bg-slate-800:hover,
+html.theme-light .hover\:bg-slate-900:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ─── FORM CONTROLS & DATEPICKER IN LIGHT MODE ─── */
+html.theme-light input[type="date"] {
+  color-scheme: light !important;
+}
+html.theme-light input[type="text"],
+html.theme-light input[type="number"],
+html.theme-light input[type="search"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* ─── TABLE ROWS & CELL DIVIDERS IN LIGHT MODE ─── */
+html.theme-light tbody td {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+html.theme-light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* ─── AI ASSISTANT CHAT & MARKDOWN BLOCKS IN LIGHT MODE ─── */
+html.theme-light .prose {
+  color: #0f172a !important;
+}
+html.theme-light .prose code {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+html.theme-light .prose pre {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    DARK THEME HIGH-CONTRAST ENHANCEMENTS FOR LAPTOP MONITORS
    Prevents washed-out text and muddy gold on low-nits laptop screens
