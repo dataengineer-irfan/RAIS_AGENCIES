@@ -61,12 +61,12 @@ export const DashboardTabStrip = ({ activePage, onSelectPage }) => {
         })}
       </div>
 
-      {/* Keyboard Shortcut Hint */}
-      <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400 font-mono shrink-0">
-        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">←</span>
-        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">→</span>
-        <span>flip</span>
-        <span className="text-slate-500 font-bold">({currentIndex + 1}/{DASHBOARD_PAGES.length})</span>
+      {/* Keyboard Shortcut & Tab Counter */}
+      <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-400 font-mono shrink-0">
+        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px]">←</span>
+        <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 text-[10px]">→</span>
+        <span className="text-slate-400 text-xs">Tab</span>
+        <span className="text-amber-500 font-bold">({currentIndex + 1}/{DASHBOARD_PAGES.length})</span>
       </div>
 
       {/* Mobile Dot Navigation */}

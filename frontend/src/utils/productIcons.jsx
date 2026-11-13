@@ -162,7 +162,7 @@ export function getProductIconInfo(product) {
   }
 
   // 14. Bread Mix & Marinades
-  if (name.includes('bread') || name.includes('marinde') || name.includes('cajun') || sku.includes('brd') || cat.includes('bread')) {
+  if (name.includes('bread') || name.includes('marinade') || name.includes('marinde') || name.includes('cajun') || sku.includes('brd') || cat.includes('bread')) {
     return {
       emoji: '🍞',
       label: 'Bread Mix & Marinade',

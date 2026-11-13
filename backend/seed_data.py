@@ -118,8 +118,8 @@ def seed_database():
         # 3. SEED 38 OFFICIAL CATALOGUE PRODUCTS (WITH VERIFIED PRICES & PACKAGING)
         products_data = [
             # Chicken Items
-            {"sku": "RAIS-CHK-01", "cat": "CHICKEN", "name": "SIGNATURE TORTILLAH 8 INCHES FROZEN", "brand": "Signature", "pack": "1 PACKET", "price": "85.00", "tax": "5.00", "hsn": "1905"},
-            {"sku": "RAIS-CHK-02", "cat": "CHICKEN", "name": "SIGNATURE TORTILLAH 8.5 INCHES", "brand": "Signature", "pack": "1 PACKET", "price": "90.00", "tax": "5.00", "hsn": "1905"},
+            {"sku": "RAIS-CHK-01", "cat": "CHICKEN", "name": "SIGNATURE TORTILLA 8 INCHES FROZEN", "brand": "Signature", "pack": "1 PACKET", "price": "85.00", "tax": "5.00", "hsn": "1905"},
+            {"sku": "RAIS-CHK-02", "cat": "CHICKEN", "name": "SIGNATURE TORTILLA 8.5 INCHES", "brand": "Signature", "pack": "1 PACKET", "price": "90.00", "tax": "5.00", "hsn": "1905"},
             {"sku": "RAIS-CHK-03", "cat": "CHICKEN", "name": "NUTRICH CHICKEN POPCORN BALL", "brand": "Nutrich", "pack": "1 KG PACKET", "price": "330.00", "tax": "5.00", "hsn": "1602"},
             {"sku": "RAIS-CHK-04", "cat": "CHICKEN", "name": "I.T.C CHICKEN MOMOS", "brand": "ITC Master Chef", "pack": "1 PACKET", "price": "170.00", "tax": "5.00", "hsn": "1902"},
             {"sku": "RAIS-CHK-05", "cat": "CHICKEN", "name": "ITC CHICKEN NUGGETS", "brand": "ITC Master Chef", "pack": "1 KG PACKET", "price": "355.00", "tax": "5.00", "hsn": "1602"},
@@ -137,10 +137,10 @@ def seed_database():
             {"sku": "RAIS-VEG-09", "cat": "VEG", "name": "GODREJ TANDOORI PANEER NUGGETS", "brand": "Godrej", "pack": "1 KG PACKET", "price": "360.00", "tax": "5.00", "hsn": "0406"},
 
             # Ketchup & Sauces
-            {"sku": "RAIS-SAU-01", "cat": "SAUCES", "name": "DELMONT TOMATO KETCHUP 1.1kg", "brand": "Del Monte", "pack": "1 PACKET", "price": "120.00", "tax": "12.00", "hsn": "2103"},
+            {"sku": "RAIS-SAU-01", "cat": "SAUCES", "name": "DEL MONTE TOMATO KETCHUP 1.1kg", "brand": "Del Monte", "pack": "1.1 KG PACKET", "price": "120.00", "tax": "12.00", "hsn": "2103"},
             {"sku": "RAIS-SAU-02", "cat": "SAUCES", "name": "FOODRITE TOMATO KETCHUP", "brand": "Foodrite", "pack": "1 KG PACKET", "price": "75.00", "tax": "12.00", "hsn": "2103"},
             {"sku": "RAIS-SAU-03", "cat": "SAUCES", "name": "DELMONTE KETCHUP (8 GRAM PKT)", "brand": "Del Monte", "pack": "1 PACKET", "price": "80.00", "tax": "12.00", "hsn": "2103"},
-            {"sku": "RAIS-SAU-04", "cat": "SAUCES", "name": "DELMONT TANDOORI MAYO", "brand": "Del Monte", "pack": "1 KG PACKET", "price": "285.00", "tax": "12.00", "hsn": "2103"},
+            {"sku": "RAIS-SAU-04", "cat": "SAUCES", "name": "DEL MONTE TANDOORI MAYO", "brand": "Del Monte", "pack": "1 KG PACKET", "price": "285.00", "tax": "12.00", "hsn": "2103"},
             {"sku": "RAIS-SAU-05", "cat": "SAUCES", "name": "DELMONTE CREAMY CHEESE SAUCE", "brand": "Del Monte", "pack": "1 KG PACKET", "price": "190.00", "tax": "12.00", "hsn": "2103"},
             {"sku": "RAIS-SAU-06", "cat": "SAUCES", "name": "DELMONTE PIZZA PASTA SAUCE", "brand": "Del Monte", "pack": "1 KG PACKET", "price": "155.00", "tax": "12.00", "hsn": "2103"},
             {"sku": "RAIS-SAU-07", "cat": "SAUCES", "name": "MAYANK GOLD KETCHUP (9 GRAM PKT)", "brand": "Mayank Gold", "pack": "1 PACKET", "price": "70.00", "tax": "12.00", "hsn": "2103"},
@@ -148,7 +148,7 @@ def seed_database():
             {"sku": "RAIS-SAU-09", "cat": "SAUCES", "name": "FOODRITE MAYONNAISE (8 GRAM PKT)", "brand": "Foodrite", "pack": "1 PACKET", "price": "190.00", "tax": "12.00", "hsn": "2103"},
 
             # Bread Mix & Powders
-            {"sku": "RAIS-BRD-01", "cat": "BREADING", "name": "VKL EXTRA H & S MARINDE", "brand": "VKL", "pack": "1 KG PACKET", "price": "370.00", "tax": "5.00", "hsn": "2103"},
+            {"sku": "RAIS-BRD-01", "cat": "BREADING", "name": "VKL EXTRA H & S MARINADE", "brand": "VKL", "pack": "1 KG PACKET", "price": "370.00", "tax": "5.00", "hsn": "2103"},
             {"sku": "RAIS-BRD-02", "cat": "BREADING", "name": "VKL CRISPY CAJUN BREADING MIX", "brand": "VKL", "pack": "1 KG PACKET", "price": "300.00", "tax": "5.00", "hsn": "1901"},
             {"sku": "RAIS-BRD-03", "cat": "BREADING", "name": "VKL PERI PERI POWDER", "brand": "VKL", "pack": "250 GRAMS PACKET", "price": "165.00", "tax": "5.00", "hsn": "0910"},
             {"sku": "RAIS-BRD-04", "cat": "BREADING", "name": "OREGANO", "brand": "RAIS Select", "pack": "1 KG PACKET", "price": "230.00", "tax": "5.00", "hsn": "1211"},

@@ -4,14 +4,8 @@
  * stored in `/assets/products/` for instant visual recognition by kitchen operators and counter staff.
  */
 
-// Direct SKU mapping to public asset images
+// Direct SKU mapping to public asset images (Harmonized with Rayachoty Depot Catalog)
 const SKU_IMAGE_MAP = {
-  // Spices & Seasonings
-  'RAIS-BRD-03': 'vkl_peri_peri_sprinkler.jpg',
-  'RAIS-SAU-06': 'big_bell_oregano.jpg',
-  'RAIS-BRD-04': 'vkl_crispy_cajun_breading.jpg',
-  'RAIS-BRD-05': 'vkl_extra_hs_marinade.jpg',
-
   // Packaging Boxes
   'RAIS-BOX-01': 'boxes_display_pizza_burger.jpg',
   'RAIS-BOX-02': 'burger_box_printed.jpg',
@@ -22,43 +16,53 @@ const SKU_IMAGE_MAP = {
   'RAIS-BOX-07': 'tissue_papers_pack.jpg',
   'RAIS-BOX-08': 'butter_paper_pack.jpg',
 
-  // Sauces & Mayonnaise
-  'RAIS-SAU-01': 'delmonte_ketchup_bottle.jpg',
-  'RAIS-SAU-02': 'delmonte_ketchup_1_1kg.jpg',
-  'RAIS-SAU-03': 'delmonte_ketchup_bottle.jpg',
-  'RAIS-SAU-04': 'delmonte_tandoori_mayo.jpg',
-  'RAIS-SAU-05': 'delmonte_pizza_pasta_sauce.jpg',
-  'RAIS-SAU-07': 'ketchup_sachets.jpg',
-  'RAIS-SAU-08': 'foodrite_mayo_sachets.jpg',
-  'RAIS-SAU-09': 'delmonte_creamy_cheese.jpg',
-  'RAIS-SAU-10': 'delmonte_barbeque_sauce.jpg',
+  // Breading, Spices & Marinades
+  'RAIS-BRD-01': 'vkl_extra_hs_marinade.jpg',
+  'RAIS-BRD-02': 'vkl_crispy_cajun_breading.jpg',
+  'RAIS-BRD-03': 'vkl_peri_peri_sprinkler.jpg',
+  'RAIS-BRD-04': 'big_bell_oregano.jpg',
+
+  // Tortillas & Chicken
+  'RAIS-CHK-01': 'fresh2go_tortilla_8_5.jpg',
+  'RAIS-CHK-02': 'fresh2go_tortilla_8_5.jpg',
+  'RAIS-CHK-03': 'chicken_fingers.jpg',
+  'RAIS-CHK-04': 'triken_chicken_momos.jpg',
+  'RAIS-CHK-05': 'itc_crunchy_chicken_nuggets.jpg',
+  'RAIS-CHK-06': 'chicken_patty.jpg',
 
   // Dairy & Cheese
-  'RAIS-CHS-01': 'milky_mist_mozzarella_1kg.jpg',
-  'RAIS-CHS-02': 'milky_mist_mozzarella_2kg.jpg',
+  'RAIS-CHS-01': 'milky_mist_mozzarella_2kg.jpg',
+  'RAIS-CHS-02': 'milky_mist_mozzarella_1kg.jpg',
   'RAIS-CHS-03': 'milky_mist_cheese_slices.jpg',
   'RAIS-CHS-04': 'paneer_diced_cubes.jpg',
 
-  // French Fries & Snacks
-  'RAIS-VEG-01': 'amul_french_fries_6mm.jpg',
-  'RAIS-VEG-02': 'amul_french_fries_9mm.jpg',
-  'RAIS-VEG-03': 'mccain_smiles.jpg',
-  'RAIS-VEG-04': 'sweet_corn_pack.jpg',
-  'RAIS-VEG-05': 'chill_fill_veg_patty.jpg',
-  'RAIS-VEG-06': 'cheesy_triangle.jpg',
+  // French Fries & Veg Snacks
+  'RAIS-VEG-01': 'amul_french_fries_9mm.jpg',
+  'RAIS-VEG-02': 'amul_french_fries_6mm.jpg',
+  'RAIS-VEG-03': 'veg_momos.jpg',
+  'RAIS-VEG-04': 'chill_fill_veg_patty.jpg',
+  'RAIS-VEG-05': 'itc_spicy_paneer_patty.jpg',
+  'RAIS-VEG-06': 'paneer_diced_cubes.jpg',
+  'RAIS-VEG-07': 'cheesy_triangle.jpg',
+  'RAIS-VEG-08': 'sweet_corn_pack.jpg',
+  'RAIS-VEG-09': 'paneer_diced_cubes.jpg',
 
-  // Momos & Chicken
-  'RAIS-MOM-01': 'triken_chicken_momos.jpg',
-  'RAIS-MOM-02': 'veg_momos.jpg',
-  'RAIS-CHK-01': 'itc_crunchy_chicken_nuggets.jpg',
-  'RAIS-CHK-02': 'chicken_patty.jpg',
-  'RAIS-CHK-03': 'chicken_fingers.jpg',
+  // Sauces & Mayonnaise
+  'RAIS-SAU-01': 'delmonte_ketchup_1_1kg.jpg',
+  'RAIS-SAU-02': 'foodrite_tomato_ketchup_pouch.jpg',
+  'RAIS-SAU-03': 'ketchup_sachets.jpg',
+  'RAIS-SAU-04': 'delmonte_tandoori_mayo.jpg',
+  'RAIS-SAU-05': 'delmonte_creamy_cheese.jpg',
+  'RAIS-SAU-06': 'delmonte_pizza_pasta_sauce.jpg',
+  'RAIS-SAU-07': 'ketchup_sachets.jpg',
+  'RAIS-SAU-08': 'mealtime_veg_mayo.jpg',
+  'RAIS-SAU-09': 'foodrite_mayo_sachets.jpg',
 
-  // Tortillas & Bakery
-  'RAIS-BRD-01': 'fresh2go_tortilla_10.jpg',
-  'RAIS-BRD-02': 'fresh2go_tortilla_8_5.jpg',
-  'RAIS-BAK-01': 'burger_buns.jpg',
-  'RAIS-BAK-02': 'pizza_base.jpg',
+  // Spices
+  'RAIS-SPC-01': 'chilly_powder.jpg',
+  'RAIS-SPC-02': 'chilly_powder.jpg',
+  'RAIS-SPC-03': 'turmeric_powder.jpg',
+  'RAIS-SPC-04': 'coriander_powder.jpg',
 
   // Mojitos & Beverages
   'RAIS-MOJ-01': 'manama_strawberry_mojito.jpg',
@@ -73,14 +77,14 @@ const KEYWORD_RULES = [
   { pattern: /BURGER\s*BOX/i, file: 'burger_box_printed.jpg', te: 'ప్రింటెడ్ బర్గర్ బాక్సులు డిపో స్టాక్' },
   { pattern: /TANDOORI\s*MAYO/i, file: 'delmonte_tandoori_mayo.jpg', te: 'డెల్మోంటే తందూరి మాయో సాస్' },
   { pattern: /MAYO|MAYONNAISE/i, file: 'delmonte_tandoori_mayo.jpg', te: 'రుచికరమైన మాయోనైస్ డిపో స్టాక్' },
-  { pattern: /KETCHUP|SAUCE\s*SACHET/i, file: 'delmonte_ketchup_bottle.jpg', te: 'డెల్మోంటే కెచప్ బాటిల్స్ & పౌచ్‌లు' },
-  { pattern: /MOZZARELLA|CHEESE/i, file: 'milky_mist_mozzarella_1kg.jpg', te: 'మిల్కీ మిస్ట్ మొజారెల్లా చీజ్' },
+  { pattern: /KETCHUP|SAUCE\s*SACHET/i, file: 'delmonte_ketchup_1_1kg.jpg', te: 'డెల్మోంటే కెచప్ బాటిల్స్ & పౌచ్‌లు' },
+  { pattern: /MOZZARELLA|CHEESE/i, file: 'milky_mist_mozzarella_2kg.jpg', te: 'మిల్కీ మిస్ట్ మొజారెల్లా చీజ్' },
   { pattern: /FRIES|FRENCH\s*FRIES/i, file: 'amul_french_fries_6mm.jpg', te: 'అముల్ ఫ్రెంచ్ ఫ్రైస్ క్రిస్పీ స్టాక్' },
-  { pattern: /TORTILLA|WRAP/i, file: 'fresh2go_tortilla_10.jpg', te: 'ఫ్రెష్2గో టోర్టిల్లా ర్యాప్స్' },
+  { pattern: /TORTILLA|WRAP/i, file: 'fresh2go_tortilla_8_5.jpg', te: 'ఫ్రెష్2గో టోర్టిల్లా ర్యాప్స్' },
   { pattern: /MOMO/i, file: 'triken_chicken_momos.jpg', te: 'చికెన్ & వెజ్ మోమోస్ తాజా బ్యాచ్' },
   { pattern: /NUGGET/i, file: 'itc_crunchy_chicken_nuggets.jpg', te: 'ఐటీసీ చికెన్ నగ్గెట్స్' },
   { pattern: /BREADING|CAJUN/i, file: 'vkl_crispy_cajun_breading.jpg', te: 'వికెఎల్ క్రిస్పీ బ్రెడ్డింగ్ మిక్స్' },
-  { pattern: /MARINADE/i, file: 'vkl_extra_hs_marinade.jpg', te: 'హాట్ & స్పైసీ చికెన్ మెరినేడ్' },
+  { pattern: /MARINADE|MARINDE/i, file: 'vkl_extra_hs_marinade.jpg', te: 'హాట్ & స్పైసీ చికెన్ మెరినేడ్' },
   { pattern: /SWEET\s*CORN/i, file: 'sweet_corn_pack.jpg', te: 'స్వీట్ కార్న్ ప్యాకెట్లు' },
   { pattern: /BUN/i, file: 'burger_buns.jpg', te: 'సాఫ్ట్ బర్గర్ బన్స్' },
   { pattern: /PIZZA\s*BASE/i, file: 'pizza_base.jpg', te: 'పిజ్జా బేస్‌లు డిపోలో ఉన్నాయి' },
@@ -93,11 +97,32 @@ const KEYWORD_RULES = [
  */
 export function getProductImageFilename(sku, name = '') {
   const cleanSku = (sku || '').trim().toUpperCase();
+  const rawName = (name || '').trim();
+
+  // 1. Check strong name keywords first to guarantee accurate image mapping
+  if (/TORTILLA|WRAP/i.test(rawName)) {
+    return /8(\.5)?/i.test(rawName) ? 'fresh2go_tortilla_8_5.jpg' : 'fresh2go_tortilla_10.jpg';
+  }
+  if (/MARINADE|MARINDE/i.test(rawName)) {
+    return 'vkl_extra_hs_marinade.jpg';
+  }
+  if (/BREADING|CAJUN/i.test(rawName)) {
+    return 'vkl_crispy_cajun_breading.jpg';
+  }
+  if (/PERI\s*PERI/i.test(rawName)) {
+    return 'vkl_peri_peri_sprinkler.jpg';
+  }
+  if (/OREGANO/i.test(rawName)) {
+    return 'big_bell_oregano.jpg';
+  }
+
+  // 2. Direct SKU mapping with verified depot catalog
   if (cleanSku && SKU_IMAGE_MAP[cleanSku]) {
     return SKU_IMAGE_MAP[cleanSku];
   }
 
-  const text = `${cleanSku} ${name || ''}`.trim();
+  // 3. Keyword rules
+  const text = `${cleanSku} ${rawName}`.trim();
   for (const rule of KEYWORD_RULES) {
     if (rule.pattern.test(text)) {
       return rule.file;

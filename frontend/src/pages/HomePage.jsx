@@ -242,7 +242,7 @@ export const HomePage = ({
     margin_leakage_loss: 571.0,
     margin_leakage_items_count: 21,
     worst_sku: 'RAIS-CHK-02',
-    worst_sku_name: 'SIGNATURE TORTILLAH 8.5 INCHES',
+    worst_sku_name: 'SIGNATURE TORTILLA 8.5 INCHES',
     worst_sku_loss: 140.0,
     top_outlet: 'Kksk',
     top_outlet_loss: 140.0,

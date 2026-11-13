@@ -157,8 +157,19 @@ export const generateTickerItems = (kpis) => {
     seenProductIds.add(pId);
 
     const stock = parseFloat(p.current_stock || 0);
-    const unit = p.packaging_unit || 'PACKETS';
+    const rawUnit = (p.packaging_unit || 'PACKETS').trim();
     const sku = p.sku ? `(${p.sku})` : '';
+
+    // Smart unit noun extractor: converts "1.1 KG PACKET" -> "packets", "1 PACKET" -> "packets", "100 NOS" -> "boxes"
+    const getUnitNoun = (qty, unitStr) => {
+      if (/PACKET|PKT/i.test(unitStr)) return qty === 1 ? 'packet' : 'packets';
+      if (/BOTTLE/i.test(unitStr)) return qty === 1 ? 'bottle' : 'bottles';
+      if (/BOX|NOS/i.test(unitStr)) return qty === 1 ? 'box' : 'boxes';
+      if (/PIECE|PC/i.test(unitStr)) return qty === 1 ? 'piece' : 'pieces';
+      return qty === 1 ? 'unit' : 'units';
+    };
+
+    const unitNoun = getUnitNoun(stock, rawUnit);
 
     if (stock <= 0) {
       items.push({
@@ -167,7 +178,7 @@ export const generateTickerItems = (kpis) => {
         icon: '🚨',
         badge: 'OUT OF STOCK',
         badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-        headline: `${p.name} ${sku} — 0 ${unit} available • Immediate reorder required`
+        headline: `${p.name} ${sku} — 0 ${unitNoun} available • Immediate reorder required`
       });
       addedStockAlerts++;
     } else {
@@ -177,7 +188,7 @@ export const generateTickerItems = (kpis) => {
         icon: '⚠️',
         badge: 'LOW STOCK',
         badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-        headline: `${p.name} ${sku} — only ${stock} ${unit} left (Alert: ${p.min_stock_alert || 5})`
+        headline: `${p.name} ${sku} — only ${stock} ${unitNoun} left (Alert: ${p.min_stock_alert || 5})`
       });
       addedStockAlerts++;
     }

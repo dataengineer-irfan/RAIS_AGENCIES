@@ -198,6 +198,14 @@ html.theme-light nav button.text-slate-400:hover {
   color: #0f172a !important;
 }
 
+/* ─── LOGO CONTAINER & MONOGRAM (Databricks clean white in Light Mode) ─── */
+html.theme-light .bg-\[\#0b1329\],
+html.theme-light [class*="bg-[#0b1329]"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05) !important;
+}
+
 /* ─── TOP HEADER & LIVE MARQUEE TICKER ─── */
 html.theme-light header {
   background-color: #ffffff !important;
@@ -353,15 +361,29 @@ html.theme-light .bg-slate-700\/50 {
   color: #475569 !important;
 }
 
-/* ─── PURPLE PALETTE ─── */
+/* ─── PURPLE / LILAC PALETTE (Zero Dark Void in Light Mode) ─── */
 html.theme-light .text-purple-400,
-html.theme-light .text-purple-300 {
+html.theme-light .text-purple-300,
+html.theme-light .text-purple-200 {
   color: #6b21a8 !important;
 }
 html.theme-light .bg-purple-500\/10,
-html.theme-light .bg-purple-500\/20 {
-  background-color: #f3e8ff !important;
-  border-color: #e9d5ff !important;
+html.theme-light .bg-purple-500\/20,
+html.theme-light .bg-purple-950\/20,
+html.theme-light .bg-purple-950\/40,
+html.theme-light .bg-purple-950\/70,
+html.theme-light [class*="bg-purple-950"] {
+  background-color: #f5f3ff !important; /* Soft lilac */
+  border-color: #ddd6fe !important;     /* Lavender border */
+  color: #5b21b6 !important;            /* Deep Purple-800 text */
+}
+
+/* ─── ACTIVE CARD SELECTION (Databricks / Linear Razor-Sharp Left Accent) ─── */
+html.theme-light .border-l-amber-500 {
+  border-left-color: #f59e0b !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04) !important;
 }
 
 /* ─── FORM CONTROLS IN LIGHT MODE ─── */

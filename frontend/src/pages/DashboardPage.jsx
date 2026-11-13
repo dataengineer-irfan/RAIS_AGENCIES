@@ -893,7 +893,8 @@ export const DashboardPage = ({
   const topProductsList = useMemo(() => {
     const list = kpis?.top_selling_products || [];
     return list.map(prod => {
-      const name = (prod.product_name || prod.name || prod.item_description || prod.sku || 'Wholesale SKU').trim();
+      const rawName = (prod.product_name || prod.name || prod.item_description || prod.sku || 'Wholesale SKU').trim();
+      const name = rawName.replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE').replace(/DELMONT\b/gi, 'DEL MONTE');
       const rev = parseFloat(prod.total_revenue || 0);
       const qty = parseFloat(prod.quantity_sold || 0);
       const stock = parseFloat(prod.current_stock ?? prod.stock ?? 0);
@@ -1332,13 +1333,11 @@ export const DashboardPage = ({
                                 </span>
                               )}
                               <StatusBadge status={inv.status} />
-                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
-                                isPaid
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30 font-mono font-black'
-                              }`}>
-                                {isPaid ? '🟢 Settled' : `Due: ₹${due.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                              </span>
+                              {!isPaid && due > 0 && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded border bg-rose-500/10 text-rose-400 border-rose-500/30 font-mono font-black">
+                                  Due: ₹{due.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                              )}
                             </div>
 
                             {/* Total Billed & Slip Button */}
@@ -1388,7 +1387,7 @@ export const DashboardPage = ({
                             {/* Line items preview pills */}
                             {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
                               <div className="flex items-center gap-1 overflow-hidden shrink-0 max-w-[280px]">
-                                {inv.items_preview.slice(0, 2).map((it, i) => (
+                                {inv.items_preview.slice(0, 2).map(it => it.replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE').replace(/\bTissu\b/gi, 'Tissue')).map((it, i) => (
                                   <span key={i} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate" title={it}>
                                     📦 {it}
                                   </span>
@@ -1848,7 +1847,7 @@ export const DashboardPage = ({
 
                       {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
                         <div className="flex items-center gap-1 overflow-hidden pt-1 border-t border-slate-900 text-[10px]">
-                          {inv.items_preview.slice(0, 2).map((it, i) => (
+                          {inv.items_preview.slice(0, 2).map(it => it.replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE').replace(/\bTissu\b/gi, 'Tissue')).map((it, i) => (
                             <span key={i} className="bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 truncate">
                               📦 {it}
                             </span>
@@ -2169,7 +2168,7 @@ export const DashboardPage = ({
                           {/* Line items preview pills */}
                           {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
                             <div className="flex items-center gap-1 overflow-hidden shrink-0 max-w-[220px]">
-                              {inv.items_preview.slice(0, 2).map((it, i) => (
+                              {inv.items_preview.slice(0, 2).map(it => it.replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE').replace(/\bTissu\b/gi, 'Tissue')).map((it, i) => (
                                 <span key={i} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate" title={it}>
                                   📦 {it}
                                 </span>
