@@ -379,7 +379,8 @@ html.theme-light [class*="bg-purple-950"] {
 }
 
 /* ─── ACTIVE CARD SELECTION (Databricks / Linear Razor-Sharp Left Accent) ─── */
-html.theme-light .border-l-amber-500 {
+html.theme-light .border-l-amber-500,
+html.theme-light .border-amber-500\/60 {
   border-left-color: #f59e0b !important;
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;

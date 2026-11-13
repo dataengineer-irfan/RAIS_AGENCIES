@@ -422,14 +422,14 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           </div>
         </div>
 
-        {/* Center: Clean Enterprise Status Filter Ribbon */}
+        {/* Center: 1-Click Status Filter Pills */}
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
           <button
             onClick={() => setActiveStatusFilter('ALL')}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeStatusFilter === 'ALL'
-                ? 'bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
             All ({statusCounts.total})
@@ -438,8 +438,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             onClick={() => setActiveStatusFilter(activeStatusFilter === 'DUE' ? 'ALL' : 'DUE')}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
               activeStatusFilter === 'DUE'
-                ? 'bg-rose-600 text-white shadow-sm ring-1 ring-rose-500'
-                : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30'
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20 ring-1 ring-rose-400'
+                : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
             }`}
           >
             <span>🚨 Due</span>
@@ -449,8 +449,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             onClick={() => setActiveStatusFilter(activeStatusFilter === 'PAID' ? 'ALL' : 'PAID')}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
               activeStatusFilter === 'PAID'
-                ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-500'
-                : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
             }`}
           >
             <span>🟢 Paid</span>
@@ -460,8 +460,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             onClick={() => setActiveStatusFilter(activeStatusFilter === 'PARTIALLY_PAID' ? 'ALL' : 'PARTIALLY_PAID')}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
               activeStatusFilter === 'PARTIALLY_PAID'
-                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-500'
-                : 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
             }`}
           >
             <span>Partial</span>
@@ -472,7 +472,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeStatusFilter === 'DRAFT'
                 ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-600'
-                : 'bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
             Draft ({statusCounts.draft})
@@ -727,8 +727,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
                 // Item description preview (e.g. "French Fries 6mm + 2 more")
                 const itemsList = Array.isArray(inv?.items) ? inv.items : [];
-                const rawFirst = itemsList.length > 0 ? (itemsList[0].item_description || itemsList[0].product_name) : null;
-                const firstItemName = rawFirst ? rawFirst.replace(/\bTissu\b/gi, 'Tissue').replace(/\bMAYONIES\b/gi, 'Mayonnaise').replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE') : null;
+                const firstItemName = itemsList.length > 0 ? (itemsList[0].item_description || itemsList[0].product_name) : null;
                 const remainingItemsCount = itemsList.length > 1 ? itemsList.length - 1 : 0;
 
                 return (
@@ -737,8 +736,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                     onClick={() => handleSelectInvoice(inv)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
-                        ? 'bg-white dark:bg-slate-900 border-l-4 border-l-amber-500 border-slate-300 dark:border-slate-700 shadow-md ring-1 ring-amber-500/20'
-                        : 'bg-white/80 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs'
+                        ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/10'
+                        : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1 min-w-0">
@@ -795,10 +794,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                         </span>
                         {hasRole(['ADMIN', 'OPERATOR']) && inv?.gross_profit !== undefined && inv?.gross_profit !== null && (
                           <span 
-                            className="text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/30 px-1.5 py-0.5 rounded block mt-0.5 shadow-2xs"
+                            className="text-[9px] font-mono font-bold text-purple-300 bg-purple-950/70 border border-purple-500/30 px-1 py-0.2 rounded block mt-0.5"
                             title={`Procurement COGS: ₹${parseFloat(inv?.cogs || 0).toFixed(2)}`}
                           >
-                            Profit: +₹{parseFloat(inv?.gross_profit || 0).toFixed(0)} ({parseFloat(inv?.gross_margin_pct || 0).toFixed(1)}%)
+                            Profit: ₹{parseFloat(inv?.gross_profit || 0).toFixed(0)} ({parseFloat(inv?.gross_margin_pct || 0).toFixed(1)}%)
                           </span>
                         )}
                       </div>
@@ -951,7 +950,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                       {selectedInvoice.due_date && (
                         <>
                           <span className="text-slate-600">•</span>
-                          <span className={`${parseFloat(selectedInvoice.outstanding_amount || 0) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400'} font-mono font-bold`}>
+                          <span className="text-amber-700 dark:text-amber-400 font-mono font-bold">
                             Due Date: {new Date(selectedInvoice.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
                         </>
@@ -1029,7 +1028,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                                   )}
                                 </div>
                                 <h5 className="font-bold text-white text-xs truncate mt-0.5">
-                                  {(item.item_description || item.item_name || item.product_name || 'Item').replace(/\bTissu\b/gi, 'Tissue').replace(/\bMAYONIES\b/gi, 'Mayonnaise').replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE')}
+                                  {item.item_description || item.item_name || item.product_name || 'Item'}
                                 </h5>
                                 <p className="text-[10px] text-slate-400 font-mono">
                                   {item.quantity} {item.packaging_unit || 'units'} @ ₹{parseFloat(item.unit_price || 0).toFixed(2)}
@@ -1041,7 +1040,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                                 </div>
                                 {hasRole(['ADMIN', 'OPERATOR']) && item.gross_profit !== undefined && item.gross_profit !== null && (
                                   <div 
-                                    className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-300 mt-0.5"
+                                    className="text-[9px] font-mono text-purple-300 mt-0.5"
                                     title={`Landed Cost: ₹${parseFloat(item.unit_cost || 0).toFixed(2)}/unit | COGS: ₹${parseFloat(item.cogs || 0).toFixed(2)}`}
                                   >
                                     Profit: +₹{parseFloat(item.gross_profit || 0).toFixed(2)} ({parseFloat(item.gross_margin_pct || 0).toFixed(1)}%)
@@ -1085,15 +1084,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
                         {/* Internal Commercial Economics (Admin & Operator Only) */}
                         {hasRole(['ADMIN', 'OPERATOR']) && selectedInvoice.gross_profit !== undefined && selectedInvoice.gross_profit !== null && (
-                          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 rounded-xl p-2.5 flex items-center justify-between flex-wrap gap-2 text-xs shadow-2xs">
-                            <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-bold">
+                          <div className="bg-purple-950/20 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-purple-300 font-bold">
                               <span className="text-xs">🔒</span>
                               <span className="text-[10px] uppercase tracking-wider font-bold">Internal Profit & Economics (Admin Only)</span>
                             </div>
                             <div className="flex items-center gap-3 font-mono text-xs flex-wrap">
-                              <span className="text-slate-600 dark:text-slate-400">COGS: <strong className="text-slate-900 dark:text-slate-200">₹{parseFloat(selectedInvoice.cogs || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
-                              <span className="text-emerald-700 dark:text-emerald-300">Gross Profit: <strong className="text-emerald-800 dark:text-emerald-200 text-sm font-bold">₹{parseFloat(selectedInvoice.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
-                              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 rounded font-black border border-emerald-300 dark:border-emerald-400/40 text-[11px]">
+                              <span className="text-slate-400">COGS: <strong className="text-slate-200">₹{parseFloat(selectedInvoice.cogs || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              <span className="text-purple-300">Gross Profit: <strong className="text-purple-200 text-sm font-bold">₹{parseFloat(selectedInvoice.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-200 rounded font-black border border-purple-400/40 text-[11px]">
                                 {parseFloat(selectedInvoice.gross_margin_pct || 0).toFixed(1)}% Margin
                               </span>
                             </div>
