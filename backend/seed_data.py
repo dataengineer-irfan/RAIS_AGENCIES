@@ -154,8 +154,8 @@ def seed_database():
             {"sku": "RAIS-BRD-04", "cat": "BREADING", "name": "OREGANO", "brand": "RAIS Select", "pack": "1 KG PACKET", "price": "230.00", "tax": "5.00", "hsn": "1211"},
 
             # Cheese & Slices
-            {"sku": "RAIS-CHS-01", "cat": "CHEESE", "name": "MILKY MIST MOZEROLLA DICED CHEESE (2KG)", "brand": "Milky Mist", "pack": "2 KG PACKET", "price": "920.00", "tax": "12.00", "hsn": "0406"},
-            {"sku": "RAIS-CHS-02", "cat": "CHEESE", "name": "MILKY MIST MOZEROLLA DICED CHEESE (1KG)", "brand": "Milky Mist", "pack": "1 KG PACKET", "price": "475.00", "tax": "12.00", "hsn": "0406"},
+            {"sku": "RAIS-CHS-01", "cat": "CHEESE", "name": "MILKY MIST MOZZARELLA DICED CHEESE (2KG)", "brand": "Milky Mist", "pack": "2 KG PACKET", "price": "920.00", "tax": "12.00", "hsn": "0406"},
+            {"sku": "RAIS-CHS-02", "cat": "CHEESE", "name": "MILKY MIST MOZZARELLA DICED CHEESE (1KG)", "brand": "Milky Mist", "pack": "1 KG PACKET", "price": "475.00", "tax": "12.00", "hsn": "0406"},
             {"sku": "RAIS-CHS-03", "cat": "CHEESE", "name": "MILKY MIST CHEESE SLICE", "brand": "Milky Mist", "pack": "765 GRAMS PACKET", "price": "440.00", "tax": "12.00", "hsn": "0406"},
             {"sku": "RAIS-CHS-04", "cat": "CHEESE", "name": "MILKY MIST PANEER (DICED CUBES)", "brand": "Milky Mist", "pack": "1 KG PACKET", "price": "460.00", "tax": "5.00", "hsn": "0406"},
 

@@ -43,6 +43,17 @@ import { ThermalReceiptModal } from '../components/ThermalReceiptModal';
 import { Printer } from 'lucide-react';
 import { formatPaymentDateTime } from './PaymentsPage';
 
+export const normalizeSkuDisplay = (name) => {
+  if (!name) return '';
+  return name
+    .replace(/\bMOZEROLLA\b/gi, 'MOZZARELLA')
+    .replace(/\bTORTILLAH\b/gi, 'TORTILLA')
+    .replace(/\bMARINDE\b/gi, 'MARINADE')
+    .replace(/\bDELMONT\b/gi, 'DEL MONTE')
+    .replace(/\bTissu\b/gi, 'Tissue')
+    .replace(/\bMayonies\b/gi, 'Mayonnaise');
+};
+
 export const sortCustomerItems = (list, sortKey = 'BALANCE_DESC') => {
   if (!Array.isArray(list) || list.length === 0) return [];
   return [...list].sort((a, b) => {
@@ -564,7 +575,7 @@ export const CustomersPage = ({
               <span className="text-slate-500 text-[10px] font-sans font-semibold">Paid:</span> ₹{totalPaid >= 100000 ? `${(totalPaid / 100000).toFixed(1)}L` : Math.round(totalPaid).toLocaleString('en-IN')}
             </span>
             <span className="text-slate-700">•</span>
-            <span className="text-purple-300 font-bold" title={`Gross Profit: ₹${totalProfit.toLocaleString('en-IN')} (${overallMargin}%)`}>
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold" title={`Gross Profit: ₹${totalProfit.toLocaleString('en-IN')} (${overallMargin}%)`}>
               <span className="text-slate-500 text-[10px] font-sans font-semibold">Profit:</span> ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')}
             </span>
             <span className="text-slate-700">•</span>
@@ -673,8 +684,8 @@ export const CustomersPage = ({
               </span>
             </div>
             <div className="flex flex-col items-center justify-center border-l border-slate-800/80">
-              <span className="text-[9px] uppercase font-bold text-purple-400 font-sans">Profit</span>
-              <span className="text-xs font-black text-purple-300 font-mono">
+              <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 font-sans">Profit</span>
+              <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 font-mono">
                 ₹{totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(1)}L` : Math.round(totalProfit).toLocaleString('en-IN')}
               </span>
             </div>
@@ -758,7 +769,7 @@ export const CustomersPage = ({
                     onClick={() => handleSelectCustomer(cust)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-500/30'
+                        ? 'bg-white dark:bg-slate-900 border-l-4 border-l-amber-500 border-slate-300 dark:border-slate-700 shadow-md ring-1 ring-amber-500/20'
                         : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
@@ -768,7 +779,7 @@ export const CustomersPage = ({
                         <span className="font-mono font-bold text-[11px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                           {cust.customer_code}
                         </span>
-                        <h4 className="font-bold text-white text-xs truncate max-w-[200px] sm:max-w-[260px]">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[200px] sm:max-w-[260px]">
                           {cust.business_name}
                         </h4>
                         <span className="text-[10px] text-slate-400 font-mono truncate">
@@ -787,8 +798,8 @@ export const CustomersPage = ({
                         {Array.isArray(cust.top_items) && cust.top_items.length > 0 && (
                           <div className="flex items-center gap-1 flex-wrap">
                             {cust.top_items.slice(0, 2).map((item, idx) => (
-                              <span key={idx} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate max-w-[120px]" title={item}>
-                                🏷️ {item}
+                              <span key={idx} className="text-[9px] bg-slate-100 dark:bg-slate-900 text-amber-800 dark:text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-300 dark:border-amber-500/20 font-sans truncate max-w-[120px]" title={normalizeSkuDisplay(item)}>
+                                📦 {normalizeSkuDisplay(item)}
                               </span>
                             ))}
                             {cust.top_items.length > 2 && (
@@ -823,22 +834,22 @@ export const CustomersPage = ({
                         {/* PROFIT & MARGIN % */}
                         <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
                           sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC'
-                            ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/60 font-black ring-1 ring-emerald-500/50'
+                            ? 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-200 border-emerald-400/60 font-black ring-1 ring-emerald-500/50'
                             : sortBy === 'PROFIT_DESC'
-                              ? 'bg-purple-500/25 text-purple-200 border-purple-400/50 font-black ring-1 ring-purple-500/40'
-                              : 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                              ? 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-200 border-emerald-400/50 font-black ring-1 ring-emerald-500/40'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                         }`}>
-                          <span className="text-[9px] font-bold text-purple-400 font-sans">
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 font-sans">
                             {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? 'MARGIN:' : 'PROFIT:'}
                           </span>
                           {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? (
                             <>
-                              <span className="font-black text-emerald-300">
-                                {parseFloat(cust.total_invoiced || 0) > 0 
+                              <span className="font-black text-emerald-700 dark:text-emerald-300">
+                                {parseFloat(cust.total_invoiced || 0) > 0
                                   ? `${((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100).toFixed(1)}%`
                                   : '0.0%'}
                               </span>
-                              <span className="text-[8px] text-slate-400 font-mono">
+                              <span className="text-[8px] text-slate-500 dark:text-slate-400 font-mono">
                                 (₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')})
                               </span>
                             </>
@@ -846,7 +857,7 @@ export const CustomersPage = ({
                             <>
                               <span className="font-bold">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
                               {parseFloat(cust.total_invoiced || 0) > 0 && (
-                                <span className="text-[8px] text-purple-400/80 font-normal">
+                                <span className="text-[8px] text-emerald-600/80 dark:text-emerald-400/80 font-normal">
                                   ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
                                 </span>
                               )}
@@ -896,17 +907,23 @@ export const CustomersPage = ({
                           ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                         <div className="flex items-center justify-end gap-1">
-                          <span className="text-[9px] text-slate-500 font-mono">
-                            Limit: ₹{(creditLimit / 1000).toFixed(0)}k
+                          <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">
+                            {creditLimit > 0 ? `Limit: ₹${(creditLimit / 1000).toFixed(0)}k` : balance > 0 ? 'COD Account' : 'COD'}
                           </span>
                         </div>
-                        {creditLimit > 0 && balance > creditLimit && (
+                        {creditLimit > 0 && balance > creditLimit ? (
                           <div className="mt-0.5">
-                            <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                            <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30">
                               Limit Exceeded (+₹{Math.round(balance - creditLimit)})
                             </span>
                           </div>
-                        )}
+                        ) : creditLimit === 0 && balance > 5000 ? (
+                          <div className="mt-0.5">
+                            <span className="px-1 py-0.2 rounded text-[8px] font-bold uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                              COD Overdue
+                            </span>
+                          </div>
+                        ) : null}
                       </div>
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-600'}`} />
                     </div>
@@ -972,49 +989,54 @@ export const CustomersPage = ({
                   </div>
                 </div>
 
-                {/* Primary Quick-Action Launchers Ribbon */}
+                {/* Primary Quick-Action Launchers Ribbon (2-Tier Executive Hierarchy) */}
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:justify-end">
+                  {/* Primary Commercial Launch */}
                   <button
                     onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+                    className="h-8 px-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all active:scale-95"
                     title="Create Commercial Invoice"
                   >
                     <FileText className="w-3.5 h-3.5" />
                     <span>+ Invoice</span>
                   </button>
 
-                  <button
-                    onClick={() => onOpenOrderForCustomer && onOpenOrderForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
-                    title="Book Wholesale Order"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>Order</span>
-                  </button>
-
+                  {/* Primary Financial Action */}
                   <button
                     onClick={() => onOpenPaymentForCustomer && onOpenPaymentForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
+                    className="h-8 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
                     title="Record Cash/UPI Payment"
                   >
                     <CreditCard className="w-3.5 h-3.5" />
                     <span>Pay</span>
                   </button>
 
+                  {/* Secondary Operational Actions */}
+                  <button
+                    onClick={() => onOpenOrderForCustomer && onOpenOrderForCustomer(selectedCustomer)}
+                    className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
+                    title="Book Wholesale Order"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="hidden sm:inline">Order</span>
+                  </button>
+
                   <button
                     onClick={() => handlePrintStatement(selectedCustomer)}
-                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
+                    className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
                     title="Print / Save PDF Account Statement"
                   >
-                    <Printer className="w-3.5 h-3.5" />
+                    <Printer className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="hidden sm:inline">Statement</span>
                   </button>
 
                   <button
                     onClick={() => handleSendWhatsApp(selectedCustomer)}
-                    className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
+                    className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
                     title="Send Statement via WhatsApp"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">WhatsApp</span>
                   </button>
 
                   {hasRole(['ADMIN', 'OPERATOR']) && (
@@ -1024,10 +1046,10 @@ export const CustomersPage = ({
                           setCustomerToEdit(selectedCustomer);
                           setCustomerModalOpen(true);
                         }}
-                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+                        className="h-8 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95"
                         title="Edit Customer Profile"
                       >
-                        <Edit className="w-3.5 h-3.5" />
+                        <Edit className="w-3.5 h-3.5 text-amber-400" />
                       </button>
 
                       <button
@@ -1039,7 +1061,7 @@ export const CustomersPage = ({
                             error: null
                           });
                         }}
-                        className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all"
+                        className="h-8 px-2 bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 rounded-lg text-xs font-bold transition-all active:scale-95"
                         title="Delete Outlet Account"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1076,19 +1098,19 @@ export const CustomersPage = ({
                   <span className="text-[9px] text-slate-500 block font-mono truncate">Wholesale Base</span>
                 </div>
 
-                <div className="p-2 bg-slate-950/80 border border-purple-500/20 rounded-lg shadow-sm">
+                <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-purple-400 uppercase font-sans">📈 Gross Profit</span>
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase font-sans">📈 Gross Profit</span>
                     {selectedCustomerBilledRev > 0 && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono">
                         {selectedCustomerMarginPct}%
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-black font-mono text-purple-300 mt-0.5 truncate">
+                  <div className="text-xs sm:text-sm font-black font-mono text-emerald-700 dark:text-emerald-300 mt-0.5 truncate">
                     ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[9px] text-purple-400/80 block font-mono truncate">Margin Rate</span>
+                  <span className="text-[9px] text-emerald-600/80 dark:text-emerald-400/80 block font-mono truncate">Margin Rate</span>
                 </div>
 
                 <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
@@ -1128,8 +1150,8 @@ export const CustomersPage = ({
                 <div className="flex items-center gap-1.5 py-1.5 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar text-xs">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 font-sans">Frequent SKUs:</span>
                   {selectedCustomer.top_items.map((sku, idx) => (
-                    <span key={idx} className="text-[10px] bg-slate-950 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800 font-mono whitespace-nowrap shrink-0">
-                      📦 {sku}
+                    <span key={idx} className="text-[10px] bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 font-mono whitespace-nowrap shrink-0">
+                      📦 {normalizeSkuDisplay(sku)}
                     </span>
                   ))}
                 </div>
@@ -1195,7 +1217,7 @@ export const CustomersPage = ({
 
                       <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
                         <span className="text-[10px] font-bold text-slate-500 uppercase">Billing Standard</span>
-                        <div className="text-xs font-bold text-purple-300 mt-1 truncate">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 truncate">
                           Cash on Delivery
                         </div>
                       </div>
@@ -1232,7 +1254,7 @@ export const CustomersPage = ({
                     })()}
 
                     {/* Account Profitability & Wholesale Economics Breakdown */}
-                    <div className="bg-slate-950/70 border border-purple-500/30 rounded-xl p-3.5 space-y-3">
+                    <div className="bg-slate-950/70 border border-emerald-500/30 rounded-xl p-3.5 space-y-3">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm">📈</span>
@@ -1268,12 +1290,12 @@ export const CustomersPage = ({
                           <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">Wholesale Cost Base</span>
                         </div>
 
-                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-purple-500/30">
-                          <span className="text-[10px] text-purple-400 block font-bold">Net Gross Profit</span>
-                          <span className="font-mono font-black text-purple-300 text-sm">
+                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-emerald-500/30">
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold">Net Gross Profit</span>
+                          <span className="font-mono font-black text-emerald-700 dark:text-emerald-300 text-sm">
                             ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </span>
-                          <span className="text-[9px] text-purple-400/80 block mt-0.5 font-mono">Margin: {selectedCustomerMarginPct}%</span>
+                          <span className="text-[9px] text-emerald-600/80 dark:text-emerald-400/80 block mt-0.5 font-mono">Margin: {selectedCustomerMarginPct}%</span>
                         </div>
 
                         <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
@@ -1299,7 +1321,7 @@ export const CustomersPage = ({
                               title="Procurement Cost" 
                             />
                             <div 
-                              className="bg-purple-500 h-full transition-all" 
+                              className="bg-emerald-500 h-full transition-all" 
                               style={{ width: `${Math.min(100, parseFloat(selectedCustomerMarginPct))}%` }} 
                               title="Gross Profit" 
                             />
@@ -1470,10 +1492,10 @@ export const CustomersPage = ({
                                 </span>
                                 {hasRole(['ADMIN', 'OPERATOR']) && inv.gross_profit !== undefined && inv.gross_profit !== null && (
                                   <span 
-                                    className="text-[9px] font-mono font-bold text-purple-300 bg-purple-950/70 border border-purple-500/30 px-1 py-0.5 rounded block mt-0.5"
+                                    className="text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/30 px-1.5 py-0.5 rounded block mt-0.5"
                                     title={`Procurement COGS: ₹${parseFloat(inv.cogs || 0).toFixed(2)}`}
                                   >
-                                    Profit: ₹{parseFloat(inv.gross_profit || 0).toFixed(0)} ({parseFloat(inv.gross_margin_pct || 0).toFixed(1)}%)
+                                    Profit: +₹{parseFloat(inv.gross_profit || 0).toFixed(0)} ({parseFloat(inv.gross_margin_pct || 0).toFixed(1)}%)
                                   </span>
                                 )}
                               </div>

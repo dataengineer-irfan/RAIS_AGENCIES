@@ -48,14 +48,17 @@ const COMMON_ALIASES = {
   mayo: 'mayonnaise',
   mayoneis: 'mayonnaise',
   mayonies: 'mayonnaise',
-  mozerella: 'mozerolla',
-  mozzarella: 'mozerolla',
+  mozerella: 'mozzarella',
+  mozerolla: 'mozzarella',
+  mozzarella: 'mozzarella',
+  tortillah: 'tortilla',
+  marinde: 'marinade',
 };
 
 /**
  * Strips brand / company prefix to yield clean generic item name
  * e.g., "HUP HUP FRENCH FRIES 6MM" -> "FRENCH FRIES 6MM"
- *       "MILKY MIST MOZEROLLA DICED CHEESE (1KG)" -> "MOZEROLLA DICED CHEESE (1KG)"
+ *       "MILKY MIST MOZZARELLA DICED CHEESE (1KG)" -> "MOZZARELLA DICED CHEESE (1KG)"
  *       "ITC CHEESY CORN TRIANGLE" -> "CHEESY CORN TRIANGLE"
  */
 export function cleanProductName(fullName, brand = '') {

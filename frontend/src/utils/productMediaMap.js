@@ -78,7 +78,7 @@ const KEYWORD_RULES = [
   { pattern: /TANDOORI\s*MAYO/i, file: 'delmonte_tandoori_mayo.jpg', te: 'డెల్మోంటే తందూరి మాయో సాస్' },
   { pattern: /MAYO|MAYONNAISE/i, file: 'delmonte_tandoori_mayo.jpg', te: 'రుచికరమైన మాయోనైస్ డిపో స్టాక్' },
   { pattern: /KETCHUP|SAUCE\s*SACHET/i, file: 'delmonte_ketchup_1_1kg.jpg', te: 'డెల్మోంటే కెచప్ బాటిల్స్ & పౌచ్‌లు' },
-  { pattern: /MOZZARELLA|CHEESE/i, file: 'milky_mist_mozzarella_2kg.jpg', te: 'మిల్కీ మిస్ట్ మొజారెల్లా చీజ్' },
+  { pattern: /MOZZARELLA|MOZEROLLA|CHEESE/i, file: 'milky_mist_mozzarella_2kg.jpg', te: 'మిల్కీ మిస్ట్ మొజారెల్లా చీజ్' },
   { pattern: /FRIES|FRENCH\s*FRIES/i, file: 'amul_french_fries_6mm.jpg', te: 'అముల్ ఫ్రెంచ్ ఫ్రైస్ క్రిస్పీ స్టాక్' },
   { pattern: /TORTILLA|WRAP/i, file: 'fresh2go_tortilla_8_5.jpg', te: 'ఫ్రెష్2గో టోర్టిల్లా ర్యాప్స్' },
   { pattern: /MOMO/i, file: 'triken_chicken_momos.jpg', te: 'చికెన్ & వెజ్ మోమోస్ తాజా బ్యాచ్' },
