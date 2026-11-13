@@ -420,6 +420,24 @@ html.theme-light thead th {
 html.theme-light table tr:hover {
   background-color: #f8fafc !important;
 }
+html.theme-light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+html.theme-light .divide-slate-700 > :not([hidden]) ~ :not([hidden]),
+html.theme-light .divide-slate-850 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* ─── GHOST ACTION BUTTONS & TOOLBARS IN LIGHT MODE ─── */
+html.theme-light button.bg-slate-800,
+html.theme-light a.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+html.theme-light button.bg-slate-800:hover,
+html.theme-light a.bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    UNIVERSAL SELECT & DROPDOWN MENU CONTRAST ENFORCEMENT
