@@ -31,7 +31,10 @@ import {
   Trash2,
   X,
   ChevronDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Package,
+  Tag,
+  CheckCircle2
 } from 'lucide-react';
 import { customerApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -758,8 +761,8 @@ export const CustomersPage = ({
                     onClick={() => handleSelectCustomer(cust)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-500/30'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
+                        ? 'bg-white dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/60 border-l-4 border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10 dark:ring-1 dark:ring-amber-500/30'
+                        : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1">
@@ -768,11 +771,12 @@ export const CustomersPage = ({
                         <span className="font-mono font-bold text-[11px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                           {cust.customer_code}
                         </span>
-                        <h4 className="font-bold text-white text-xs truncate max-w-[200px] sm:max-w-[260px]">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-[200px] sm:max-w-[260px]">
                           {cust.business_name}
                         </h4>
-                        <span className="text-[10px] text-slate-400 font-mono truncate">
-                          📍 {cust.city || 'Rayachoty'}
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate flex items-center gap-0.5">
+                          <MapPin className="w-2.5 h-2.5 text-amber-500 inline mr-0.5 shrink-0" />
+                          <span>{cust.city || 'Rayachoty'}</span>
                         </span>
                         {isSelected && (
                           <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-sans tracking-wider shadow-xs ml-auto">
@@ -787,8 +791,9 @@ export const CustomersPage = ({
                         {Array.isArray(cust.top_items) && cust.top_items.length > 0 && (
                           <div className="flex items-center gap-1 flex-wrap">
                             {cust.top_items.slice(0, 2).map((item, idx) => (
-                              <span key={idx} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate max-w-[120px]" title={item}>
-                                🏷️ {item}
+                              <span key={idx} className="text-[9px] bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-amber-300/90 px-1.5 py-0.5 rounded border border-slate-200 dark:border-amber-500/20 font-sans truncate max-w-[180px] flex items-center gap-1" title={item}>
+                                <Tag className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                <span className="truncate">{item}</span>
                               </span>
                             ))}
                             {cust.top_items.length > 2 && (
@@ -799,12 +804,12 @@ export const CustomersPage = ({
                       </div>
 
                       {/* Line 3: Commercial Performance Pills with Dynamic Active Metric Highlight */}
-                      <div className="flex items-center gap-1 mt-1.5 pt-1 border-t border-slate-800/60 text-[10px] font-mono flex-wrap">
+                      <div className="flex items-center gap-1 mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-800/60 text-[10px] font-mono flex-wrap">
                         {/* REV */}
                         <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
                           sortBy === 'REVENUE_DESC'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-black ring-1 ring-amber-500/30'
-                            : 'bg-slate-900 border-slate-800 text-slate-300'
+                            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/50 font-black ring-1 ring-amber-500/30'
+                            : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                         }`}>
                           <span className="text-[9px] font-bold text-slate-500 font-sans">REV:</span>
                           <span className="font-bold">₹{Math.round(parseFloat(cust.total_invoiced || 0)).toLocaleString('en-IN')}</span>
@@ -813,40 +818,40 @@ export const CustomersPage = ({
                         {/* PAID */}
                         <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
                           sortBy === 'PAID_DESC'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-black ring-1 ring-emerald-500/30'
-                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                            ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/50 font-black ring-1 ring-emerald-500/30'
+                            : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                         }`}>
-                          <span className="text-[9px] font-bold text-emerald-500 font-sans">PAID:</span>
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-500 font-sans">PAID:</span>
                           <span className="font-bold">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
                         </span>
 
                         {/* PROFIT & MARGIN % */}
                         <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
                           sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC'
-                            ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/60 font-black ring-1 ring-emerald-500/50'
+                            ? 'bg-indigo-100 dark:bg-emerald-500/25 text-indigo-800 dark:text-emerald-200 border-indigo-300 dark:border-emerald-400/60 font-black ring-1 ring-indigo-400/30 dark:ring-1 dark:ring-emerald-500/50'
                             : sortBy === 'PROFIT_DESC'
-                              ? 'bg-purple-500/25 text-purple-200 border-purple-400/50 font-black ring-1 ring-purple-500/40'
-                              : 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                              ? 'bg-indigo-100 dark:bg-purple-500/25 text-indigo-800 dark:text-purple-200 border-indigo-300 dark:border-purple-400/50 font-black ring-1 ring-indigo-400/30 dark:ring-1 dark:ring-purple-500/40'
+                              : 'bg-indigo-50 dark:bg-purple-500/10 border-indigo-200 dark:border-purple-500/20 text-indigo-700 dark:text-purple-300'
                         }`}>
-                          <span className="text-[9px] font-bold text-purple-400 font-sans">
+                          <span className="text-[9px] font-bold text-indigo-600 dark:text-purple-400 font-sans">
                             {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? 'MARGIN:' : 'PROFIT:'}
                           </span>
                           {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? (
                             <>
-                              <span className="font-black text-emerald-300">
+                              <span className="font-black text-indigo-700 dark:text-emerald-300">
                                 {parseFloat(cust.total_invoiced || 0) > 0 
                                   ? `${((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100).toFixed(1)}%`
                                   : '0.0%'}
                               </span>
-                              <span className="text-[8px] text-slate-400 font-mono">
+                              <span className="text-[8px] text-indigo-600/70 dark:text-slate-400 font-mono">
                                 (₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')})
                               </span>
                             </>
                           ) : (
                             <>
-                              <span className="font-bold">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
+                              <span className="font-bold text-indigo-700 dark:text-purple-300">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
                               {parseFloat(cust.total_invoiced || 0) > 0 && (
-                                <span className="text-[8px] text-purple-400/80 font-normal">
+                                <span className="text-[8px] text-indigo-600/70 dark:text-purple-400/80 font-normal">
                                   ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
                                 </span>
                               )}
@@ -897,16 +902,22 @@ export const CustomersPage = ({
                         </div>
                         <div className="flex items-center justify-end gap-1">
                           <span className="text-[9px] text-slate-500 font-mono">
-                            Limit: ₹{(creditLimit / 1000).toFixed(0)}k
+                            {creditLimit > 0 ? `Limit: ₹${(creditLimit / 1000).toFixed(0)}k` : 'COD Account'}
                           </span>
                         </div>
-                        {creditLimit > 0 && balance > creditLimit && (
+                        {creditLimit > 0 && balance > creditLimit ? (
                           <div className="mt-0.5">
-                            <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                            <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30">
                               Limit Exceeded (+₹{Math.round(balance - creditLimit)})
                             </span>
                           </div>
-                        )}
+                        ) : creditLimit === 0 && balance > 0 ? (
+                          <div className="mt-0.5">
+                            <span className="px-1 py-0.2 rounded text-[8px] font-bold uppercase bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                              COD Due
+                            </span>
+                          </div>
+                        ) : null}
                       </div>
                       <ChevronRight className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-600'}`} />
                     </div>
@@ -950,23 +961,25 @@ export const CustomersPage = ({
                       </button>
                     </span>
                     <StatusBadge status={selectedCustomer.status} />
-                    <span className="text-[11px] text-slate-400 font-medium">
-                      📍 {selectedCustomer.city || 'Rayachoty'}, AP
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-0.5">
+                      <MapPin className="w-3 h-3 text-amber-500 inline mr-0.5 shrink-0" />
+                      <span>{selectedCustomer.city || 'Rayachoty'}, AP</span>
                     </span>
                   </div>
                   
-                  <h2 className="text-base sm:text-lg font-black text-white mt-1 tracking-tight">
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1 tracking-tight">
                     {selectedCustomer.business_name}
                   </h2>
-                  <div className="flex flex-col gap-0.5 text-xs text-slate-400 mt-1">
+                  <div className="flex flex-col gap-0.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span>Contact: <strong className="text-slate-200">{selectedCustomer.contact_person || 'Authorized Dealer'}</strong></span>
-                      <span className="text-slate-600">•</span>
-                      <span>Ph: <strong className="text-slate-200 font-mono">{selectedCustomer.phone}</strong></span>
+                      <span>Contact: <strong className="text-slate-700 dark:text-slate-200">{selectedCustomer.contact_person || 'Authorized Dealer'}</strong></span>
+                      <span className="text-slate-400 dark:text-slate-600">•</span>
+                      <span>Ph: <strong className="text-slate-700 dark:text-slate-200 font-mono">{selectedCustomer.phone}</strong></span>
                     </div>
                     {(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at) && (
-                      <span className="text-[11px] text-amber-400/90 font-medium">
-                        🤝 Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400/90 font-medium flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-500 inline mr-0.5 shrink-0" />
+                        <span>Associated Since: {new Date(selectedCustomer.first_invoice_date || selectedCustomer.customer_since || selectedCustomer.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                       </span>
                     )}
                   </div>
@@ -984,15 +997,6 @@ export const CustomersPage = ({
                   </button>
 
                   <button
-                    onClick={() => onOpenOrderForCustomer && onOpenOrderForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
-                    title="Book Wholesale Order"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>Order</span>
-                  </button>
-
-                  <button
                     onClick={() => onOpenPaymentForCustomer && onOpenPaymentForCustomer(selectedCustomer)}
                     className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
                     title="Record Cash/UPI Payment"
@@ -1002,8 +1006,17 @@ export const CustomersPage = ({
                   </button>
 
                   <button
+                    onClick={() => onOpenOrderForCustomer && onOpenOrderForCustomer(selectedCustomer)}
+                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white dark:border-transparent font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
+                    title="Book Wholesale Order"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>Order</span>
+                  </button>
+
+                  <button
                     onClick={() => handlePrintStatement(selectedCustomer)}
-                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/30 rounded-xl text-xs font-bold transition-all"
                     title="Print / Save PDF Account Statement"
                   >
                     <Printer className="w-3.5 h-3.5" />
@@ -1011,7 +1024,7 @@ export const CustomersPage = ({
 
                   <button
                     onClick={() => handleSendWhatsApp(selectedCustomer)}
-                    className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
                     title="Send Statement via WhatsApp"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -1024,7 +1037,7 @@ export const CustomersPage = ({
                           setCustomerToEdit(selectedCustomer);
                           setCustomerModalOpen(true);
                         }}
-                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all"
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-transparent rounded-xl text-xs font-bold transition-all"
                         title="Edit Customer Profile"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -1039,7 +1052,7 @@ export const CustomersPage = ({
                             error: null
                           });
                         }}
-                        className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all"
+                        className="p-2 bg-slate-100 hover:bg-rose-50 text-rose-600 border border-slate-300 hover:border-rose-300 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30 rounded-xl text-xs font-bold transition-all"
                         title="Delete Outlet Account"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1050,71 +1063,99 @@ export const CustomersPage = ({
               </div>
 
               {/* Persistent Commercial Standing Strip (5-Card Complete Economics Strip with Opening Balance Transparency) */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 py-2 border-b border-slate-800 shrink-0">
-                <div className="p-2 bg-slate-950/80 border border-amber-500/20 rounded-lg shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 py-2 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                <div className="p-2 bg-amber-50/50 dark:bg-slate-950/80 border border-amber-500/20 rounded-lg shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-amber-500 uppercase font-sans">💰 Total Claim</span>
+                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-500 uppercase font-sans flex items-center gap-1">
+                      <DollarSign className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>Total Claim</span>
+                    </span>
                     {selectedCustomerOpeningBalance > 0 && (
-                      <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono" title={`Opening Balance: ₹${selectedCustomerOpeningBalance.toFixed(2)}`}>
+                      <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-mono" title={`Opening Balance: ₹${selectedCustomerOpeningBalance.toFixed(2)}`}>
                         +Op.Bal
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-black font-mono text-white mt-0.5 truncate">
+                  <div className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white mt-0.5 truncate">
                     ₹{selectedCustomerTotalClaim.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[9px] text-slate-400 block font-mono truncate">
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-mono truncate">
                     Billed ₹{selectedCustomerBilledRev >= 1000 ? `${(selectedCustomerBilledRev/1000).toFixed(1)}k` : selectedCustomerBilledRev.toFixed(0)} {selectedCustomerOpeningBalance > 0 ? `+ ₹${selectedCustomerOpeningBalance >= 1000 ? `${(selectedCustomerOpeningBalance/1000).toFixed(1)}k` : selectedCustomerOpeningBalance.toFixed(0)} Op` : ''}
                   </span>
                 </div>
 
-                <div className="p-2 bg-slate-950/80 border border-slate-700/60 rounded-lg shadow-sm">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase block font-sans">📦 Procurement COGS</span>
-                  <div className="text-xs sm:text-sm font-black font-mono text-slate-300 mt-0.5 truncate">
+                <div className="p-2 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/60 rounded-lg shadow-xs">
+                  <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase font-sans flex items-center gap-1">
+                    <Package className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span>Procurement COGS</span>
+                  </span>
+                  <div className="text-xs sm:text-sm font-black font-mono text-slate-700 dark:text-slate-300 mt-0.5 truncate">
                     ₹{selectedCustomerCogs.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                   <span className="text-[9px] text-slate-500 block font-mono truncate">Wholesale Base</span>
                 </div>
 
-                <div className="p-2 bg-slate-950/80 border border-purple-500/20 rounded-lg shadow-sm">
+                <div className="p-2 bg-indigo-50/60 dark:bg-slate-950/80 border border-indigo-200 dark:border-purple-500/20 rounded-lg shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-purple-400 uppercase font-sans">📈 Gross Profit</span>
+                    <span className="text-[9px] font-bold text-indigo-700 dark:text-purple-400 uppercase font-sans flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-indigo-600 dark:text-purple-400 shrink-0" />
+                      <span>Gross Profit</span>
+                    </span>
                     {selectedCustomerBilledRev > 0 && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800 dark:bg-purple-500/20 dark:text-purple-300 font-mono">
                         {selectedCustomerMarginPct}%
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-black font-mono text-purple-300 mt-0.5 truncate">
+                  <div className="text-xs sm:text-sm font-black font-mono text-indigo-700 dark:text-purple-300 mt-0.5 truncate">
                     ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[9px] text-purple-400/80 block font-mono truncate">Margin Rate</span>
+                  <span className="text-[9px] text-indigo-600/80 dark:text-purple-400/80 block font-mono truncate">Margin Rate</span>
                 </div>
 
-                <div className="p-2 bg-slate-950/80 border border-emerald-500/20 rounded-lg shadow-sm">
+                <div className="p-2 bg-emerald-50/60 dark:bg-slate-950/80 border border-emerald-200 dark:border-emerald-500/20 rounded-lg shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-emerald-400 uppercase font-sans">💳 Collections</span>
+                    <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase font-sans flex items-center gap-1">
+                      <CreditCard className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>Collections</span>
+                    </span>
                     {selectedCustomerTotalClaim > 0 && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-mono">
                         {selectedCustomerRealizationPct}%
                       </span>
                     )}
                   </div>
-                  <div className="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5 truncate">
+                  <div className="text-xs sm:text-sm font-black font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 truncate">
                     ₹{selectedCustomerPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[9px] text-emerald-500/80 block font-mono truncate">
+                  <span className="text-[9px] text-emerald-600/80 dark:text-emerald-500/80 block font-mono truncate">
                     {selectedCustomerRealizationPct}% Realized
                   </span>
                 </div>
 
-                <div className={`p-2 bg-slate-950/80 border rounded-lg shadow-sm col-span-2 sm:col-span-1 ${
-                  selectedCustomerBalance > 0.01 ? 'border-rose-500/30' : 'border-emerald-500/20'
+                <div className={`p-2 rounded-lg shadow-xs col-span-2 sm:col-span-1 border ${
+                  selectedCustomerBalance > 0.01 
+                    ? 'bg-rose-50/60 dark:bg-slate-950/80 border-rose-200 dark:border-rose-500/30' 
+                    : 'bg-emerald-50/60 dark:bg-slate-950/80 border-emerald-200 dark:border-emerald-500/20'
                 }`}>
-                  <span className={`text-[9px] font-bold uppercase block font-sans ${selectedCustomerBalance > 0.01 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {selectedCustomerBalance > 0.01 ? '🚨 Balance Due' : '✅ Balance Due'}
+                  <span className={`text-[9px] font-bold uppercase font-sans flex items-center gap-1 ${
+                    selectedCustomerBalance > 0.01 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    {selectedCustomerBalance > 0.01 ? (
+                      <>
+                        <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                        <span>Balance Due</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span>Balance Due</span>
+                      </>
+                    )}
                   </span>
-                  <div className={`text-xs sm:text-sm font-black font-mono mt-0.5 truncate ${selectedCustomerBalance > 0.01 ? 'text-rose-300' : 'text-emerald-400'}`}>
+                  <div className={`text-xs sm:text-sm font-black font-mono mt-0.5 truncate ${
+                    selectedCustomerBalance > 0.01 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-400'
+                  }`}>
                     ₹{selectedCustomerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                   <span className="text-[9px] text-slate-500 block font-mono truncate">
@@ -1125,18 +1166,19 @@ export const CustomersPage = ({
 
               {/* Frequent SKUs Pill Strip */}
               {Array.isArray(selectedCustomer.top_items) && selectedCustomer.top_items.length > 0 && (
-                <div className="flex items-center gap-1.5 py-1.5 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar text-xs">
+                <div className="flex items-center gap-1.5 py-1.5 border-b border-slate-200 dark:border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar text-xs">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 font-sans">Frequent SKUs:</span>
                   {selectedCustomer.top_items.map((sku, idx) => (
-                    <span key={idx} className="text-[10px] bg-slate-950 text-slate-300 px-2 py-0.5 rounded-full border border-slate-800 font-mono whitespace-nowrap shrink-0">
-                      📦 {sku}
+                    <span key={idx} className="text-[10px] bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 font-mono whitespace-nowrap shrink-0 flex items-center gap-1">
+                      <Package className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                      <span>{sku.replace(/MOZEROLLA/gi, 'MOZZARELLA')}</span>
                     </span>
                   ))}
                 </div>
               )}
 
               {/* Inspector Tab Navigation Bar */}
-              <div className="flex items-center gap-1.5 pt-2 pb-2 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-1.5 pt-2 pb-2 border-b border-slate-200 dark:border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
                 {[
                   { id: 'overview', label: '360° Dossier', icon: ShieldCheck },
                   { id: 'invoices', label: `Invoices (${customerInvoices.length})`, icon: FileText },
@@ -1151,8 +1193,8 @@ export const CustomersPage = ({
                       onClick={() => setActiveInspectorTab(tab.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                         isActive
-                          ? 'bg-amber-500 text-slate-950 shadow-sm'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                       }`}
                     >
                       <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
@@ -1168,35 +1210,37 @@ export const CustomersPage = ({
                 {/* ─── TAB 1: 360° DOSSIER & FINANCIAL EXPOSURE ─── */}
                 {activeInspectorTab === 'overview' && (
                   <div className="space-y-3">
-                    {/* Financial Matrix Cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Current Balance Due</span>
-                        <div className={`text-base font-black font-mono mt-0.5 ${
-                          selectedCustomerBalance > 0.01 ? 'text-rose-400' : 'text-emerald-400'
+                    {/* Financial Matrix Cards - Compact Clean Horizontal Data Bar */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-950/70 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div className="px-2 py-1 border-r border-slate-200 dark:border-slate-800/80 last:border-r-0">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Current Balance</span>
+                        <div className={`text-sm font-black font-mono mt-0.5 truncate ${
+                          selectedCustomerBalance > 0.01 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                         }`}>
                           ₹{selectedCustomerBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
 
-                      <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Opening Ledger Balance</span>
-                        <div className="text-base font-black font-mono text-slate-300 mt-0.5">
+                      <div className="px-2 py-1 border-r border-slate-200 dark:border-slate-800/80 last:border-r-0">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Opening Ledger</span>
+                        <div className="text-sm font-black font-mono text-slate-700 dark:text-slate-300 mt-0.5 truncate">
                           ₹{selectedCustomerOpeningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
 
-                      <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Credit Ceiling</span>
-                        <div className="text-base font-black font-mono text-white mt-0.5">
-                          ₹{parseFloat(selectedCustomer.credit_limit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      <div className="px-2 py-1 border-r border-slate-200 dark:border-slate-800/80 last:border-r-0">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Credit Ceiling</span>
+                        <div className="text-sm font-black font-mono text-slate-900 dark:text-white mt-0.5 truncate">
+                          {parseFloat(selectedCustomer.credit_limit || 0) > 0 
+                            ? `₹${parseFloat(selectedCustomer.credit_limit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` 
+                            : '₹0.00 (COD)'}
                         </div>
                       </div>
 
-                      <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">Billing Standard</span>
-                        <div className="text-xs font-bold text-purple-300 mt-1 truncate">
-                          Cash on Delivery
+                      <div className="px-2 py-1">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Billing Standard</span>
+                        <div className="text-xs font-bold text-indigo-700 dark:text-purple-300 mt-1 truncate">
+                          {selectedCustomer.billing_standard || 'Cash on Delivery'}
                         </div>
                       </div>
                     </div>
@@ -1232,11 +1276,11 @@ export const CustomersPage = ({
                     })()}
 
                     {/* Account Profitability & Wholesale Economics Breakdown */}
-                    <div className="bg-slate-950/70 border border-purple-500/30 rounded-xl p-3.5 space-y-3">
+                    <div className="bg-slate-50/70 dark:bg-slate-950/70 border border-indigo-200 dark:border-purple-500/30 rounded-xl p-3.5 space-y-3">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm">📈</span>
-                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                          <TrendingUp className="w-3.5 h-3.5 text-indigo-600 dark:text-purple-400 shrink-0" />
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Account Profitability & Wholesale Economics
                           </h4>
                         </div>
@@ -1268,12 +1312,12 @@ export const CustomersPage = ({
                           <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">Wholesale Cost Base</span>
                         </div>
 
-                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-purple-500/30">
-                          <span className="text-[10px] text-purple-400 block font-bold">Net Gross Profit</span>
-                          <span className="font-mono font-black text-purple-300 text-sm">
+                        <div className="p-2.5 bg-indigo-50/80 dark:bg-slate-900/80 rounded-lg border border-indigo-200 dark:border-purple-500/30">
+                          <span className="text-[10px] text-indigo-700 dark:text-purple-400 block font-bold">Net Gross Profit</span>
+                          <span className="font-mono font-black text-indigo-700 dark:text-purple-300 text-sm">
                             ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </span>
-                          <span className="text-[9px] text-purple-400/80 block mt-0.5 font-mono">Margin: {selectedCustomerMarginPct}%</span>
+                          <span className="text-[9px] text-indigo-600/80 dark:text-purple-400/80 block mt-0.5 font-mono">Margin: {selectedCustomerMarginPct}%</span>
                         </div>
 
                         <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
