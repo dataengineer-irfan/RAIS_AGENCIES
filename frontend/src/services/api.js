@@ -581,16 +581,14 @@ export const analyticsApi = {
   },
   getProductSalesDrilldown: async (productId, params = {}) => {
     try {
-      return await cachedGet('/analytics/product-sales-drilldown', {
+      const res = await cachedGet('/analytics/product-sales-drilldown', {
         params: { product_id: productId, ...params }
       });
+      if (res && res.daily_breakdown) return res;
+      return await computeClientDrilldown(productId, params);
     } catch (err) {
-      // Robust Fallback: If dedicated analytics endpoint returns 404 (e.g. pending backend redeploy),
-      // compute client-side chronological drilldown directly from live invoices and products
-      if (err?.response?.status === 404 || err?.status === 404) {
-        return await computeClientDrilldown(productId, params);
-      }
-      throw err;
+      console.warn('Backend drilldown endpoint unavailable, synthesizing from live invoices & ledger:', err?.message || err);
+      return await computeClientDrilldown(productId, params);
     }
   }
 };
@@ -600,238 +598,294 @@ export const analyticsApi = {
  * Fallback synthesizer for day-by-day sales records, customer invoices, and outlet lineage.
  */
 async function computeClientDrilldown(productId, params = {}) {
-  const [invoicesRes, productsRes, customersRes] = await Promise.all([
-    cachedGet('/invoices', { params: { limit: 500 } }).catch(() => []),
-    cachedGet('/catalogue/products', { params: { limit: 500 } }).catch(() => []),
-    cachedGet('/customers', { params: { limit: 500 } }).catch(() => [])
-  ]);
+  try {
+    const [invoicesRes, productsRes, customersRes] = await Promise.all([
+      cachedGet('/invoices', { params: { limit: 500 } }).catch(() => []),
+      cachedGet('/catalogue/products', { params: { limit: 500 } }).catch(() => []),
+      cachedGet('/customers', { params: { limit: 500 } }).catch(() => [])
+    ]);
 
-  const invoices = Array.isArray(invoicesRes) ? invoicesRes : (invoicesRes?.items || []);
-  const products = Array.isArray(productsRes) ? productsRes : (productsRes?.items || []);
-  const customers = Array.isArray(customersRes) ? customersRes : (customersRes?.items || []);
+    const invoices = Array.isArray(invoicesRes) ? invoicesRes : (invoicesRes?.items || []);
+    const products = Array.isArray(productsRes) ? productsRes : (productsRes?.items || []);
+    const customers = Array.isArray(customersRes) ? customersRes : (customersRes?.items || []);
 
-  const targetProduct = products.find(p => 
-    p.id === productId || 
-    (p.sku && String(p.sku).toLowerCase() === String(productId).toLowerCase()) ||
-    (p.name && String(p.name).toLowerCase() === String(productId).toLowerCase())
-  ) || {
-    id: productId,
-    sku: String(productId),
-    name: String(productId),
-    base_price: 0,
-    packaging_unit: '1 pkt'
-  };
-
-  const period = (params.period || '30d').toLowerCase().trim();
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
-  let startDate = null;
-  let endDate = null;
-
-  if (params.start_date && params.end_date) {
-    startDate = params.start_date;
-    endDate = params.end_date;
-  } else if (period === 'today') {
-    startDate = todayStr;
-    endDate = todayStr;
-  } else if (period === 'yesterday') {
-    const y = new Date(today);
-    y.setDate(y.getDate() - 1);
-    startDate = y.toISOString().split('T')[0];
-    endDate = startDate;
-  } else if (period === 'this_week') {
-    const d = new Date(today);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    d.setDate(diff);
-    startDate = d.toISOString().split('T')[0];
-    endDate = todayStr;
-  } else if (period === 'this_month') {
-    const d = new Date(today.getFullYear(), today.getMonth(), 1);
-    startDate = d.toISOString().split('T')[0];
-    endDate = todayStr;
-  } else if (period === 'past_month' || period === 'last_month') {
-    const firstDayPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const lastDayPrev = new Date(today.getFullYear(), today.getMonth(), 0);
-    startDate = firstDayPrev.toISOString().split('T')[0];
-    endDate = lastDayPrev.toISOString().split('T')[0];
-  } else if (period === '7d' || period === 'last_7d') {
-    const d = new Date(today);
-    d.setDate(d.getDate() - 6);
-    startDate = d.toISOString().split('T')[0];
-    endDate = todayStr;
-  } else if (period === '90d' || period === 'last_90d') {
-    const d = new Date(today);
-    d.setDate(d.getDate() - 89);
-    startDate = d.toISOString().split('T')[0];
-    endDate = todayStr;
-  } else if (period === 'all_time' || period === 'all') {
-    startDate = null;
-    endDate = null;
-  } else {
-    // 30d default
-    const d = new Date(today);
-    d.setDate(d.getDate() - 29);
-    startDate = d.toISOString().split('T')[0];
-    endDate = todayStr;
-  }
-
-  const validStatuses = ['ISSUED', 'PAID', 'PARTIALLY_PAID', 'DRAFT', 'OVERDUE'];
-  const daysDict = {};
-  const buyingCustomers = {};
-  let totUnits = 0;
-  let totRevenue = 0;
-  let totCost = 0;
-  let totRows = 0;
-
-  const unitWeightKg = 1.0;
-  const basePrice = Number(targetProduct.base_price || 0);
-  const unitCost = basePrice * 0.8;
-
-  invoices.forEach(inv => {
-    if (!validStatuses.includes(inv.status)) return;
-    const invDate = inv.invoice_date;
-    if (startDate && invDate < startDate) return;
-    if (endDate && invDate > endDate) return;
-
-    (inv.items || []).forEach(item => {
-      const desc = (item.item_description || '').toLowerCase();
-      const pSku = (targetProduct.sku || '').toLowerCase();
-      const pName = (targetProduct.name || '').toLowerCase();
-      const pId = targetProduct.id;
-
-      const matches = item.product_id === pId ||
-        (pSku && desc.includes(pSku)) ||
-        (pName && desc.includes(pName));
-
-      if (!matches) return;
-
-      const qty = Number(item.quantity || 0);
-      const lineRev = Number(item.line_total || 0);
-      const itemCost = Number(item.landed_cost) > 0 ? Number(item.landed_cost) : unitCost;
-      const lineCost = itemCost * qty;
-      const lineProfit = lineRev - lineCost;
-      const lineMargin = lineRev > 0 ? (lineProfit / lineRev * 100) : 0;
-
-      if (!daysDict[invDate]) {
-        const dObj = new Date(invDate);
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        daysDict[invDate] = {
-          date: invDate,
-          day_name: dayNames[dObj.getDay()] || '',
-          total_units: 0,
-          total_kg: 0,
-          total_revenue: 0,
-          total_cost: 0,
-          total_profit: 0,
-          invoices: []
-        };
-      }
-
-      const dayEntry = daysDict[invDate];
-      dayEntry.total_units += qty;
-      dayEntry.total_kg += qty * unitWeightKg;
-      dayEntry.total_revenue += lineRev;
-      dayEntry.total_cost += lineCost;
-      dayEntry.total_profit += lineProfit;
-
-      dayEntry.invoices.push({
-        invoice_id: inv.id,
-        invoice_number: inv.invoice_number,
-        invoice_date: invDate,
-        created_at: inv.created_at || invDate,
-        status: inv.status,
-        customer_id: inv.customer_id,
-        customer_name: inv.customer_name || 'Customer',
-        customer_code: inv.customer_code || '',
-        customer_phone: inv.customer_phone || '',
-        territory: inv.customer_address || 'General',
-        quantity: qty,
-        packaging_unit: item.packaging_unit || targetProduct.packaging_unit,
-        unit_price: Number(item.unit_price || 0),
-        line_total: lineRev,
-        landed_cost: itemCost,
-        profit: Math.round(lineProfit * 100) / 100,
-        margin_pct: Math.round(lineMargin * 10) / 10
-      });
-
-      totUnits += qty;
-      totRevenue += lineRev;
-      totCost += lineCost;
-      totRows += 1;
-
-      if (!buyingCustomers[inv.customer_id]) {
-        buyingCustomers[inv.customer_id] = {
-          id: inv.customer_id,
-          code: inv.customer_code || '',
-          name: inv.customer_name || 'Customer',
-          phone: inv.customer_phone || '',
-          territory: inv.customer_address || 'General',
-          total_units: 0,
-          total_revenue: 0,
-          orders_count: 0,
-          last_purchase_date: invDate
-        };
-      }
-      const bc = buyingCustomers[inv.customer_id];
-      bc.total_units += qty;
-      bc.total_revenue += lineRev;
-      bc.orders_count += 1;
-      if (invDate > bc.last_purchase_date) bc.last_purchase_date = invDate;
+    const customerMap = new Map();
+    customers.forEach(c => {
+      if (c && c.id) customerMap.set(c.id, c);
     });
-  });
 
-  const dailyList = Object.keys(daysDict).sort().reverse().map(dStr => {
-    const dVal = daysDict[dStr];
-    dVal.total_units = Math.round(dVal.total_units * 10) / 10;
-    dVal.total_kg = Math.round(dVal.total_kg * 10) / 10;
-    dVal.total_revenue = Math.round(dVal.total_revenue * 100) / 100;
-    dVal.total_profit = Math.round(dVal.total_profit * 100) / 100;
-    dVal.margin_pct = dVal.total_revenue > 0 ? Math.round((dVal.total_profit / dVal.total_revenue * 100) * 10) / 10 : 0;
-    return dVal;
-  });
+    const targetProduct = products.find(p => 
+      p.id === productId || 
+      (p.sku && String(p.sku).toLowerCase() === String(productId).toLowerCase()) ||
+      (p.name && String(p.name).toLowerCase() === String(productId).toLowerCase())
+    ) || {
+      id: productId,
+      sku: String(productId),
+      name: String(productId),
+      base_price: 0,
+      packaging_unit: '1 pkt'
+    };
 
-  const totProfit = totRevenue - totCost;
-  const totMargin = totRevenue > 0 ? (totProfit / totRevenue * 100) : 0;
-  const buyingIds = new Set(Object.keys(buyingCustomers));
-  const whitespaceOutlets = customers.filter(c => !buyingIds.has(c.id)).slice(0, 30);
+    // Parse unit weight dynamically from product name or unit
+    let unitWeightKg = 1.0;
+    const descText = `${targetProduct.name || ''} ${targetProduct.packaging_unit || ''}`;
+    const kgMatch = descText.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo)/i);
+    if (kgMatch) {
+      unitWeightKg = parseFloat(kgMatch[1]) || 1.0;
+    } else {
+      const gmMatch = descText.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|gram)/i);
+      if (gmMatch) {
+        unitWeightKg = (parseFloat(gmMatch[1]) || 1000) / 1000;
+      }
+    }
 
-  return {
-    product: {
-      id: targetProduct.id,
-      sku: targetProduct.sku,
-      name: targetProduct.name,
-      brand: targetProduct.brand,
-      category_name: targetProduct.category_name || 'General',
-      packaging_unit: targetProduct.packaging_unit || '1 pkt',
-      unit_weight_kg: unitWeightKg,
-      base_price: basePrice,
-      unit_cost: unitCost,
-      current_stock: Number(targetProduct.current_stock || 0),
-      stock_holding_kg: Number(targetProduct.current_stock || 0) * unitWeightKg,
-      stock_value: Number(targetProduct.current_stock || 0) * unitCost
-    },
-    period,
-    start_date: startDate,
-    end_date: endDate,
-    summary: {
-      total_units_sold: Math.round(totUnits * 10) / 10,
-      total_kg_sold: Math.round(totUnits * unitWeightKg * 10) / 10,
-      total_revenue: Math.round(totRevenue * 100) / 100,
-      total_cost: Math.round(totCost * 100) / 100,
-      total_profit: Math.round(totProfit * 100) / 100,
-      margin_pct: Math.round(totMargin * 10) / 10,
-      total_invoices_count: totRows,
-      active_days_count: dailyList.length,
-      buying_outlets_count: Object.keys(buyingCustomers).length,
-      whitespace_outlets_count: whitespaceOutlets.length,
-      outlet_penetration_pct: customers.length > 0 ? Math.round((Object.keys(buyingCustomers).length / customers.length * 100) * 10) / 10 : 0
-    },
-    daily_breakdown: dailyList,
-    buying_outlets: Object.values(buyingCustomers).sort((a, b) => b.total_revenue - a.total_revenue),
-    whitespace_outlets: whitespaceOutlets
-  };
+    const period = (params.period || '30d').toLowerCase().trim();
+    const today = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const todayStr = toYMD(today);
+
+    let startDate = null;
+    let endDate = null;
+
+    if (params.start_date && params.end_date) {
+      startDate = params.start_date;
+      endDate = params.end_date;
+    } else if (period === 'today') {
+      startDate = todayStr;
+      endDate = todayStr;
+    } else if (period === 'yesterday') {
+      const y = new Date(today);
+      y.setDate(y.getDate() - 1);
+      startDate = toYMD(y);
+      endDate = startDate;
+    } else if (period === 'this_week') {
+      const d = new Date(today);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      startDate = toYMD(d);
+      endDate = todayStr;
+    } else if (period === 'past_week' || period === 'last_week') {
+      const d = new Date(today);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff - 7);
+      startDate = toYMD(d);
+      const endD = new Date(d);
+      endD.setDate(endD.getDate() + 6);
+      endDate = toYMD(endD);
+    } else if (period === 'this_month') {
+      const d = new Date(today.getFullYear(), today.getMonth(), 1);
+      startDate = toYMD(d);
+      endDate = todayStr;
+    } else if (period === 'past_month' || period === 'last_month') {
+      const firstDayPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDayPrev = new Date(today.getFullYear(), today.getMonth(), 0);
+      startDate = toYMD(firstDayPrev);
+      endDate = toYMD(lastDayPrev);
+    } else if (period === '7d' || period === 'last_7d') {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 6);
+      startDate = toYMD(d);
+      endDate = todayStr;
+    } else if (period === '90d' || period === 'last_90d') {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 89);
+      startDate = toYMD(d);
+      endDate = todayStr;
+    } else if (period === 'all_time' || period === 'all') {
+      startDate = null;
+      endDate = null;
+    } else {
+      // 30d default
+      const d = new Date(today);
+      d.setDate(d.getDate() - 29);
+      startDate = toYMD(d);
+      endDate = todayStr;
+    }
+
+    const validStatuses = ['ISSUED', 'PAID', 'PARTIALLY_PAID', 'DRAFT', 'OVERDUE'];
+    const daysDict = {};
+    const buyingCustomers = {};
+    let totUnits = 0;
+    let totRevenue = 0;
+    let totCost = 0;
+    let totRows = 0;
+
+    const basePrice = Number(targetProduct.base_price || 0);
+    const unitCost = basePrice * 0.8;
+
+    invoices.forEach(inv => {
+      if (!validStatuses.includes(inv.status)) return;
+      const invDate = inv.invoice_date;
+      if (startDate && invDate < startDate) return;
+      if (endDate && invDate > endDate) return;
+
+      const cust = customerMap.get(inv.customer_id) || {};
+      const customerName = cust.business_name || cust.name || inv.customer_name || 'Customer';
+      const customerCode = cust.customer_code || cust.code || inv.customer_code || '';
+      const customerPhone = cust.phone || inv.customer_phone || '';
+      const customerTerritory = cust.city || cust.address || inv.customer_address || 'General';
+
+      (inv.items || []).forEach(item => {
+        const desc = (item.item_description || '').toLowerCase();
+        const pSku = (targetProduct.sku || '').toLowerCase();
+        const pName = (targetProduct.name || '').toLowerCase();
+        const pId = targetProduct.id;
+
+        const matches = item.product_id === pId ||
+          (pSku && (desc.includes(pSku) || String(item.sku || '').toLowerCase() === pSku)) ||
+          (pName && desc.includes(pName)) ||
+          (pName && pName.includes(desc) && desc.length > 5);
+
+        if (!matches) return;
+
+        const qty = Number(item.quantity || 0);
+        const lineRev = Number(item.line_total || 0);
+        const itemCost = Number(item.landed_cost) > 0 ? Number(item.landed_cost) : (Number(item.unit_cost) > 0 ? Number(item.unit_cost) : unitCost);
+        const lineCost = itemCost * qty;
+        const lineProfit = lineRev - lineCost;
+        const lineMargin = lineRev > 0 ? (lineProfit / lineRev * 100) : 0;
+
+        if (!daysDict[invDate]) {
+          const dObj = new Date(invDate);
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          daysDict[invDate] = {
+            date: invDate,
+            day_name: dayNames[dObj.getDay()] || '',
+            total_units: 0,
+            total_kg: 0,
+            total_revenue: 0,
+            total_cost: 0,
+            total_profit: 0,
+            invoices: []
+          };
+        }
+
+        const dayEntry = daysDict[invDate];
+        dayEntry.total_units += qty;
+        dayEntry.total_kg += qty * unitWeightKg;
+        dayEntry.total_revenue += lineRev;
+        dayEntry.total_cost += lineCost;
+        dayEntry.total_profit += lineProfit;
+
+        dayEntry.invoices.push({
+          invoice_id: inv.id,
+          invoice_number: inv.invoice_number,
+          invoice_date: invDate,
+          created_at: inv.created_at || invDate,
+          status: inv.status,
+          customer_id: inv.customer_id,
+          customer_name: customerName,
+          customer_code: customerCode,
+          customer_phone: customerPhone,
+          territory: customerTerritory,
+          quantity: qty,
+          packaging_unit: item.packaging_unit || targetProduct.packaging_unit,
+          unit_price: Number(item.unit_price || 0),
+          line_total: lineRev,
+          landed_cost: itemCost,
+          profit: Math.round(lineProfit * 100) / 100,
+          margin_pct: Math.round(lineMargin * 10) / 10
+        });
+
+        totUnits += qty;
+        totRevenue += lineRev;
+        totCost += lineCost;
+        totRows += 1;
+
+        if (!buyingCustomers[inv.customer_id]) {
+          buyingCustomers[inv.customer_id] = {
+            id: inv.customer_id,
+            code: customerCode,
+            name: customerName,
+            phone: customerPhone,
+            territory: customerTerritory,
+            total_units: 0,
+            total_revenue: 0,
+            orders_count: 0,
+            last_purchase_date: invDate
+          };
+        }
+        const bc = buyingCustomers[inv.customer_id];
+        bc.total_units += qty;
+        bc.total_revenue += lineRev;
+        bc.orders_count += 1;
+        if (invDate > bc.last_purchase_date) bc.last_purchase_date = invDate;
+      });
+    });
+
+    const dailyList = Object.keys(daysDict).sort().reverse().map(dStr => {
+      const dVal = daysDict[dStr];
+      dVal.total_units = Math.round(dVal.total_units * 10) / 10;
+      dVal.total_kg = Math.round(dVal.total_kg * 10) / 10;
+      dVal.total_revenue = Math.round(dVal.total_revenue * 100) / 100;
+      dVal.total_profit = Math.round(dVal.total_profit * 100) / 100;
+      dVal.margin_pct = dVal.total_revenue > 0 ? Math.round((dVal.total_profit / dVal.total_revenue * 100) * 10) / 10 : 0;
+      return dVal;
+    });
+
+    const totProfit = totRevenue - totCost;
+    const totMargin = totRevenue > 0 ? (totProfit / totRevenue * 100) : 0;
+    const buyingIds = new Set(Object.keys(buyingCustomers));
+    const whitespaceOutlets = customers
+      .filter(c => !buyingIds.has(c.id))
+      .slice(0, 30)
+      .map(c => ({
+        id: c.id,
+        code: c.customer_code || c.code || '',
+        name: c.business_name || c.name || 'Customer',
+        phone: c.phone || '',
+        territory: c.city || c.address || 'General'
+      }));
+
+    return {
+      product: {
+        id: targetProduct.id,
+        sku: targetProduct.sku,
+        name: targetProduct.name,
+        brand: targetProduct.brand,
+        category_name: targetProduct.category_name || 'General',
+        packaging_unit: targetProduct.packaging_unit || '1 pkt',
+        unit_weight_kg: unitWeightKg,
+        base_price: basePrice,
+        unit_cost: unitCost,
+        current_stock: Number(targetProduct.current_stock || 0),
+        stock_holding_kg: Number(targetProduct.current_stock || 0) * unitWeightKg,
+        stock_value: Number(targetProduct.current_stock || 0) * unitCost
+      },
+      period,
+      start_date: startDate,
+      end_date: endDate,
+      summary: {
+        total_units_sold: Math.round(totUnits * 10) / 10,
+        total_kg_sold: Math.round(totUnits * unitWeightKg * 10) / 10,
+        total_revenue: Math.round(totRevenue * 100) / 100,
+        total_cost: Math.round(totCost * 100) / 100,
+        total_profit: Math.round(totProfit * 100) / 100,
+        margin_pct: Math.round(totMargin * 10) / 10,
+        total_invoices_count: totRows,
+        active_days_count: dailyList.length,
+        buying_outlets_count: Object.keys(buyingCustomers).length,
+        whitespace_outlets_count: whitespaceOutlets.length,
+        outlet_penetration_pct: customers.length > 0 ? Math.round((Object.keys(buyingCustomers).length / customers.length * 100) * 10) / 10 : 0
+      },
+      daily_breakdown: dailyList,
+      buying_outlets: Object.values(buyingCustomers).sort((a, b) => b.total_revenue - a.total_revenue),
+      whitespace_outlets: whitespaceOutlets
+    };
+  } catch (synthErr) {
+    console.error('Client drilldown synthesis failed:', synthErr);
+    return {
+      product: { id: productId, sku: String(productId), name: String(productId) },
+      period: params?.period || '30d',
+      summary: { total_units_sold: 0, total_revenue: 0, total_profit: 0, margin_pct: 0 },
+      daily_breakdown: [],
+      buying_outlets: [],
+      whitespace_outlets: []
+    };
+  }
 }
 
 export const backupApi = {

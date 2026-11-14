@@ -247,24 +247,72 @@ export const ReportsPage = ({ onNavigate }) => {
       )}
 
       {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
-      <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
-        {/* Left: Icon & Title */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <BarChart3 className="w-4 h-4" />
+      <div className="hidden md:flex flex-col gap-2 bg-slate-900/95 border border-slate-800 rounded-2xl p-2.5 shrink-0 shadow-md">
+        {/* Row 1: Title, Search, Due Ticker & Action Buttons */}
+        <div className="flex items-center justify-between gap-2.5 flex-wrap">
+          {/* Left: Icon & Title */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <BarChart3 className="w-4 h-4" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm font-black text-white whitespace-nowrap">
+                Financial Reports
+              </h1>
+              <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
+                {filteredCustomerAging.length}/{customerAging.length} Outlets
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-sm font-black text-white whitespace-nowrap">
-              Financial Reports
-            </h1>
-            <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-              {filteredCustomerAging.length}/{customerAging.length} Outlets
-            </span>
+
+          {/* Right: Search, Due Ticker & Action CTAs */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <div className="relative max-w-[200px] min-w-[130px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search outlet, phone..."
+                className="w-full pl-8 pr-7 py-1 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
+              <span className="text-amber-400 font-bold">Due: ₹{totalOutstandingVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+            </div>
+
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('financial-audit')}
+                className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-750 text-amber-400 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all shrink-0"
+                title="Open Senior Forensic Audit & Excel Dossier Hub"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
+                <span>Audit Hub</span>
+              </button>
+            )}
+            <button
+              onClick={() => setFifoModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all shrink-0"
+              title="Open FIFO Reconciliation Dialog"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>FIFO Reconcile</span>
+            </button>
           </div>
         </div>
 
-        {/* Center: 1-Click Aging Bucket Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+        {/* Row 2: 1-Click Aging Bucket Filter Pills */}
+        <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/60 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setSelectedAgingBucket('ALL')}
             className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
@@ -330,53 +378,6 @@ export const ReportsPage = ({ onNavigate }) => {
             <span className="font-mono text-[10px]">
               ₹{parseFloat(reconciledAging?.aging_60_plus_days || 0) >= 1000 ? `${(parseFloat(reconciledAging?.aging_60_plus_days || 0)/1000).toFixed(0)}k` : parseFloat(reconciledAging?.aging_60_plus_days || 0).toFixed(0)}
             </span>
-          </button>
-        </div>
-
-        {/* Center-Right: Omni-Search Input with Clear */}
-        <div className="relative flex-1 max-w-[220px] min-w-[130px]">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search outlet, phone..."
-            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Live Total Outstanding Micro-Ticker */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
-          <span className="text-amber-400">Due: <strong className="font-bold">₹{totalOutstandingVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
-        </div>
-
-        {/* Right: FIFO Reconcile CTA & Financial Audit Hub Link */}
-        <div className="flex items-center gap-2 shrink-0">
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('financial-audit')}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-amber-400 border border-amber-500/30 font-bold rounded-xl text-xs uppercase tracking-wider transition-all hover:scale-105"
-              title="Open Senior Forensic Audit & Excel Dossier Hub"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
-              <span>Audit Hub</span>
-            </button>
-          )}
-          <button
-            onClick={() => setFifoModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
-            title="Open FIFO Reconciliation Dialog"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>FIFO Reconcile</span>
           </button>
         </div>
       </div>

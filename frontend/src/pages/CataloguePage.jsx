@@ -444,7 +444,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
         </div>
 
         {/* Tier 3: Dedicated Full-Width Category Filter Ribbon (All Categories Visible & Never Squeezed) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-0.5 border-t border-slate-800/40">
+        <div className="flex items-center gap-1.5 flex-wrap pt-2 pb-0.5 border-t border-slate-800/40">
           <button
             onClick={() => setSelectedCategory('ALL')}
             className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 ${

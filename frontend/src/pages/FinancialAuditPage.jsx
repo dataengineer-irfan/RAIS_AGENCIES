@@ -447,50 +447,50 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
   const anomalies = filteredAnomalies;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto pb-24 text-slate-100">
+    <div className="p-3 sm:p-4 space-y-3 max-w-7xl mx-auto pb-12 text-slate-100">
       
-      {/* ─── Top Header & Controls ─── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/10">
-            <ShieldCheck className="w-6 h-6" />
+      {/* ─── Compact Top Header & Controls ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-md">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
+            <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h1 className="text-sm sm:text-base font-black text-white tracking-tight">
                 Financial Audit & Reconciliation Hub
               </h1>
-              <span className="whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <span className="whitespace-nowrap shrink-0 px-2 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
                 PRO AUDIT
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-400 hidden sm:block">
               Deep forensic ledger verification, rapid-fire duplicate detector & automated multi-tab Excel generator
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => {
               loadScanData();
               loadMarginLeakage();
             }}
             disabled={loading || leakageLoading}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-all border border-slate-700 active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg transition-all border border-slate-700 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading || leakageLoading ? 'animate-spin text-amber-400' : ''}`} />
-            <span>{loading ? 'Scanning...' : 'Run Deep Scan'}</span>
+            <RefreshCw className={`w-3 h-3 ${loading || leakageLoading ? 'animate-spin text-amber-400' : ''}`} />
+            <span>{loading ? 'Scanning...' : 'Run Scan'}</span>
           </button>
 
           <button
             onClick={() => handleExportExcel(null)}
             disabled={exportingExcel}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-emerald-950/50 active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
             title="Download multi-tab Excel spreadsheet containing executive summary, duplicates, margin leaks, and statement dossiers"
           >
-            <FileSpreadsheet className={`w-4 h-4 ${exportingExcel ? 'animate-spin' : ''}`} />
-            <span>{exportingExcel ? 'Generating Excel...' : 'Export Audit Excel (.xlsx)'}</span>
+            <FileSpreadsheet className={`w-3.5 h-3.5 ${exportingExcel ? 'animate-spin' : ''}`} />
+            <span>{exportingExcel ? 'Generating...' : 'Export Excel (.xlsx)'}</span>
           </button>
         </div>
       </div>
@@ -532,65 +532,72 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
         </div>
       )}
 
-      {/* ─── Top 4 KPI Metrics Cards ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl relative overflow-hidden">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-            Platform Invoiced
-          </span>
-          <div className="text-xl sm:text-2xl font-black font-mono text-slate-100">
-            ₹{(summary.total_invoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+      {/* ─── Compact Senior KPI Scorecards ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              Platform Invoiced
+            </span>
+            <div className="text-base sm:text-lg font-black font-mono text-slate-100">
+              ₹{(summary.total_invoiced || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </div>
           </div>
-          <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1 font-semibold">
-            <CheckCircle2 className="w-3 h-3" /> 100% Invariant Verified
+          <span className="text-[9px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 font-bold shrink-0">
+            ✓ Verified
           </span>
         </div>
 
-        <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl relative overflow-hidden">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-            Total Collections
-          </span>
-          <div className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-            ₹{(summary.total_collected || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              Total Collections
+            </span>
+            <div className="text-base sm:text-lg font-black font-mono text-emerald-400">
+              ₹{(summary.total_collected || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </div>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">
-            Across {summary.total_payments_count || 0} Recorded Payments
+          <span className="text-[9px] font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-800 shrink-0">
+            {summary.total_payments_count || 0} Payments
           </span>
         </div>
 
-        <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl relative overflow-hidden">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-            Current Net Dues
-          </span>
-          <div className="text-xl sm:text-2xl font-black font-mono text-amber-400">
-            ₹{(summary.total_outstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              Current Net Dues
+            </span>
+            <div className="text-base sm:text-lg font-black font-mono text-amber-400">
+              ₹{(summary.total_outstanding || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </div>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">
-            Across all {summary.total_customers || 0} Customer Accounts
+          <span className="text-[9px] font-mono text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 font-bold shrink-0">
+            {summary.total_customers || 0} Outlets
           </span>
         </div>
 
-        <div className={`p-4 rounded-xl border relative overflow-hidden ${
+        <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
           (summary.total_at_risk_amount || 0) > 0 
             ? 'bg-rose-950/20 border-rose-500/30' 
             : 'bg-slate-900 border-slate-800'
         }`}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">
-              Duplicate Credit at Risk
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 block">
+              Duplicate at Risk
             </span>
-            {(summary.anomalies_count || 0) > 0 && (
-              <span className="px-1.5 py-0.2 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded text-[9px] font-black">
-                {summary.anomalies_count} FLAGGED
-              </span>
-            )}
+            <div className="text-base sm:text-lg font-black font-mono text-rose-400">
+              ₹{(summary.total_at_risk_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black font-mono text-rose-400">
-            ₹{(summary.total_at_risk_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </div>
-          <span className="text-[10px] text-rose-300/80 mt-1 block font-medium">
-            {(summary.total_at_risk_amount || 0) > 0 ? 'Recoverable Revenue (Double-Clicks)' : 'All Accounts Clean & Reconciled'}
-          </span>
+          {(summary.anomalies_count || 0) > 0 ? (
+            <span className="text-[9px] font-mono text-rose-400 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/30 font-bold shrink-0">
+              {summary.anomalies_count} FLAGGED
+            </span>
+          ) : (
+            <span className="text-[9px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 font-bold shrink-0">
+              0 Clean
+            </span>
+          )}
         </div>
       </div>
 
@@ -1430,92 +1437,86 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
       )}
 
       {/* ─── TAB 4: CUSTOMER DOSSIER DRILLDOWN ─── */}
+      {/* ─── TAB 4: SINGLE CUSTOMER DEEP DOSSIER ─── */}
       {activeTab === 'dossier' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
+        <div className="space-y-3 animate-in fade-in duration-200">
           
-          {/* Customer Selector Toolbar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 p-4 rounded-xl border border-slate-800">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Customer:</span>
-              <select
-                value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-white text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 w-full sm:w-64 cursor-pointer"
-              >
-                {(scanData?.customers || []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} — {c.name} {c.has_anomaly ? '⚠️ (Duplicate)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-center">
-              <button
-                onClick={() => handleExportExcel(selectedCustomerId)}
-                disabled={exportingExcel}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-700 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5 text-amber-400" />
-                <span>Export Customer Statement (.xlsx)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Customer Summary Card */}
-          {dossierData && (
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <div>
-                  <h2 className="text-lg font-black text-white">
-                    {dossierData.customer.business_name} ({dossierData.customer.customer_code})
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Contact: {dossierData.customer.contact_person} • Phone: {dossierData.customer.phone} • {dossierData.customer.address}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 text-right">
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Opening Balance</span>
-                    <span className="text-xs font-bold font-mono text-slate-200">₹{dossierData.customer.opening_balance.toFixed(2)}</span>
-                  </div>
-                  <div className="border-l border-slate-800 pl-3">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Invoiced</span>
-                    <span className="text-xs font-bold font-mono text-slate-200">₹{dossierData.customer.total_invoiced.toFixed(2)}</span>
-                  </div>
-                  <div className="border-l border-slate-800 pl-3">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Paid</span>
-                    <span className="text-xs font-bold font-mono text-emerald-400">₹{dossierData.customer.total_paid.toFixed(2)}</span>
-                  </div>
-                  <div className="border-l border-slate-800 pl-3">
-                    <span className="text-[10px] text-amber-400 uppercase font-bold block">Current Balance</span>
-                    <span className="text-sm font-black font-mono text-amber-400">₹{dossierData.customer.current_balance.toFixed(2)}</span>
-                  </div>
-                </div>
+          {/* Unified Compact Customer Control & Financial Balance Strip */}
+          <div className="bg-slate-900 border border-slate-800 p-2.5 sm:p-3 rounded-xl shadow-md space-y-2">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+              {/* Left: Customer Selector & Quick Info */}
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Outlet:</span>
+                <select
+                  value={selectedCustomerId}
+                  onChange={(e) => setSelectedCustomerId(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 text-amber-400 text-xs font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:border-amber-500 max-w-[280px] sm:max-w-[340px] truncate cursor-pointer shrink-0"
+                >
+                  {(scanData?.customers || []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.code} — {c.name} {c.has_anomaly ? '⚠️ (Duplicate)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {dossierData?.customer && (
+                  <span className="text-[11px] text-slate-400 font-mono hidden md:inline truncate">
+                    📞 {dossierData.customer.phone || 'No phone'} • 📍 {dossierData.customer.address || dossierData.customer.city || 'Local'}
+                  </span>
+                )}
               </div>
 
-              {/* Customer Margin Leakage Notice if any */}
-              {customerLeakageItems.length > 0 && (
-                <div className="mt-3.5 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-between gap-3 text-xs flex-wrap">
-                  <div className="flex items-center gap-2 text-rose-300">
-                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span>
-                      <strong className="text-white">{customerLeakageItems.length} Under-Cost Billing Items</strong> recorded for this outlet (Direct Margin Loss: <strong className="text-rose-400 font-mono font-bold">-₹{customerLeakageItems.reduce((acc, x) => acc + (x.total_loss || 0), 0).toFixed(2)}</strong>)
-                    </span>
+              {/* Right: Balances Strip + Export Statement */}
+              {dossierData && (
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-between lg:justify-end shrink-0">
+                  <div className="flex items-center gap-2 text-[11px] font-mono bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800/80">
+                    <span className="text-slate-400">Op: <strong className="text-slate-200">₹{Math.round(dossierData.customer.opening_balance || 0).toLocaleString('en-IN')}</strong></span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-slate-400">Inv: <strong className="text-slate-200">₹{Math.round(dossierData.customer.total_invoiced || 0).toLocaleString('en-IN')}</strong></span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-slate-400">Paid: <strong className="text-emerald-400">₹{Math.round(dossierData.customer.total_paid || 0).toLocaleString('en-IN')}</strong></span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-amber-400 font-bold">Due: <strong className="text-amber-400 text-xs font-black">₹{Math.round(dossierData.customer.current_balance || 0).toLocaleString('en-IN')}</strong></span>
                   </div>
+
                   <button
-                    onClick={() => {
-                      setLeakageSearch(dossierData.customer.business_name);
-                      setActiveTab('leakage');
-                    }}
-                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    onClick={() => handleExportExcel(selectedCustomerId)}
+                    disabled={exportingExcel}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-700 cursor-pointer shrink-0"
+                    title="Export Customer Statement"
                   >
-                    <span>Inspect Margin Leakage</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Statement (.xlsx)</span>
                   </button>
                 </div>
               )}
+            </div>
 
+            {/* Inline Leakage Warning Chip (Ultra Compact) */}
+            {customerLeakageItems.length > 0 && (
+              <div className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/25 rounded-lg flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-1.5 text-rose-300 text-[11px]">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>
+                    <strong>{customerLeakageItems.length} Under-Cost Billing Items</strong> for this outlet (Margin Loss: <strong className="text-rose-400 font-mono font-bold">-₹{customerLeakageItems.reduce((acc, x) => acc + (x.total_loss || 0), 0).toFixed(2)}</strong>)
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setLeakageSearch(dossierData.customer.business_name);
+                    setActiveTab('leakage');
+                  }}
+                  className="text-[10px] font-bold text-rose-400 hover:text-white px-2 py-0.5 rounded bg-rose-950/60 border border-rose-700/50 hover:bg-rose-700 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <span>Inspect</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Dossier Tables Container */}
+          {dossierData && (
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl shadow-md space-y-3">
               {/* Sub-tabs inside Dossier */}
               <div className="flex items-center gap-2 mt-4 border-b border-slate-800 pb-2 text-xs font-bold">
                 <button
