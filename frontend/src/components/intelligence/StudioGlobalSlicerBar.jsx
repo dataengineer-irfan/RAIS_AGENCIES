@@ -6,18 +6,17 @@ import {
   RefreshCw, 
   Layers, 
   Percent, 
-  Eye, 
   LayoutDashboard, 
   Table as TableIcon,
   PieChart,
   X,
-  ChevronDown,
-  ChevronUp
+  TrendingUp,
+  Tag
 } from 'lucide-react';
 
 /**
- * StudioGlobalSlicerBar - Power BI 2026 Universal Sticky Slicer Ribbon
- * Handles temporal slicing, category selection, margin bands, and 3 distinct view modes.
+ * StudioGlobalSlicerBar - Power BI 2026 Universal Visual Slicer Ribbon
+ * Visual chiclets, period buttons, and multi-layout workspace controllers.
  */
 export const StudioGlobalSlicerBar = ({
   period = '30d',
@@ -39,8 +38,6 @@ export const StudioGlobalSlicerBar = ({
   onMetricModeChange,
   viewLayout = 'COCKPIT',
   onViewLayoutChange,
-  showChartsTray = false,
-  onToggleChartsTray,
   onRefresh,
   loading = false
 }) => {
@@ -71,19 +68,19 @@ export const StudioGlobalSlicerBar = ({
     { id: 'WINNER', label: '⭐ Winners' },
     { id: 'STEADY', label: '📦 Steady' },
     { id: 'DECLINING', label: '📉 Declining' },
-    { id: 'ZERO_MOVER', label: '❄️ Dead Stock' },
-    { id: 'OUT_OF_STOCK', label: '⚪ Unstocked' }
+    { id: 'ZERO_MOVER', label: '❄️ Dead Stock' }
   ];
 
   const VIEW_MODES = [
-    { id: 'COCKPIT', label: 'Split Cockpit', icon: LayoutDashboard },
-    { id: 'VISUALS', label: 'Visual Charts', icon: PieChart },
-    { id: 'TABLE', label: 'Full Grid', icon: TableIcon }
+    { id: 'COCKPIT', label: 'Visual Cockpit', icon: LayoutDashboard },
+    { id: 'VISUALS', label: 'Executive Charts', icon: PieChart },
+    { id: 'TABLE', label: 'Data Grid', icon: TableIcon }
   ];
 
   return (
-    <div className="shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-1.5 select-none">
-      {/* Top Row: Temporal Quick-Pills + View Modes + Metric Toggle */}
+    <div className="shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-2 select-none">
+      
+      {/* Row 1: Temporal Horizon Buttons + View Mode Switcher + Metric Toggle */}
       <div className="flex flex-wrap items-center justify-between gap-1.5">
         
         {/* Temporal Quick Pills */}
@@ -95,7 +92,7 @@ export const StudioGlobalSlicerBar = ({
                 <button
                   key={opt.id}
                   onClick={() => onPeriodChange(opt.id)}
-                  className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold transition-all whitespace-nowrap ${
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -128,10 +125,10 @@ export const StudioGlobalSlicerBar = ({
           )}
         </div>
 
-        {/* View Modes Toggle + Metric Mode Toggle */}
+        {/* View Modes Toggle & Metric Mode */}
         <div className="flex items-center gap-1.5 ml-auto">
-          {/* 3 Power BI View Modes */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[10px]">
+          {/* View Modes (Visual Cockpit vs Executive Charts vs Data Grid) */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[11px]">
             {VIEW_MODES.map((vm) => {
               const Icon = vm.icon;
               const isCurrent = viewLayout === vm.id;
@@ -139,34 +136,34 @@ export const StudioGlobalSlicerBar = ({
                 <button
                   key={vm.id}
                   onClick={() => onViewLayoutChange(vm.id)}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded font-bold transition-all ${
+                  className={`flex items-center gap-1 px-2.5 py-0.5 rounded font-bold transition-all ${
                     isCurrent
-                      ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   <Icon className="w-3 h-3" />
-                  <span className="hidden sm:inline">{vm.label}</span>
+                  <span>{vm.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Metric Mode Toggle (Revenue / Profit / Volume) */}
-          <div className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[10px]">
+          {/* Metric Mode Toggle */}
+          <div className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[11px]">
             <button
               onClick={() => onMetricModeChange('revenue')}
-              className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+              className={`px-2 py-0.5 rounded font-bold transition-all ${
                 metricMode === 'revenue'
                   ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Rev (₹)
+              Revenue (₹)
             </button>
             <button
               onClick={() => onMetricModeChange('profit')}
-              className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+              className={`px-2 py-0.5 rounded font-bold transition-all ${
                 metricMode === 'profit'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
@@ -176,13 +173,13 @@ export const StudioGlobalSlicerBar = ({
             </button>
             <button
               onClick={() => onMetricModeChange('volume')}
-              className={`px-1.5 py-0.5 rounded font-bold transition-all ${
+              className={`px-2 py-0.5 rounded font-bold transition-all ${
                 metricMode === 'volume'
                   ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Vol (KG)
+              Volume (KG)
             </button>
           </div>
 
@@ -191,7 +188,7 @@ export const StudioGlobalSlicerBar = ({
             <button
               onClick={onRefresh}
               disabled={loading}
-              className="p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 transition-colors"
               title="Refresh Analytics Dataset"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-500' : ''}`} />
@@ -200,92 +197,66 @@ export const StudioGlobalSlicerBar = ({
         </div>
       </div>
 
-      {/* Bottom Row: Slicer Dropdowns + Search */}
-      <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80 text-xs">
-        {/* Category Slicer */}
-        <div className="flex items-center gap-1 min-w-[140px] flex-1 sm:flex-initial">
-          <Layers className="w-3 h-3 text-slate-400 shrink-0" />
-          <select
-            value={selectedCategory}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-[11px]"
-          >
-            <option value="ALL">All Categories ({categoryOptions.length})</option>
-            {categoryOptions.map((cat) => (
-              <option key={cat.name} value={cat.name}>
-                {cat.name} ({cat.count})
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Row 2: Category Visual Chiclets Ribbon (Click to filter like real Power BI) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+          <Layers className="w-3 h-3 text-amber-500" /> Slicers:
+        </span>
 
-        {/* Margin Tier Slicer */}
-        <div className="flex items-center gap-1 min-w-[110px] flex-1 sm:flex-initial">
-          <Percent className="w-3 h-3 text-slate-400 shrink-0" />
-          <select
-            value={marginTier}
-            onChange={(e) => onMarginTierChange(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-[11px]"
-          >
-            {MARGIN_TIERS.map((tier) => (
-              <option key={tier.id} value={tier.id}>
-                {tier.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* All Categories Pill */}
+        <button
+          onClick={() => onCategoryChange('ALL')}
+          className={`px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all border shrink-0 ${
+            selectedCategory === 'ALL'
+              ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-sm'
+              : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+          }`}
+        >
+          All Categories ({categoryOptions.reduce((s, c) => s + c.count, 0)})
+        </button>
 
-        {/* Velocity Status Slicer */}
-        <div className="flex items-center gap-1 min-w-[110px] flex-1 sm:flex-initial">
-          <Filter className="w-3 h-3 text-slate-400 shrink-0" />
-          <select
-            value={classificationFilter}
-            onChange={(e) => onClassificationChange(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-[11px]"
-          >
-            {CLASSIFICATION_OPTIONS.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Dynamic Category Chiclet Pills */}
+        {categoryOptions.map((cat) => {
+          const isSelected = selectedCategory === cat.name;
+          return (
+            <button
+              key={cat.name}
+              onClick={() => onCategoryChange(isSelected ? 'ALL' : cat.name)}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all border shrink-0 flex items-center gap-1 ${
+                isSelected
+                  ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-sm'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+              }`}
+            >
+              <span>{cat.name}</span>
+              <span className={`text-[10px] px-1 py-0.1 rounded-full ${
+                isSelected ? 'bg-slate-950 text-amber-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+              }`}>
+                {cat.count}
+              </span>
+            </button>
+          );
+        })}
 
-        {/* Search Slicer */}
-        <div className="relative flex-1 min-w-[150px]">
+        {/* Search Slicer (Always pinned on right) */}
+        <div className="relative min-w-[140px] ml-auto shrink-0">
           <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search SKU or item..."
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md pl-7 pr-6 py-0.5 text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
+            placeholder="Search SKU..."
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full pl-6 pr-5 py-0.5 text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
           />
           {searchTerm && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400"
             >
               <X className="w-2.5 h-2.5" />
             </button>
           )}
         </div>
-
-        {/* Optional Collapsible Charts Tray Toggle (when in Cockpit mode) */}
-        {viewLayout === 'COCKPIT' && onToggleChartsTray && (
-          <button
-            onClick={onToggleChartsTray}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-all border shrink-0 ${
-              showChartsTray
-                ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-sm'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <PieChart className="w-3 h-3" />
-            <span>{showChartsTray ? 'Hide Charts' : 'Show Charts'}</span>
-            {showChartsTray ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
-          </button>
-        )}
       </div>
     </div>
   );

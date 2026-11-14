@@ -13,7 +13,9 @@ import {
   RefreshCw, 
   Package, 
   CheckCircle2, 
-  AlertTriangle 
+  AlertTriangle,
+  History,
+  Phone
 } from 'lucide-react';
 import { analyticsApi } from '../../services/api';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -38,15 +40,16 @@ export const DailySalesDrillthroughModal = ({
   const [error, setError] = useState('');
   const [expandedDays, setExpandedDays] = useState({});
   const [previewInvoiceId, setPreviewInvoiceId] = useState(null);
+  const [activePeriod, setActivePeriod] = useState(period);
 
-  const fetchDrilldown = async () => {
+  const fetchDrilldown = async (periodToUse = activePeriod) => {
     if (!product?.id && !product?.product_id) return;
     const prodId = product.id || product.product_id;
     setLoading(true);
     setError('');
     try {
-      const params = { period };
-      if (start_date && end_date) {
+      const params = { period: periodToUse };
+      if (periodToUse === 'custom' && start_date && end_date) {
         params.start_date = start_date;
         params.end_date = end_date;
       }
@@ -54,7 +57,7 @@ export const DailySalesDrillthroughModal = ({
       setDrillData(data);
     } catch (err) {
       console.error('Failed to fetch product daily drilldown:', err);
-      setError('Failed to load chronological sales records. Please try again.');
+      setError('Unable to load chronological sales records. Please try again or switch to All-Time.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +65,8 @@ export const DailySalesDrillthroughModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchDrilldown();
+      setActivePeriod(period);
+      fetchDrilldown(period);
     }
   }, [isOpen, product, period, start_date, end_date]);
 
@@ -73,6 +77,11 @@ export const DailySalesDrillthroughModal = ({
       ...prev,
       [dateStr]: !prev[dateStr]
     }));
+  };
+
+  const handlePeriodSwitch = (newPeriod) => {
+    setActivePeriod(newPeriod);
+    fetchDrilldown(newPeriod);
   };
 
   const handleExportCsv = () => {
@@ -101,14 +110,16 @@ export const DailySalesDrillthroughModal = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${product.name.replace(/[^a-zA-Z0-9]/g, '_')}_daily_sales_${period}.csv`);
+    link.setAttribute('download', `${(product.name || 'product').replace(/[^a-zA-Z0-9]/g, '_')}_daily_sales_${activePeriod}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const summary = drillData?.summary || {};
+  const productInfo = drillData?.product || product || {};
   const dailyBreakdown = drillData?.daily_breakdown || [];
+  const whitespaceOutlets = drillData?.whitespace_outlets || [];
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
@@ -123,19 +134,47 @@ export const DailySalesDrillthroughModal = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  {product?.sku}
+                  {productInfo.sku || product?.sku}
                 </span>
                 <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                  Power BI 2026 Drillthrough
+                  Power BI 2026 Chronological Drillthrough
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
-                {product?.name}
+                {productInfo.name || product?.name}
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Quick Horizon Toggles */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-bold">
+              <button
+                onClick={() => handlePeriodSwitch('30d')}
+                className={`px-2 py-1 rounded transition-all ${
+                  activePeriod === '30d' ? 'bg-amber-500 text-slate-950 font-black shadow-sm' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                30D
+              </button>
+              <button
+                onClick={() => handlePeriodSwitch('this_month')}
+                className={`px-2 py-1 rounded transition-all ${
+                  activePeriod === 'this_month' ? 'bg-amber-500 text-slate-950 font-black shadow-sm' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                This Month
+              </button>
+              <button
+                onClick={() => handlePeriodSwitch('all_time')}
+                className={`px-2 py-1 rounded transition-all ${
+                  activePeriod === 'all_time' ? 'bg-amber-500 text-slate-950 font-black shadow-sm' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                All Time
+              </button>
+            </div>
+
             <button
               onClick={handleExportCsv}
               disabled={loading || dailyBreakdown.length === 0}
@@ -156,37 +195,37 @@ export const DailySalesDrillthroughModal = ({
         {/* Executive Summary Metrics Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 sm:px-4 bg-slate-100/60 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 text-xs">
           <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Units Sold ({period}):</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Units Sold ({activePeriod}):</span>
             <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
-              {summary.total_units_sold || 0} pkts
+              {summary.total_units_sold !== undefined ? summary.total_units_sold : (product?.units_sold_30d || 0)} pkts
             </span>
           </div>
 
           <div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Weight Moved:</span>
             <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-sm">
-              ⚖️ {summary.total_kg_sold || 0} KG
+              ⚖️ {summary.total_kg_sold !== undefined ? summary.total_kg_sold : (product?.kg_sold || 0)} KG
             </span>
           </div>
 
           <div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Total Billed:</span>
             <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-sm">
-              ₹{Number(summary.total_revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+              ₹{Number(summary.total_revenue !== undefined ? summary.total_revenue : (product?.revenue_30d || 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </span>
           </div>
 
           <div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Net Profit (₹):</span>
             <span className="font-mono font-black text-indigo-600 dark:text-indigo-400 text-sm">
-              +₹{Number(summary.total_profit || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+              +₹{Number(summary.total_profit !== undefined ? summary.total_profit : (product?.profit_30d || 0)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </span>
           </div>
 
           <div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-sans">Gross Margin %:</span>
             <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
-              {summary.margin_pct || 0}%
+              {summary.margin_pct !== undefined ? summary.margin_pct : (product?.margin_pct || 0)}%
             </span>
           </div>
         </div>
@@ -199,16 +238,75 @@ export const DailySalesDrillthroughModal = ({
               <p className="text-xs font-mono">Aggregating chronological sales records from database...</p>
             </div>
           ) : error ? (
-            <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs text-center">
-              {error}
+            <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs text-center space-y-2">
+              <p>{error}</p>
+              <button
+                onClick={() => fetchDrilldown('all_time')}
+                className="px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold text-xs"
+              >
+                Try All-Time History
+              </button>
             </div>
           ) : dailyBreakdown.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
-              No sales recorded for {product?.name} in the selected time period ({period}).
+            <div className="p-6 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="text-center space-y-1">
+                <Package className="w-8 h-8 mx-auto text-slate-400 opacity-50" />
+                <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                  Zero sales recorded in the selected period ({activePeriod})
+                </h4>
+                <p className="text-xs text-slate-500 font-mono">
+                  This product has not been invoiced during this window. Current physical warehouse stock: <strong>{productInfo.current_stock || 0} pkts</strong> (₹{productInfo.stock_value || 0}).
+                </p>
+                {activePeriod !== 'all_time' && (
+                  <button
+                    onClick={() => handlePeriodSwitch('all_time')}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs shadow-md transition-all"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span>View All-Time Sales History</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Whitespace Outlets Pitch Section */}
+              {whitespaceOutlets.length > 0 && (
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                      <Store className="w-3.5 h-3.5" /> Untapped Whitespace Outlets ({whitespaceOutlets.length} non-buyers)
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">Direct Pitch Opportunity</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {whitespaceOutlets.slice(0, 6).map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="font-bold text-slate-900 dark:text-white truncate text-xs">{c.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{c.code} • {c.territory}</div>
+                        </div>
+                        {c.phone && (
+                          <a
+                            href={`https://wa.me/91${c.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${c.name}, we have wholesale stock of ${productInfo.name || 'this item'}. Would you like a sample or rate quote?`)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold flex items-center gap-1 shrink-0"
+                          >
+                            <Phone className="w-2.5 h-2.5" /> WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             dailyBreakdown.map((day) => {
-              const isExpanded = expandedDays[day.date] !== false; // default expanded
+              const isExpanded = expandedDays[day.date] !== false;
 
               return (
                 <div
@@ -319,7 +417,6 @@ export const DailySalesDrillthroughModal = ({
         </div>
       </div>
 
-      {/* Embedded Thermal / Invoice Slip Preview */}
       {previewInvoiceId && (
         <ThermalReceiptModal
           isOpen={!!previewInvoiceId}

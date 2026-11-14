@@ -476,10 +476,10 @@ def get_product_sales_drilldown(
             "created_at": inv.created_at.isoformat() if inv.created_at else inv_date_str,
             "status": inv.status,
             "customer_id": cust.id,
-            "customer_name": cust.name,
-            "customer_code": cust.code,
-            "customer_phone": cust.phone,
-            "territory": cust.territory or "General",
+            "customer_name": getattr(cust, "business_name", "Customer"),
+            "customer_code": getattr(cust, "customer_code", ""),
+            "customer_phone": getattr(cust, "phone", ""),
+            "territory": getattr(cust, "city", "General") or "General",
             "quantity": qty,
             "packaging_unit": item.packaging_unit or product.packaging_unit,
             "unit_price": float(item.unit_price),
@@ -496,10 +496,10 @@ def get_product_sales_drilldown(
         if cust.id not in buying_customers:
             buying_customers[cust.id] = {
                 "id": cust.id,
-                "code": cust.code,
-                "name": cust.name,
-                "phone": cust.phone,
-                "territory": cust.territory or "General",
+                "code": getattr(cust, "customer_code", ""),
+                "name": getattr(cust, "business_name", "Customer"),
+                "phone": getattr(cust, "phone", ""),
+                "territory": getattr(cust, "city", "General") or "General",
                 "total_units": 0.0,
                 "total_revenue": 0.0,
                 "orders_count": 0,
@@ -524,16 +524,16 @@ def get_product_sales_drilldown(
         daily_list.append(d_val)
 
     # Fetch active customers who have not bought this SKU in the period (Whitespace opportunity)
-    all_active_custs = db.query(Customer).filter(Customer.is_active == True).all()
+    all_active_custs = db.query(Customer).filter(Customer.status == "ACTIVE").all()
     buying_ids = set(buying_customers.keys())
     whitespace_customers = [
         {
             "id": c.id,
-            "code": c.code,
-            "name": c.name,
-            "phone": c.phone,
-            "territory": c.territory or "General",
-            "current_balance": float(c.current_balance_due or 0)
+            "code": getattr(c, "customer_code", ""),
+            "name": getattr(c, "business_name", "Customer"),
+            "phone": getattr(c, "phone", ""),
+            "territory": getattr(c, "city", "General") or "General",
+            "current_balance": float(getattr(c, "opening_balance", 0) or 0)
         }
         for c in all_active_custs if c.id not in buying_ids
     ]

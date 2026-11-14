@@ -14,15 +14,14 @@ import {
   RefreshCw,
   Scale,
   Compass,
-  PieChart,
-  ChevronDown,
-  ChevronUp
+  PieChart
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { StudioGlobalSlicerBar } from '../components/intelligence/StudioGlobalSlicerBar';
 import { PowerBIKpiCard } from '../components/intelligence/PowerBIKpiCard';
 import { CategoryParetoTreemap } from '../components/intelligence/CategoryParetoTreemap';
 import { MarginVelocityScatterPlot } from '../components/intelligence/MarginVelocityScatterPlot';
+import { SalesVelocityTrendChart } from '../components/intelligence/SalesVelocityTrendChart';
 import { HierarchicalMatrixTable } from '../components/intelligence/HierarchicalMatrixTable';
 import { MasterDetailDossier } from '../components/intelligence/MasterDetailDossier';
 import { DailySalesDrillthroughModal } from '../components/intelligence/DailySalesDrillthroughModal';
@@ -30,8 +29,8 @@ import { OutletPenetrationModal } from '../components/intelligence/OutletPenetra
 
 /**
  * IntelligenceStudioPage - Power BI 2026 Commercial Intelligence Studio
- * Zero-scrolling high-density executive analytics cockpit with view-mode switching,
- * compact KPI tiles, collapsible visual charts tray, and internal independent scrolling panes.
+ * Dual visual canvas, interactive category chiclets, hierarchical data bars,
+ * 360° dossier inspector, and reliable chronological daily sales drillthroughs.
  */
 export const IntelligenceStudioPage = ({
   onNavigate,
@@ -46,9 +45,8 @@ export const IntelligenceStudioPage = ({
   const [marginTier, setMarginTier] = useState('ALL');
   const [classificationFilter, setClassificationFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [metricMode, setMetricMode] = useState('revenue'); // 'revenue' | 'profit' | 'volume'
+  const [metricMode, setMetricMode] = useState('revenue');
   const [viewLayout, setViewLayout] = useState('COCKPIT'); // 'COCKPIT' | 'VISUALS' | 'TABLE'
-  const [showChartsTray, setShowChartsTray] = useState(false); // Collapsed by default to prevent vertical scrolling
 
   // Data Loading State
   const [loading, setLoading] = useState(true);
@@ -184,7 +182,7 @@ export const IntelligenceStudioPage = ({
   return (
     <div className="flex flex-col h-full w-full overflow-y-auto md:overflow-hidden gap-1.5 pb-20 md:pb-0 select-none animate-fadeIn">
       
-      {/* Top Header Bar: Title + Compact Live Stats (Zero-space wastage) */}
+      {/* Top Header Bar */}
       <div className="flex items-center justify-between gap-2 px-1 shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-1 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shadow-sm">
@@ -214,7 +212,7 @@ export const IntelligenceStudioPage = ({
         )}
       </div>
 
-      {/* STICKY UNIVERSAL SLICER BAR */}
+      {/* STICKY UNIVERSAL SLICER BAR (WITH VISUAL CATEGORY CHICLETS) */}
       <StudioGlobalSlicerBar
         period={period}
         onPeriodChange={setPeriod}
@@ -235,13 +233,11 @@ export const IntelligenceStudioPage = ({
         onMetricModeChange={setMetricMode}
         viewLayout={viewLayout}
         onViewLayoutChange={setViewLayout}
-        showChartsTray={showChartsTray}
-        onToggleChartsTray={() => setShowChartsTray(prev => !prev)}
         onRefresh={fetchStudioData}
         loading={loading}
       />
 
-      {/* COMPACT EXECUTIVE SCORECARD (Sleek 64px KPI Strip) */}
+      {/* EXECUTIVE SCORECARD (High-Density 64px KPI Strip) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 shrink-0">
         <PowerBIKpiCard
           title={`Revenue (${periodDisplay})`}
@@ -304,66 +300,47 @@ export const IntelligenceStudioPage = ({
         />
       </div>
 
-      {/* COLLAPSIBLE VISUALS TRAY (When enabled in Cockpit mode) */}
-      {viewLayout === 'COCKPIT' && showChartsTray && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 shrink-0 animate-fadeIn min-h-[220px]">
-          <div className="lg:col-span-6 h-[220px]">
-            <CategoryParetoTreemap
-              items={filteredItems}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              metricMode={metricMode}
-            />
-          </div>
-          <div className="lg:col-span-6 h-[220px]">
-            <MarginVelocityScatterPlot
-              items={filteredItems}
-              selectedProductId={selectedProduct?.product_id}
-              onSelectProduct={(prod) => setSelectedProduct(prod)}
-            />
-          </div>
-        </div>
-      )}
+      {/* MODE 1: VISUAL COCKPIT (Balanced 2-Column: Chart on Top, Data Below) */}
+      {viewLayout === 'COCKPIT' && (
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-y-auto lg:overflow-hidden">
+          {/* Left Column (7 cols): Treemap Chart on Top, Master Matrix Table Below */}
+          <div className="lg:col-span-7 flex flex-col gap-2 h-full min-h-0 overflow-hidden">
+            {/* Visual 1: Category Pareto Treemap */}
+            <div className="h-[210px] shrink-0">
+              <CategoryParetoTreemap
+                items={filteredItems}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                metricMode={metricMode}
+              />
+            </div>
 
-      {/* DEDICATED VISUALS MODE (Full-Height Treemap & BCG Scatter Plot without scrolling) */}
-      {viewLayout === 'VISUALS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden animate-fadeIn">
-          <div className="lg:col-span-6 h-full flex flex-col min-h-[300px]">
-            <CategoryParetoTreemap
-              items={filteredItems}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              metricMode={metricMode}
-            />
-          </div>
-          <div className="lg:col-span-6 h-full flex flex-col min-h-[300px]">
-            <MarginVelocityScatterPlot
-              items={filteredItems}
-              selectedProductId={selectedProduct?.product_id}
-              onSelectProduct={(prod) => setSelectedProduct(prod)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* MASTER-DETAIL SPLIT WORKSPACE (COCKPIT or TABLE Modes: Zero Window Scrolling) */}
-      {(viewLayout === 'COCKPIT' || viewLayout === 'TABLE') && (
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
-          {/* Left: Master Matrix Table (Scrolls independently with sticky header) */}
-          <div className={`${viewLayout === 'TABLE' ? 'lg:col-span-12' : 'lg:col-span-8'} h-full flex flex-col min-h-0 overflow-hidden`}>
-            <HierarchicalMatrixTable
-              items={filteredItems}
-              selectedProductId={selectedProduct?.product_id}
-              onSelectProduct={(prod) => setSelectedProduct(prod)}
-              onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
-              onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
-              periodLabel={periodDisplay}
-            />
+            {/* High-Density Matrix Table */}
+            <div className="flex-1 min-h-[320px] overflow-hidden">
+              <HierarchicalMatrixTable
+                items={filteredItems}
+                selectedProductId={selectedProduct?.product_id}
+                onSelectProduct={(prod) => setSelectedProduct(prod)}
+                onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
+                onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
+                periodLabel={periodDisplay}
+              />
+            </div>
           </div>
 
-          {/* Right: Master-Detail Contextual Dossier (Scrolls independently) */}
-          {viewLayout === 'COCKPIT' && (
-            <div className="lg:col-span-4 h-full flex flex-col min-h-0 overflow-hidden">
+          {/* Right Column (5 cols): BCG Scatter Plot on Top, Detail Dossier Below */}
+          <div className="lg:col-span-5 flex flex-col gap-2 h-full min-h-0 overflow-hidden">
+            {/* Visual 2: BCG Growth-Share & Velocity Matrix */}
+            <div className="h-[210px] shrink-0">
+              <MarginVelocityScatterPlot
+                items={filteredItems}
+                selectedProductId={selectedProduct?.product_id}
+                onSelectProduct={(prod) => setSelectedProduct(prod)}
+              />
+            </div>
+
+            {/* Contextual Master-Detail Dossier */}
+            <div className="flex-1 min-h-[320px] overflow-hidden">
               <MasterDetailDossier
                 product={selectedProduct}
                 onClose={() => setSelectedProduct(null)}
@@ -373,11 +350,58 @@ export const IntelligenceStudioPage = ({
                 periodLabel={periodDisplay}
               />
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* DRILLTHROUGH MODAL A: Chronological Daily Sales Lineage & Invoice Slips */}
+      {/* MODE 2: EXECUTIVE CHARTS MODE (Pure Visual Storytelling) */}
+      {viewLayout === 'VISUALS' && (
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-y-auto lg:overflow-hidden animate-fadeIn">
+          {/* Left: Category Treemap + Velocity Run-Rate Chart */}
+          <div className="lg:col-span-6 flex flex-col gap-2 h-full min-h-0">
+            <div className="flex-1 min-h-[220px]">
+              <CategoryParetoTreemap
+                items={filteredItems}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                metricMode={metricMode}
+              />
+            </div>
+            <div className="flex-1 min-h-[200px]">
+              <SalesVelocityTrendChart
+                items={filteredItems}
+                periodLabel={periodDisplay}
+                metricMode={metricMode}
+              />
+            </div>
+          </div>
+
+          {/* Right: BCG Scatter Matrix */}
+          <div className="lg:col-span-6 h-full flex flex-col min-h-[400px]">
+            <MarginVelocityScatterPlot
+              items={filteredItems}
+              selectedProductId={selectedProduct?.product_id}
+              onSelectProduct={(prod) => setSelectedProduct(prod)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* MODE 3: FULL GRID SPREADSHEET (Max Density Table Mode) */}
+      {viewLayout === 'TABLE' && (
+        <div className="flex-1 min-h-0 overflow-hidden animate-fadeIn">
+          <HierarchicalMatrixTable
+            items={filteredItems}
+            selectedProductId={selectedProduct?.product_id}
+            onSelectProduct={(prod) => setSelectedProduct(prod)}
+            onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
+            onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
+            periodLabel={periodDisplay}
+          />
+        </div>
+      )}
+
+      {/* DRILLTHROUGH MODAL A: Chronological Daily Sales Lineage & Invoices */}
       {drillthroughProduct && (
         <DailySalesDrillthroughModal
           isOpen={!!drillthroughProduct}
