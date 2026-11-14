@@ -23,7 +23,10 @@ import {
   AlertTriangle,
   Pencil,
   Share2,
-  ShieldCheck
+  ShieldCheck,
+  Scale,
+  Lock,
+  Package
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
@@ -736,8 +739,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                     onClick={() => handleSelectInvoice(inv)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/10'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
+                        ? 'bg-white dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/50 border-l-4 border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10'
+                        : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1 min-w-0">
@@ -761,24 +764,24 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                         <StatusBadge status={inv?.status} />
                       </div>
 
-                      <h4 className="font-bold text-white text-xs truncate mt-0.5">
+                      <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate mt-0.5">
                         {inv?.customer_name || 'Customer'}
                         {inv?.customer_contact && inv.customer_contact.toLowerCase() !== (inv.customer_name || '').toLowerCase() && (
-                          <span className="text-amber-300 font-semibold ml-1">({inv.customer_contact})</span>
+                          <span className="text-amber-700 dark:text-amber-300 font-semibold ml-1">({inv.customer_contact})</span>
                         )}
                       </h4>
 
                       {/* Items Preview Chip */}
                       {firstItemName ? (
                         <p className="text-[11px] text-amber-700 dark:text-amber-200/80 mt-0.5 flex items-center gap-1 font-mono min-w-0">
-                          <span className="text-slate-500 font-sans shrink-0">📦</span>
+                          <Package className="w-2.5 h-2.5 text-amber-500 shrink-0 inline" />
                           <span className="truncate flex-1 min-w-0">{firstItemName}</span>
                           {remainingItemsCount > 0 && (
                             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans shrink-0 whitespace-nowrap">+{remainingItemsCount} more</span>
                           )}
                         </p>
                       ) : (
-                        <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate mt-0.5">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                           {formatInvoiceDateTime(inv?.invoice_date, inv?.created_at).fullText} • {inv?.items_count || 0} line items
                         </p>
                       )}
@@ -786,15 +789,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
-                        <div className="font-mono font-bold text-xs text-white">
+                        <div className="font-mono font-bold text-xs text-slate-900 dark:text-white">
                           ₹{parseFloat(total || 0).toFixed(2)}
                         </div>
-                        <span className={`text-[11px] font-mono block ${outstanding > 0 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
+                        <span className={`text-[11px] font-mono block ${outstanding > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
                           Due: ₹{parseFloat(outstanding || 0).toFixed(2)}
                         </span>
                         {hasRole(['ADMIN', 'OPERATOR']) && inv?.gross_profit !== undefined && inv?.gross_profit !== null && (
                           <span 
-                            className="text-[9px] font-mono font-bold text-purple-300 bg-purple-950/70 border border-purple-500/30 px-1 py-0.2 rounded block mt-0.5"
+                            className="text-[9px] font-mono font-bold text-indigo-700 dark:text-purple-300 bg-indigo-50 dark:bg-purple-950/70 border border-indigo-200 dark:border-purple-500/30 px-1 py-0.2 rounded block mt-0.5"
                             title={`Procurement COGS: ₹${parseFloat(inv?.cogs || 0).toFixed(2)}`}
                           >
                             Profit: ₹{parseFloat(inv?.gross_profit || 0).toFixed(0)} ({parseFloat(inv?.gross_margin_pct || 0).toFixed(1)}%)
@@ -811,7 +814,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                           setSelectedInvoiceDetails(inv);
                           setThermalModalOpen(true);
                         }}
-                        className="p-1 rounded-lg bg-slate-800/80 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-700/50 transition opacity-80 group-hover:opacity-100"
+                        className="p-1 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 border border-slate-200 dark:bg-slate-800/80 dark:hover:bg-amber-500/20 dark:text-slate-400 dark:hover:text-amber-400 dark:border-slate-700/50 transition opacity-80 group-hover:opacity-100"
                         title="Print 58mm Thermal Slip"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -867,7 +870,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                     {/* Thermal Slip */}
                     <button
                       onClick={() => setThermalModalOpen(true)}
-                      className="h-8 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shadow-blue-600/20"
+                      className="h-8 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
                       title="Print 58mm Thermal Slip"
                     >
                       <Printer className="w-3.5 h-3.5" />
@@ -887,7 +890,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                     {/* Share Image Card (PNG Attachment) */}
                     <button
                       onClick={() => handleShareInvoiceImage(selectedInvoice)}
-                      className="h-8 px-2.5 bg-slate-800 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                      className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
                       title="Share High-Resolution PNG Receipt Card"
                     >
                       <Share2 className="w-3.5 h-3.5" />
@@ -899,7 +902,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                       href={billingApi.getPrintHtmlUrl(selectedInvoice.id)}
                       target="_blank"
                       rel="noreferrer"
-                      className="h-8 px-2.5 flex items-center justify-center text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-bold transition-colors"
+                      className="h-8 px-2.5 flex items-center justify-center text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 dark:text-slate-300 dark:hover:text-white dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 rounded-lg text-xs font-bold transition-colors"
                       title="Standard A4 Tax Invoice PDF"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -912,7 +915,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                           setInvoiceToEdit(selectedInvoiceDetails || selectedInvoice);
                           setEditInvoiceModalOpen(true);
                         }}
-                        className="h-8 px-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                        className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-amber-700 border border-slate-300 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 dark:text-amber-300 dark:border-amber-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
                         title="Edit Customer, Line Items, or Quantities"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -927,7 +930,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                           setInvoiceToDelete(selectedInvoice);
                           setDeleteModalOpen(true);
                         }}
-                        className="h-8 px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center"
+                        className="h-8 px-2.5 bg-slate-100 hover:bg-rose-50 text-rose-600 border border-slate-300 hover:border-rose-300 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30 rounded-lg text-xs font-bold transition-all active:scale-95 flex items-center justify-center"
                         title="Delete Invoice & Restore Stock"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -939,10 +942,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                 {/* Bottom Row: Customer Name & Meta Context */}
                 <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
                   <div>
-                    <h2 className="text-sm sm:text-base font-black text-white leading-tight">
+                    <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
                       {selectedInvoice.customer_name}
                       {selectedInvoice.customer_contact && selectedInvoice.customer_contact.toLowerCase() !== (selectedInvoice.customer_name || '').toLowerCase() && (
-                        <span className="text-amber-300 font-bold ml-1.5">({selectedInvoice.customer_contact})</span>
+                        <span className="text-amber-700 dark:text-amber-300 font-bold ml-1.5">({selectedInvoice.customer_contact})</span>
                       )}
                     </h2>
                     <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
@@ -967,7 +970,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               </div>
 
               {/* Inspector Tab Bar */}
-              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-800/80 shrink-0">
+              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
                 {[
                   { id: 'items', label: 'Itemized Line Items', icon: FileText },
                   { id: 'payment', label: 'Settlement & Ledger', icon: CreditCard },
@@ -981,8 +984,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                       onClick={() => setActiveInspectorTab(tab.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                         isActive
-                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                       }`}
                     >
                       <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
@@ -1052,31 +1055,32 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                         </div>
 
                         {/* Invoice Pricing Summary Banner (Explicit Total, Weight, Paid, and Balance Due) */}
-                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs shadow-inner">
+                        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs shadow-xs">
                           <div>
                             <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Invoiced</span>
-                            <span className="text-sm sm:text-base font-black text-amber-400 font-mono">
+                            <span className="text-sm sm:text-base font-black text-slate-900 dark:text-amber-400 font-mono">
                               ₹{parseFloat(selectedInvoice.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
 
                           <div>
                             <span className="text-[10px] text-slate-500 uppercase font-bold block">Dispatch Weight</span>
-                            <span className="text-sm sm:text-base font-bold text-amber-300 font-mono">
-                              ⚖️ {selectedInvoiceTotalKg > 0 ? `${selectedInvoiceTotalKg.toFixed(1)} KG` : '—'}
+                            <span className="text-sm sm:text-base font-bold text-slate-700 dark:text-amber-300 font-mono flex items-center gap-1">
+                              <Scale className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span>{selectedInvoiceTotalKg > 0 ? `${selectedInvoiceTotalKg.toFixed(1)} KG` : '—'}</span>
                             </span>
                           </div>
 
                           <div>
                             <span className="text-[10px] text-slate-500 uppercase font-bold block">Amount Paid</span>
-                            <span className="text-sm sm:text-base font-bold text-emerald-400 font-mono">
+                            <span className="text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-400 font-mono">
                               ₹{parseFloat(selectedInvoice.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
 
                           <div className="sm:text-right">
                             <span className="text-[10px] text-slate-500 uppercase font-bold block">Balance Due</span>
-                            <span className={`text-sm sm:text-base font-black font-mono ${parseFloat(selectedInvoice.outstanding_amount || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            <span className={`text-sm sm:text-base font-black font-mono ${parseFloat(selectedInvoice.outstanding_amount || 0) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                               ₹{parseFloat(selectedInvoice.outstanding_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
@@ -1084,15 +1088,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
                         {/* Internal Commercial Economics (Admin & Operator Only) */}
                         {hasRole(['ADMIN', 'OPERATOR']) && selectedInvoice.gross_profit !== undefined && selectedInvoice.gross_profit !== null && (
-                          <div className="bg-purple-950/20 border border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 text-purple-300 font-bold">
-                              <span className="text-xs">🔒</span>
+                          <div className="bg-indigo-50/70 dark:bg-purple-950/20 border border-indigo-200 dark:border-purple-500/30 rounded-xl p-2.5 flex items-center justify-between flex-wrap gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-indigo-700 dark:text-purple-300 font-bold">
+                              <Lock className="w-3 h-3 text-indigo-600 dark:text-purple-300 shrink-0" />
                               <span className="text-[10px] uppercase tracking-wider font-bold">Internal Profit & Economics (Admin Only)</span>
                             </div>
                             <div className="flex items-center gap-3 font-mono text-xs flex-wrap">
-                              <span className="text-slate-400">COGS: <strong className="text-slate-200">₹{parseFloat(selectedInvoice.cogs || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
-                              <span className="text-purple-300">Gross Profit: <strong className="text-purple-200 text-sm font-bold">₹{parseFloat(selectedInvoice.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
-                              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-200 rounded font-black border border-purple-400/40 text-[11px]">
+                              <span className="text-slate-500 dark:text-slate-400">COGS: <strong className="text-slate-700 dark:text-slate-200">₹{parseFloat(selectedInvoice.cogs || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              <span className="text-indigo-700 dark:text-purple-300">Gross Profit: <strong className="text-indigo-900 dark:text-purple-200 text-sm font-bold">₹{parseFloat(selectedInvoice.gross_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+                              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 dark:bg-purple-500/20 dark:text-purple-200 rounded font-black border border-indigo-300 dark:border-purple-400/40 text-[11px]">
                                 {parseFloat(selectedInvoice.gross_margin_pct || 0).toFixed(1)}% Margin
                               </span>
                             </div>

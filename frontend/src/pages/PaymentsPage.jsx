@@ -867,8 +867,8 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                     }}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
-                        ? 'bg-emerald-500/10 border-emerald-500/50 shadow-md shadow-emerald-500/10'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
+                        ? 'bg-white dark:bg-emerald-500/10 border-slate-300 dark:border-emerald-500/50 border-l-4 border-l-emerald-500 shadow-sm dark:shadow-md dark:shadow-emerald-500/10'
+                        : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1 min-w-0">
@@ -893,10 +893,10 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                           {p?.payment_method || 'CASH'}
                         </span>
                       </div>
-                      <h4 className="font-bold text-white text-xs truncate mt-0.5">
+                      <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate mt-0.5">
                         {p?.customer_name || 'Customer'}
                         {p?.customer_contact && p.customer_contact.toLowerCase() !== (p.customer_name || '').toLowerCase() && (
-                          <span className="text-amber-300 font-semibold ml-1">({p.customer_contact})</span>
+                          <span className="text-amber-700 dark:text-amber-300 font-semibold ml-1">({p.customer_contact})</span>
                         )}
                       </h4>
                       {(() => {
@@ -926,8 +926,9 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                           +₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                         {parseFloat(p?.discount_amount || 0) > 0 && (
-                          <span className="text-[9px] text-amber-400 font-bold block font-mono">
-                            🏷️ -₹{parseFloat(p.discount_amount).toFixed(2)} disc
+                          <span className="text-[9px] text-amber-700 dark:text-amber-400 font-bold block font-mono flex items-center justify-end gap-0.5">
+                            <Tag className="w-2.5 h-2.5 text-amber-500 shrink-0 inline" />
+                            <span>-₹{parseFloat(p.discount_amount).toFixed(2)} disc</span>
                           </span>
                         )}
                         {unallocated > 0.01 ? (
@@ -1060,41 +1061,41 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       )}
                     </div>
                     
-                    <h2 className="text-base sm:text-lg font-black text-white mt-1.5 leading-snug break-words">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1.5 leading-snug break-words">
                       {selectedPayment.customer_name}
                       {selectedPayment.customer_contact && selectedPayment.customer_contact.toLowerCase() !== (selectedPayment.customer_name || '').toLowerCase() && (
-                        <span className="text-amber-300 font-semibold text-sm ml-1.5">({selectedPayment.customer_contact})</span>
+                        <span className="text-amber-700 dark:text-amber-300 font-semibold text-sm ml-1.5">({selectedPayment.customer_contact})</span>
                       )}
                     </h2>
                   </div>
 
                   {/* Settled Amount Card */}
-                  <div className="text-right shrink-0 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
+                  <div className="text-right shrink-0 bg-slate-50 dark:bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Settled Amount</span>
-                    <div className="text-base sm:text-lg font-black font-mono text-emerald-400">
+                    <div className="text-base sm:text-lg font-black font-mono text-emerald-700 dark:text-emerald-400">
                       ₹{parseFloat(selectedPayment.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
 
                 {/* Row 2: Dedicated Action Toolbar (Spacious, grouped, never crowds the header) */}
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/60 flex-wrap">
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800/60 flex-wrap">
                   {/* Share & Export Tools */}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <button
                       type="button"
                       onClick={() => handleSendWhatsAppReceipt(selectedPayment)}
-                      className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                      className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:hover:text-white border border-emerald-600 dark:border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 whitespace-nowrap"
                       title="Send Receipt via WhatsApp to Customer"
                     >
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                      <MessageSquare className="w-3.5 h-3.5 text-white dark:text-emerald-400" />
                       <span>WhatsApp</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleSharePaymentImage(selectedPayment)}
-                      className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-emerald-950/60 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 dark:bg-slate-800/80 dark:hover:bg-emerald-950/60 dark:text-emerald-400 dark:hover:text-emerald-300 dark:border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
                       title="Share High-Res PNG Receipt Card"
                     >
                       <Share2 className="w-3.5 h-3.5" />
@@ -1104,10 +1105,10 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                     <button
                       type="button"
                       onClick={() => handlePrintVoucher(selectedPayment)}
-                      className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:hover:text-white dark:border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
                       title="Print / Save PDF Voucher"
                     >
-                      <Printer className="w-3.5 h-3.5 text-blue-400" />
+                      <Printer className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                       <span>Print Voucher</span>
                     </button>
                   </div>
@@ -1118,10 +1119,10 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => onOpenPaymentModal && onOpenPaymentModal({ id: selectedPayment.customer_id, business_name: selectedPayment.customer_name }, null)}
-                        className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                        className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-300 dark:hover:text-emerald-200 dark:border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
                         title={`Collect New Payment for ${selectedPayment.customer_name}`}
                       >
-                        <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                        <PlusCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>+ Collect</span>
                       </button>
                     )}
@@ -1129,17 +1130,17 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                     <button
                       type="button"
                       onClick={() => setEditingPayment(selectedPayment)}
-                      className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-amber-700 border border-slate-300 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 dark:text-amber-300 dark:hover:text-amber-200 dark:border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap"
                       title="Edit Payment Voucher"
                     >
-                      <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                      <Pencil className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                       <span>Edit</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => openDeleteModal(selectedPayment)}
-                      className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold flex items-center justify-center transition-all active:scale-95"
+                      className="p-1.5 bg-slate-100 hover:bg-rose-50 text-rose-600 border border-slate-300 hover:border-rose-300 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 dark:hover:text-rose-300 dark:border-rose-500/30 rounded-xl text-xs font-bold flex items-center justify-center transition-all active:scale-95"
                       title="Delete / Reverse Payment"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1149,7 +1150,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
               </div>
 
               {/* Inspector Tab Bar */}
-              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-200 dark:border-slate-800/80 shrink-0 overflow-x-auto no-scrollbar">
                 {[
                   { id: 'metadata', label: 'Voucher Details', icon: CreditCard },
                   { id: 'allocations', label: `Allocations (${selectedPayment.allocations?.length || 0})`, icon: FileText },
@@ -1163,11 +1164,11 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
                       onClick={() => setActiveInspectorTab(tab.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                         isActive
-                          ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          ? 'bg-emerald-600 text-white font-black shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                       }`}
                     >
-                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                       <span>{tab.label}</span>
                     </button>
                   );

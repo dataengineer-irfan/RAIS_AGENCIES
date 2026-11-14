@@ -556,20 +556,20 @@ export const ReportsPage = ({ onNavigate }) => {
                     </div>
 
                     {/* Aging Buckets Micro-Pills */}
-                    <div className="grid grid-cols-4 gap-1 text-center font-mono text-[10px] pt-1 border-t border-slate-900">
-                      <div className="bg-slate-900/90 rounded p-1">
+                    <div className="grid grid-cols-4 gap-1 text-center font-mono text-[10px] pt-1 border-t border-slate-200 dark:border-slate-900">
+                      <div className="bg-slate-100 dark:bg-slate-900/90 rounded p-1 border border-slate-200 dark:border-transparent">
                         <span className="text-[8px] text-slate-500 block">0–15d</span>
-                        <span className="text-slate-300 font-bold">₹{c0_15.toFixed(0)}</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-bold">₹{c0_15.toFixed(0)}</span>
                       </div>
-                      <div className="bg-slate-900/90 rounded p-1">
+                      <div className="bg-slate-100 dark:bg-slate-900/90 rounded p-1 border border-slate-200 dark:border-transparent">
                         <span className="text-[8px] text-slate-500 block">16–30d</span>
-                        <span className="text-slate-300 font-bold">₹{c16_30.toFixed(0)}</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-bold">₹{c16_30.toFixed(0)}</span>
                       </div>
-                      <div className="bg-slate-900/90 rounded p-1">
+                      <div className="bg-slate-100 dark:bg-slate-900/90 rounded p-1 border border-slate-200 dark:border-transparent">
                         <span className="text-[8px] text-slate-500 block">31–60d</span>
-                        <span className="text-amber-400 font-bold">₹{c31_60.toFixed(0)}</span>
+                        <span className="text-amber-700 dark:text-amber-400 font-bold">₹{c31_60.toFixed(0)}</span>
                       </div>
-                      <div className={`rounded p-1 ${isSevere ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-900/90 text-slate-500'}`}>
+                      <div className={`rounded p-1 border ${isSevere ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-transparent' : 'bg-slate-100 dark:bg-slate-900/90 text-slate-600 dark:text-slate-500 border-slate-200 dark:border-transparent'}`}>
                         <span className="text-[8px] block opacity-75">60+d</span>
                         <span className="font-bold">₹{c60_plus.toFixed(0)}</span>
                       </div>

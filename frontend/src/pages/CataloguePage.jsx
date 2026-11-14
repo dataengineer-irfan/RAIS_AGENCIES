@@ -247,7 +247,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               <Package className="w-4 h-4" />
             </div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-black text-white whitespace-nowrap">
+              <h1 className="text-sm font-black text-slate-900 dark:text-white whitespace-nowrap">
                 Product Catalogue
               </h1>
               <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
@@ -259,11 +259,11 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
           {/* Right: Action Launchers (Clean, Spaced, No Overlap) */}
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             {/* View Toggle */}
-            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-0.5">
               <button
                 onClick={() => setViewMode('matrix')}
                 className={`p-1.5 rounded-lg transition-all ${
-                  viewMode === 'matrix' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  viewMode === 'matrix' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="List / Matrix View"
               >
@@ -272,7 +272,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded-lg transition-all ${
-                  viewMode === 'grid' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  viewMode === 'grid' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Cards Grid View"
               >
@@ -303,7 +303,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
             <button
               onClick={() => setPriceListModalOpen(true)}
-              className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs"
               title="WhatsApp Wholesale Price List"
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -312,7 +312,7 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
 
             <button
               onClick={() => setFlyerModalOpen(true)}
-              className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-blue-700 border border-slate-300 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs"
               title="Official PDF Price Flyer"
             >
               <FileImage className="w-3.5 h-3.5" />
@@ -323,19 +323,19 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
               href="/catalogue.html"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-sm"
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-amber-700 border border-slate-300 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 dark:text-amber-300 dark:border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs"
               title="Open Public Customer Photo Catalogue (Photos & Pack Sizes)"
             >
-              <Globe className="w-3.5 h-3.5 text-amber-400" />
+              <Globe className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span className="hidden sm:inline">Photo Catalogue</span>
-              <ExternalLink className="w-3 h-3 text-amber-400/80" />
+              <ExternalLink className="w-3 h-3 text-amber-500/80 dark:text-amber-400/80" />
             </a>
 
             {hasRole(['ADMIN', 'OPERATOR']) && (
               <>
                 <button
                   onClick={() => setBulkPriceModalOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all shrink-0"
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-indigo-700 border border-slate-300 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 dark:text-purple-300 dark:border-purple-500/30 rounded-xl text-xs font-bold transition-all shrink-0 shadow-xs"
                   title="Category Bulk Wholesale Price Adjuster"
                 >
                   <Tag className="w-3.5 h-3.5" />
@@ -946,44 +946,44 @@ export const CataloguePage = ({ onOpenOrderForProduct }) => {
             {filteredProducts.map(prod => (
               <div 
                 key={prod.id}
-                className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/40 transition-all group"
+                className="bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-between hover:border-amber-500/40 hover:shadow-sm transition-all group"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700 shadow-xs tracking-wide">
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-amber-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 shadow-xs tracking-wide">
                       {prod.sku}
                     </span>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{prod.brand || 'RAIS'}</span>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{prod.brand || 'RAIS'}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5 min-w-0">
                     <ProductVisualBadge product={prod} size="sm" />
-                    <h4 className="font-bold text-white text-xs truncate group-hover:text-amber-300">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate group-hover:text-amber-600 dark:group-hover:text-amber-300">
                       {prod.name}
                     </h4>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{prod.category_name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{prod.category_name}</p>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] text-slate-400 uppercase font-bold block">Base Rate</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Base Rate</span>
                     <button
                       type="button"
                       onClick={() => hasRole(['ADMIN', 'OPERATOR']) && setQuickPriceProduct(prod)}
-                      className="inline-flex items-center gap-1 group/price hover:text-amber-300 transition-colors text-left"
+                      className="inline-flex items-center gap-1 group/price hover:text-amber-600 dark:hover:text-amber-300 transition-colors text-left"
                       title="1-Tap Quick Price Tweak"
                     >
-                      <span className="text-sm font-extrabold text-amber-400 font-mono group-hover/price:underline">
+                      <span className="text-sm font-extrabold text-amber-600 dark:text-amber-400 font-mono group-hover/price:underline">
                         ₹{parseFloat(prod.base_price || 0).toFixed(2)}
                       </span>
                       {hasRole(['ADMIN', 'OPERATOR']) && (
-                        <Edit3 className="w-3.5 h-3.5 text-slate-400 group-hover/price:text-amber-400" />
+                        <Edit3 className="w-3.5 h-3.5 text-slate-400 group-hover/price:text-amber-500" />
                       )}
                     </button>
                   </div>
                   <div className="text-right">
-                    <span className="text-[11px] text-slate-400 uppercase font-bold block">Stock</span>
-                    <span className="text-xs font-bold text-slate-200 font-mono">{prod.current_stock || 0} pk</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Stock</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-200 font-mono">{prod.current_stock || 0} pk</span>
                   </div>
                 </div>
               </div>

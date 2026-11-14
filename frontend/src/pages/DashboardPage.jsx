@@ -22,7 +22,9 @@ import {
   Filter as FilterIcon,
   Search,
   Copy,
-  Check
+  Check,
+  Banknote,
+  Smartphone
 } from 'lucide-react';
 import { reportApi, customerApi, catalogueApi, billingApi, getLocalCachedSnapshot } from '../services/api';
 import { copyToClipboard } from '../utils/mobileHelpers';
@@ -1095,7 +1097,7 @@ export const DashboardPage = ({
                       {activeBillsCount} Bills ↗
                     </button>
                   </div>
-                  <p className="text-sm lg:text-base font-bold text-white mt-1 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-slate-900 dark:text-white mt-1 font-mono truncate">
                     ₹{activeRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -1123,9 +1125,15 @@ export const DashboardPage = ({
                     ₹{activeCollections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-[10px] font-mono mt-1.5 pt-1 border-t border-slate-800/80 text-slate-400">
-                  <span className="text-emerald-300 font-semibold truncate">💵 ₹{activeCash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                  <span className="text-blue-300 font-semibold truncate">📱 ₹{activeUpi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <div className="flex items-center justify-between text-[10px] font-mono mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-800/80 text-slate-500 dark:text-slate-400">
+                  <span className="text-emerald-700 dark:text-emerald-300 font-semibold truncate flex items-center gap-0.5">
+                    <Banknote className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>₹{activeCash.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  </span>
+                  <span className="text-blue-700 dark:text-blue-300 font-semibold truncate flex items-center gap-0.5">
+                    <Smartphone className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>₹{activeUpi.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  </span>
                 </div>
               </div>
 
@@ -1156,22 +1164,22 @@ export const DashboardPage = ({
               {/* Card 4: Overall Profit */}
               <div 
                 onClick={() => openDrilldown('profit', 'Gross Profit & Margins Deep-Dive', filters.dateRange === 'today' ? 'this_month' : (filters.dateRange || 'this_month'))}
-                className="bg-slate-900 p-2.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500/70 shadow-sm transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
+                className="bg-indigo-50/40 dark:bg-slate-900 p-2.5 rounded-xl border border-indigo-200 dark:border-emerald-500/30 hover:border-indigo-400 dark:hover:border-emerald-500/70 shadow-xs transition-all hover:scale-[1.01] cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Overall Profit</span>
-                    <div className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <span className="text-[11px] font-semibold text-indigo-700 dark:text-emerald-400 uppercase tracking-wider">Overall Profit</span>
+                    <div className="w-5 h-5 rounded-lg bg-indigo-100 dark:bg-emerald-500/10 text-indigo-700 dark:text-emerald-400 flex items-center justify-center">
                       <TrendingUp className="w-3 h-3" />
                     </div>
                   </div>
-                  <p className="text-sm lg:text-base font-bold text-emerald-400 mt-1 font-mono truncate">
+                  <p className="text-sm lg:text-base font-bold text-indigo-700 dark:text-emerald-400 mt-1 font-mono truncate">
                     ₹{profitVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-emerald-500/90 mt-1.5 pt-1 border-t border-slate-800/80 font-medium">
-                  <MiniSparkline data={profitTrend} color="emerald" width={44} height={14} />
-                  <span className="font-semibold text-emerald-400 text-[10px]">Net Pos</span>
+                <div className="flex items-center justify-between text-[10px] text-indigo-600/90 dark:text-emerald-500/90 mt-1.5 pt-1 border-t border-indigo-100 dark:border-slate-800/80 font-medium">
+                  <MiniSparkline data={profitTrend} color="indigo" width={44} height={14} />
+                  <span className="font-semibold text-indigo-700 dark:text-emerald-400 text-[10px]">Net Pos</span>
                 </div>
               </div>
 

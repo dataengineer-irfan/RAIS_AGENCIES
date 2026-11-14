@@ -1053,8 +1053,8 @@ export const InventoryPage = () => {
                     onClick={() => handleSelectProduct(item)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none relative group ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-500/40'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-800/50 hover:border-slate-700'
+                        ? 'bg-white dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/60 border-l-4 border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10 dark:ring-1 dark:ring-amber-500/40'
+                        : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     {/* Top Row: SKU & Zone */}
@@ -1073,14 +1073,14 @@ export const InventoryPage = () => {
                           <ZoneIcon className="w-2.5 h-2.5" />
                           <span className="hidden sm:inline">{zone.id === 'DEEP_FREEZE' ? '-18°C' : zone.id === 'CHILLER' ? '0-4°C' : 'Dry'}</span>
                         </span>
-                        <span className="text-xs font-mono font-black text-slate-200">
+                        <span className="text-xs font-mono font-black text-slate-900 dark:text-slate-200">
                           {stock.toLocaleString('en-IN')} <span className="text-[10px] font-normal text-slate-500">pk</span>
                         </span>
                       </div>
                     </div>
 
                     {/* Middle Row: Product Name */}
-                    <h4 className="font-bold text-white text-xs line-clamp-1 group-hover:text-amber-300 transition-colors">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-xs line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
                       {item.name}
                     </h4>
 
@@ -1146,7 +1146,7 @@ export const InventoryPage = () => {
                         </span>
                       )}
                     </div>
-                    <h2 className="text-base sm:text-lg font-black text-white mt-1 leading-snug">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1 leading-snug">
                       {selectedProduct.name}
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -1175,7 +1175,7 @@ export const InventoryPage = () => {
                             setTargetProductForAction(selectedProduct.product_id);
                             setAdjustModalOpen(true);
                           }}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs uppercase tracking-wider transition-all"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-transparent font-bold rounded-lg text-xs uppercase tracking-wider transition-all"
                           title="Record Count Reconciliation / Damage"
                         >
                           <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -1189,7 +1189,7 @@ export const InventoryPage = () => {
                         setSelectedProductId(selectedProduct.product_id);
                         setMovementsDrawerOpen(true);
                       }}
-                      className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg text-xs font-bold transition-all"
+                      className="p-2 bg-slate-100 hover:bg-slate-200 text-amber-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-400 dark:border-transparent rounded-lg text-xs font-bold transition-all"
                       title="Full Screen Movement Audit Trail"
                     >
                       <History className="w-3.5 h-3.5" />
@@ -1198,13 +1198,13 @@ export const InventoryPage = () => {
                 </div>
 
                 {/* 4 Inspector Tabs */}
-                <div className="flex items-center gap-1.5 sm:gap-2 mt-3 pt-2 border-t border-slate-800/80 overflow-x-auto custom-scrollbar shrink-0 pb-1 pr-6">
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800/80 overflow-x-auto custom-scrollbar shrink-0 pb-1 pr-6">
                   <button
                     onClick={() => setActiveInspectorTab('dossier')}
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'dossier'
                         ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <Boxes className="w-3.5 h-3.5" />
@@ -1216,7 +1216,7 @@ export const InventoryPage = () => {
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'lineage'
                         ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <History className="w-3.5 h-3.5" />
@@ -1228,7 +1228,7 @@ export const InventoryPage = () => {
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'velocity'
                         ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <TrendingUp className="w-3.5 h-3.5" />
@@ -1240,13 +1240,13 @@ export const InventoryPage = () => {
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                       activeInspectorTab === 'radar'
                         ? 'bg-amber-500 text-slate-950 shadow-sm font-black ring-1 ring-amber-400/50'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                    <Target className="w-3.5 h-3.5 text-amber-500" />
                     <span>Demand Radar</span>
                     {(demandRadarData?.summary?.identified_procurement_gaps || 0) > 0 && (
-                      <span className="whitespace-nowrap shrink-0 px-1.5 py-0.5 bg-slate-950 text-amber-400 rounded-full text-[9px] font-black border border-amber-400/30">
+                      <span className="whitespace-nowrap shrink-0 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-950 text-amber-700 dark:text-amber-400 rounded-full text-[9px] font-black border border-slate-200 dark:border-amber-400/30">
                         {demandRadarData.summary.identified_procurement_gaps}
                       </span>
                     )}

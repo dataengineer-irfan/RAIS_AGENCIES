@@ -442,8 +442,8 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                     onClick={() => handleSelectOrder(ord)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/10'
-                        : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
+                        ? 'bg-white dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/50 border-l-4 border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10'
+                        : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="overflow-hidden pr-2 flex-1 min-w-0">
@@ -467,20 +467,20 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                         <StatusBadge status={ord.status} />
                       </div>
 
-                      <h4 className="font-bold text-white text-xs truncate mt-0.5">
+                      <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate mt-0.5">
                         {ord.customer_name}
                         {ord.customer_contact && ord.customer_contact.toLowerCase() !== (ord.customer_name || '').toLowerCase() && (
-                          <span className="text-amber-300 font-semibold ml-1">({ord.customer_contact})</span>
+                          <span className="text-amber-700 dark:text-amber-300 font-semibold ml-1">({ord.customer_contact})</span>
                         )}
                       </h4>
 
                       {/* Items Preview Chip */}
                       {firstItemName ? (
-                        <p className="text-[11px] text-amber-200/80 truncate mt-0.5 flex items-center gap-1 font-mono">
-                          <span className="text-slate-500 font-sans">📦</span>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-200/80 truncate mt-0.5 flex items-center gap-1 font-mono">
+                          <Package className="w-2.5 h-2.5 text-amber-500 inline mr-0.5 shrink-0" />
                           <span>{firstItemName}</span>
                           {remainingItemsCount > 0 && (
-                            <span className="text-[10px] text-slate-400 font-sans">+{remainingItemsCount} more</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">+{remainingItemsCount} more</span>
                           )}
                         </p>
                       ) : (
@@ -492,7 +492,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
 
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
-                        <div className="font-mono font-black text-xs text-white">
+                        <div className="font-mono font-black text-xs text-slate-900 dark:text-white">
                           ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </div>
                         <span className="text-[9px] text-slate-500 block">
@@ -570,10 +570,10 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                     </span>
                     <StatusBadge status={selectedOrder.status} />
                   </div>
-                  <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1">
                     {selectedOrder.customer_name}
                     {selectedOrder.customer_contact && selectedOrder.customer_contact.toLowerCase() !== (selectedOrder.customer_name || '').toLowerCase() && (
-                      <span className="text-amber-300 font-bold ml-1.5">({selectedOrder.customer_contact})</span>
+                      <span className="text-amber-700 dark:text-amber-300 font-bold ml-1.5">({selectedOrder.customer_contact})</span>
                     )}
                   </h2>
                   <p className="text-xs text-slate-400">
@@ -596,14 +596,14 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                   )}
                   <button
                     onClick={() => handlePrintOrder(selectedOrder)}
-                    className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-bold transition-all"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-blue-600/20 dark:hover:bg-blue-600/30 dark:text-blue-300 dark:border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-xs"
                     title="Print / Save PDF Order Slip"
                   >
                     <Printer className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleSendWhatsAppConfirmation(selectedOrder)}
-                    className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/30 rounded-xl text-xs font-bold transition-all shadow-xs"
                     title="Send WhatsApp Confirmation"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -612,7 +612,7 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
               </div>
 
               {/* Inspector Tab Bar */}
-              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-800/80 shrink-0">
+              <div className="flex items-center gap-1.5 pt-2 pb-3 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
                 {[
                   { id: 'items', label: 'Itemized Line Items', icon: Package },
                   { id: 'details', label: 'Booking & Delivery Info', icon: Calendar },
@@ -626,8 +626,8 @@ export const OrdersPage = ({ onOpenBillingForInvoice }) => {
                       onClick={() => setActiveInspectorTab(tab.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                         isActive
-                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                       }`}
                     >
                       <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-slate-950' : 'text-slate-400'}`} />
