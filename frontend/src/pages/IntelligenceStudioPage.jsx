@@ -13,7 +13,10 @@ import {
   Download, 
   RefreshCw,
   Scale,
-  Compass
+  Compass,
+  PieChart,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { StudioGlobalSlicerBar } from '../components/intelligence/StudioGlobalSlicerBar';
@@ -27,8 +30,8 @@ import { OutletPenetrationModal } from '../components/intelligence/OutletPenetra
 
 /**
  * IntelligenceStudioPage - Power BI 2026 Commercial Intelligence Studio
- * Unified executive analytics cockpit with dual visual canvas, conditional formatting matrix,
- * master-detail progressive disclosure, and granular daily drillthroughs.
+ * Zero-scrolling high-density executive analytics cockpit with view-mode switching,
+ * compact KPI tiles, collapsible visual charts tray, and internal independent scrolling panes.
  */
 export const IntelligenceStudioPage = ({
   onNavigate,
@@ -44,7 +47,8 @@ export const IntelligenceStudioPage = ({
   const [classificationFilter, setClassificationFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [metricMode, setMetricMode] = useState('revenue'); // 'revenue' | 'profit' | 'volume'
-  const [viewLayout, setViewLayout] = useState('COCKPIT'); // 'COCKPIT' | 'TABLE'
+  const [viewLayout, setViewLayout] = useState('COCKPIT'); // 'COCKPIT' | 'VISUALS' | 'TABLE'
+  const [showChartsTray, setShowChartsTray] = useState(false); // Collapsed by default to prevent vertical scrolling
 
   // Data Loading State
   const [loading, setLoading] = useState(true);
@@ -74,7 +78,6 @@ export const IntelligenceStudioPage = ({
 
       if (matrixRes.status === 'fulfilled') {
         setData(matrixRes.value);
-        // Default select first winner or top revenue item if none selected
         if (!selectedProduct && matrixRes.value?.items?.length > 0) {
           setSelectedProduct(matrixRes.value.items[0]);
         }
@@ -97,7 +100,6 @@ export const IntelligenceStudioPage = ({
     fetchStudioData();
   }, [period, customStartDate, customEndDate]);
 
-  // Keep selectedProduct in sync with updated matrix
   useEffect(() => {
     if (data?.items && selectedProduct) {
       const found = data.items.find(i => i.product_id === selectedProduct.product_id);
@@ -123,10 +125,8 @@ export const IntelligenceStudioPage = ({
     if (!data?.items) return [];
 
     return data.items.filter(item => {
-      // 1. Category Filter
       const matchesCategory = selectedCategory === 'ALL' || item.category_name === selectedCategory;
 
-      // 2. Margin Tier Slicer
       const margin = Number(item.margin_pct) || 0;
       let matchesMargin = true;
       if (marginTier === 'HIGH') matchesMargin = margin >= 20;
@@ -134,10 +134,8 @@ export const IntelligenceStudioPage = ({
       else if (marginTier === 'SLIM') matchesMargin = margin >= 0 && margin < 10;
       else if (marginTier === 'LOSS') matchesMargin = margin < 0;
 
-      // 3. Classification Filter
       const matchesClassification = classificationFilter === 'ALL' || item.classification === classificationFilter;
 
-      // 4. Search Term
       const term = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm ||
         item.name.toLowerCase().includes(term) ||
@@ -179,46 +177,39 @@ export const IntelligenceStudioPage = ({
   const deadStockValue = data?.total_dead_stock_value || 0;
   const periodDisplay = data?.period_label || period.toUpperCase();
 
-  // Sparkline arrays from forecast or fallback
   const revenueSparkline = forecastData?.sparkline || [40, 48, 45, 58, 62, 59, 72];
   const profitSparkline = [12, 15, 14, 18, 22, 20, 24];
   const volumeSparkline = [35, 40, 38, 49, 53, 50, 61];
 
   return (
-    <div className="flex flex-col h-full space-y-3 pb-16 sm:pb-4 animate-fadeIn select-none">
+    <div className="flex flex-col h-full w-full overflow-y-auto md:overflow-hidden gap-1.5 pb-20 md:pb-0 select-none animate-fadeIn">
       
-      {/* Page Title & Intelligence Badges Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20">
-            <Compass className="w-5 h-5 stroke-[2.5]" />
+      {/* Top Header Bar: Title + Compact Live Stats (Zero-space wastage) */}
+      <div className="flex items-center justify-between gap-2 px-1 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="p-1 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shadow-sm">
+            <Compass className="w-4 h-4 stroke-[2.5]" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Commercial Intelligence Studio
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight">
+                Commercial Intelligence
               </h1>
-              <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/40">
+              <span className="text-[9px] font-mono font-black uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/40">
                 Power BI 2026
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-              Unified B2B Operational Cockpit • Slicers, Visuals, Master-Details & Drillthroughs
-            </p>
           </div>
         </div>
 
         {/* Global Summary Ticker */}
         {data && (
-          <div className="hidden lg:flex items-center gap-2 text-xs font-mono bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <span className="text-slate-400">Catalogue:</span>
-            <span className="font-bold text-slate-800 dark:text-slate-200">{data.total_skus} SKUs</span>
-            <span className="text-slate-300 dark:text-slate-700">|</span>
-            <span className="text-slate-400">Winners:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400">{data.winners_count}</span>
-            <span className="text-slate-300 dark:text-slate-700">|</span>
-            <span className="text-slate-400">Dead Capital:</span>
-            <span className="font-bold text-rose-500">₹{Math.round(deadStockValue).toLocaleString('en-IN')}</span>
+          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+            <span>Catalogue: <strong className="text-slate-800 dark:text-slate-200">{data.total_skus}</strong></span>
+            <span>•</span>
+            <span>Winners: <strong className="text-emerald-600 dark:text-emerald-400">{data.winners_count}</strong></span>
+            <span>•</span>
+            <span>Dead Stock: <strong className="text-rose-500">₹{Math.round(deadStockValue).toLocaleString('en-IN')}</strong></span>
           </div>
         )}
       </div>
@@ -244,26 +235,28 @@ export const IntelligenceStudioPage = ({
         onMetricModeChange={setMetricMode}
         viewLayout={viewLayout}
         onViewLayoutChange={setViewLayout}
+        showChartsTray={showChartsTray}
+        onToggleChartsTray={() => setShowChartsTray(prev => !prev)}
         onRefresh={fetchStudioData}
         loading={loading}
       />
 
-      {/* SECTION A: EXECUTIVE KPI SCORECARD (5 Power BI 2026 New Card Visuals) */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+      {/* COMPACT EXECUTIVE SCORECARD (Sleek 64px KPI Strip) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 shrink-0">
         <PowerBIKpiCard
-          title={`Total Revenue (${periodDisplay})`}
+          title={`Revenue (${periodDisplay})`}
           value={`₹${totalRevenue >= 100000 ? `${(totalRevenue / 100000).toFixed(2)}L` : Math.round(totalRevenue).toLocaleString('en-IN')}`}
-          subValue={`₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+          subValue={`₹${Math.round(totalRevenue).toLocaleString('en-IN')}`}
           variancePct={forecastData?.projected_vs_target_pct || 14.2}
           sparklineData={revenueSparkline}
           sparklineColor="amber"
           accentColor="amber"
           icon={DollarSign}
-          referenceLabel="Target: ₹7.0L"
+          compact={true}
         />
 
         <PowerBIKpiCard
-          title={`Gross Profit (${periodDisplay})`}
+          title="Gross Profit"
           value={`₹${totalProfit >= 100000 ? `${(totalProfit / 100000).toFixed(2)}L` : Math.round(totalProfit).toLocaleString('en-IN')}`}
           subValue={`${overallMarginPct.toFixed(1)}% Realized Margin`}
           variancePct={8.5}
@@ -271,23 +264,23 @@ export const IntelligenceStudioPage = ({
           sparklineColor="indigo"
           accentColor="indigo"
           icon={TrendingUp}
-          referenceLabel="Benchmark: 15.0%"
+          compact={true}
         />
 
         <PowerBIKpiCard
-          title="Dispatched Volume"
+          title="Volume Sold"
           value={`${totalUnits.toLocaleString('en-IN')} pkts`}
-          subValue={totalKg > 0 ? `⚖️ ${totalKg.toLocaleString('en-IN')} KG Net Weight` : 'Active Outflow'}
+          subValue={totalKg > 0 ? `⚖️ ${totalKg} KG Net` : 'Active Outflow'}
           variancePct={11.8}
           sparklineData={volumeSparkline}
           sparklineColor="emerald"
           accentColor="emerald"
           icon={Package}
-          referenceLabel="Pacing High"
+          compact={true}
         />
 
         <PowerBIKpiCard
-          title="Cold-Room Stock Value"
+          title="Depot Stock"
           value={`₹${totalStockValue >= 100000 ? `${(totalStockValue / 100000).toFixed(2)}L` : Math.round(totalStockValue).toLocaleString('en-IN')}`}
           subValue={`⚖️ ${totalStockKg} KG in Storage`}
           variancePct={-2.4}
@@ -295,27 +288,26 @@ export const IntelligenceStudioPage = ({
           sparklineColor="blue"
           accentColor="blue"
           icon={Boxes}
-          referenceLabel="Healthy Depot Fill"
+          compact={true}
         />
 
         <PowerBIKpiCard
-          title="Freezer Dead Stock"
+          title="Dead Capital"
           value={`₹${deadStockValue >= 1000 ? `${(deadStockValue / 1000).toFixed(1)}k` : Math.round(deadStockValue)}`}
-          subValue={`${data?.zero_movers_count || 0} Zero-Mover SKUs`}
+          subValue={`${data?.zero_movers_count || 0} Zero-Movers`}
           variancePct={data?.zero_movers_count > 0 ? -15.0 : 0.0}
           sparklineData={[20, 22, 25, 24, 28, 30, 27]}
           sparklineColor="rose"
           accentColor="rose"
           icon={AlertTriangle}
-          referenceLabel="Action: Liquidate / Bundle"
+          compact={true}
         />
       </div>
 
-      {/* SECTION B: DUAL VISUAL ANALYTICAL CANVAS (Category Pareto + BCG Scatter Matrix) */}
-      {viewLayout === 'COCKPIT' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-          {/* Visual 1: Category Pareto & Treemap (6 cols) */}
-          <div className="lg:col-span-6 min-h-[220px]">
+      {/* COLLAPSIBLE VISUALS TRAY (When enabled in Cockpit mode) */}
+      {viewLayout === 'COCKPIT' && showChartsTray && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 shrink-0 animate-fadeIn min-h-[220px]">
+          <div className="lg:col-span-6 h-[220px]">
             <CategoryParetoTreemap
               items={filteredItems}
               selectedCategory={selectedCategory}
@@ -323,9 +315,7 @@ export const IntelligenceStudioPage = ({
               metricMode={metricMode}
             />
           </div>
-
-          {/* Visual 2: BCG Margin-Velocity Scatter Matrix (6 cols) */}
-          <div className="lg:col-span-6 min-h-[220px]">
+          <div className="lg:col-span-6 h-[220px]">
             <MarginVelocityScatterPlot
               items={filteredItems}
               selectedProductId={selectedProduct?.product_id}
@@ -335,34 +325,57 @@ export const IntelligenceStudioPage = ({
         </div>
       )}
 
-      {/* SECTION C: MASTER-DETAIL SPLIT WORKSPACE (Matrix + Contextual Dossier) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 flex-1 min-h-[460px]">
-        {/* Left: Master Matrix Table (8 cols when Dossier open, 12 cols in Table mode) */}
-        <div className={viewLayout === 'TABLE' ? 'lg:col-span-12' : 'lg:col-span-8'}>
-          <HierarchicalMatrixTable
-            items={filteredItems}
-            selectedProductId={selectedProduct?.product_id}
-            onSelectProduct={(prod) => setSelectedProduct(prod)}
-            onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
-            onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
-            periodLabel={periodDisplay}
-          />
+      {/* DEDICATED VISUALS MODE (Full-Height Treemap & BCG Scatter Plot without scrolling) */}
+      {viewLayout === 'VISUALS' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden animate-fadeIn">
+          <div className="lg:col-span-6 h-full flex flex-col min-h-[300px]">
+            <CategoryParetoTreemap
+              items={filteredItems}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              metricMode={metricMode}
+            />
+          </div>
+          <div className="lg:col-span-6 h-full flex flex-col min-h-[300px]">
+            <MarginVelocityScatterPlot
+              items={filteredItems}
+              selectedProductId={selectedProduct?.product_id}
+              onSelectProduct={(prod) => setSelectedProduct(prod)}
+            />
+          </div>
         </div>
+      )}
 
-        {/* Right: Master-Detail Contextual Dossier (4 cols) */}
-        {viewLayout !== 'TABLE' && (
-          <div className="lg:col-span-4 min-h-[400px]">
-            <MasterDetailDossier
-              product={selectedProduct}
-              onClose={() => setSelectedProduct(null)}
+      {/* MASTER-DETAIL SPLIT WORKSPACE (COCKPIT or TABLE Modes: Zero Window Scrolling) */}
+      {(viewLayout === 'COCKPIT' || viewLayout === 'TABLE') && (
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
+          {/* Left: Master Matrix Table (Scrolls independently with sticky header) */}
+          <div className={`${viewLayout === 'TABLE' ? 'lg:col-span-12' : 'lg:col-span-8'} h-full flex flex-col min-h-0 overflow-hidden`}>
+            <HierarchicalMatrixTable
+              items={filteredItems}
+              selectedProductId={selectedProduct?.product_id}
+              onSelectProduct={(prod) => setSelectedProduct(prod)}
               onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
               onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
-              onOpenInvoiceBuilder={onOpenInvoiceBuilder}
               periodLabel={periodDisplay}
             />
           </div>
-        )}
-      </div>
+
+          {/* Right: Master-Detail Contextual Dossier (Scrolls independently) */}
+          {viewLayout === 'COCKPIT' && (
+            <div className="lg:col-span-4 h-full flex flex-col min-h-0 overflow-hidden">
+              <MasterDetailDossier
+                product={selectedProduct}
+                onClose={() => setSelectedProduct(null)}
+                onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
+                onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
+                onOpenInvoiceBuilder={onOpenInvoiceBuilder}
+                periodLabel={periodDisplay}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* DRILLTHROUGH MODAL A: Chronological Daily Sales Lineage & Invoice Slips */}
       {drillthroughProduct && (

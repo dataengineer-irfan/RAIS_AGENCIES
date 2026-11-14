@@ -9,12 +9,15 @@ import {
   Eye, 
   LayoutDashboard, 
   Table as TableIcon,
-  X
+  PieChart,
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 /**
  * StudioGlobalSlicerBar - Power BI 2026 Universal Sticky Slicer Ribbon
- * Handles temporal slicing, category selection, margin bands, and view layouts.
+ * Handles temporal slicing, category selection, margin bands, and 3 distinct view modes.
  */
 export const StudioGlobalSlicerBar = ({
   period = '30d',
@@ -36,6 +39,8 @@ export const StudioGlobalSlicerBar = ({
   onMetricModeChange,
   viewLayout = 'COCKPIT',
   onViewLayoutChange,
+  showChartsTray = false,
+  onToggleChartsTray,
   onRefresh,
   loading = false
 }) => {
@@ -50,7 +55,7 @@ export const StudioGlobalSlicerBar = ({
     { id: '30d', label: '30D' },
     { id: '90d', label: '90D' },
     { id: 'all_time', label: 'All Time' },
-    { id: 'custom', label: 'Custom Date' }
+    { id: 'custom', label: 'Custom' }
   ];
 
   const MARGIN_TIERS = [
@@ -70,20 +75,27 @@ export const StudioGlobalSlicerBar = ({
     { id: 'OUT_OF_STOCK', label: '⚪ Unstocked' }
   ];
 
+  const VIEW_MODES = [
+    { id: 'COCKPIT', label: 'Split Cockpit', icon: LayoutDashboard },
+    { id: 'VISUALS', label: 'Visual Charts', icon: PieChart },
+    { id: 'TABLE', label: 'Full Grid', icon: TableIcon }
+  ];
+
   return (
-    <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-md space-y-2 select-none">
-      {/* Top Row: Temporal Slicers + Metric Mode + View Toggles */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-1.5 select-none">
+      {/* Top Row: Temporal Quick-Pills + View Modes + Metric Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        
         {/* Temporal Quick Pills */}
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
+          <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
             {PERIOD_OPTIONS.map((opt) => {
               const isActive = period.toLowerCase() === opt.id.toLowerCase();
               return (
                 <button
                   key={opt.id}
                   onClick={() => onPeriodChange(opt.id)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all whitespace-nowrap ${
+                  className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -97,8 +109,8 @@ export const StudioGlobalSlicerBar = ({
 
           {/* Custom Date Pickers */}
           {period.toLowerCase() === 'custom' && (
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
-              <Calendar className="w-3.5 h-3.5 text-amber-500" />
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px]">
+              <Calendar className="w-3 h-3 text-amber-500" />
               <input
                 type="date"
                 value={customStartDate || ''}
@@ -116,23 +128,45 @@ export const StudioGlobalSlicerBar = ({
           )}
         </div>
 
-        {/* Metric Mode Toggle & View Layout Toggle */}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Metric Mode Toggle */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[11px]">
+        {/* View Modes Toggle + Metric Mode Toggle */}
+        <div className="flex items-center gap-1.5 ml-auto">
+          {/* 3 Power BI View Modes */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[10px]">
+            {VIEW_MODES.map((vm) => {
+              const Icon = vm.icon;
+              const isCurrent = viewLayout === vm.id;
+              return (
+                <button
+                  key={vm.id}
+                  onClick={() => onViewLayoutChange(vm.id)}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded font-bold transition-all ${
+                    isCurrent
+                      ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span className="hidden sm:inline">{vm.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Metric Mode Toggle (Revenue / Profit / Volume) */}
+          <div className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60 text-[10px]">
             <button
               onClick={() => onMetricModeChange('revenue')}
-              className={`px-2 py-1 rounded-md font-bold transition-all ${
+              className={`px-1.5 py-0.5 rounded font-bold transition-all ${
                 metricMode === 'revenue'
                   ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Revenue (₹)
+              Rev (₹)
             </button>
             <button
               onClick={() => onMetricModeChange('profit')}
-              className={`px-2 py-1 rounded-md font-bold transition-all ${
+              className={`px-1.5 py-0.5 rounded font-bold transition-all ${
                 metricMode === 'profit'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
@@ -142,39 +176,13 @@ export const StudioGlobalSlicerBar = ({
             </button>
             <button
               onClick={() => onMetricModeChange('volume')}
-              className={`px-2 py-1 rounded-md font-bold transition-all ${
+              className={`px-1.5 py-0.5 rounded font-bold transition-all ${
                 metricMode === 'volume'
                   ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Volume (KG/Pkt)
-            </button>
-          </div>
-
-          {/* View Layout Toggle */}
-          <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
-            <button
-              onClick={() => onViewLayoutChange('COCKPIT')}
-              title="Full Cockpit: Dual Visual Canvas + Master-Detail Matrix"
-              className={`p-1 rounded-md transition-all ${
-                viewLayout === 'COCKPIT'
-                  ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-              }`}
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onViewLayoutChange('TABLE')}
-              title="Focus Matrix: Expanded Data Grid"
-              className={`p-1 rounded-md transition-all ${
-                viewLayout === 'TABLE'
-                  ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-              }`}
-            >
-              <TableIcon className="w-3.5 h-3.5" />
+              Vol (KG)
             </button>
           </div>
 
@@ -183,7 +191,7 @@ export const StudioGlobalSlicerBar = ({
             <button
               onClick={onRefresh}
               disabled={loading}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               title="Refresh Analytics Dataset"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-500' : ''}`} />
@@ -192,15 +200,15 @@ export const StudioGlobalSlicerBar = ({
         </div>
       </div>
 
-      {/* Bottom Row: Slicer Dropdowns (Category, Margin Tier, Classification, Search) */}
-      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+      {/* Bottom Row: Slicer Dropdowns + Search */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80 text-xs">
         {/* Category Slicer */}
-        <div className="flex items-center gap-1.5 min-w-[160px]">
-          <Layers className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-1 min-w-[140px] flex-1 sm:flex-initial">
+          <Layers className="w-3 h-3 text-slate-400 shrink-0" />
           <select
             value={selectedCategory}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-xs"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-[11px]"
           >
             <option value="ALL">All Categories ({categoryOptions.length})</option>
             {categoryOptions.map((cat) => (
@@ -212,12 +220,12 @@ export const StudioGlobalSlicerBar = ({
         </div>
 
         {/* Margin Tier Slicer */}
-        <div className="flex items-center gap-1.5 min-w-[130px]">
-          <Percent className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-1 min-w-[110px] flex-1 sm:flex-initial">
+          <Percent className="w-3 h-3 text-slate-400 shrink-0" />
           <select
             value={marginTier}
             onChange={(e) => onMarginTierChange(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-xs"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-[11px]"
           >
             {MARGIN_TIERS.map((tier) => (
               <option key={tier.id} value={tier.id}>
@@ -228,12 +236,12 @@ export const StudioGlobalSlicerBar = ({
         </div>
 
         {/* Velocity Status Slicer */}
-        <div className="flex items-center gap-1.5 min-w-[130px]">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center gap-1 min-w-[110px] flex-1 sm:flex-initial">
+          <Filter className="w-3 h-3 text-slate-400 shrink-0" />
           <select
             value={classificationFilter}
             onChange={(e) => onClassificationChange(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-xs"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-1.5 py-0.5 text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:border-amber-500 text-[11px]"
           >
             {CLASSIFICATION_OPTIONS.map((cls) => (
               <option key={cls.id} value={cls.id}>
@@ -244,24 +252,40 @@ export const StudioGlobalSlicerBar = ({
         </div>
 
         {/* Search Slicer */}
-        <div className="relative flex-1 min-w-[160px]">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 min-w-[150px]">
+          <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search SKU, item, or brand..."
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-7 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
+            placeholder="Search SKU or item..."
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md pl-7 pr-6 py-0.5 text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-amber-500"
           />
           {searchTerm && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             >
-              <X className="w-3 h-3" />
+              <X className="w-2.5 h-2.5" />
             </button>
           )}
         </div>
+
+        {/* Optional Collapsible Charts Tray Toggle (when in Cockpit mode) */}
+        {viewLayout === 'COCKPIT' && onToggleChartsTray && (
+          <button
+            onClick={onToggleChartsTray}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-all border shrink-0 ${
+              showChartsTray
+                ? 'bg-amber-500 text-slate-950 border-amber-500 font-black shadow-sm'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <PieChart className="w-3 h-3" />
+            <span>{showChartsTray ? 'Hide Charts' : 'Show Charts'}</span>
+            {showChartsTray ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+          </button>
+        )}
       </div>
     </div>
   );

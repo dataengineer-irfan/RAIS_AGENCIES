@@ -41,7 +41,6 @@ export const Sidebar = ({
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'intelligence', label: 'Commercial Intelligence', icon: Compass, highlight: true, badge: '2026' },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'catalogue', label: 'Catalogue', icon: Package },
     { id: 'inventory', label: 'Inventory', icon: Boxes, highlight: true },
@@ -54,6 +53,7 @@ export const Sidebar = ({
 
   if (hasRole('ADMIN') || hasRole('OPERATOR')) {
     menuItems.push({ id: 'financial-audit', label: 'Financial Audit Hub', icon: FileSpreadsheet, highlight: true, badge: 'PRO' });
+    menuItems.push({ id: 'intelligence', label: 'Commercial Intelligence', icon: Compass, highlight: true, badge: '2026' });
     menuItems.push({ id: 'audit', label: 'Audit & Data Vault', icon: ShieldCheck });
   }
 
