@@ -47,7 +47,8 @@ export const IntelligenceStudioPage = ({
   const [classificationFilter, setClassificationFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [metricMode, setMetricMode] = useState('revenue');
-  const [viewLayout, setViewLayout] = useState('COCKPIT'); // 'COCKPIT' | 'VISUALS' | 'TABLE'
+  const [viewLayout, setViewLayout] = useState('MATRIX'); // 'MATRIX' | 'VISUALS' | 'COCKPIT'
+  const [showInlineCharts, setShowInlineCharts] = useState(false);
 
   // Data Loading State
   const [loading, setLoading] = useState(true);
@@ -301,58 +302,134 @@ export const IntelligenceStudioPage = ({
         />
       </div>
 
-      {/* ROW 2: DUAL VISUAL CHARTS CANVAS (Side-by-Side: Treemap 6 cols + BCG Scatter 6 cols) */}
-      {(viewLayout === 'COCKPIT' || viewLayout === 'VISUALS') && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-[270px]">
-          {/* Visual 1: Category Pareto Treemap & 80/20 Mosaic */}
-          <div className="lg:col-span-6 min-h-[270px] flex flex-col">
-            <CategoryParetoTreemap
+      {/* VIEW LAYOUT 1: COMMERCIAL OPERATIONS MATRIX (DEFAULT POWER BI DESKTOP VIEW) */}
+      {viewLayout === 'MATRIX' && (
+        <div className="space-y-2.5 flex-1 flex flex-col">
+          {/* Optional Inline Charts Collapsible Drawer */}
+          {showInlineCharts && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-[250px] transition-all">
+              <div className="lg:col-span-6 min-h-[250px] flex flex-col">
+                <CategoryParetoTreemap
+                  items={filteredItems}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                  metricMode={metricMode}
+                />
+              </div>
+              <div className="lg:col-span-6 min-h-[250px] flex flex-col">
+                <MarginVelocityScatterPlot
+                  items={filteredItems}
+                  selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
+                  onSelectProduct={(prod) => setSelectedProduct(prod)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Master Matrix (8 cols) + 360° Dossier (4 cols) Workspace */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 flex-1 min-h-[520px]">
+            <div className="lg:col-span-8 flex flex-col min-h-[520px]">
+              <HierarchicalMatrixTable
+                items={filteredItems}
+                selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
+                onSelectProduct={(prod) => setSelectedProduct(prod)}
+                onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
+                onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
+                periodLabel={periodDisplay}
+                showVisualCharts={showInlineCharts}
+                onToggleVisualCharts={() => setShowInlineCharts(prev => !prev)}
+              />
+            </div>
+
+            <div className="lg:col-span-4 flex flex-col min-h-[520px]">
+              <MasterDetailDossier
+                product={selectedProduct}
+                onClose={() => setSelectedProduct(null)}
+                onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
+                onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
+                onOpenInvoiceBuilder={onOpenInvoiceBuilder}
+                periodLabel={periodDisplay}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW LAYOUT 2: VISUAL ANALYTICS CANVAS (FULL SCREEN CHARTS & PARETO) */}
+      {viewLayout === 'VISUALS' && (
+        <div className="space-y-2.5 flex-1 flex flex-col">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-[280px]">
+            <div className="lg:col-span-6 min-h-[280px] flex flex-col">
+              <CategoryParetoTreemap
+                items={filteredItems}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                metricMode={metricMode}
+              />
+            </div>
+            <div className="lg:col-span-6 min-h-[280px] flex flex-col">
+              <MarginVelocityScatterPlot
+                items={filteredItems}
+                selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
+                onSelectProduct={(prod) => setSelectedProduct(prod)}
+              />
+            </div>
+          </div>
+
+          <div className="min-h-[260px]">
+            <SalesVelocityTrendChart
               items={filteredItems}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
+              periodLabel={periodDisplay}
+              metricMode={metricMode}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* VIEW LAYOUT 3: ALL-IN-ONE COCKPIT (SEQUENTIAL SCROLL FOR LARGE SCREENS) */}
+      {viewLayout === 'COCKPIT' && (
+        <div className="space-y-3 flex-1 flex flex-col">
+          {/* Visual Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-[270px]">
+            <div className="lg:col-span-6 min-h-[270px] flex flex-col">
+              <CategoryParetoTreemap
+                items={filteredItems}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                metricMode={metricMode}
+              />
+            </div>
+            <div className="lg:col-span-6 min-h-[270px] flex flex-col">
+              <MarginVelocityScatterPlot
+                items={filteredItems}
+                selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
+                onSelectProduct={(prod) => setSelectedProduct(prod)}
+              />
+            </div>
+          </div>
+
+          {/* Sales Velocity Trend Chart */}
+          <div className="min-h-[230px]">
+            <SalesVelocityTrendChart
+              items={filteredItems}
+              periodLabel={periodDisplay}
               metricMode={metricMode}
             />
           </div>
 
-          {/* Visual 2: BCG Growth-Share Margin vs Velocity Scatter Matrix */}
-          <div className="lg:col-span-6 min-h-[270px] flex flex-col">
-            <MarginVelocityScatterPlot
-              items={filteredItems}
-              selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
-              onSelectProduct={(prod) => setSelectedProduct(prod)}
-            />
-          </div>
-        </div>
-      )}
+          {/* Master Matrix + Dossier */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-[500px]">
+            <div className="lg:col-span-8 min-h-[500px] flex flex-col">
+              <HierarchicalMatrixTable
+                items={filteredItems}
+                selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
+                onSelectProduct={(prod) => setSelectedProduct(prod)}
+                onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
+                onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
+                periodLabel={periodDisplay}
+              />
+            </div>
 
-      {/* ADDITIONAL CHART FOR 'VISUALS' MODE: Sales Velocity Run-Rate Trajectory */}
-      {viewLayout === 'VISUALS' && (
-        <div className="min-h-[220px]">
-          <SalesVelocityTrendChart
-            items={filteredItems}
-            periodLabel={periodDisplay}
-            metricMode={metricMode}
-          />
-        </div>
-      )}
-
-      {/* ROW 3: MASTER-DETAIL OPERATIONAL WORKSPACE (Side-by-Side: Table 8 cols + Dossier 4 cols) */}
-      {(viewLayout === 'COCKPIT' || viewLayout === 'TABLE') && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-[500px]">
-          {/* Left: Master Matrix Table with In-Cell Data Bars & Heatmaps */}
-          <div className={`${viewLayout === 'TABLE' ? 'lg:col-span-12' : 'lg:col-span-8'} min-h-[500px] flex flex-col`}>
-            <HierarchicalMatrixTable
-              items={filteredItems}
-              selectedProductId={selectedProduct?.product_id || selectedProduct?.sku}
-              onSelectProduct={(prod) => setSelectedProduct(prod)}
-              onOpenDrillthrough={(prod) => setDrillthroughProduct(prod)}
-              onOpenOutletPenetration={(prod) => setPenetrationProduct(prod)}
-              periodLabel={periodDisplay}
-            />
-          </div>
-
-          {/* Right: Master-Detail Contextual Dossier */}
-          {viewLayout === 'COCKPIT' && (
             <div className="lg:col-span-4 min-h-[500px] flex flex-col">
               <MasterDetailDossier
                 product={selectedProduct}
@@ -363,7 +440,7 @@ export const IntelligenceStudioPage = ({
                 periodLabel={periodDisplay}
               />
             </div>
-          )}
+          </div>
         </div>
       )}
 

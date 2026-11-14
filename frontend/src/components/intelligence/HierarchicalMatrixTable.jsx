@@ -12,7 +12,8 @@ import {
   Layers, 
   ArrowUpRight, 
   ArrowDownRight, 
-  Minus 
+  Minus,
+  PieChart
 } from 'lucide-react';
 import { ProductVisualBadge } from '../../utils/productIcons';
 import { InCellDataBar } from './InCellDataBar';
@@ -27,7 +28,9 @@ export const HierarchicalMatrixTable = ({
   onSelectProduct,
   onOpenDrillthrough,
   onOpenOutletPenetration,
-  periodLabel = '30D'
+  periodLabel = '30D',
+  showVisualCharts = false,
+  onToggleVisualCharts
 }) => {
   const [groupByCategory, setGroupByCategory] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
@@ -308,7 +311,7 @@ export const HierarchicalMatrixTable = ({
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
-      {/* Sub-header Bar: Grouping Toggle + Row Counter */}
+      {/* Sub-header Bar: Grouping Toggle + Row Counter + Inline Charts Toggle */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-xs">
         <div className="flex items-center gap-2">
           <span className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -319,18 +322,34 @@ export const HierarchicalMatrixTable = ({
           </span>
         </div>
 
-        {/* Group by Category Toggle */}
-        <button
-          onClick={() => setGroupByCategory(prev => !prev)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold transition-all border ${
-            groupByCategory
-              ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
-              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-          }`}
-        >
-          <Layers className="w-3 h-3" />
-          <span>Hierarchy (Group by Category)</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onToggleVisualCharts && (
+            <button
+              onClick={onToggleVisualCharts}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all border ${
+                showVisualCharts
+                  ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <PieChart className="w-3 h-3" />
+              <span>{showVisualCharts ? 'Hide Charts' : 'Show Charts'}</span>
+            </button>
+          )}
+
+          {/* Group by Category Toggle */}
+          <button
+            onClick={() => setGroupByCategory(prev => !prev)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold transition-all border ${
+              groupByCategory
+                ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <Layers className="w-3 h-3" />
+            <span>Hierarchy (Group by Category)</span>
+          </button>
+        </div>
       </div>
 
       {/* Table Scroll Container */}

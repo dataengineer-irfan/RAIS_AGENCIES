@@ -36,7 +36,7 @@ export const StudioGlobalSlicerBar = ({
   onSearchChange,
   metricMode = 'revenue',
   onMetricModeChange,
-  viewLayout = 'COCKPIT',
+  viewLayout = 'MATRIX',
   onViewLayoutChange,
   onRefresh,
   loading = false
@@ -72,9 +72,9 @@ export const StudioGlobalSlicerBar = ({
   ];
 
   const VIEW_MODES = [
-    { id: 'COCKPIT', label: 'Visual Cockpit', icon: LayoutDashboard },
-    { id: 'VISUALS', label: 'Executive Charts', icon: PieChart },
-    { id: 'TABLE', label: 'Data Grid', icon: TableIcon }
+    { id: 'MATRIX', label: 'Commercial Matrix', icon: TableIcon },
+    { id: 'VISUALS', label: 'Visual Analytics', icon: PieChart },
+    { id: 'COCKPIT', label: 'All-In-One Cockpit', icon: LayoutDashboard }
   ];
 
   return (

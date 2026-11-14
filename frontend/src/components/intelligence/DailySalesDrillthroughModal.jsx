@@ -43,8 +43,8 @@ export const DailySalesDrillthroughModal = ({
   const [activePeriod, setActivePeriod] = useState(period);
 
   const fetchDrilldown = async (periodToUse = activePeriod) => {
-    if (!product?.id && !product?.product_id) return;
-    const prodId = product.id || product.product_id;
+    const prodId = product?.id || product?.product_id || product?.sku;
+    if (!prodId) return;
     setLoading(true);
     setError('');
     try {
@@ -57,7 +57,8 @@ export const DailySalesDrillthroughModal = ({
       setDrillData(data);
     } catch (err) {
       console.error('Failed to fetch product daily drilldown:', err);
-      setError('Unable to load chronological sales records. Please try again or switch to All-Time.');
+      const detail = err?.response?.data?.detail || err?.message;
+      setError(`Unable to load sales lineage: ${detail || 'Please retry or select All-Time.'}`);
     } finally {
       setLoading(false);
     }

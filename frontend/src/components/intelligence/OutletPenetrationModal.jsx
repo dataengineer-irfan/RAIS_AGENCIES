@@ -34,8 +34,8 @@ export const OutletPenetrationModal = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchPenetration = async () => {
-    if (!product?.id && !product?.product_id) return;
-    const prodId = product.id || product.product_id;
+    const prodId = product?.id || product?.product_id || product?.sku;
+    if (!prodId) return;
     setLoading(true);
     setError('');
     try {
@@ -43,7 +43,8 @@ export const OutletPenetrationModal = ({
       setData(res);
     } catch (err) {
       console.error('Failed to load outlet penetration:', err);
-      setError('Unable to load customer outlet penetration. Please try again.');
+      const detail = err?.response?.data?.detail || err?.message;
+      setError(`Unable to load customer outlet penetration: ${detail || 'Please retry.'}`);
     } finally {
       setLoading(false);
     }
