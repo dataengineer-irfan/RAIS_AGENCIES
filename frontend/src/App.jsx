@@ -15,6 +15,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { AIAssistantPage } from './pages/AIAssistantPage';
 import { AuditPage } from './pages/AuditPage';
 import { FinancialAuditPage } from './pages/FinancialAuditPage';
+import { IntelligenceStudioPage } from './pages/IntelligenceStudioPage';
 import { InvoiceBuilderModal } from './components/InvoiceBuilderModal';
 import { OrderBuilderModal } from './components/OrderBuilderModal';
 import { PaymentModal } from './components/PaymentModal';
@@ -248,7 +249,7 @@ export const App = () => {
           alertsCount={alertsCount}
         />
 
-        <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${activeTab === 'dashboard' ? 'p-2 sm:p-3 overflow-y-auto md:overflow-hidden' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
+        <main className={`flex-1 flex flex-col pb-24 md:pb-0 ${['dashboard', 'intelligence'].includes(activeTab) ? 'p-2 sm:p-3 overflow-y-auto' : 'px-3 py-2.5 sm:p-6 overflow-y-auto'} max-w-7xl w-full mx-auto`}>
           {activeTab === 'home' && (
             <HomePage
               key={dataRefreshKey}
@@ -268,6 +269,15 @@ export const App = () => {
               onOpenInactiveReminder={() => setInactiveReminderModalOpen(true)}
               onModalStateChange={setChildModalOpen}
               alertsCount={alertsCount}
+            />
+          )}
+
+          {activeTab === 'intelligence' && (
+            <IntelligenceStudioPage
+              key={dataRefreshKey}
+              onNavigate={handleNavigate}
+              onOpenInvoiceBuilder={() => handleOpenInvoice(null)}
+              onOpenPaymentModal={() => handleOpenPayment()}
             />
           )}
 

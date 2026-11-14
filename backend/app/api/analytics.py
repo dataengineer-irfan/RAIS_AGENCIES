@@ -335,3 +335,244 @@ def get_metric_drilldown(
 
     # Default fallback
     return {"metric": metric, "level": level, "summary": {}, "items": []}
+
+
+@router.get("/product-sales-drilldown")
+def get_product_sales_drilldown(
+    product_id: str = Query(..., description="Target product ID for granular drillthrough"),
+    period: Optional[str] = Query("30d"),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """
+    Power BI 2026 Style Granular Drillthrough:
+    Returns chronological day-by-day sales records, customer invoices, and outlet penetration for a specific SKU.
+    """
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    valid_statuses = ["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT", "OVERDUE"]
+
+    # Calculate date bounds
+    today_d = get_ist_today()
+    p = (period or "30d").lower().strip()
+    calc_start = None
+    calc_end = None
+
+    if start_date and end_date and p in ("custom", "30d"):
+        calc_start = start_date
+        calc_end = end_date
+    elif p == "today":
+        calc_start = today_d
+        calc_end = today_d
+    elif p == "yesterday":
+        calc_start = today_d - timedelta(days=1)
+        calc_end = calc_start
+    elif p == "this_week":
+        calc_start = today_d - timedelta(days=today_d.weekday())
+        calc_end = today_d
+    elif p in ("last_week", "past_week"):
+        calc_start = today_d - timedelta(days=today_d.weekday() + 7)
+        calc_end = calc_start + timedelta(days=6)
+    elif p == "this_month":
+        calc_start = today_d.replace(day=1)
+        calc_end = today_d
+    elif p in ("last_month", "past_month"):
+        first_this_month = today_d.replace(day=1)
+        calc_end = first_this_month - timedelta(days=1)
+        calc_start = calc_end.replace(day=1)
+    elif p in ("7d", "last_7d"):
+        calc_start = today_d - timedelta(days=6)
+        calc_end = today_d
+    elif p in ("60d", "last_60d"):
+        calc_start = today_d - timedelta(days=59)
+        calc_end = today_d
+    elif p in ("90d", "last_90d"):
+        calc_start = today_d - timedelta(days=89)
+        calc_end = today_d
+    elif p in ("all_time", "all"):
+        calc_start = None
+        calc_end = None
+    else: # Default 30d
+        calc_start = today_d - timedelta(days=29)
+        calc_end = today_d
+
+    # Query all invoice items for this product
+    items_query = db.query(
+        InvoiceItem,
+        Invoice,
+        Customer
+    ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
+     .join(Customer, Customer.id == Invoice.customer_id)\
+     .filter(
+         InvoiceItem.product_id == product_id,
+         Invoice.status.in_(valid_statuses)
+     )
+
+    if calc_start:
+        items_query = items_query.filter(Invoice.invoice_date >= calc_start)
+    if calc_end:
+        items_query = items_query.filter(Invoice.invoice_date <= calc_end)
+
+    rows = items_query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).all()
+
+    # Get product unit weight
+    unit_weight_kg = float(extract_unit_weight_kg(product.packaging_unit, product.name))
+
+    # Fetch latest purchase landed cost
+    latest_movement = db.query(StockMovement).filter(
+        StockMovement.product_id == product_id,
+        StockMovement.purchase_cost.isnot(None)
+    ).order_by(StockMovement.created_at.desc()).first()
+    
+    unit_cost = float(latest_movement.purchase_cost) if (latest_movement and latest_movement.purchase_cost) else (float(product.base_price) * 0.80)
+
+    # Aggregate by day
+    days_dict = defaultdict(lambda: {
+        "date": "",
+        "day_name": "",
+        "total_units": 0.0,
+        "total_kg": 0.0,
+        "total_revenue": 0.0,
+        "total_cost": 0.0,
+        "total_profit": 0.0,
+        "invoices": []
+    })
+
+    # Track buying customers
+    buying_customers = {}
+    tot_units = 0.0
+    tot_revenue = 0.0
+    tot_cost = 0.0
+
+    for item, inv, cust in rows:
+        inv_date_str = str(inv.invoice_date)
+        day_entry = days_dict[inv_date_str]
+        
+        qty = float(item.quantity)
+        line_rev = float(item.line_total)
+        item_cost_val = float(item.landed_cost) if (item.landed_cost and float(item.landed_cost) > 0) else unit_cost
+        line_cost = item_cost_val * qty
+        line_profit = line_rev - line_cost
+        line_margin = (line_profit / line_rev * 100) if line_rev > 0 else 0.0
+
+        if not day_entry["date"]:
+            day_entry["date"] = inv_date_str
+            day_entry["day_name"] = inv.invoice_date.strftime("%A")
+
+        day_entry["total_units"] += qty
+        day_entry["total_kg"] += round(qty * unit_weight_kg, 2)
+        day_entry["total_revenue"] += line_rev
+        day_entry["total_cost"] += line_cost
+        day_entry["total_profit"] += line_profit
+
+        day_entry["invoices"].append({
+            "invoice_id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "invoice_date": inv_date_str,
+            "created_at": inv.created_at.isoformat() if inv.created_at else inv_date_str,
+            "status": inv.status,
+            "customer_id": cust.id,
+            "customer_name": cust.name,
+            "customer_code": cust.code,
+            "customer_phone": cust.phone,
+            "territory": cust.territory or "General",
+            "quantity": qty,
+            "packaging_unit": item.packaging_unit or product.packaging_unit,
+            "unit_price": float(item.unit_price),
+            "line_total": line_rev,
+            "landed_cost": item_cost_val,
+            "profit": round(line_profit, 2),
+            "margin_pct": round(line_margin, 1)
+        })
+
+        tot_units += qty
+        tot_revenue += line_rev
+        tot_cost += line_cost
+
+        if cust.id not in buying_customers:
+            buying_customers[cust.id] = {
+                "id": cust.id,
+                "code": cust.code,
+                "name": cust.name,
+                "phone": cust.phone,
+                "territory": cust.territory or "General",
+                "total_units": 0.0,
+                "total_revenue": 0.0,
+                "orders_count": 0,
+                "last_purchase_date": inv_date_str
+            }
+        bc = buying_customers[cust.id]
+        bc["total_units"] += qty
+        bc["total_revenue"] += line_rev
+        bc["orders_count"] += 1
+        if inv_date_str > bc["last_purchase_date"]:
+            bc["last_purchase_date"] = inv_date_str
+
+    # Finalize daily list
+    daily_list = []
+    for d_str in sorted(days_dict.keys(), reverse=True):
+        d_val = days_dict[d_str]
+        d_val["total_units"] = round(d_val["total_units"], 1)
+        d_val["total_kg"] = round(d_val["total_kg"], 1)
+        d_val["total_revenue"] = round(d_val["total_revenue"], 2)
+        d_val["total_profit"] = round(d_val["total_profit"], 2)
+        d_val["margin_pct"] = round((d_val["total_profit"] / d_val["total_revenue"] * 100), 1) if d_val["total_revenue"] > 0 else 0.0
+        daily_list.append(d_val)
+
+    # Fetch active customers who have not bought this SKU in the period (Whitespace opportunity)
+    all_active_custs = db.query(Customer).filter(Customer.is_active == True).all()
+    buying_ids = set(buying_customers.keys())
+    whitespace_customers = [
+        {
+            "id": c.id,
+            "code": c.code,
+            "name": c.name,
+            "phone": c.phone,
+            "territory": c.territory or "General",
+            "current_balance": float(c.current_balance_due or 0)
+        }
+        for c in all_active_custs if c.id not in buying_ids
+    ]
+
+    tot_profit = tot_revenue - tot_cost
+    tot_margin = (tot_profit / tot_revenue * 100) if tot_revenue > 0 else 0.0
+
+    return {
+        "product": {
+            "id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "brand": product.brand,
+            "category_name": product.category.name if product.category else "General",
+            "packaging_unit": product.packaging_unit,
+            "unit_weight_kg": unit_weight_kg,
+            "base_price": float(product.base_price),
+            "unit_cost": round(unit_cost, 2),
+            "current_stock": float(product.current_stock or 0),
+            "stock_holding_kg": round(float(product.current_stock or 0) * unit_weight_kg, 1),
+            "stock_value": round(float(product.current_stock or 0) * unit_cost, 2)
+        },
+        "period": p,
+        "start_date": str(calc_start) if calc_start else None,
+        "end_date": str(calc_end) if calc_end else None,
+        "summary": {
+            "total_units_sold": round(tot_units, 1),
+            "total_kg_sold": round(tot_units * unit_weight_kg, 1),
+            "total_revenue": round(tot_revenue, 2),
+            "total_cost": round(tot_cost, 2),
+            "total_profit": round(tot_profit, 2),
+            "margin_pct": round(tot_margin, 1),
+            "total_invoices_count": len(rows),
+            "active_days_count": len(daily_list),
+            "buying_outlets_count": len(buying_customers),
+            "whitespace_outlets_count": len(whitespace_customers),
+            "outlet_penetration_pct": round((len(buying_customers) / len(all_active_custs) * 100), 1) if all_active_custs else 0.0
+        },
+        "daily_breakdown": daily_list,
+        "buying_outlets": sorted(list(buying_customers.values()), key=lambda x: x["total_revenue"], reverse=True),
+        "whitespace_outlets": whitespace_customers[:30]
+    }

@@ -578,6 +578,11 @@ export const analyticsApi = {
     return cachedGet('/analytics/drilldown', {
       params: { metric, level, category_id: categoryId, period }
     });
+  },
+  getProductSalesDrilldown: async (productId, params = {}) => {
+    return cachedGet('/analytics/product-sales-drilldown', {
+      params: { product_id: productId, ...params }
+    });
   }
 };
 
