@@ -350,7 +350,9 @@ def get_product_sales_drilldown(
     Power BI 2026 Style Granular Drillthrough:
     Returns chronological day-by-day sales records, customer invoices, and outlet penetration for a specific SKU.
     """
-    product = db.query(Product).filter(Product.id == product_id).first()
+    product = db.query(Product).filter(
+        (Product.id == product_id) | (Product.sku == product_id)
+    ).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 

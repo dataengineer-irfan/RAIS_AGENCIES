@@ -125,7 +125,7 @@ export const CategoryParetoTreemap = ({
       </div>
 
       {/* Proportional Grid Blocks (Treemap Layout) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 flex-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 flex-1 overflow-y-auto custom-scrollbar">
         {categoryStats.map((c) => {
           const isSelected = selectedCategory === c.name;
           const isParetoVital = c.cumulativePct <= 80;
