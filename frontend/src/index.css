@@ -178,17 +178,20 @@ html.theme-light .border-slate-700\/50 {
   border-color: #cbd5e1 !important;
 }
 
-/* ─── SIDEBAR NAVIGATION (Databricks & Swiggy Clean SaaS Theme) ─── */
+/* ─── SIDEBAR NAVIGATION (Executive Enterprise SaaS Theme) ─── */
 html.theme-light nav button.bg-amber-500\/10,
 html.theme-light nav .bg-amber-500\/10 {
-  background-color: #fff7ed !important; /* Soft warm orange-50 */
-  border-color: #fed7aa !important;     /* Soft warm orange-200 */
-  color: #c2410c !important;            /* Warm Orange-700 text */
-  box-shadow: 0 1px 2px 0 rgba(234, 88, 12, 0.08) !important;
+  background-color: #f1f5f9 !important; /* Clean Slate-100 neutral */
+  border-color: #e2e8f0 !important;     /* Subtle Slate-200 border */
+  border-left-width: 3px !important;
+  border-left-color: #d97706 !important; /* Crisp 3px Amber spine */
+  color: #0f172a !important;            /* High-contrast Slate-900 text */
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
 }
 html.theme-light nav button.bg-amber-500\/10 svg,
 html.theme-light nav .bg-amber-500\/10 svg {
-  color: #ea580c !important;            /* Signature vibrant orange-600 */
+  color: #d97706 !important;            /* Refined Amber-600 */
 }
 html.theme-light nav button.text-slate-400 {
   color: #475569 !important;            /* Slate-600 */
@@ -382,15 +385,19 @@ html.theme-light [class*="bg-purple-950"] {
 }
 
 /* ─── ACTIVE CARD SELECTION (Databricks / Linear Razor-Sharp Left Accent) ─── */
+html.theme-light [data-active-customer="true"],
 html.theme-light .border-l-amber-500,
 html.theme-light [class*="border-amber-500/60"] {
   background-color: #ffffff !important;
   border-left-width: 4px !important;
   border-left-color: #f59e0b !important;
-  border-top-color: #cbd5e1 !important;
-  border-right-color: #cbd5e1 !important;
-  border-bottom-color: #cbd5e1 !important;
-  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04) !important;
+  border-top-width: 1px !important;
+  border-top-color: #e2e8f0 !important;
+  border-right-width: 1px !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-width: 1px !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04) !important;
   --tw-ring-color: transparent !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
   --tw-ring-shadow: 0 0 #0000 !important;

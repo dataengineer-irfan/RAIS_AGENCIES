@@ -758,10 +758,11 @@ export const CustomersPage = ({
                 return (
                   <div
                     key={cust.id}
+                    data-active-customer={isSelected ? "true" : undefined}
                     onClick={() => handleSelectCustomer(cust)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
                       isSelected
-                        ? 'bg-white dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/60 border-l-4 border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10 dark:ring-1 dark:ring-amber-500/30'
+                        ? 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 border-l-4 !border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10'
                         : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
@@ -779,8 +780,8 @@ export const CustomersPage = ({
                           <span>{cust.city || 'Rayachoty'}</span>
                         </span>
                         {isSelected && (
-                          <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-sans tracking-wider shadow-xs ml-auto">
-                            ACTIVE DOSSIER ➔
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 font-sans tracking-tight ml-auto">
+                            Active Dossier ➔
                           </span>
                         )}
                       </div>
@@ -803,61 +804,31 @@ export const CustomersPage = ({
                         )}
                       </div>
 
-                      {/* Line 3: Commercial Performance Pills with Dynamic Active Metric Highlight */}
-                      <div className="flex items-center gap-1 mt-1.5 pt-1 border-t border-slate-200 dark:border-slate-800/60 text-[10px] font-mono flex-wrap">
-                        {/* REV */}
-                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
-                          sortBy === 'REVENUE_DESC'
-                            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/50 font-black ring-1 ring-amber-500/30'
-                            : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                        }`}>
-                          <span className="text-[9px] font-bold text-slate-500 font-sans">REV:</span>
-                          <span className="font-bold">₹{Math.round(parseFloat(cust.total_invoiced || 0)).toLocaleString('en-IN')}</span>
-                        </span>
-
-                        {/* PAID */}
-                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
-                          sortBy === 'PAID_DESC'
-                            ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/50 font-black ring-1 ring-emerald-500/30'
-                            : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                        }`}>
-                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-500 font-sans">PAID:</span>
-                          <span className="font-bold">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
-                        </span>
-
-                        {/* PROFIT & MARGIN % */}
-                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all ${
-                          sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC'
-                            ? 'bg-indigo-100 dark:bg-emerald-500/25 text-indigo-800 dark:text-emerald-200 border-indigo-300 dark:border-emerald-400/60 font-black ring-1 ring-indigo-400/30 dark:ring-1 dark:ring-emerald-500/50'
-                            : sortBy === 'PROFIT_DESC'
-                              ? 'bg-indigo-100 dark:bg-purple-500/25 text-indigo-800 dark:text-purple-200 border-indigo-300 dark:border-purple-400/50 font-black ring-1 ring-indigo-400/30 dark:ring-1 dark:ring-purple-500/40'
-                              : 'bg-indigo-50 dark:bg-purple-500/10 border-indigo-200 dark:border-purple-500/20 text-indigo-700 dark:text-purple-300'
-                        }`}>
-                          <span className="text-[9px] font-bold text-indigo-600 dark:text-purple-400 font-sans">
-                            {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? 'MARGIN:' : 'PROFIT:'}
+                      {/* Line 3: Clean Monospace Financial Metrics Strip */}
+                      <div className="flex items-center justify-between gap-2 mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/60 text-[10px] font-mono flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-slate-600 dark:text-slate-300">
+                            <span className="text-[9px] text-slate-400 font-sans mr-0.5 uppercase">Billed:</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">₹{Math.round(parseFloat(cust.total_invoiced || 0)).toLocaleString('en-IN')}</span>
                           </span>
-                          {sortBy === 'MARGIN_DESC' || sortBy === 'MARGIN_ASC' ? (
-                            <>
-                              <span className="font-black text-indigo-700 dark:text-emerald-300">
-                                {parseFloat(cust.total_invoiced || 0) > 0 
-                                  ? `${((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100).toFixed(1)}%`
-                                  : '0.0%'}
-                              </span>
-                              <span className="text-[8px] text-indigo-600/70 dark:text-slate-400 font-mono">
-                                (₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')})
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="font-bold text-indigo-700 dark:text-purple-300">₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}</span>
+                          <span className="text-slate-300 dark:text-slate-700">•</span>
+                          <span className="text-slate-600 dark:text-slate-300">
+                            <span className="text-[9px] text-slate-400 font-sans mr-0.5 uppercase">Paid:</span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">₹{Math.round(parseFloat(cust.total_paid || 0)).toLocaleString('en-IN')}</span>
+                          </span>
+                          <span className="text-slate-300 dark:text-slate-700">•</span>
+                          <span className="text-slate-600 dark:text-slate-300">
+                            <span className="text-[9px] text-slate-400 font-sans mr-0.5 uppercase">Profit:</span>
+                            <span className="font-semibold text-indigo-600 dark:text-purple-400">
+                              ₹{Math.round(parseFloat(cust.gross_profit || 0)).toLocaleString('en-IN')}
                               {parseFloat(cust.total_invoiced || 0) > 0 && (
-                                <span className="text-[8px] text-indigo-600/70 dark:text-purple-400/80 font-normal">
+                                <span className="text-[9px] text-slate-500 dark:text-slate-400 ml-0.5 font-normal">
                                   ({Math.round((parseFloat(cust.gross_profit || 0) / parseFloat(cust.total_invoiced || 1)) * 100)}%)
                                 </span>
                               )}
-                            </>
-                          )}
-                        </span>
+                            </span>
+                          </span>
+                        </div>
 
                         {/* Invoices & Ledger Quick Jump Buttons */}
                         <div className="flex items-center gap-1 ml-auto">
@@ -867,7 +838,7 @@ export const CustomersPage = ({
                               e.stopPropagation();
                               handleSelectCustomer(cust, 'invoices');
                             }}
-                            className="text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-0.5 transition-colors"
+                            className="text-[10px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-0.5 transition-colors"
                           >
                             <FileText className="w-2.5 h-2.5" />
                             <span>Invoices</span>
@@ -878,7 +849,7 @@ export const CustomersPage = ({
                               e.stopPropagation();
                               handleSelectCustomer(cust, 'ledger');
                             }}
-                            className="text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-0.5 transition-colors"
+                            className="text-[10px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-0.5 transition-colors"
                           >
                             <History className="w-2.5 h-2.5" />
                             <span>Ledger</span>
@@ -989,7 +960,7 @@ export const CustomersPage = ({
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:justify-end">
                   <button
                     onClick={() => onOpenInvoiceForCustomer && onOpenInvoiceForCustomer(selectedCustomer)}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+                    className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-sm active:scale-95"
                     title="Create Commercial Invoice"
                   >
                     <FileText className="w-3.5 h-3.5" />
@@ -998,7 +969,7 @@ export const CustomersPage = ({
 
                   <button
                     onClick={() => onOpenPaymentForCustomer && onOpenPaymentForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
+                    className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
                     title="Record Cash/UPI Payment"
                   >
                     <CreditCard className="w-3.5 h-3.5" />
@@ -1007,7 +978,7 @@ export const CustomersPage = ({
 
                   <button
                     onClick={() => onOpenOrderForCustomer && onOpenOrderForCustomer(selectedCustomer)}
-                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white dark:border-transparent font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105 active:scale-95"
+                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
                     title="Book Wholesale Order"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
@@ -1276,56 +1247,56 @@ export const CustomersPage = ({
                     })()}
 
                     {/* Account Profitability & Wholesale Economics Breakdown */}
-                    <div className="bg-slate-50/70 dark:bg-slate-950/70 border border-indigo-200 dark:border-purple-500/30 rounded-xl p-3.5 space-y-3">
+                    <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3 shadow-xs">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-indigo-600 dark:text-purple-400 shrink-0" />
+                          <TrendingUp className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Account Profitability & Wholesale Economics
                           </h4>
                         </div>
                         <span className={`whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           parseFloat(selectedCustomerMarginPct) >= 10
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
                             : parseFloat(selectedCustomerMarginPct) >= 5
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                            : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30'
+                            : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30'
                         }`}>
                           {parseFloat(selectedCustomerMarginPct) >= 10 ? '🟢 High Margin (>10%)' : parseFloat(selectedCustomerMarginPct) >= 5 ? '🟡 Standard Wholesale' : '🔵 High Volume / Slim'}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
-                          <span className="text-[10px] text-slate-400 block">Total Billed Revenue</span>
-                          <span className="font-mono font-bold text-white text-sm">
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Billed Revenue</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
                             ₹{selectedCustomerBilledRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </span>
-                          <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">{customerInvoices.length} Invoices</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-mono">{customerInvoices.length} Invoices</span>
                         </div>
 
-                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
-                          <span className="text-[10px] text-slate-400 block">Procurement Cost (COGS)</span>
-                          <span className="font-mono font-bold text-slate-300 text-sm">
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Procurement Cost (COGS)</span>
+                          <span className="font-mono font-bold text-slate-700 dark:text-slate-300 text-sm">
                             ₹{selectedCustomerCogs.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </span>
-                          <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">Wholesale Cost Base</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-mono">Wholesale Cost Base</span>
                         </div>
 
-                        <div className="p-2.5 bg-indigo-50/80 dark:bg-slate-900/80 rounded-lg border border-indigo-200 dark:border-purple-500/30">
-                          <span className="text-[10px] text-indigo-700 dark:text-purple-400 block font-bold">Net Gross Profit</span>
-                          <span className="font-mono font-black text-indigo-700 dark:text-purple-300 text-sm">
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Net Gross Profit</span>
+                          <span className="font-mono font-black text-indigo-600 dark:text-purple-300 text-sm">
                             ₹{selectedCustomerProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </span>
-                          <span className="text-[9px] text-indigo-600/80 dark:text-purple-400/80 block mt-0.5 font-mono">Margin: {selectedCustomerMarginPct}%</span>
+                          <span className="text-[9px] text-indigo-600 dark:text-purple-400 block mt-0.5 font-mono font-semibold">Margin: {selectedCustomerMarginPct}%</span>
                         </div>
 
-                        <div className="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800">
-                          <span className="text-[10px] text-slate-400 block">Avg Profit / Invoice</span>
-                          <span className="font-mono font-bold text-emerald-400 text-sm">
+                        <div className="p-2.5 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Avg Profit / Invoice</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                             ₹{customerInvoices.length > 0 ? (selectedCustomerProfit / customerInvoices.length).toFixed(2) : '0.00'}
                           </span>
-                          <span className="text-[9px] text-slate-500 block mt-0.5 font-mono">Markup: {selectedCustomerMarkupPct}% on cost</span>
+                          <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-mono">Markup: {selectedCustomerMarkupPct}% on cost</span>
                         </div>
                       </div>
 

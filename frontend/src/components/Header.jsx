@@ -165,7 +165,7 @@ export const Header = ({
           <div className="relative group">
             <button
               onClick={onToggleAI}
-              className="p-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-400 transition-all shadow-sm flex items-center justify-center active:scale-95"
+              className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 transition-all shadow-xs flex items-center justify-center active:scale-95"
               aria-label="Executive AI Assistant"
             >
               <Sparkles className="w-4 h-4 animate-pulse" />
@@ -176,17 +176,17 @@ export const Header = ({
             </div>
           </div>
 
-          {/* 4. 1-Click Dark/Light Theme Switcher (Only ☀️/🌙 Icon with Tooltip) */}
+          {/* 4. 1-Click Dark/Light Theme Switcher (Clean Enclosure) */}
           <div className="relative group">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 text-slate-300 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-900/90 dark:hover:bg-slate-800 dark:text-slate-300 dark:border-slate-800/80 transition-all shadow-xs flex items-center justify-center active:scale-95"
               aria-label={theme === 'dark' ? "Switch to High-Clarity Light Theme" : "Switch to Executive Midnight Dark Theme"}
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-indigo-400" />
+                <Moon className="w-4 h-4 text-slate-700" />
               )}
             </button>
             {/* Hover Tooltip */}
@@ -223,13 +223,13 @@ export const Header = ({
             {/* Theme Toggle Button (Mobile) */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/80 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-800/80 dark:border-slate-700/80 dark:text-slate-300 shadow-xs transition-all active:scale-95 flex items-center justify-center"
               title="Toggle Theme"
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-indigo-500" />
+                <Moon className="w-4 h-4 text-slate-700" />
               )}
             </button>
 
