@@ -242,37 +242,57 @@ html.theme-light [class*="ContinuousLiveTicker"] {
 }
 
 /* ─── TYPOGRAPHY OVERRIDES FOR HIGH CONTRAST LEGIBILITY ─── */
-html.theme-light .text-white {
+html.theme-light .text-white,
+html.theme-light [class*="text-white"] {
   color: #111827 !important; /* Deep Charcoal Black */
 }
 html.theme-light .text-slate-100,
-html.theme-light .text-slate-200 {
+html.theme-light .text-slate-200,
+html.theme-light [class*="text-slate-100"],
+html.theme-light [class*="text-slate-200"] {
   color: #1f2937 !important; /* Gray-800 */
 }
-html.theme-light .text-slate-300 {
-  color: #334155 !important; /* Slate-700 */
+html.theme-light .text-slate-300,
+html.theme-light [class*="text-slate-300"] {
+  color: #374151 !important; /* Slate-700 */
 }
-html.theme-light .text-slate-400 {
-  color: #4b5563 !important; /* Gray-600: strong contrast on white */
+html.theme-light .text-slate-400,
+html.theme-light [class*="text-slate-400"] {
+  color: #374151 !important; /* High contrast Slate-700 on white */
 }
-html.theme-light .text-slate-500 {
-  color: #64748b !important; /* Slate-500 */
-}
-html.theme-light .text-slate-600 {
-  color: #64748b !important;
+html.theme-light .text-slate-500,
+html.theme-light [class*="text-slate-500"],
+html.theme-light .text-slate-600,
+html.theme-light [class*="text-slate-600"] {
+  color: #374151 !important; /* High contrast Gray-700 for locations, dates & metadata */
+  font-weight: 500;
 }
 
-/* ─── GOLD / AMBER BRAND PALETTE (Crisp Warm Amber #d97706, NEVER muddy brown #92400e!) ─── */
+/* ─── GOLD / AMBER BRAND PALETTE (Catches ALL variants with /90, /80 opacities) ─── */
 html.theme-light .text-amber-400,
-html.theme-light .text-amber-500 {
-  color: #d97706 !important; /* Vibrant Amber-600 */
+html.theme-light .text-amber-500,
+html.theme-light [class*="text-amber-400"],
+html.theme-light [class*="text-amber-500"] {
+  color: #b45309 !important; /* Warm Amber-700: sharp contrast */
 }
-html.theme-light .text-amber-300 {
-  color: #b45309 !important; /* Warm Amber-700 */
-}
+html.theme-light .text-amber-300,
 html.theme-light .text-amber-200,
-html.theme-light .text-amber-100 {
-  color: #b45309 !important;
+html.theme-light .text-amber-100,
+html.theme-light [class*="text-amber-300"],
+html.theme-light [class*="text-amber-200"],
+html.theme-light [class*="text-amber-100"] {
+  color: #92400e !important; /* Deep Amber-800: eliminates pale yellow washout */
+}
+
+/* ─── IN-STREAM CHIPS & BADGES (Never disappear as white-on-white) ─── */
+html.theme-light span[class*="bg-slate-900"],
+html.theme-light span[class*="bg-slate-950"],
+html.theme-light div[class*="items_preview"] span,
+html.theme-light span[class*="border-amber-500"] {
+  background-color: #f3f4f6 !important; /* Crisp neutral Gray-100 pill */
+  border-color: #d1d5db !important;     /* Clean Gray-300 border */
+  color: #111827 !important;            /* Bold Jet Black text */
+  font-weight: 600 !important;
 }
 
 html.theme-light .bg-amber-500\/10,
