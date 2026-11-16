@@ -54,8 +54,8 @@
    and refined brand accents. ZERO IMPACT ON DARK THEME.
    ═══════════════════════════════════════════════════════════════════════ */
 html.theme-light body {
-  background-color: #f8fafc; /* Crisp cool slate-50 canvas */
-  color: #0f172a;            /* Deep obsidian slate-900 */
+  background-color: #f4f6f8; /* Crisp accounting paper canvas */
+  color: #111827;            /* Deep Charcoal Black */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -73,7 +73,7 @@ html.theme-light ::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
 html.theme-light ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d1d5db;
   border-radius: 4px;
 }
 html.theme-light ::-webkit-scrollbar-thumb:hover {
@@ -92,7 +92,7 @@ html.theme-light .bg-slate-900\/50,
 html.theme-light .bg-slate-900\/40,
 html.theme-light .bg-slate-900\/30 {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03) !important;
 }
 
@@ -108,14 +108,14 @@ html.theme-light .bg-slate-950\/50,
 html.theme-light .bg-slate-950\/40,
 html.theme-light .bg-slate-950\/30 {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
   box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03) !important;
 }
 
 /* Deep Canvas / Backdrops */
 html.theme-light .bg-slate-950 {
   background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 
 /* Secondary Panels & Strip Tracks (.bg-slate-800) */
@@ -128,7 +128,7 @@ html.theme-light .bg-slate-800\/50,
 html.theme-light .bg-slate-800\/40,
 html.theme-light .bg-slate-800\/30 {
   background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
   color: #1e293b !important;
 }
 
@@ -143,7 +143,7 @@ html.theme-light [class*="to-slate-950"],
 html.theme-light [class*="to-slate-900"] {
   background-image: none !important;
   background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 
 /* Clean Row Hover (Databricks subtle highlight) */
@@ -157,7 +157,7 @@ html.theme-light .hover\:bg-slate-800\/80:hover,
 html.theme-light .hover\:bg-slate-800\/70:hover,
 html.theme-light .hover\:bg-slate-800\/60:hover {
   background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
+  border-color: #d1d5db !important;
 }
 
 /* Borders */
@@ -169,20 +169,20 @@ html.theme-light .border-slate-800\/50,
 html.theme-light .border-slate-800\/40,
 html.theme-light .border-slate-850,
 html.theme-light .border-slate-900 {
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 
 html.theme-light .border-slate-700,
 html.theme-light .border-slate-700\/80,
 html.theme-light .border-slate-700\/50 {
-  border-color: #cbd5e1 !important;
+  border-color: #d1d5db !important;
 }
 
 /* ─── SIDEBAR NAVIGATION (Executive Enterprise SaaS Theme) ─── */
 html.theme-light nav button.bg-amber-500\/10,
 html.theme-light nav .bg-amber-500\/10 {
   background-color: #f1f5f9 !important; /* Clean Slate-100 neutral */
-  border-color: #e2e8f0 !important;     /* Subtle Slate-200 border */
+  border-color: #e5e7eb !important;     /* Subtle Slate-200 border */
   border-left-width: 3px !important;
   border-left-color: #d97706 !important; /* Crisp 3px Amber spine */
   color: #0f172a !important;            /* High-contrast Slate-900 text */
@@ -205,34 +205,34 @@ html.theme-light nav button.text-slate-400:hover {
 html.theme-light .bg-\[\#0b1329\],
 html.theme-light [class*="bg-[#0b1329]"] {
   background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
+  border-color: #d1d5db !important;
   box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05) !important;
 }
 
 /* ─── TOP HEADER & LIVE MARQUEE TICKER ─── */
 html.theme-light header {
   background-color: #ffffff !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
   box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03) !important;
 }
 html.theme-light [class*="ContinuousLiveTicker"] {
   background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 
 /* ─── TYPOGRAPHY OVERRIDES FOR HIGH CONTRAST LEGIBILITY ─── */
 html.theme-light .text-white {
-  color: #0f172a !important; /* Deep black-slate */
+  color: #111827 !important; /* Deep Charcoal Black */
 }
 html.theme-light .text-slate-100,
 html.theme-light .text-slate-200 {
-  color: #1e293b !important; /* Slate-800 */
+  color: #1f2937 !important; /* Gray-800 */
 }
 html.theme-light .text-slate-300 {
   color: #334155 !important; /* Slate-700 */
 }
 html.theme-light .text-slate-400 {
-  color: #475569 !important; /* Slate-600: strong contrast on white */
+  color: #4b5563 !important; /* Gray-600: strong contrast on white */
 }
 html.theme-light .text-slate-500 {
   color: #64748b !important; /* Slate-500 */
@@ -291,8 +291,11 @@ html.theme-light [class*="bg-emerald-950"] {
 
 /* ─── ROSE / RED PALETTE (Rose-600 #e11d48 / Rose-700 #be123c) ─── */
 html.theme-light .text-rose-400,
-html.theme-light .text-rose-500 {
-  color: #e11d48 !important; /* Rose-600 */
+html.theme-light .text-rose-500,
+html.theme-light .text-red-400,
+html.theme-light .text-red-500 {
+  color: #dc2626 !important; /* Vyapar Crimson Red-600 */
+  font-weight: 700;
 }
 html.theme-light .text-rose-300,
 html.theme-light .text-rose-200 {
@@ -353,14 +356,14 @@ html.theme-light button.bg-emerald-600\/20:hover {
 /* Copy Invoice # Chip */
 html.theme-light span.cursor-pointer.bg-slate-900 {
   background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
   color: #0f172a !important;
 }
 
 /* Rank Badges in Fast-Moving SKUs */
 html.theme-light .bg-slate-700\/50 {
   background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
   color: #475569 !important;
 }
 
@@ -392,11 +395,11 @@ html.theme-light [class*="border-amber-500/60"] {
   border-left-width: 4px !important;
   border-left-color: #f59e0b !important;
   border-top-width: 1px !important;
-  border-top-color: #e2e8f0 !important;
+  border-top-color: #e5e7eb !important;
   border-right-width: 1px !important;
-  border-right-color: #e2e8f0 !important;
+  border-right-color: #e5e7eb !important;
   border-bottom-width: 1px !important;
-  border-bottom-color: #e2e8f0 !important;
+  border-bottom-color: #e5e7eb !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04) !important;
   --tw-ring-color: transparent !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
@@ -409,7 +412,7 @@ html.theme-light select,
 html.theme-light textarea {
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  border-color: #d1d5db !important;
 }
 
 html.theme-light input:focus,
@@ -428,7 +431,7 @@ html.theme-light textarea::placeholder {
 html.theme-light thead.bg-slate-950,
 html.theme-light thead {
   background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
+  border-color: #d1d5db !important;
 }
 html.theme-light thead th {
   color: #334155 !important;
@@ -439,19 +442,19 @@ html.theme-light table tr:hover {
 html.theme-light .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
 html.theme-light .divide-slate-700 > :not([hidden]) ~ :not([hidden]),
 html.theme-light .divide-slate-850 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 
 /* ─── GHOST ACTION BUTTONS & TOOLBARS IN LIGHT MODE ─── */
 html.theme-light button.bg-slate-800,
 html.theme-light a.bg-slate-800 {
   background-color: #f1f5f9 !important;
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid #d1d5db !important;
   color: #1e293b !important;
 }
 html.theme-light button.bg-slate-800:hover,
 html.theme-light a.bg-slate-800:hover {
-  background-color: #e2e8f0 !important;
+  background-color: #e5e7eb !important;
   color: #0f172a !important;
 }
 
@@ -503,11 +506,11 @@ html.theme-light select option:hover {
 html.theme-light .bg-gray-900,
 html.theme-light .bg-gray-950 {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 html.theme-light .border-gray-800,
 html.theme-light .border-gray-700 {
-  border-color: #e2e8f0 !important;
+  border-color: #e5e7eb !important;
 }
 html.theme-light .text-gray-400,
 html.theme-light .text-gray-300 {
@@ -557,12 +560,12 @@ html.theme-light input[type="number"],
 html.theme-light input[type="search"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  border-color: #d1d5db !important;
 }
 
 /* ─── TABLE ROWS & CELL DIVIDERS IN LIGHT MODE ─── */
 html.theme-light tbody td {
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 html.theme-light tbody tr:hover {
   background-color: #f8fafc !important;
@@ -575,11 +578,11 @@ html.theme-light .prose {
 html.theme-light .prose code {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid #e5e7eb !important;
 }
 html.theme-light .prose pre {
   background-color: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid #e5e7eb !important;
   color: #0f172a !important;
 }
 
