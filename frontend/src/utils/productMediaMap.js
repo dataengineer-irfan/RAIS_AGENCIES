@@ -6,7 +6,7 @@
 
 // Direct SKU mapping to public asset images (Harmonized with Rayachoty Depot Catalog)
 const SKU_IMAGE_MAP = {
-  // Packaging Boxes
+  // Packaging Boxes & Disposables
   'RAIS-BOX-01': 'boxes_display_pizza_burger.jpg',
   'RAIS-BOX-02': 'burger_box_printed.jpg',
   'RAIS-BOX-03': 'pizza_boxes_assortment.jpg',
@@ -15,6 +15,12 @@ const SKU_IMAGE_MAP = {
   'RAIS-BOX-06': 'kfc_bucket.jpg',
   'RAIS-BOX-07': 'tissue_papers_pack.jpg',
   'RAIS-BOX-08': 'butter_paper_pack.jpg',
+  'RAIS-PKG-01': 'butter_paper_pack.jpg',
+  'RAIS-PKG-02': 'mayo_portion_cups.jpg',
+  'RAIS-PAC-01': 'butter_paper_pack.jpg',
+  'RAIS-PAC-08': 'butter_paper_pack.jpg',
+  'RAIS-PAC-BUT': 'butter_paper_pack.jpg',
+  'RAIS-BUT-01': 'butter_paper_pack.jpg',
 
   // Breading, Spices & Marinades
   'RAIS-BRD-01': 'vkl_extra_hs_marinade.jpg',
@@ -71,6 +77,10 @@ const SKU_IMAGE_MAP = {
 
 // Keyword matcher rules for dynamic recommendations and products
 const KEYWORD_RULES = [
+  { pattern: /BUTTER\s*PAPER|GREASEPROOF|WRAPPING\s*PAPER/i, file: 'butter_paper_pack.jpg', te: 'రాయచోటి డిపోలో తాజా బట్టర్ పేపర్ స్టాక్ సిద్ధంగా ఉంది' },
+  { pattern: /TISSUE/i, file: 'tissue_papers_pack.jpg', te: 'టిష్యూ పేపర్స్ డిపోలో సిద్ధంగా ఉన్నాయి' },
+  { pattern: /NUTRILITE|TABLE\s*BUTTER/i, file: 'nutrilite_butter.jpg', te: 'న్యూట్రిలైట్ బట్టర్ డిపో స్టాక్' },
+  { pattern: /PORTION\s*CUP|DIP\s*CUP/i, file: 'mayo_portion_cups.jpg', te: 'మాయో మరియు డిప్ కప్పులు డిపోలో ఉన్నాయి' },
   { pattern: /PERI\s*PERI/i, file: 'vkl_peri_peri_sprinkler.jpg', te: 'ఫ్రెంచ్ ఫ్రైస్‌కు పెరి పెరి బెస్ట్ కాంబినేషన్' },
   { pattern: /OREGANO/i, file: 'big_bell_oregano.jpg', te: 'పిజ్జా కోసం ఒరేగానో తాజా స్టాక్' },
   { pattern: /PIZZA\s*BOX/i, file: 'boxes_display_pizza_burger.jpg', te: 'పిజ్జా బాక్సులు డిపోలో సిద్ధంగా ఉన్నాయి' },
@@ -100,6 +110,15 @@ export function getProductImageFilename(sku, name = '') {
   const rawName = (name || '').trim();
 
   // 1. Check strong name keywords first to guarantee accurate image mapping
+  if (/BUTTER\s*PAPER|GREASEPROOF|WRAPPING\s*PAPER/i.test(rawName) || /BUTTER\s*PAPER|GREASEPROOF|WRAPPING\s*PAPER/i.test(cleanSku)) {
+    return 'butter_paper_pack.jpg';
+  }
+  if (/TISSUE/i.test(rawName) || /TISSUE/i.test(cleanSku)) {
+    return 'tissue_papers_pack.jpg';
+  }
+  if (/NUTRILITE/i.test(rawName)) {
+    return 'nutrilite_butter.jpg';
+  }
   if (/TORTILLA|WRAP/i.test(rawName)) {
     return /8(\.5)?/i.test(rawName) ? 'fresh2go_tortilla_8_5.jpg' : 'fresh2go_tortilla_10.jpg';
   }

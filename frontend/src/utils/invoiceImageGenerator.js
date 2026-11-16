@@ -191,6 +191,20 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
         };
       }
     }
+    if (isWrap) {
+      if (hasTortilla) {
+        const pName = 'PRINTED GREASEPROOF BUTTER PAPER';
+        return {
+          sku: 'RAIS-BOX-08',
+          name: pName,
+          packaging_unit: '1000 SHEETS',
+          context_note: 'Greaseproof Wrapping Paper',
+          image_url: getProductImageUrl('RAIS-BOX-08', pName),
+          telugu_note: getTeluguCompanionPhrase(pName),
+          display_text: `📦 *GREASEPROOF WRAPPING PAPER:* ${pName} (1000 SHEETS) — _Ready for immediate delivery_`
+        };
+      }
+    }
     const defaultName = 'VKL PERI PERI SPRINKLER';
     return {
       sku: 'RAIS-BRD-03',
