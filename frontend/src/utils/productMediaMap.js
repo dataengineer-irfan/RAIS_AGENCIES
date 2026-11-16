@@ -13,6 +13,7 @@ const SKU_IMAGE_MAP = {
   'RAIS-BOX-04': 'burger_box_printed.jpg',
   'RAIS-BOX-05': 'burger_boxes.jpg',
   'RAIS-BOX-06': 'kfc_bucket.jpg',
+  'RAIS-BKT-01': 'kfc_bucket.jpg',
   'RAIS-BOX-07': 'tissue_papers_pack.jpg',
   'RAIS-BOX-08': 'butter_paper_pack.jpg',
   'RAIS-PKG-01': 'butter_paper_pack.jpg',

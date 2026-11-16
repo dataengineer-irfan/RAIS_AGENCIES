@@ -103,6 +103,7 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   const hasTortilla = /TORTILLA|TORTILLAH|WRAP/i.test(allTxText);
   const hasPatty = /PATTY|PATTIES/i.test(allTxText);
   const hasMomosNuggets = /MOMO|NUGGET|POPS|POPCORN/i.test(allTxText);
+  const hasAnyBox = hasPizzaBox || hasBurgerBox || hasChickenBucket || /BOX|BUCKET/i.test(allTxText);
 
   // General vertical affinity detection
   const isPizza = hasPizzaBox || hasCheese || hasPizzaSauce || /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(allTxText);
@@ -119,6 +120,10 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
     if (cSku && purchasedSkus.has(cSku)) return true;
 
     const cName = (candidate.name || '').toUpperCase();
+    // SKU-prefix family & Takeaway Box exclusion: if customer bought ANY box, block ALL takeaway boxes/buckets
+    const isTakeawayBox = (/BOX|BUCKET/i.test(cName) || cSku.startsWith('RAIS-BOX-') || cSku.startsWith('RAIS-BKT-')) && !/BUTTER\s*PAPER|GREASEPROOF|TISSUE/i.test(cName);
+    if (hasAnyBox && isTakeawayBox) return true;
+
     if (hasPizzaBox && /PIZZA\s*BOX/i.test(cName)) return true;
     if (hasBurgerBox && /BURGER\s*BOX/i.test(cName)) return true;
     if (hasChickenBucket && /BUCKET|CHICKEN\s*BOX/i.test(cName)) return true;

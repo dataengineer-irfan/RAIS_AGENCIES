@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import date, datetime
 
@@ -111,6 +111,7 @@ class InvoiceResponse(BaseModel):
     gross_margin_pct: Optional[Decimal] = None
     items: List[InvoiceItemResponse] = []
     allocations: List[InvoiceAllocationItem] = []
+    restock_suggestion: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

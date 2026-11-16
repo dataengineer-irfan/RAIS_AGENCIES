@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     
     # Recommendations & Restock Upsell Feature Flag (Kill Switch)
     ENABLE_RESTOCK_SUGGESTIONS: bool = True
+    FRONTEND_URL: str = "https://rais-frontend.onrender.com"
 
     # AI Engine
     AI_PROVIDER: str = "semantic_engine"

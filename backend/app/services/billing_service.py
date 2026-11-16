@@ -1227,6 +1227,24 @@ class BillingService:
                 Decimal("0.00") if inv.status == InvoiceStatus.PAID.value and (cust_balance is None or cust_balance <= Decimal("0.00")) else None
             )
 
+        # Calculate in-stock restock suggestion for customer (strictly fail-safe & zero prices)
+        restock_sugg = None
+        db_state = getattr(inv, '_sa_instance_state', None)
+        active_db = getattr(db_state, 'session', None) if db_state else None
+        if active_db and inv.customer_id:
+            try:
+                from app.services.recommendation_service import RecommendationService
+                exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
+                current_descs = [getattr(itm, 'item_description', '') for itm in (inv.items or []) if getattr(itm, 'item_description', None)]
+                restock_sugg = RecommendationService.get_customer_restock_suggestion(
+                    db=active_db,
+                    customer_id=str(inv.customer_id),
+                    exclude_product_ids=exclude_pids,
+                    current_item_descriptions=current_descs
+                )
+            except Exception:
+                restock_sugg = None
+
         return InvoiceResponse(
             id=inv.id,
             invoice_number=inv.invoice_number,
@@ -1265,7 +1283,8 @@ class BillingService:
             gross_profit=invoice_profit,
             gross_margin_pct=invoice_margin,
             items=items_resp,
-            allocations=allocs_resp
+            allocations=allocs_resp,
+            restock_suggestion=restock_sugg
         )
 
     @staticmethod

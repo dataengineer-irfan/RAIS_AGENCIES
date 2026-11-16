@@ -248,13 +248,13 @@ class RecommendationService:
                     target_skus.extend(["RAIS-BRD-04", "RAIS-BRD-05", "RAIS-BRD-03"])
                     target_keywords.extend(["BREADING", "MARINADE", "PERI PERI"])
                 else:
-                    target_skus.extend(["RAIS-BOX-08", "RAIS-BOX-06", "RAIS-BRD-03"])
+                    target_skus.extend(["RAIS-BKT-01", "RAIS-BOX-06", "RAIS-BRD-03"])
                     target_keywords.extend(["BUCKET", "PERI PERI"])
 
             # ── 4. SHAWARMA / WRAP ──
             if "WRAP" in detected_affinities or has_tortilla or has_butter_paper:
                 if has_tortilla:
-                    target_skus.extend(["RAIS-PKG-01", "RAIS-SAU-04", "RAIS-VEG-BUTT"])
+                    target_skus.extend(["RAIS-PKG-01", "RAIS-BOX-08", "RAIS-SAU-04"])
                     target_keywords.extend(["BUTTER PAPER", "MAYO"])
                 else:
                     target_skus.extend(["RAIS-CHK-01", "RAIS-CHK-02", "RAIS-SAU-04"])
@@ -376,7 +376,8 @@ class RecommendationService:
 
         display_text = f"📦 {context_note}: {clean_name} ({unit})"
         img_file = cls.get_product_image_filename(product.sku, clean_name)
-        img_url = f"https://rais-frontend.onrender.com/assets/products/{img_file}"
+        base_url = getattr(settings, "FRONTEND_URL", "").rstrip("/") or "https://rais-frontend.onrender.com"
+        img_url = f"{base_url}/assets/products/{img_file}"
         te_note = cls.get_telugu_companion_note(clean_name)
 
         return {
@@ -397,26 +398,55 @@ class RecommendationService:
         clean_name = (name or "").strip().upper()
 
         sku_map = {
-            "RAIS-BRD-03": "vkl_peri_peri_sprinkler.jpg",
-            "RAIS-SAU-06": "big_bell_oregano.jpg",
-            "RAIS-BRD-04": "vkl_crispy_cajun_breading.jpg",
-            "RAIS-BRD-05": "vkl_extra_hs_marinade.jpg",
+            # Packaging Boxes & Disposables
             "RAIS-BOX-01": "boxes_display_pizza_burger.jpg",
             "RAIS-BOX-02": "burger_box_printed.jpg",
             "RAIS-BOX-03": "pizza_boxes_assortment.jpg",
             "RAIS-BOX-04": "burger_box_printed.jpg",
             "RAIS-BOX-05": "burger_boxes.jpg",
             "RAIS-BOX-06": "kfc_bucket.jpg",
+            "RAIS-BKT-01": "kfc_bucket.jpg",
+            "RAIS-BOX-07": "tissue_papers_pack.jpg",
+            "RAIS-BOX-08": "butter_paper_pack.jpg",
+            "RAIS-PKG-01": "butter_paper_pack.jpg",
+            "RAIS-PKG-02": "mayo_portion_cups.jpg",
+            "RAIS-PAC-01": "butter_paper_pack.jpg",
+            "RAIS-PAC-08": "butter_paper_pack.jpg",
+            "RAIS-PAC-BUT": "butter_paper_pack.jpg",
+            "RAIS-BUT-01": "butter_paper_pack.jpg",
+
+            # Spices, Seasonings & Breading
+            "RAIS-BRD-01": "vkl_extra_hs_marinade.jpg",
+            "RAIS-BRD-02": "vkl_crispy_cajun_breading.jpg",
+            "RAIS-BRD-03": "vkl_peri_peri_sprinkler.jpg",
+            "RAIS-BRD-04": "big_bell_oregano.jpg",
+            "RAIS-BRD-05": "vkl_extra_hs_marinade.jpg",
+
+            # Sauces & Mayonnaise
             "RAIS-SAU-01": "delmonte_ketchup_bottle.jpg",
+            "RAIS-SAU-02": "foodrite_tomato_ketchup_pouch.jpg",
             "RAIS-SAU-04": "delmonte_tandoori_mayo.jpg",
+            "RAIS-SAU-06": "delmonte_pizza_pasta_sauce.jpg",
+            "RAIS-SAU-08": "mealtime_veg_mayo.jpg",
+
+            # Dairy & Veg Snacks
             "RAIS-CHS-01": "milky_mist_mozzarella_1kg.jpg",
+            "RAIS-CHS-02": "milky_mist_mozzarella_2kg.jpg",
             "RAIS-VEG-01": "amul_french_fries_6mm.jpg",
-            "RAIS-MOM-01": "triken_chicken_momos.jpg"
+            "RAIS-VEG-02": "amul_french_fries_6mm.jpg",
+            "RAIS-MOM-01": "triken_chicken_momos.jpg",
+            "RAIS-CHK-01": "fresh2go_tortilla_8_5.jpg",
+            "RAIS-CHK-02": "fresh2go_tortilla_10.jpg"
         }
         if clean_sku in sku_map:
             return sku_map[clean_sku]
 
         combined = f"{clean_sku} {clean_name}"
+        # High-priority specific wrapping/disposable match
+        if any(w in combined for w in ["BUTTER PAPER", "GREASEPROOF", "WRAPPING PAPER"]):
+            return "butter_paper_pack.jpg"
+        if "TISSUE" in combined:
+            return "tissue_papers_pack.jpg"
         if "PERI PERI" in combined:
             return "vkl_peri_peri_sprinkler.jpg"
         if "OREGANO" in combined:
@@ -427,6 +457,8 @@ class RecommendationService:
             return "burger_box_printed.jpg"
         if "TANDOORI MAYO" in combined or "MAYO" in combined:
             return "delmonte_tandoori_mayo.jpg"
+        if "PIZZA SAUCE" in combined or "PASTA SAUCE" in combined:
+            return "delmonte_pizza_pasta_sauce.jpg"
         if "KETCHUP" in combined:
             return "delmonte_ketchup_bottle.jpg"
         if "MOZZARELLA" in combined or "CHEESE" in combined:
@@ -434,13 +466,17 @@ class RecommendationService:
         if "FRIES" in combined:
             return "amul_french_fries_6mm.jpg"
         if "TORTILLA" in combined or "WRAP" in combined:
-            return "fresh2go_tortilla_10.jpg"
+            return "fresh2go_tortilla_8_5.jpg" if ("8.5" in combined or " 8 " in combined) else "fresh2go_tortilla_10.jpg"
         if "MOMO" in combined:
             return "triken_chicken_momos.jpg"
         if "NUGGET" in combined:
             return "itc_crunchy_chicken_nuggets.jpg"
         if "BREADING" in combined:
             return "vkl_crispy_cajun_breading.jpg"
+        if "MARINADE" in combined:
+            return "vkl_extra_hs_marinade.jpg"
+        if "BUCKET" in combined:
+            return "kfc_bucket.jpg"
 
         return "boxes_display_pizza_burger.jpg"
 
@@ -554,7 +590,7 @@ class RecommendationService:
                     "primary_keywords": ["BREADING", "MARINADE", "CAJUN", "CRISPY", "POPCORN", "NUGGET"],
                     "trigger_skus": ["RAIS-BRD-01", "RAIS-BRD-02", "RAIS-CHK-03", "RAIS-CHK-05"],
                     "recommended_sku": {
-                        "sku": "RAIS-BOX-08",
+                        "sku": "RAIS-BKT-01",
                         "name": "BROASTED CHICKEN BUCKET 1000ML WITH LID (100 NOS)",
                         "brand": "Packaging Solutions",
                         "category_id": pkg_cat_id,

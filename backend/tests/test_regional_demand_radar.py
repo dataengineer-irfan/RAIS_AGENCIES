@@ -225,7 +225,7 @@ def test_demand_radar_detects_live_accounts_and_derived_units(setup_radar_db):
     assert "Rayachoty" in afc["cities_served"]
     assert "Bucket Servings" in afc["derived_packaging_demand"]
     assert afc["is_in_catalog"] is False
-    assert afc["recommended_sku"]["sku"] == "RAIS-BOX-08"
+    assert afc["recommended_sku"]["sku"] == "RAIS-BKT-01"
     assert afc["recommended_sku"]["base_price"] == 850.00
     assert afc["recommended_sku"]["packaging_unit"] == "100 NOS"
 
@@ -255,10 +255,10 @@ def test_demand_radar_updates_when_sku_is_added_to_catalogue(setup_radar_db):
     assert afc1["is_in_catalog"] is False
     assert afc1["recommended_sku"]["current_stock"] == 0.0
 
-    # Simulate 1-click addition of RAIS-BOX-08 to catalogue
+    # Simulate 1-click addition of RAIS-BKT-01 to catalogue
     pkg_cat = db.query(Category).filter_by(code="PACKAGING").first()
     new_box = Product(
-        sku="RAIS-BOX-08",
+        sku="RAIS-BKT-01",
         name="BROASTED CHICKEN BUCKET 1000ML WITH LID (100 NOS)",
         brand="Packaging Solutions",
         category_id=pkg_cat.id,
