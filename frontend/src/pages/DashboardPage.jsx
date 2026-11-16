@@ -1379,15 +1379,15 @@ export const DashboardPage = ({
                             <div className="flex items-center gap-2 truncate flex-1 min-w-0">
                               <span 
                                 onClick={() => onNavigate('customers')}
-                                className="font-bold text-white hover:text-amber-400 cursor-pointer truncate"
+                                className="font-bold text-slate-900 dark:text-white hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer truncate"
                                 title="View Customer Dossier"
                               >
                                 {inv.customer_name}
                                 {inv.customer_contact && inv.customer_contact.toLowerCase() !== (inv.customer_name || '').toLowerCase() && (
-                                  <span className="text-amber-300 font-medium ml-1">({inv.customer_contact})</span>
+                                  <span className="text-slate-600 dark:text-amber-300 font-medium ml-1">({inv.customer_contact})</span>
                                 )}
                               </span>
-                              <span className="text-[10px] text-slate-500 font-mono truncate">
+                              <span className="text-[10px] text-slate-600 dark:text-slate-500 font-mono font-medium truncate">
                                 📍 {inv.customer_city || 'Rayachoty'}
                               </span>
                             </div>
@@ -1396,7 +1396,7 @@ export const DashboardPage = ({
                             {Array.isArray(inv.items_preview) && inv.items_preview.length > 0 && (
                               <div className="flex items-center gap-1 overflow-hidden shrink-0 max-w-[280px]">
                                 {inv.items_preview.slice(0, 2).map(it => it.replace(/TORTILLAH/gi, 'TORTILLA').replace(/MARINDE/gi, 'MARINADE').replace(/\bTissu\b/gi, 'Tissue')).map((it, i) => (
-                                  <span key={i} className="text-[9px] bg-slate-900 text-amber-300/90 px-1.5 py-0.2 rounded border border-amber-500/20 font-sans truncate" title={it}>
+                                  <span key={i} className="text-[9px] bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-amber-300/90 px-1.5 py-0.2 rounded border border-slate-300 dark:border-amber-500/20 font-sans font-semibold truncate" title={it}>
                                     📦 {it}
                                   </span>
                                 ))}

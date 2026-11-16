@@ -739,7 +739,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                     onClick={() => handleSelectInvoice(inv)}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs group ${
                       isSelected
-                        ? 'bg-white dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/50 border-l-4 border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10'
+                        ? 'bg-amber-50/40 dark:bg-amber-500/10 border-slate-300 dark:border-amber-500/50 border-l-4 !border-l-amber-500 shadow-sm dark:shadow-md dark:shadow-amber-500/10'
                         : 'bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
@@ -792,7 +792,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                         <div className="font-mono font-bold text-xs text-slate-900 dark:text-white">
                           ₹{parseFloat(total || 0).toFixed(2)}
                         </div>
-                        <span className={`text-[11px] font-mono block ${outstanding > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                        <span className={`text-[11px] font-mono block ${outstanding > 0 ? 'text-rose-600 dark:text-rose-400 font-black' : 'text-slate-500 dark:text-slate-400'}`}>
                           Due: ₹{parseFloat(outstanding || 0).toFixed(2)}
                         </span>
                         {hasRole(['ADMIN', 'OPERATOR']) && inv?.gross_profit !== undefined && inv?.gross_profit !== null && (
@@ -948,7 +948,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                         <span className="text-amber-700 dark:text-amber-300 font-bold ml-1.5">({selectedInvoice.customer_contact})</span>
                       )}
                     </h2>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 flex-wrap">
                       <span>Billed: {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText}</span>
                       {selectedInvoice.due_date && (
                         <>
@@ -1016,34 +1016,34 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                           {selectedInvoice.items.map((item, idx) => (
                             <div 
                               key={idx}
-                              className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs"
+                              className="bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between text-xs hover:border-slate-300 dark:hover:border-slate-700 shadow-2xs"
                             >
                               <div className="overflow-hidden pr-2">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   {item.brand && (
-                                    <span className="font-mono text-[10px] text-amber-400 font-bold uppercase tracking-wider">{item.brand}</span>
+                                    <span className="font-mono text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">{item.brand}</span>
                                   )}
                                   {item.product_sku && (
-                                    <span className="font-mono text-[10px] text-slate-400">{item.product_sku}</span>
+                                    <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400">{item.product_sku}</span>
                                   )}
                                   {item.hsn_code && (
-                                    <span className="font-mono text-[9px] text-slate-500">HSN: {item.hsn_code}</span>
+                                    <span className="font-mono text-[9px] text-slate-500 dark:text-slate-500">HSN: {item.hsn_code}</span>
                                   )}
                                 </div>
-                                <h5 className="font-bold text-white text-xs truncate mt-0.5">
+                                <h5 className="font-bold text-slate-900 dark:text-white text-xs truncate mt-0.5">
                                   {item.item_description || item.item_name || item.product_name || 'Item'}
                                 </h5>
-                                <p className="text-[10px] text-slate-400 font-mono">
+                                <p className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">
                                   {item.quantity} {item.packaging_unit || 'units'} @ ₹{parseFloat(item.unit_price || 0).toFixed(2)}
                                 </p>
                               </div>
                               <div className="text-right shrink-0">
-                                <div className="font-mono font-bold text-white text-xs">
+                                <div className="font-mono font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
                                   ₹{parseFloat(item.line_total || item.total_amount || 0).toFixed(2)}
                                 </div>
                                 {hasRole(['ADMIN', 'OPERATOR']) && item.gross_profit !== undefined && item.gross_profit !== null && (
                                   <div 
-                                    className="text-[9px] font-mono text-purple-300 mt-0.5"
+                                    className="text-[9px] font-mono font-bold text-indigo-700 dark:text-purple-300 bg-indigo-50 dark:bg-purple-950/70 border border-indigo-200 dark:border-purple-500/30 px-1.5 py-0.5 rounded mt-0.5 inline-block text-right shadow-2xs"
                                     title={`Landed Cost: ₹${parseFloat(item.unit_cost || 0).toFixed(2)}/unit | COGS: ₹${parseFloat(item.cogs || 0).toFixed(2)}`}
                                   >
                                     Profit: +₹{parseFloat(item.gross_profit || 0).toFixed(2)} ({parseFloat(item.gross_margin_pct || 0).toFixed(1)}%)
