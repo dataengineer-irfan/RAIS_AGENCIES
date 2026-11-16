@@ -178,6 +178,27 @@ html.theme-light .border-slate-700\/50 {
   border-color: #d1d5db !important;
 }
 
+/* ─── MOBILE BOTTOM NAVIGATION (Vyapar / Khatabook Clean White Bar) ─── */
+html.theme-light nav.fixed.bottom-0,
+html.theme-light .bg-slate-900\/98 {
+  background-color: #ffffff !important;
+  border-top: 1px solid #e5e7eb !important;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05), 0 -2px 4px -2px rgba(0, 0, 0, 0.03) !important;
+}
+
+html.theme-light nav.fixed.bottom-0 button.text-slate-400 {
+  color: #6b7280 !important;
+}
+
+html.theme-light nav.fixed.bottom-0 button.bg-amber-500\/15 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+html.theme-light nav.fixed.bottom-0 button.bg-amber-500\/15 svg {
+  color: #d97706 !important;
+}
+
 /* ─── SIDEBAR NAVIGATION (Executive Enterprise SaaS Theme) ─── */
 html.theme-light nav button.bg-amber-500\/10,
 html.theme-light nav .bg-amber-500\/10 {
