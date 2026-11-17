@@ -10,6 +10,8 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
   const [quantity, setQuantity] = useState('');
   const [purchaseCost, setPurchaseCost] = useState('');
   const [supplier, setSupplier] = useState('');
+  const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState('');
+  const [idempotencyKey, setIdempotencyKey] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -70,6 +72,8 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
     setQuantity('');
     setPurchaseCost('');
     setSupplier('');
+    setSupplierInvoiceNumber('');
+    setIdempotencyKey('GRN-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9));
     setBatchNumber('');
     setExpiryDate('');
     setNotes('');
@@ -97,6 +101,8 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
         quantity: parseFloat(quantity),
         purchase_cost: purchaseCost ? parseFloat(purchaseCost) : null,
         supplier: supplier || null,
+        supplier_invoice_number: supplierInvoiceNumber.trim() || null,
+        idempotency_key: idempotencyKey || ('GRN-' + Date.now()),
         batch_number: batchNumber || null,
         expiry_date: expiryDate || null,
         notes: notes || null
@@ -251,6 +257,21 @@ export const ReceiveStockModal = ({ isOpen, onClose, initialProductId = null, on
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
               />
             </div>
+            <div>
+              <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Supplier Invoice / Challan #
+              </label>
+              <input
+                type="text"
+                value={supplierInvoiceNumber}
+                onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
+                placeholder="e.g. INV-98421"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block font-bold uppercase tracking-wider text-slate-400 mb-1">
                 Batch Number

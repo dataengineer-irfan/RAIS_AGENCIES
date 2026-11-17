@@ -73,6 +73,15 @@ def get_customer_audit_statement(
     """Detailed audit dossier for a single customer: statement, invoices, payments, and suspect flags."""
     return FinancialAuditService.get_customer_statement_dossier(db, customer_id)
 
+@router.get("/financial-audit/product/{product_id}")
+def get_product_audit_statement(
+    product_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """Detailed 360-degree stock movement, procurement, and customer consumption dossier for a single SKU."""
+    return FinancialAuditService.get_product_statement_dossier(db, product_id)
+
 @router.post("/financial-audit/export-excel")
 def export_financial_audit_excel(
     payload: ExportAuditExcelRequest,

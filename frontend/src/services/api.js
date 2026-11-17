@@ -520,6 +520,10 @@ export const reportApi = {
     const res = await api.get(`/reports/financial-audit/customer/${customerId}`);
     return res.data;
   },
+  getProductAuditStatement: async (productId) => {
+    const res = await api.get(`/reports/financial-audit/product/${productId}`);
+    return res.data;
+  },
   exportFinancialAuditExcel: async (payload = {}) => {
     const res = await api.post('/reports/financial-audit/export-excel', payload, {
       responseType: 'blob'

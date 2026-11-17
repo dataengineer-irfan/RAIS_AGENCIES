@@ -29,9 +29,13 @@ import {
   CreditCard,
   Building,
   ArrowDownRight,
-  UserX
+  UserX,
+  Package,
+  Truck,
+  ArrowUpRight
 } from 'lucide-react';
-import { reportApi, auditApi } from '../services/api';
+import { reportApi, auditApi, catalogueApi } from '../services/api';
+import { getProductImageUrl } from '../utils/productMediaMap';
 
 export const WEEKLY_FILTER_PRESETS = [
   { id: 'all', label: 'All Time (Historical)', shortLabel: 'All Time' },
@@ -171,6 +175,13 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
   const [loadingDossier, setLoadingDossier] = useState(false);
   const [dossierSubTab, setDossierSubTab] = useState('ledger'); // 'ledger' | 'invoices' | 'payments'
 
+  // Product Dossier Drilldown State
+  const [productsList, setProductsList] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(() => initialParams?.productId || '');
+  const [productDossierData, setProductDossierData] = useState(null);
+  const [loadingProductDossier, setLoadingProductDossier] = useState(false);
+  const [productDossierSubTab, setProductDossierSubTab] = useState('movements'); // 'movements' | 'consumption' | 'procurement'
+
   // Export State
   const [exportingExcel, setExportingExcel] = useState(false);
 
@@ -200,10 +211,44 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
     }
   }, [initialParams]);
 
+  const loadProducts = async () => {
+    try {
+      const data = await catalogueApi.listProducts({ limit: 300 });
+      const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
+      setProductsList(items);
+      if (items.length > 0 && !selectedProductId) {
+        setSelectedProductId(items[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to load products for dossier:', err);
+    }
+  };
+
+  const loadProductDossier = async (productId) => {
+    if (!productId) return;
+    setLoadingProductDossier(true);
+    try {
+      const dossier = await reportApi.getProductAuditStatement(productId);
+      setProductDossierData(dossier);
+    } catch (err) {
+      console.error('Failed to load product dossier:', err);
+    } finally {
+      setLoadingProductDossier(false);
+    }
+  };
+
   useEffect(() => {
     loadScanData();
     loadMarginLeakage();
+    loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (selectedProductId) {
+      loadProductDossier(selectedProductId);
+    }
+  }, [selectedProductId]);
+
 
   // Debounce margin leakage search input
   useEffect(() => {
@@ -663,6 +708,23 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
           {selectedCustomerId && (
             <span className="text-[10px] text-amber-400/80 font-mono">
               ({scanData?.customers?.find(c => c.id === selectedCustomerId)?.code || 'SELECTED'})
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('product_dossier')}
+          className={`px-4 py-3 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'product_dossier'
+              ? 'border-amber-500 text-amber-400 bg-slate-900'
+              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          <span>Single Product Deep Dossier</span>
+          {selectedProductId && (
+            <span className="text-[10px] text-amber-400/80 font-mono">
+              ({productsList?.find(p => p.id === selectedProductId)?.sku || 'SELECTED'})
             </span>
           )}
         </button>
@@ -1704,6 +1766,379 @@ export const FinancialAuditPage = ({ onNavigate, initialParams = null }) => {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── TAB 4.5: SINGLE PRODUCT DEEP DOSSIER ─── */}
+      {activeTab === 'product_dossier' && (
+        <div className="space-y-3 animate-in fade-in duration-200">
+          {/* Unified Compact Product Control & Metrics Strip */}
+          <div className="bg-slate-900 border border-slate-800 p-2.5 sm:p-3 rounded-xl shadow-md space-y-2">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+              {/* Left: Product Selector with Packshot */}
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Product SKU:</span>
+                <select
+                  value={selectedProductId}
+                  onChange={(e) => setSelectedProductId(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 text-amber-400 text-xs font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:border-amber-500 max-w-[280px] sm:max-w-[340px] truncate cursor-pointer shrink-0"
+                >
+                  {(productsList || []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.sku} — {p.name}
+                    </option>
+                  ))}
+                </select>
+
+                {productDossierData?.product && (
+                  <div className="flex items-center gap-2 min-w-0">
+                    {getProductImageUrl(productDossierData.product) ? (
+                      <img
+                        src={getProductImageUrl(productDossierData.product)}
+                        alt={productDossierData.product.name}
+                        className="w-7 h-7 rounded object-cover border border-slate-700 shrink-0 bg-slate-800"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                        <Package className="w-3.5 h-3.5 text-slate-400" />
+                      </div>
+                    )}
+                    <span className="text-[11px] text-slate-400 font-mono hidden md:inline truncate">
+                      📦 {productDossierData.product.category_name} • HSN: {productDossierData.product.hsn_code} • Tax: {productDossierData.product.tax_rate}%
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Live Stock & Margin Strip */}
+              {productDossierData?.product && (
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-between lg:justify-end shrink-0">
+                  <div className="flex items-center gap-2 text-[11px] font-mono bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800/80">
+                    <span className="text-slate-400">
+                      Stock: <strong className={productDossierData.product.current_stock <= 0 ? 'text-rose-400 font-bold' : productDossierData.product.current_stock <= productDossierData.product.min_stock_alert ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+                        {productDossierData.product.current_stock} {productDossierData.product.packaging_unit}
+                      </strong>
+                    </span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-slate-400">Cost: <strong className="text-slate-200">₹{productDossierData.product.purchase_cost?.toFixed(2)}</strong></span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-slate-400">Price: <strong className="text-slate-200">₹{productDossierData.product.base_price?.toFixed(2)}</strong></span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-emerald-400 font-bold">
+                      Margin: <strong className="text-emerald-400 text-xs font-black">₹{productDossierData.product.unit_margin?.toFixed(2)} ({productDossierData.product.unit_margin_pct}%)</strong>
+                    </span>
+                  </div>
+
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                    productDossierData.product.stock_status === 'OUT_OF_STOCK'
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      : productDossierData.product.stock_status === 'LOW_STOCK'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  }`}>
+                    {productDossierData.product.stock_status.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Lifetime Summary KPI Cards Strip */}
+            {productDossierData?.summary && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-800/60">
+                <div className="p-2 bg-slate-950/60 rounded-lg border border-slate-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lifetime Sold</div>
+                  <div className="text-sm font-black text-white font-mono mt-0.5">
+                    {productDossierData.summary.lifetime_units_sold} <span className="text-[10px] text-slate-400 font-normal">{productDossierData.product.packaging_unit}</span>
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    Intake: {productDossierData.summary.lifetime_units_received} {productDossierData.product.packaging_unit}
+                  </div>
+                </div>
+
+                <div className="p-2 bg-slate-950/60 rounded-lg border border-slate-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Revenue</div>
+                  <div className="text-sm font-black text-amber-400 font-mono mt-0.5">
+                    ₹{Math.round(productDossierData.summary.lifetime_revenue || 0).toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    From {productDossierData.statement?.filter(m => m.type === 'INVOICE_SALE' || (m.reference && m.reference.startsWith('INV-'))).length || 0} bills
+                  </div>
+                </div>
+
+                <div className="p-2 bg-slate-950/60 rounded-lg border border-slate-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Gross Margin</div>
+                  <div className="text-sm font-black text-emerald-400 font-mono mt-0.5">
+                    ₹{Math.round(productDossierData.summary.lifetime_gross_profit || 0).toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-[9px] text-emerald-500/80 mt-0.5">
+                    Cumulative profit generated
+                  </div>
+                </div>
+
+                <div className="p-2 bg-slate-950/60 rounded-lg border border-slate-800">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">QSR Reach</div>
+                  <div className="text-sm font-black text-blue-400 font-mono mt-0.5">
+                    {productDossierData.summary.active_outlets_count} <span className="text-[10px] text-slate-400 font-normal">Outlets</span>
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    {productDossierData.summary.grn_receipts_count} GRN Intake Batches
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Dossier Tables Container */}
+          {loadingProductDossier ? (
+            <div className="p-12 text-center text-slate-400 font-mono text-xs flex items-center justify-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+              <span>Loading complete product statement & supply chain history...</span>
+            </div>
+          ) : productDossierData && (
+            <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl shadow-md space-y-3">
+              {/* Sub-tabs inside Product Dossier */}
+              <div className="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold flex-wrap">
+                <button
+                  onClick={() => setProductDossierSubTab('movements')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    productDossierSubTab === 'movements' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span>Stock Movement Ledger ({productDossierData.statement?.length || 0})</span>
+                </button>
+                <button
+                  onClick={() => setProductDossierSubTab('consumption')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    productDossierSubTab === 'consumption' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Building className="w-3.5 h-3.5" />
+                  <span>Outlet Consumption Breakdown ({productDossierData.outlets?.length || 0})</span>
+                </button>
+                <button
+                  onClick={() => setProductDossierSubTab('procurement')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    productDossierSubTab === 'procurement' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                  <span>Supplier GRN Intake History ({productDossierData.procurement?.length || 0})</span>
+                </button>
+              </div>
+
+              {/* Subtab 1: Stock Movement Ledger */}
+              {productDossierSubTab === 'movements' && (
+                <div className="overflow-x-auto mt-4">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950/70 border-b border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="py-2.5 px-3">Date</th>
+                        <th className="py-2.5 px-3">Exact Time (IST)</th>
+                        <th className="py-2.5 px-3">Type</th>
+                        <th className="py-2.5 px-3">Reference</th>
+                        <th className="py-2.5 px-3">Party / Reason</th>
+                        <th className="py-2.5 px-3">Supplier Inv / Challan</th>
+                        <th className="py-2.5 px-3 text-right">Change</th>
+                        <th className="py-2.5 px-3 text-right">Bal Stock</th>
+                        <th className="py-2.5 px-3 text-right">Rate</th>
+                        <th className="py-2.5 px-3 text-right">Total Val</th>
+                        <th className="py-2.5 px-3 text-right">Margin</th>
+                        <th className="py-2.5 px-3">Operator</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
+                      {(productDossierData.statement || []).length === 0 ? (
+                        <tr>
+                          <td colSpan="12" className="text-center py-8 text-slate-500">No stock movements found for this product.</td>
+                        </tr>
+                      ) : (
+                        productDossierData.statement.map((m) => {
+                          const isReceipt = m.quantity_change > 0;
+                          return (
+                            <tr key={m.id} className="hover:bg-slate-800/40 transition-colors">
+                              <td className="py-2.5 px-3 text-slate-300 whitespace-nowrap">{m.date}</td>
+                              <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{m.created_at_ist}</td>
+                              <td className="py-2.5 px-3">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                  m.type === 'RECEIPT'
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                    : m.type === 'INVOICE_SALE' || (m.reference && m.reference.startsWith('INV-'))
+                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                }`}>
+                                  {m.type}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-amber-400 font-bold whitespace-nowrap">{m.reference}</td>
+                              <td className="py-2.5 px-3 text-slate-200 font-sans max-w-[200px] truncate" title={m.party}>{m.party}</td>
+                              <td className="py-2.5 px-3 text-slate-400">{m.supplier_invoice_number || '-'}</td>
+                              <td className={`py-2.5 px-3 text-right font-black ${isReceipt ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {isReceipt ? `+${m.quantity_change}` : m.quantity_change} {m.unit}
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-slate-200 font-bold">
+                                {m.new_stock} {m.unit}
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-slate-300">
+                                {m.unit_rate !== null ? `₹${m.unit_rate.toFixed(2)}` : '-'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-slate-200 font-bold">
+                                {m.total_value !== null ? `₹${Math.round(m.total_value).toLocaleString('en-IN')}` : '-'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-sans">
+                                {m.margin_amount !== null ? (
+                                  <span className={`text-[10px] font-bold ${m.margin_amount >= 0 ? 'text-emerald-400' : 'text-rose-400 font-black'}`}>
+                                    {m.margin_amount >= 0 ? `+₹${Math.round(m.margin_amount)}` : `-₹${Math.abs(Math.round(m.margin_amount))}`} ({m.margin_percent}%)
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500">-</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-400 font-sans text-[10px]">{m.operator}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Subtab 2: Outlet Consumption Breakdown */}
+              {productDossierSubTab === 'consumption' && (
+                <div className="overflow-x-auto mt-4">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950/70 border-b border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="py-2.5 px-3">Outlet Code & Business Name</th>
+                        <th className="py-2.5 px-3">Contact & Phone</th>
+                        <th className="py-2.5 px-3">Location</th>
+                        <th className="py-2.5 px-3 text-right">Total Units</th>
+                        <th className="py-2.5 px-3 text-right">% Demand Share</th>
+                        <th className="py-2.5 px-3 text-right">Total Billed</th>
+                        <th className="py-2.5 px-3 text-right">Gross Margin</th>
+                        <th className="py-2.5 px-3 text-center">Invoices</th>
+                        <th className="py-2.5 px-3">Last Billed</th>
+                        <th className="py-2.5 px-3 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
+                      {(productDossierData.outlets || []).length === 0 ? (
+                        <tr>
+                          <td colSpan="10" className="text-center py-8 text-slate-500">No outlet sales recorded yet for this SKU.</td>
+                        </tr>
+                      ) : (
+                        productDossierData.outlets.map((o) => (
+                          <tr key={o.customer_id} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-2.5 px-3">
+                              <span className="text-amber-400 font-bold block">{o.customer_code}</span>
+                              <span className="text-slate-200 font-sans text-xs font-semibold">{o.business_name}</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-300 font-sans">
+                              <div>{o.contact_person || '-'}</div>
+                              <div className="text-slate-400 font-mono text-[10px]">{o.phone || 'No phone'}</div>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-300 font-sans">{o.city}</td>
+                            <td className="py-2.5 px-3 text-right font-black text-white">
+                              {o.total_quantity} {productDossierData.product.packaging_unit}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <div className="w-16 bg-slate-800 rounded-full h-1.5 overflow-hidden hidden sm:block">
+                                  <div className="bg-amber-400 h-full rounded-full" style={{ width: `${Math.min(100, o.percentage_share)}%` }}></div>
+                                </div>
+                                <span className="text-amber-400 font-bold">{o.percentage_share}%</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-right text-slate-200 font-bold">
+                              ₹{Math.round(o.total_billed).toLocaleString('en-IN')}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-sans">
+                              <span className={`text-[10px] font-bold ${o.total_margin >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                ₹{Math.round(o.total_margin).toLocaleString('en-IN')}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center text-slate-300">{o.invoices_count}</td>
+                            <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{o.last_order_date || '-'}</td>
+                            <td className="py-2.5 px-3 text-center">
+                              <button
+                                onClick={() => {
+                                  setSelectedCustomerId(o.customer_id);
+                                  setActiveTab('dossier');
+                                }}
+                                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded text-[10px] font-bold transition-all border border-slate-700 flex items-center gap-1 mx-auto cursor-pointer"
+                              >
+                                <span>Dossier</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Subtab 3: Supplier GRN Intake History */}
+              {productDossierSubTab === 'procurement' && (
+                <div className="overflow-x-auto mt-4">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950/70 border-b border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="py-2.5 px-3">Date</th>
+                        <th className="py-2.5 px-3">Exact Time (IST)</th>
+                        <th className="py-2.5 px-3">Receipt #</th>
+                        <th className="py-2.5 px-3">Supplier</th>
+                        <th className="py-2.5 px-3">Supplier Invoice / Challan</th>
+                        <th className="py-2.5 px-3">Batch & Expiry</th>
+                        <th className="py-2.5 px-3 text-right">Qty Received</th>
+                        <th className="py-2.5 px-3 text-right">Landed Cost</th>
+                        <th className="py-2.5 px-3 text-right">Total Cost</th>
+                        <th className="py-2.5 px-3">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 font-mono text-[11px]">
+                      {(productDossierData.procurement || []).length === 0 ? (
+                        <tr>
+                          <td colSpan="10" className="text-center py-8 text-slate-500">No GRN stock receipts recorded for this SKU.</td>
+                        </tr>
+                      ) : (
+                        productDossierData.procurement.map((r) => (
+                          <tr key={r.id} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="py-2.5 px-3 text-slate-300 whitespace-nowrap">{r.date}</td>
+                            <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{r.created_at_ist}</td>
+                            <td className="py-2.5 px-3 text-emerald-400 font-bold whitespace-nowrap">{r.receipt_number}</td>
+                            <td className="py-2.5 px-3 text-slate-200 font-sans font-bold">{r.supplier}</td>
+                            <td className="py-2.5 px-3 text-amber-400 font-bold">{r.supplier_invoice_number || '-'}</td>
+                            <td className="py-2.5 px-3 text-slate-300">
+                              <div>Batch: {r.batch_number}</div>
+                              {r.expiry_date && r.expiry_date !== '-' && (
+                                <div className="text-[10px] text-slate-400">Exp: {r.expiry_date}</div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-black text-emerald-400">
+                              +{r.quantity} {r.unit}
+                            </td>
+                            <td className="py-2.5 px-3 text-right text-slate-200 font-bold">
+                              ₹{r.purchase_cost.toFixed(2)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right text-slate-100 font-black">
+                              ₹{Math.round(r.total_cost).toLocaleString('en-IN')}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-400 font-sans text-[10px] max-w-[150px] truncate" title={r.notes || ''}>
+                              {r.notes || '-'}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

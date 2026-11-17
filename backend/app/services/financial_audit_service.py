@@ -9,6 +9,7 @@ from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceItem
 from app.models.payment import Payment, PaymentAllocation
 from app.models.catalogue import Product
+from app.models.inventory import StockMovement
 from app.services.customer_service import CustomerService
 from app.services.sequence_service import SequenceService
 from app.services.audit_service import AuditService
@@ -964,4 +965,216 @@ class FinancialAuditService:
             "customer_id": c_id,
             "customer_name": customer.business_name,
             "new_balance": float(bal)
+        }
+
+    @staticmethod
+    def get_product_statement_dossier(db: Session, product_id: str) -> Dict[str, Any]:
+        """
+        Returns full detailed 360-degree supply chain, stock movement ledger,
+        customer outlet consumption breakdown, and procurement history for a single SKU.
+        """
+        product = db.query(Product).options(joinedload(Product.category)).filter(Product.id == product_id).first()
+        if not product:
+            raise EntityNotFoundException("Product", product_id)
+
+        # 1. Fetch all stock movements for this product
+        movements = db.query(StockMovement).filter(
+            StockMovement.product_id == product.id
+        ).order_by(StockMovement.created_at.desc(), StockMovement.id.desc()).all()
+
+        # Batch resolve references for customers and invoices
+        inv_numbers = [m.reference_number for m in movements if m.reference_number and str(m.reference_number).startswith("INV-")]
+        invoices_map = {}
+        if inv_numbers:
+            invoices = db.query(Invoice).options(
+                joinedload(Invoice.customer),
+                joinedload(Invoice.items)
+            ).filter(Invoice.invoice_number.in_(inv_numbers)).all()
+            for inv in invoices:
+                invoices_map[inv.invoice_number] = inv
+
+        users_map = {}
+        user_ids = [m.created_by_id for m in movements if m.created_by_id]
+        if user_ids:
+            from app.models.user import User
+            users = db.query(User).filter(User.id.in_(user_ids)).all()
+            for u in users:
+                users_map[u.id] = u.username or u.email
+
+        # 2. Build running chronological movements list
+        formatted_movements = []
+        lifetime_units_received = Decimal("0.00")
+        lifetime_units_sold = Decimal("0.00")
+        lifetime_revenue = Decimal("0.00")
+        lifetime_gross_profit = Decimal("0.00")
+        latest_purchase_cost = product.purchase_cost
+
+        for m in movements:
+            party_name = "-"
+            unit_rate = None
+            line_tot = None
+            margin_val = None
+            margin_pct = None
+
+            if m.movement_type == "RECEIPT":
+                party_name = m.supplier or "Supplier GRN"
+                if m.purchase_cost and (latest_purchase_cost is None or latest_purchase_cost == 0):
+                    latest_purchase_cost = m.purchase_cost
+                lifetime_units_received += Decimal(str(m.quantity_change or 0))
+                if m.purchase_cost:
+                    unit_rate = float(m.purchase_cost)
+                    line_tot = float(abs(m.quantity_change) * m.purchase_cost)
+            elif m.reference_number and m.reference_number in invoices_map:
+                inv = invoices_map[m.reference_number]
+                if inv.customer:
+                    party_name = inv.customer.business_name
+                matched_item = next((it for it in inv.items if it.product_id == product.id), None)
+                if matched_item:
+                    unit_rate = float(matched_item.unit_price)
+                    line_tot = float(matched_item.line_total)
+                    cost_basis = Decimal(str(matched_item.landed_cost or latest_purchase_cost or (matched_item.unit_price * Decimal("0.80"))))
+                    item_cogs = cost_basis * Decimal(str(matched_item.quantity))
+                    margin_dec = matched_item.line_total - item_cogs
+                    margin_val = float(margin_dec)
+                    margin_pct = round(float((margin_dec / matched_item.line_total) * 100), 1) if matched_item.line_total > 0 else 0.0
+                    lifetime_revenue += matched_item.line_total
+                    lifetime_gross_profit += margin_dec
+                lifetime_units_sold += abs(Decimal(str(m.quantity_change or 0)))
+            elif m.movement_type in ["ADJUSTMENT_INCREASE", "ADJUSTMENT_DECREASE"]:
+                party_name = m.reason or "Stock Adjustment"
+
+            formatted_movements.append({
+                "id": m.id,
+                "date": to_date_str(m.created_at),
+                "created_at_ist": to_ist_str(m.created_at),
+                "type": m.movement_type,
+                "reference": m.reference_number or "-",
+                "party": party_name,
+                "supplier_invoice_number": getattr(m, "supplier_invoice_number", None) or "-",
+                "batch_number": m.batch_number or "-",
+                "quantity_change": float(m.quantity_change),
+                "previous_stock": float(m.previous_stock),
+                "new_stock": float(m.new_stock),
+                "unit": m.unit,
+                "unit_rate": unit_rate,
+                "total_value": line_tot,
+                "margin_amount": margin_val,
+                "margin_percent": margin_pct,
+                "operator": users_map.get(m.created_by_id, "System / Admin"),
+                "notes": m.notes
+            })
+
+        # 3. Build Outlet Consumption Breakdown (Who buys this SKU)
+        items_query = db.query(InvoiceItem).options(
+            joinedload(InvoiceItem.invoice).joinedload(Invoice.customer)
+        ).filter(InvoiceItem.product_id == product.id).all()
+
+        outlet_map = {}
+        for itm in items_query:
+            inv = itm.invoice
+            if not inv or not inv.customer:
+                continue
+            c = inv.customer
+            c_id = c.id
+            if c_id not in outlet_map:
+                outlet_map[c_id] = {
+                    "customer_id": c.id,
+                    "customer_code": c.customer_code,
+                    "business_name": c.business_name,
+                    "contact_person": c.contact_person,
+                    "phone": c.phone,
+                    "city": c.city or "Rayachoty",
+                    "total_quantity": Decimal("0.00"),
+                    "total_billed": Decimal("0.00"),
+                    "total_margin": Decimal("0.00"),
+                    "invoices_count": 0,
+                    "last_order_date": inv.invoice_date or inv.created_at
+                }
+            outlet_map[c_id]["total_quantity"] += Decimal(str(itm.quantity))
+            outlet_map[c_id]["total_billed"] += Decimal(str(itm.line_total))
+            cost_basis = Decimal(str(itm.landed_cost or latest_purchase_cost or (itm.unit_price * Decimal("0.80"))))
+            outlet_map[c_id]["total_margin"] += (Decimal(str(itm.line_total)) - (cost_basis * Decimal(str(itm.quantity))))
+            outlet_map[c_id]["invoices_count"] += 1
+            if inv.invoice_date and inv.invoice_date > outlet_map[c_id]["last_order_date"]:
+                outlet_map[c_id]["last_order_date"] = inv.invoice_date
+
+        total_outlet_qty = sum(v["total_quantity"] for v in outlet_map.values())
+        outlet_breakdown = []
+        for v in sorted(outlet_map.values(), key=lambda x: x["total_quantity"], reverse=True):
+            pct_share = round(float((v["total_quantity"] / total_outlet_qty) * 100), 1) if total_outlet_qty > 0 else 0.0
+            outlet_breakdown.append({
+                "customer_id": v["customer_id"],
+                "customer_code": v["customer_code"],
+                "business_name": v["business_name"],
+                "contact_person": v["contact_person"],
+                "phone": v["phone"],
+                "city": v["city"],
+                "total_quantity": float(v["total_quantity"]),
+                "total_billed": float(v["total_billed"]),
+                "total_margin": float(v["total_margin"]),
+                "invoices_count": v["invoices_count"],
+                "percentage_share": pct_share,
+                "last_order_date": to_date_str(v["last_order_date"])
+            })
+
+        # 4. Build Supplier Inward Procurement History (GRN History)
+        receipt_movements = [m for m in movements if m.movement_type == "RECEIPT"]
+        procurement_history = []
+        for rm in receipt_movements:
+            cost_val = float(rm.purchase_cost) if rm.purchase_cost else 0.0
+            qty_val = float(rm.quantity_change)
+            procurement_history.append({
+                "id": rm.id,
+                "receipt_number": rm.reference_number or "-",
+                "date": to_date_str(rm.created_at),
+                "created_at_ist": to_ist_str(rm.created_at),
+                "supplier": rm.supplier or "Supplier Intake",
+                "supplier_invoice_number": getattr(rm, "supplier_invoice_number", None) or "-",
+                "batch_number": rm.batch_number or "-",
+                "expiry_date": to_date_str(rm.expiry_date) if rm.expiry_date else "-",
+                "quantity": qty_val,
+                "purchase_cost": cost_val,
+                "total_cost": round(cost_val * qty_val, 2),
+                "unit": rm.unit,
+                "notes": rm.notes
+            })
+
+        # 5. Summary calculations
+        curr_stock = float(product.current_stock or 0)
+        min_stock = float(product.min_stock_alert or 10)
+        stock_status = "OUT_OF_STOCK" if curr_stock <= 0 else ("LOW_STOCK" if curr_stock <= min_stock else "IN_STOCK")
+        base_p = float(product.base_price or 0)
+        p_cost = float(latest_purchase_cost) if latest_purchase_cost else (base_p * 0.75)
+        unit_margin = round(base_p - p_cost, 2)
+        unit_margin_pct = round((unit_margin / base_p) * 100, 1) if base_p > 0 else 0.0
+
+        return {
+            "product": {
+                "id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "category_name": product.category.name if product.category else "Uncategorized",
+                "brand": product.brand,
+                "packaging_unit": product.packaging_unit,
+                "hsn_code": product.hsn_code or "1905",
+                "tax_rate": float(product.tax_rate or 0),
+                "current_stock": curr_stock,
+                "min_stock_alert": min_stock,
+                "stock_status": stock_status,
+                "base_price": base_p,
+                "purchase_cost": p_cost,
+                "unit_margin": unit_margin,
+                "unit_margin_pct": unit_margin_pct
+            },
+            "summary": {
+                "lifetime_units_received": float(lifetime_units_received),
+                "lifetime_units_sold": float(lifetime_units_sold),
+                "lifetime_revenue": float(lifetime_revenue),
+                "lifetime_gross_profit": float(lifetime_gross_profit),
+                "active_outlets_count": len(outlet_breakdown),
+                "grn_receipts_count": len(procurement_history)
+            },
+            "statement": formatted_movements,
+            "outlets": outlet_breakdown,
+            "procurement": procurement_history
         }

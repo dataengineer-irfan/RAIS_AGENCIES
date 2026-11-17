@@ -30,9 +30,11 @@ class ReceiveStockRequest(BaseModel):
     unit: Optional[str] = None
     purchase_cost: Optional[Decimal] = None
     supplier: Optional[str] = None
+    supplier_invoice_number: Optional[str] = None
     batch_number: Optional[str] = None
     expiry_date: Optional[Union[date, str]] = None
     notes: Optional[str] = None
+    idempotency_key: Optional[str] = None
 
     @field_validator('expiry_date', mode='before')
     @classmethod
@@ -72,10 +74,12 @@ class StockMovementResponse(BaseModel):
     unit: str
     purchase_cost: Optional[Decimal] = None
     supplier: Optional[str] = None
+    supplier_invoice_number: Optional[str] = None
     batch_number: Optional[str] = None
     expiry_date: Optional[date] = None
     reference_type: Optional[str] = None
     reference_number: Optional[str] = None
+    idempotency_key: Optional[str] = None
     customer_name: Optional[str] = None
     customer_code: Optional[str] = None
     invoice_id: Optional[str] = None

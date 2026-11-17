@@ -89,6 +89,44 @@ class InventoryService:
 
     @staticmethod
     def receive_stock(db: Session, req: ReceiveStockRequest, user_id: Optional[str] = None) -> dict:
+        # 1. Technical Idempotency Check: Return existing receipt if already processed
+        raw_key = getattr(req, "idempotency_key", None)
+        clean_key = str(raw_key).strip() if raw_key and str(raw_key).strip() else None
+        if clean_key:
+            existing_rec = db.query(StockMovement).filter(
+                StockMovement.idempotency_key == clean_key
+            ).first()
+            if existing_rec:
+                prod = existing_rec.product or db.query(Product).filter(Product.id == existing_rec.product_id).first()
+                return {
+                    "success": True,
+                    "message": f"Idempotent return: Stock already received under {existing_rec.reference_number}",
+                    "receipt_number": existing_rec.reference_number,
+                    "product_name": prod.name if prod else "Product",
+                    "previous_stock": float(existing_rec.previous_stock),
+                    "received_quantity": float(existing_rec.quantity_change),
+                    "new_stock": float(existing_rec.new_stock),
+                    "unit": existing_rec.unit,
+                    "idempotent": True
+                }
+
+        # 2. Physical Delivery Duplicate Protection: Check supplier invoice / challan number
+        supp_inv = (getattr(req, "supplier_invoice_number", None) or "").strip()
+        supp_name = (req.supplier or "").strip()
+        if supp_inv and supp_name:
+            prior_delivery = db.query(StockMovement).filter(
+                StockMovement.product_id == req.product_id,
+                StockMovement.movement_type == "RECEIPT",
+                StockMovement.supplier.ilike(supp_name),
+                StockMovement.supplier_invoice_number == supp_inv
+            ).first()
+            if prior_delivery:
+                raise InvalidFinancialOperationException(
+                    f"Duplicate physical delivery blocked: Supplier invoice/challan '{supp_inv}' from '{supp_name}' "
+                    f"was already received on {prior_delivery.created_at.strftime('%d-%m-%Y')} "
+                    f"(Receipt: {prior_delivery.reference_number})."
+                )
+
         product = db.query(Product).filter(Product.id == req.product_id).populate_existing().with_for_update().first()
         if not product:
             raise EntityNotFoundException("Product", req.product_id)
@@ -109,6 +147,8 @@ class InventoryService:
             unit=req.unit or product.packaging_unit,
             purchase_cost=Decimal(str(req.purchase_cost)) if req.purchase_cost else None,
             supplier=req.supplier,
+            supplier_invoice_number=supp_inv if supp_inv else None,
+            idempotency_key=clean_key,
             batch_number=req.batch_number,
             expiry_date=req.expiry_date,
             reference_type="RECEIPT",

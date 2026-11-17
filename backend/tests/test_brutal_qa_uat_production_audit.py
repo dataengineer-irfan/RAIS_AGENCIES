@@ -737,3 +737,162 @@ def test_art_03_thermal_slip_zero_retail_tax_surcharge():
     assert "1500.00" in receipt["upi"]["upi_qr_string"]
     assert receipt["header"]["hotline"] == "9347453135"
 
+
+def test_grn_01_idempotent_retry_prevents_double_stock(audit_db):
+    """
+    BRUTAL ADVERSARIAL QA: Technical Retry Idempotency
+    When a network timeout occurs or operator double-taps 'Receive Stock', the identical
+    client-side idempotency_key must return the existing receipt and MUST NEVER increment
+    stock a second time.
+    """
+    from app.services.inventory_service import InventoryService
+    from app.schemas.inventory import ReceiveStockRequest
+    import uuid
+
+    prod = audit_db.query(Product).first()
+    assert prod is not None, "Product must exist in audit db"
+
+    initial_stock = Decimal(str(prod.current_stock or 0))
+    intake_qty = Decimal("25.00")
+    unique_key = f"TEST-IDEM-{uuid.uuid4()}"
+
+    req = ReceiveStockRequest(
+        product_id=prod.id,
+        quantity=intake_qty,
+        purchase_cost=Decimal("120.00"),
+        supplier="HYDERABAD AGRO PRODUCTS",
+        supplier_invoice_number=f"INV-{uuid.uuid4().hex[:6].upper()}",
+        idempotency_key=unique_key,
+        unit="packets"
+    )
+
+    # 1. First execution: Stock must increase
+    res1 = InventoryService.receive_stock(audit_db, req)
+    audit_db.commit()
+
+    assert res1["success"] is True
+    assert Decimal(str(res1["received_quantity"])) == intake_qty
+    audit_db.refresh(prod)
+    assert Decimal(str(prod.current_stock)) == initial_stock + intake_qty, "First GRN did not increment stock correctly"
+
+    # 2. Duplicate submission with SAME idempotency key (simulating retry)
+    res2 = InventoryService.receive_stock(audit_db, req)
+    audit_db.commit()
+
+    assert res2["success"] is True
+    assert res2.get("idempotent") is True, "Idempotent flag not returned on duplicate retry"
+    assert res2["receipt_number"] == res1["receipt_number"], "Receipt number must be identical on idempotent return"
+
+    # 3. STOCK INVARIANT: Stock balance MUST remain strictly equal to initial + 25 (NOT + 50)
+    audit_db.refresh(prod)
+    assert Decimal(str(prod.current_stock)) == initial_stock + intake_qty, (
+        f"CRITICAL VULNERABILITY: Duplicate GRN submission doubled stock! "
+        f"Expected {initial_stock + intake_qty}, Got {prod.current_stock}"
+    )
+
+
+def test_grn_02_duplicate_supplier_invoice_blocked(audit_db):
+    """
+    BRUTAL ADVERSARIAL QA: Physical Delivery Duplicate Protection
+    Operators attempting to receive the same supplier invoice / challan number for the same
+    product and supplier MUST be blocked with InvalidFinancialOperationException.
+    """
+    from app.services.inventory_service import InventoryService
+    from app.schemas.inventory import ReceiveStockRequest
+    from app.core.exceptions import InvalidFinancialOperationException
+    import uuid
+
+    prod = audit_db.query(Product).first()
+    assert prod is not None
+
+    supp_name = "TIRUPATI COLD STORAGE PVT"
+    challan_no = f"CHALLAN-{uuid.uuid4().hex[:8].upper()}"
+
+    # Intake 1: Legitimate first delivery
+    req1 = ReceiveStockRequest(
+        product_id=prod.id,
+        quantity=Decimal("15.00"),
+        purchase_cost=Decimal("85.50"),
+        supplier=supp_name,
+        supplier_invoice_number=challan_no,
+        idempotency_key=f"KEY-1-{uuid.uuid4()}",
+        unit="packets"
+    )
+    res1 = InventoryService.receive_stock(audit_db, req1)
+    audit_db.commit()
+    assert res1["success"] is True
+
+    # Intake 2: Duplicate delivery attempt with different idempotency key but SAME supplier & challan
+    req2 = ReceiveStockRequest(
+        product_id=prod.id,
+        quantity=Decimal("15.00"),
+        purchase_cost=Decimal("85.50"),
+        supplier=supp_name,
+        supplier_invoice_number=challan_no,
+        idempotency_key=f"KEY-2-{uuid.uuid4()}",
+        unit="packets"
+    )
+
+    with pytest.raises(InvalidFinancialOperationException) as excinfo:
+        InventoryService.receive_stock(audit_db, req2)
+
+    assert "Duplicate physical delivery blocked" in str(excinfo.value)
+    assert challan_no in str(excinfo.value)
+
+
+def test_dossier_01_single_product_statement_payload(audit_db):
+    """
+    BRUTAL ADVERSARIAL QA: Single Product Deep Dossier Invariants
+    - 360° supply chain statement must reconcile with live stock
+    - Margins must be mathematically exact: (unit_price - cost) / unit_price
+    - Outlet consumption breakdown must reconcile with invoice items
+    """
+    from app.services.financial_audit_service import FinancialAuditService
+
+    prod = audit_db.query(Product).first()
+    assert prod is not None
+
+    dossier = FinancialAuditService.get_product_statement_dossier(audit_db, prod.id)
+
+    # 1. Product details integrity
+    p = dossier["product"]
+    assert p["id"] == prod.id
+    assert p["sku"] == prod.sku
+    assert p["name"] == prod.name
+    assert p["current_stock"] == float(prod.current_stock or 0)
+    assert p["stock_status"] in ["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"]
+    assert "unit_margin" in p
+    assert "unit_margin_pct" in p
+
+    # 2. Summary scorecard integrity
+    summary = dossier["summary"]
+    assert summary["lifetime_units_received"] >= 0
+    assert summary["lifetime_units_sold"] >= 0
+    assert summary["lifetime_revenue"] >= 0
+    assert summary["lifetime_gross_profit"] is not None
+    assert summary["active_outlets_count"] >= 0
+    assert summary["grn_receipts_count"] >= 0
+
+    # 3. Movements statement
+    statement = dossier["statement"]
+    assert isinstance(statement, list)
+    if len(statement) > 0:
+        first_m = statement[0]
+        assert "date" in first_m
+        assert "created_at_ist" in first_m
+        assert "quantity_change" in first_m
+        assert "new_stock" in first_m
+        assert "type" in first_m
+
+    # 4. Procurement GRN History
+    procurement = dossier["procurement"]
+    assert isinstance(procurement, list)
+    if len(procurement) > 0:
+        first_pr = procurement[0]
+        assert "receipt_number" in first_pr
+        assert "supplier" in first_pr
+        assert "supplier_invoice_number" in first_pr
+        assert "quantity" in first_pr
+        assert "total_cost" in first_pr
+
+

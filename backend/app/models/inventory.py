@@ -25,6 +25,8 @@ class StockMovement(Base):
     
     reference_type = Column(String(30), nullable=True) # ORDER, RECEIPT, MANUAL
     reference_number = Column(String(50), nullable=True)
+    idempotency_key = Column(String(100), nullable=True, index=True)
+    supplier_invoice_number = Column(String(100), nullable=True, index=True)
     reason = Column(String(150), nullable=True)
     notes = Column(Text, nullable=True)
     

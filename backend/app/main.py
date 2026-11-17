@@ -15,6 +15,8 @@ from sqlalchemy import text as _text
 try:
     with engine.connect() as _conn:
         _conn.execute(_text("ALTER TABLE products ADD COLUMN IF NOT EXISTS purchase_cost NUMERIC(12,2) NULL"))
+        _conn.execute(_text("ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(100) NULL"))
+        _conn.execute(_text("ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS supplier_invoice_number VARCHAR(100) NULL"))
         _conn.commit()
 except Exception:
     pass

@@ -148,6 +148,7 @@ export const BarcodeScanModal = ({ isOpen, onClose, products = [], onStockUpdate
         await inventoryApi.receiveStock({
           product_id: prodId,
           quantity: qty,
+          idempotency_key: `SCAN-GRN-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           reference_number: `SCAN-INWARD-${Date.now().toString().slice(-4)}`,
           notes: 'Camera barcode scanner instant inward'
         });
