@@ -11,10 +11,10 @@ def test_seeded_catalogue_completeness():
 
         # Check key items from catalogue image
         item_checks = {
-            "RAIS-CHK-01": {"name": "SIGNATURE TORTILLAH 8 INCHES FROZEN", "price": Decimal("85.00")},
+            "RAIS-CHK-01": {"name": "SIGNATURE TORTILLA 8 INCHES FROZEN", "price": Decimal("85.00")},
             "RAIS-CHK-05": {"name": "ITC CHICKEN NUGGETS", "price": Decimal("355.00")},
             "RAIS-VEG-01": {"name": "HUP HUP FRENCH FRIES 9MM", "price": Decimal("310.00")},
-            "RAIS-CHS-01": {"name": "MILKY MIST MOZEROLLA DICED CHEESE (2KG)", "price": Decimal("920.00")},
+            "RAIS-CHS-01": {"name": "MILKY MIST MOZZARELLA DICED CHEESE (2KG)", "price": Decimal("920.00")},
             "RAIS-BOX-03": {"name": 'PIZZA BOX 8"x8" PRINTED', "price": Decimal("650.00")},
             "RAIS-SPC-01": {"name": "CHILLY POWDER NO 1 (PICKLE)", "price": Decimal("300.00")},
             "RAIS-MOJ-01": {"name": "LIME AND MINT", "price": Decimal("360.00")}

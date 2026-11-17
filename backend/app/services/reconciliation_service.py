@@ -30,8 +30,24 @@ class ReconciliationService:
 
         ob = Decimal(str(customer.opening_balance or "0.00"))
 
+        # Step 1: Remove existing allocations for ALL payments of this customer (active + cancelled)
+        all_cust_payment_ids = [r[0] for r in db.query(Payment.id).filter(Payment.customer_id == customer_id).all()]
+        if all_cust_payment_ids:
+            db.query(PaymentAllocation).filter(PaymentAllocation.payment_id.in_(all_cust_payment_ids)).delete(synchronize_session=False)
+
+        # Ensure any cancelled or void payments strictly stay at zero allocation
+        db.query(Payment).filter(
+            Payment.customer_id == customer_id,
+            Payment.status.in_(["CANCELLED", "VOID"])
+        ).update({
+            Payment.allocated_amount: Decimal("0.00"),
+            Payment.unallocated_amount: Decimal("0.00")
+        }, synchronize_session=False)
+
+        # Fetch strictly active payments for FIFO reallocation
         payments = db.query(Payment).filter(
-            Payment.customer_id == customer_id
+            Payment.customer_id == customer_id,
+            Payment.status.notin_(["CANCELLED", "VOID"])
         ).order_by(Payment.payment_date.asc(), Payment.created_at.asc()).all()
 
         valid_billable_statuses = [
@@ -46,18 +62,13 @@ class ReconciliationService:
             Invoice.status.in_(valid_billable_statuses)
         ).order_by(Invoice.invoice_date.asc(), Invoice.created_at.asc()).all()
 
-        # Step 1: Remove existing allocations for this customer
-        payment_ids = [p.id for p in payments]
-        if payment_ids:
-            db.query(PaymentAllocation).filter(PaymentAllocation.payment_id.in_(payment_ids)).delete(synchronize_session=False)
-
         # Step 2: Reset invoices
         for inv in invoices:
             inv.paid_amount = Decimal("0.00")
             inv.outstanding_amount = Decimal(str(inv.total_amount))
             inv.status = InvoiceStatus.ISSUED.value
 
-        # Step 3: Reset payments
+        # Step 3: Reset active payments
         for p in payments:
             p.allocated_amount = Decimal("0.00")
             p.unallocated_amount = Decimal(str(p.amount))

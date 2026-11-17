@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Any
+from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import date, timedelta, datetime, timezone
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -310,15 +311,20 @@ class BillingService:
                 cost_source=itm.get("cost_source")
             )
             db.add(inv_item)
-            
-            # Automatically deduct warehouse inventory for this commercial invoice item
-            # (If invoice was created from an order, order already deducted stock upon placement)
-            if not data.order_id:
-                from app.services.inventory_service import InventoryService
+
+        # Concurrency Invariant: Deduct stock in deterministic, monotonically sorted product_id order
+        # to eliminate PostgreSQL deadlocks across parallel multi-terminal billing sessions.
+        if not data.order_id:
+            from app.services.inventory_service import InventoryService
+            product_deductions = defaultdict(Decimal)
+            for itm in calc["items"]:
+                product_deductions[itm["product_id"]] += Decimal(str(itm["quantity"]))
+
+            for pid in sorted(product_deductions.keys()):
                 InventoryService.deduct_stock_for_invoice(
                     db=db,
-                    product_id=itm["product_id"],
-                    quantity=itm["quantity"],
+                    product_id=pid,
+                    quantity=product_deductions[pid],
                     invoice_number=invoice.invoice_number,
                     user_id=user_id
                 )
@@ -764,8 +770,9 @@ class BillingService:
                         user_id=user_id
                     )
 
-            # Deduct stock for products added or with increased quantity
-            for prod_id, new_qty in new_items_dict.items():
+            # Deduct stock for products added or with increased quantity (sorted for deterministic locking)
+            for prod_id in sorted(new_items_dict.keys()):
+                new_qty = new_items_dict[prod_id]
                 old_qty = prev_items.get(prod_id, Decimal("0"))
                 diff = new_qty - old_qty
                 if diff > 0:

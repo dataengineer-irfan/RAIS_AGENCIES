@@ -147,29 +147,52 @@ export const InvoiceBuilderModal = ({
       setDueDate(curToday);
       setPaymentTerms('Cash on Delivery / Immediate Settlement');
 
-      // 1. Resolve initial customer
-      if (preselectedCustomer) {
-        setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
-      } else {
-        setCustomerId('');
+      // Check for saved session crash-recovery draft (protects against session timeout / accidental refresh)
+      let restoredDraft = null;
+      if (!isEditMode && !preselectedCustomer && !preselectedProduct && !initialVoiceData) {
+        try {
+          const rawDraft = sessionStorage.getItem('rais_invoice_draft_session_v1');
+          if (rawDraft) {
+            const parsed = JSON.parse(rawDraft);
+            if (parsed && Array.isArray(parsed.items) && parsed.items.some(i => i && i.product_id)) {
+              restoredDraft = parsed;
+            }
+          }
+        } catch {
+          // ignore storage error
+        }
       }
 
-      // 2. Resolve initial product line items
-      if (preselectedProduct && typeof preselectedProduct === 'object') {
-        setItems([
-          {
-            product_id: preselectedProduct.id,
-            quantity: 1,
-            unit_price: parseFloat(preselectedProduct.base_price || 0),
-            discount_rate: 0,
-            packaging_unit: preselectedProduct.packaging_unit || 'PKT'
-          }
-        ]);
+      if (restoredDraft) {
+        setCustomerId(restoredDraft.customerId || '');
+        setItems(restoredDraft.items);
+        if (restoredDraft.invoiceDiscount) setInvoiceDiscount(restoredDraft.invoiceDiscount);
+        if (restoredDraft.notes) setNotes(restoredDraft.notes);
       } else {
-        // Blank item row: user must choose product from dropdown or quick catalog
-        setItems([
-          { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }
-        ]);
+        // 1. Resolve initial customer
+        if (preselectedCustomer) {
+          setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
+        } else {
+          setCustomerId('');
+        }
+
+        // 2. Resolve initial product line items
+        if (preselectedProduct && typeof preselectedProduct === 'object') {
+          setItems([
+            {
+              product_id: preselectedProduct.id,
+              quantity: 1,
+              unit_price: parseFloat(preselectedProduct.base_price || 0),
+              discount_rate: 0,
+              packaging_unit: preselectedProduct.packaging_unit || 'PKT'
+            }
+          ]);
+        } else {
+          // Blank item row: user must choose product from dropdown or quick catalog
+          setItems([
+            { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }
+          ]);
+        }
       }
 
       // 3. If initialVoiceData was passed upon modal launch, apply it immediately
@@ -185,6 +208,23 @@ export const InvoiceBuilderModal = ({
       setLoading(false);
     }
   };
+
+  // Autosave draft to sessionStorage to protect against session expiry or accidental page refresh
+  useEffect(() => {
+    if (!isOpen || isEditMode || successInvoice) return;
+    try {
+      if (items && items.some(i => i && i.product_id)) {
+        sessionStorage.setItem('rais_invoice_draft_session_v1', JSON.stringify({
+          customerId,
+          items,
+          invoiceDiscount,
+          notes
+        }));
+      }
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [isOpen, isEditMode, successInvoice, customerId, items, invoiceDiscount, notes]);
 
   const applyStagedVoiceData = (parsedResult, mode = 'REPLACE') => {
     if (!parsedResult) return;
@@ -697,6 +737,7 @@ export const InvoiceBuilderModal = ({
         res = await billingApi.updateInvoice(invoiceToEdit.id, editPayload);
         setSuccessInvoice(res);
         setShowPreview(false);
+        try { sessionStorage.removeItem('rais_invoice_draft_session_v1'); } catch {}
         emitDataUpdated('invoice-updated', { invoice: res });
         if (onInvoiceCreated) onInvoiceCreated(res);
       } else {

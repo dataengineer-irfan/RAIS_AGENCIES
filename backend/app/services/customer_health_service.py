@@ -29,8 +29,8 @@ class CustomerHealthService:
         # Batch Query 1: All active customers (1 round-trip)
         customers = db.query(Customer).filter(Customer.status != "INACTIVE").all()
 
-        # Batch Query 2: All active invoices (1 round-trip)
-        all_invoices = db.query(Invoice).filter(Invoice.status != "CANCELLED").all()
+        # Batch Query 2: All active invoices (excluding CANCELLED and VOID)
+        all_invoices = db.query(Invoice).filter(Invoice.status.notin_(["CANCELLED", "VOID"])).all()
         invoices_by_customer = defaultdict(list)
         for inv in all_invoices:
             invoices_by_customer[inv.customer_id].append(inv)
@@ -41,8 +41,8 @@ class CustomerHealthService:
         for ord_item in all_orders:
             orders_by_customer[ord_item.customer_id].append(ord_item)
 
-        # Batch Query 4: All payments (1 round-trip)
-        all_payments = db.query(Payment).all()
+        # Batch Query 4: All active payments (excluding CANCELLED and VOID vouchers)
+        all_payments = db.query(Payment).filter(Payment.status.notin_(["CANCELLED", "VOID"])).all()
         payments_by_customer = defaultdict(list)
         for pay in all_payments:
             payments_by_customer[pay.customer_id].append(pay)

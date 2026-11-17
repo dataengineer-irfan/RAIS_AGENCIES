@@ -896,3 +896,155 @@ def test_dossier_01_single_product_statement_payload(audit_db):
         assert "total_cost" in first_pr
 
 
+def test_pay_01_payment_reversal_fifo_reconciliation_integrity(audit_db):
+    """
+    BRUTAL ADVERSARIAL QA: Payment Reversal & FIFO Reallocation (Scenario 3)
+    Proves that when a payment voucher is cancelled/reversed:
+    1. The cancelled payment's funds are NEVER resurrected during automatic FIFO reconciliation.
+    2. Invoices previously paid by this voucher are restored to their exact outstanding balance.
+    3. The customer ledger total dues strictly equal Opening Balance + Invoices.
+    4. Zero active PaymentAllocation records remain for the cancelled voucher.
+    """
+    from app.services.billing_service import BillingService
+    from app.services.payment_service import PaymentService
+    from app.services.customer_service import CustomerService
+    from app.services.reconciliation_service import ReconciliationService
+    from app.schemas.invoice import InvoiceCreate, InvoiceItemCreate
+    from app.schemas.payment import PaymentCreate
+    import uuid
+
+    # 1. Create dedicated customer with ₹2,000 opening balance
+    cust = Customer(
+        id=str(uuid.uuid4()),
+        customer_code=f"TEST-REV-{uuid.uuid4().hex[:4].upper()}",
+        business_name="AL-REHMAN FAST FOOD KITCHEN",
+        contact_person="Rehman Bhai",
+        phone="9848011223",
+        address_line1="Main Road, Near RTC Bus Stand",
+        city="Rayachoty",
+        state="Andhra Pradesh",
+        pincode="516269",
+        opening_balance=Decimal("2000.00"),
+        status="ACTIVE"
+    )
+    audit_db.add(cust)
+    audit_db.commit()
+
+    prod = audit_db.query(Product).filter(Product.current_stock >= 50).first()
+    assert prod is not None
+
+    # 2. Issue Invoice 1: 10 units @ ₹100 = ₹1,000.00
+    inv1_data = InvoiceCreate(
+        customer_id=cust.id,
+        items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("10.00"), unit_price=Decimal("100.00"))],
+        auto_issue=True
+    )
+    inv1 = BillingService.create_invoice(audit_db, inv1_data)
+    audit_db.commit()
+    assert inv1.total_amount == Decimal("1000.00")
+
+    # 3. Issue Invoice 2: 5 units @ ₹100 = ₹500.00
+    inv2_data = InvoiceCreate(
+        customer_id=cust.id,
+        items=[InvoiceItemCreate(product_id=prod.id, quantity=Decimal("5.00"), unit_price=Decimal("100.00"))],
+        auto_issue=True
+    )
+    inv2 = BillingService.create_invoice(audit_db, inv2_data)
+    audit_db.commit()
+    assert inv2.total_amount == Decimal("500.00")
+
+    # Total customer liability before payment: ₹2,000 (OB) + ₹1,000 (Inv1) + ₹500 (Inv2) = ₹3,500.00
+    _, _, bal_initial = CustomerService.get_customer_balances(audit_db, cust.id)
+    assert bal_initial == Decimal("3500.00")
+
+    # 4. Record Payment: ₹2,500.00 (Covers ₹2,000 OB + ₹500 of Invoice 1)
+    pay_data = PaymentCreate(
+        customer_id=cust.id,
+        amount=Decimal("2500.00"),
+        payment_method="UPI",
+        idempotency_key=f"PAY-REV-TEST-{uuid.uuid4()}",
+        reference_number="UPI-REF-99281"
+    )
+    pay = PaymentService.record_payment(audit_db, pay_data)
+    audit_db.commit()
+
+    # Reconcile FIFO to apply payment
+    recon_res = ReconciliationService.reconcile_customer_fifo(audit_db, cust.id, auto_commit=True)
+    assert recon_res["success"] is True
+
+    audit_db.refresh(inv1)
+    audit_db.refresh(inv2)
+    # Inv1 had ₹1,000 total, received ₹500 allocation -> outstanding must be ₹500.00
+    assert inv1.paid_amount == Decimal("500.00")
+    assert inv1.outstanding_amount == Decimal("500.00")
+    assert inv1.status == "PARTIALLY_PAID"
+    # Inv2 untouched -> outstanding ₹500.00
+    assert inv2.outstanding_amount == Decimal("500.00")
+    assert inv2.status == "ISSUED"
+
+    # Net balance after payment: ₹3,500 - ₹2,500 = ₹1,000.00
+    _, _, bal_after_pay = CustomerService.get_customer_balances(audit_db, cust.id)
+    assert bal_after_pay == Decimal("1000.00")
+
+    # 5. NOW REVERSE / CANCEL THE PAYMENT VOUCHER
+    # This triggers delete_payment which cancels voucher and executes ReconciliationService.reconcile_customer_fifo!
+    del_res = PaymentService.delete_payment(audit_db, pay.id, username="audit_tester")
+    audit_db.commit()
+    assert del_res["success"] is True
+
+    # 6. BRUTAL INVARIANT VERIFICATION:
+    audit_db.refresh(pay)
+    audit_db.refresh(inv1)
+    audit_db.refresh(inv2)
+
+    # Invariant A: Cancelled payment allocation must be zeroed
+    assert pay.status == "CANCELLED"
+    assert pay.allocated_amount == Decimal("0.00")
+    assert pay.unallocated_amount == Decimal("0.00")
+
+    # Invariant B: Invoices MUST be fully restored
+    assert inv1.paid_amount == Decimal("0.00"), f"Inv1 paid_amount not restored! Got {inv1.paid_amount}"
+    assert inv1.outstanding_amount == Decimal("1000.00"), f"Inv1 outstanding not restored! Got {inv1.outstanding_amount}"
+    assert inv1.status == "ISSUED"
+
+    assert inv2.paid_amount == Decimal("0.00")
+    assert inv2.outstanding_amount == Decimal("500.00")
+    assert inv2.status == "ISSUED"
+
+    # Invariant C: Customer balance must be exactly ₹3,500.00
+    _, _, bal_restored = CustomerService.get_customer_balances(audit_db, cust.id)
+    assert bal_restored == Decimal("3500.00"), f"Customer ledger balance violated! Expected 3500, Got {bal_restored}"
+
+    # Invariant D: Zero allocations pointing to cancelled voucher
+    alloc_count = audit_db.query(PaymentAllocation).filter(PaymentAllocation.payment_id == pay.id).count()
+    assert alloc_count == 0, f"Found {alloc_count} lingering allocations for cancelled payment voucher!"
+
+
+def test_cust_03_customer_health_excludes_cancelled_payments(audit_db):
+    """
+    BRUTAL ADVERSARIAL QA: Health Analysis & Ledger Parity with Cancelled Vouchers
+    Customer health analysis outstanding balance must strictly match customer_service
+    and must never count cancelled payments towards collections.
+    """
+    from app.services.customer_health_service import CustomerHealthService
+    from app.services.customer_service import CustomerService
+
+    # Force refresh health analysis cache
+    health = CustomerHealthService.get_customer_health_analysis(audit_db, force_refresh=True)
+    assert health is not None
+    assert "customers" in health
+
+    # Verify that for all active customers, health outstanding == customer_service balance
+    cust_ids = [c["customer_id"] for c in health["customers"][:10]]
+    balances_map = CustomerService.get_customer_balances_map(audit_db, cust_ids)
+
+    for c in health["customers"][:10]:
+        expected_balance = balances_map.get(c["customer_id"], Decimal("0.00"))
+        reported_outstanding = Decimal(str(c["outstanding_balance"]))
+        assert abs(reported_outstanding - expected_balance) < Decimal("0.01"), (
+            f"Health balance mismatch for customer {c['code']}: "
+            f"Health={reported_outstanding}, Ledger={expected_balance}"
+        )
+
+
+
