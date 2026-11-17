@@ -28,10 +28,13 @@ import {
   Bell,
   Sun,
   Moon,
+  Volume2,
+  VolumeX,
   FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { isSoundboxEnabled, setSoundboxEnabled } from '../utils/soundbox';
 import { backupApi } from '../services/api';
 import { RaisLogo } from './RaisLogo';
 import { ContinuousLiveTicker } from './DashboardLiveTicker';
@@ -51,11 +54,22 @@ export const Header = ({
 }) => {
   const { user, logout, hasRole } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [soundboxActive, setSoundboxActive] = useState(isSoundboxEnabled);
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [mobileNavDrawerOpen, setMobileNavDrawerOpen] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupMsg, setBackupMsg] = useState('');
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e?.detail?.enabled !== undefined) {
+        setSoundboxActive(e.detail.enabled);
+      }
+    };
+    window.addEventListener('rais-soundbox-toggled', handler);
+    return () => window.removeEventListener('rais-soundbox-toggled', handler);
+  }, []);
 
   const handleMobileDownloadBackup = async () => {
     setIsBackingUp(true);
@@ -194,6 +208,32 @@ export const Header = ({
               {theme === 'dark' ? "Switch to High-Clarity Light Theme" : "Switch to Executive Midnight Dark Theme"}
             </div>
           </div>
+
+          {/* 5. Counter Soundbox Audio Chime Switcher */}
+          <div className="relative group">
+            <button
+              onClick={() => {
+                const next = !soundboxActive;
+                setSoundboxActive(next);
+                setSoundboxEnabled(next);
+              }}
+              className={`p-2 rounded-xl transition-all shadow-xs flex items-center justify-center active:scale-95 border ${
+                soundboxActive
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40'
+                  : 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-900/90 dark:text-slate-500 dark:border-slate-800/80'
+              }`}
+              aria-label={soundboxActive ? "Counter Soundbox: Active" : "Counter Soundbox: Muted"}
+            >
+              {soundboxActive ? (
+                <Volume2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 animate-pulse" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+              )}
+            </button>
+            <div className="absolute right-0 top-full mt-2 hidden group-hover:block whitespace-nowrap px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 pointer-events-none text-xs text-slate-200 animate-in fade-in duration-150">
+              {soundboxActive ? "Soundbox Audio Chime: ACTIVE (Paytm/PhonePe Style)" : "Soundbox Audio Chime: MUTED"}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -230,6 +270,27 @@ export const Header = ({
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
                 <Moon className="w-4 h-4 text-slate-700" />
+              )}
+            </button>
+
+            {/* Soundbox Toggle Button (Mobile) */}
+            <button
+              onClick={() => {
+                const next = !soundboxActive;
+                setSoundboxActive(next);
+                setSoundboxEnabled(next);
+              }}
+              className={`p-2 rounded-xl border transition-all active:scale-95 flex items-center justify-center ${
+                soundboxActive
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400'
+                  : 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800/80 dark:border-slate-700/80 dark:text-slate-500'
+              }`}
+              title={soundboxActive ? "Soundbox: Active" : "Soundbox: Muted"}
+            >
+              {soundboxActive ? (
+                <Volume2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-slate-400" />
               )}
             </button>
 
@@ -556,6 +617,28 @@ export const Header = ({
                   </div>
                   <span className="whitespace-nowrap shrink-0 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
                     {theme === 'dark' ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
+                  </span>
+                </button>
+              </div>
+
+              {/* Drawer Soundbox Toggle */}
+              <div className="pt-1 pb-1 shrink-0">
+                <button
+                  onClick={() => {
+                    const next = !soundboxActive;
+                    setSoundboxActive(next);
+                    setSoundboxEnabled(next);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 bg-slate-950/80 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold transition-all active:scale-95"
+                >
+                  <div className="flex items-center gap-2">
+                    {soundboxActive ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+                    <span className="text-white">Counter Soundbox</span>
+                  </div>
+                  <span className={`whitespace-nowrap shrink-0 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                    soundboxActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {soundboxActive ? '🔊 ACTIVE' : '🔇 MUTED'}
                   </span>
                 </button>
               </div>

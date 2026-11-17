@@ -3,6 +3,7 @@ import { X, CreditCard, CheckCircle2, Tag, RotateCcw } from 'lucide-react';
 import { customerApi, billingApi, paymentApi } from '../services/api';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { emitDataUpdated } from '../utils/eventBus';
+import { playSoundboxChime } from '../utils/soundbox';
 
 export const PaymentModal = ({ 
   isOpen, 
@@ -169,6 +170,11 @@ export const PaymentModal = ({
       emitDataUpdated('payment-recorded', { payment: result });
       const discText = discNum > 0 ? ` (with ₹${discNum.toFixed(2)} cash discount)` : '';
       setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${amtNum.toFixed(2)}${discText} recorded successfully!`);
+      // Trigger counter soundbox announcement (Paytm/PhonePe dual-tone + voice chime)
+      playSoundboxChime(amtNum, {
+        method: paymentMethod,
+        customerName: selectedCustomer?.business_name || ''
+      });
       if (onPaymentRecorded) {
         onPaymentRecorded(result);
       }

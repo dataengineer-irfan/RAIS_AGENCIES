@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
+  Volume2,
   FileText, 
   PlusCircle, 
   Printer, 
@@ -29,6 +30,7 @@ import {
   Package
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
+import { playSoundboxChime } from '../utils/soundbox';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
@@ -762,6 +764,23 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                           </button>
                         </span>
                         <StatusBadge status={inv?.status} />
+                        {(inv?.status === 'PAID' || parseFloat(inv?.paid_amount || 0) > 0) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const amt = parseFloat(inv.paid_amount || 0) > 0 ? parseFloat(inv.paid_amount) : parseFloat(inv.total_amount || 0);
+                              playSoundboxChime(amt, {
+                                method: inv.payment_terms || 'UPI',
+                                customerName: inv.customer_name || ''
+                              });
+                            }}
+                            className="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition active:scale-95"
+                            title="Play Counter Soundbox Chime"
+                          >
+                            <Volume2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
 
                       <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate mt-0.5">
@@ -896,6 +915,25 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                       <Share2 className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Image Card</span>
                     </button>
+
+                    {/* Soundbox Announce Button */}
+                    {(selectedInvoice.status === 'PAID' || parseFloat(selectedInvoice.paid_amount || 0) > 0) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const amt = parseFloat(selectedInvoice.paid_amount || 0) > 0 ? parseFloat(selectedInvoice.paid_amount) : parseFloat(selectedInvoice.total_amount || 0);
+                          playSoundboxChime(amt, {
+                            method: selectedInvoice.payment_terms || 'UPI',
+                            customerName: selectedInvoice.customer_name || ''
+                          });
+                        }}
+                        className="h-8 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:text-emerald-300 dark:border-emerald-500/30 rounded-lg text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
+                        title="Soundbox Voice Announcement (Paytm/PhonePe style)"
+                      >
+                        <Volume2 className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                        <span className="hidden sm:inline">Chime</span>
+                      </button>
+                    )}
 
                     {/* A4 PDF View */}
                     <a

@@ -876,6 +876,25 @@ export const CustomersPage = ({
                             {creditLimit > 0 ? `Limit: ₹${(creditLimit / 1000).toFixed(0)}k` : 'COD Account'}
                           </span>
                         </div>
+                        {balance > 0.01 ? (
+                          <div className="mt-0.5">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black tracking-tight bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                              🔴 రావాల్సినవి
+                            </span>
+                          </div>
+                        ) : balance < -0.01 ? (
+                          <div className="mt-0.5">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black tracking-tight bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 border border-cyan-500/30">
+                              🔵 అడ్వాన్స్
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="mt-0.5">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-tight bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                              🟢 క్లియర్
+                            </span>
+                          </div>
+                        )}
                         {creditLimit > 0 && balance > creditLimit ? (
                           <div className="mt-0.5">
                             <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30">
@@ -1088,7 +1107,7 @@ export const CustomersPage = ({
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase font-sans flex items-center gap-1">
                       <CreditCard className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span>Collections</span>
+                      <span>వచ్చినవి • Received</span>
                     </span>
                     {selectedCustomerTotalClaim > 0 && (
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 font-mono">
@@ -1115,12 +1134,12 @@ export const CustomersPage = ({
                     {selectedCustomerBalance > 0.01 ? (
                       <>
                         <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
-                        <span>Balance Due</span>
+                        <span className="font-black">రావాల్సినవి • Due Balance</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                        <span>Balance Due</span>
+                        <span className="font-bold">క్లియర్ • Settled</span>
                       </>
                     )}
                   </span>
@@ -1641,7 +1660,7 @@ export const CustomersPage = ({
                                     isInvoice ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
                                     'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                                   }`}>
-                                    {entry.type}
+                                    {isOpening ? 'OB • Opening' : isInvoice ? '🔴 బిల్లు • Billed' : '🟢 వచ్చినవి • Received'}
                                   </span>
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center gap-1">

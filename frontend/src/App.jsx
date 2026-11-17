@@ -128,9 +128,54 @@ export const App = () => {
     setInvoiceBuilderOpen(true);
   };
 
-  // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar
+  const handleOpenPayment = (cust = null, inv = null) => {
+    setSelectedCustForPayment(cust);
+    setSelectedInvForPayment(inv);
+    setPaymentModalOpen(true);
+  };
+
+  const handleOpenCustomerModal = (cust = null) => {
+    setCustomerToEdit(cust);
+    setCustomerModalOpen(true);
+  };
+
+  const handleOpenOrder = (cust = null) => {
+    setSelectedCustForOrder(cust ? cust.id : null);
+    setOrderBuilderOpen(true);
+  };
+
+
+
+  // Zero-Mouse Global Shortcuts (Vyapar / Khatabook / Tally style)
+  // F2 or Alt+N: New Invoice
+  // Alt+P: Record Payment
+  // Alt+C: Add / Manage Customer
+  // Ctrl+B / Cmd+B: Toggle Sidebar
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        handleOpenInvoice(null);
+        return;
+      }
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        const k = e.key.toLowerCase();
+        if (k === 'n') {
+          e.preventDefault();
+          handleOpenInvoice(null);
+          return;
+        }
+        if (k === 'p') {
+          e.preventDefault();
+          handleOpenPayment(null);
+          return;
+        }
+        if (k === 'c') {
+          e.preventDefault();
+          handleOpenCustomerModal(null);
+          return;
+        }
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
         setSidebarOpen(prev => !prev);
@@ -181,21 +226,7 @@ export const App = () => {
     return <LoginPage />;
   }
 
-  const handleOpenPayment = (cust = null, inv = null) => {
-    setSelectedCustForPayment(cust);
-    setSelectedInvForPayment(inv);
-    setPaymentModalOpen(true);
-  };
 
-  const handleOpenCustomerModal = (cust = null) => {
-    setCustomerToEdit(cust);
-    setCustomerModalOpen(true);
-  };
-
-  const handleOpenOrder = (cust = null) => {
-    setSelectedCustForOrder(cust ? cust.id : null);
-    setOrderBuilderOpen(true);
-  };
 
   return (
     <div className="h-screen h-[100dvh] w-screen overflow-hidden bg-slate-950 flex relative">

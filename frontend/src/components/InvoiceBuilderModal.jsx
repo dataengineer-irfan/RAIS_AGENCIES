@@ -11,6 +11,7 @@ import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 import { getLocalDateString } from '../utils/dateUtils';
 import { emitDataUpdated } from '../utils/eventBus';
+import { playSoundboxChime } from '../utils/soundbox';
 
 export const InvoiceBuilderModal = ({ 
   isOpen, 
@@ -787,6 +788,11 @@ export const InvoiceBuilderModal = ({
           res.payment_method = methodVal;
           res.closing_balance = closingLedgerVal;
           res.customer_outstanding_balance = closingLedgerVal;
+          // Trigger counter soundbox announcement (Paytm/PhonePe style)
+          playSoundboxChime(effectiveAmountPaid > 0 ? effectiveAmountPaid : billTotalVal, {
+            method: methodVal,
+            customerName: selectedCustomerObj?.business_name || ''
+          });
         } else if (res) {
           // Unpaid credit invoice: ensure closing balance includes this bill
           const prevDue = parseFloat(selectedCustomerObj?.outstanding_balance || 0);
@@ -815,6 +821,20 @@ export const InvoiceBuilderModal = ({
       setSubmitting(false);
     }
   };
+
+  // Zero-Mouse Billing: Ctrl+Enter to Save/Issue Invoice
+  useEffect(() => {
+    if (!isOpen || showPreview || successInvoice) return;
+    const handleModalKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSubmit(e);
+      }
+    };
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => window.removeEventListener('keydown', handleModalKeyDown);
+  }, [isOpen, showPreview, successInvoice, handleSubmit]);
 
   if (!isOpen) return null;
 
@@ -1763,7 +1783,16 @@ export const InvoiceBuilderModal = ({
                               <div className="col-span-4">
                                 <select
                                   value={item.product_id}
-                                  onChange={(e) => handleProductChange(index, e.target.value)}
+                                  data-billing-sku={index}
+                                  onChange={(e) => {
+                                    handleProductChange(index, e.target.value);
+                                    if (e.target.value) {
+                                      setTimeout(() => {
+                                        const qEl = document.querySelector(`[data-billing-qty="${index}"]`);
+                                        if (qEl) { qEl.focus(); qEl.select?.(); }
+                                      }, 50);
+                                    }
+                                  }}
                                   required
                                   className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium focus:outline-none focus:border-amber-500 truncate"
                                 >
@@ -1835,7 +1864,15 @@ export const InvoiceBuilderModal = ({
                                     min="0.1"
                                     step="any"
                                     value={item.quantity}
+                                    data-billing-qty={index}
                                     onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const pEl = document.querySelector(`[data-billing-price="${index}"]`);
+                                        if (pEl) { pEl.focus(); pEl.select?.(); }
+                                      }
+                                    }}
                                     placeholder="Qty"
                                     required
                                     className={`w-full min-w-[32px] bg-slate-900 border rounded-md py-1 text-xs text-center font-bold font-mono focus:outline-none ${
@@ -1878,7 +1915,16 @@ export const InvoiceBuilderModal = ({
                                     step="1"
                                     min="0"
                                     value={item.unit_price}
+                                    data-billing-price={index}
                                     onChange={(e) => handleItemFieldChange(index, 'unit_price', e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (index === items.length - 1) {
+                                          addItemRow();
+                                        }
+                                      }
+                                    }}
                                     placeholder="0"
                                     required
                                     className={`w-full bg-slate-900 border rounded-lg pl-5 pr-2 py-1.5 text-xs text-right font-mono font-bold focus:outline-none transition-colors ${
@@ -2652,6 +2698,7 @@ export const InvoiceBuilderModal = ({
                       : numCollected > 0
                         ? `Issue & Collect ₹${numCollected.toFixed(0)}`
                         : autoIssue ? 'Issue Invoice' : 'Save Draft'}
+                  <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[9px] bg-slate-950/20 text-slate-950 font-mono rounded">Ctrl+↵</kbd>
                 </button>
               </div>
             </div>

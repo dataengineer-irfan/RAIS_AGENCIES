@@ -147,11 +147,11 @@ export const CustomerProfileModal = ({
             <p className="text-sm font-black text-slate-200 mt-0.5">₹{parseFloat(customer.total_invoiced || 0).toFixed(2)}</p>
           </div>
           <div>
-            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Total Paid</span>
+            <span className="text-[10px] text-emerald-400 uppercase font-sans font-bold flex items-center gap-1">🟢 వచ్చినవి • Total Paid</span>
             <p className="text-sm font-black text-emerald-400 mt-0.5">₹{parseFloat(customer.total_paid || 0).toFixed(2)}</p>
           </div>
           <div>
-            <span className="text-[10px] text-slate-400 uppercase font-sans font-bold">Outstanding Balance</span>
+            <span className="text-[10px] text-rose-400 uppercase font-sans font-bold flex items-center gap-1">🔴 రావాల్సినవి • Due Balance</span>
             <p className="text-sm font-black text-amber-400 mt-0.5">₹{parseFloat(customer.outstanding_balance || 0).toFixed(2)}</p>
           </div>
           <div>
