@@ -148,52 +148,35 @@ export const InvoiceBuilderModal = ({
       setDueDate(curToday);
       setPaymentTerms('Cash on Delivery / Immediate Settlement');
 
-      // Check for saved session crash-recovery draft (protects against session timeout / accidental refresh)
-      let restoredDraft = null;
-      if (!isEditMode && !preselectedCustomer && !preselectedProduct && !initialVoiceData) {
-        try {
-          const rawDraft = sessionStorage.getItem('rais_invoice_draft_session_v1');
-          if (rawDraft) {
-            const parsed = JSON.parse(rawDraft);
-            if (parsed && Array.isArray(parsed.items) && parsed.items.some(i => i && i.product_id)) {
-              restoredDraft = parsed;
-            }
-          }
-        } catch {
-          // ignore storage error
-        }
+      // Purge any stale session cache so new bill always starts completely clean
+      try {
+        sessionStorage.removeItem('rais_invoice_draft_session_v1');
+        localStorage.removeItem('rais_invoice_draft_session_v1');
+      } catch {}
+
+      // 1. Resolve initial customer
+      if (preselectedCustomer) {
+        setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
+      } else {
+        setCustomerId('');
       }
 
-      if (restoredDraft) {
-        setCustomerId(restoredDraft.customerId || '');
-        setItems(restoredDraft.items);
-        if (restoredDraft.invoiceDiscount) setInvoiceDiscount(restoredDraft.invoiceDiscount);
-        if (restoredDraft.notes) setNotes(restoredDraft.notes);
+      // 2. Resolve initial product line items
+      if (preselectedProduct && typeof preselectedProduct === 'object') {
+        setItems([
+          {
+            product_id: preselectedProduct.id,
+            quantity: 1,
+            unit_price: parseFloat(preselectedProduct.base_price || 0),
+            discount_rate: 0,
+            packaging_unit: preselectedProduct.packaging_unit || 'PKT'
+          }
+        ]);
       } else {
-        // 1. Resolve initial customer
-        if (preselectedCustomer) {
-          setCustomerId(typeof preselectedCustomer === 'object' ? preselectedCustomer.id : preselectedCustomer);
-        } else {
-          setCustomerId('');
-        }
-
-        // 2. Resolve initial product line items
-        if (preselectedProduct && typeof preselectedProduct === 'object') {
-          setItems([
-            {
-              product_id: preselectedProduct.id,
-              quantity: 1,
-              unit_price: parseFloat(preselectedProduct.base_price || 0),
-              discount_rate: 0,
-              packaging_unit: preselectedProduct.packaging_unit || 'PKT'
-            }
-          ]);
-        } else {
-          // Blank item row: user must choose product from dropdown or quick catalog
-          setItems([
-            { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }
-          ]);
-        }
+        // Blank item row: user must choose product from dropdown or quick catalog
+        setItems([
+          { product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }
+        ]);
       }
 
       // 3. If initialVoiceData was passed upon modal launch, apply it immediately
@@ -210,22 +193,6 @@ export const InvoiceBuilderModal = ({
     }
   };
 
-  // Autosave draft to sessionStorage to protect against session expiry or accidental page refresh
-  useEffect(() => {
-    if (!isOpen || isEditMode || successInvoice) return;
-    try {
-      if (items && items.some(i => i && i.product_id)) {
-        sessionStorage.setItem('rais_invoice_draft_session_v1', JSON.stringify({
-          customerId,
-          items,
-          invoiceDiscount,
-          notes
-        }));
-      }
-    } catch {
-      // ignore storage quota errors
-    }
-  }, [isOpen, isEditMode, successInvoice, customerId, items, invoiceDiscount, notes]);
 
   const applyStagedVoiceData = (parsedResult, mode = 'REPLACE') => {
     if (!parsedResult) return;
@@ -321,6 +288,10 @@ export const InvoiceBuilderModal = ({
   };
 
   const resetForm = () => {
+    try {
+      sessionStorage.removeItem('rais_invoice_draft_session_v1');
+      localStorage.removeItem('rais_invoice_draft_session_v1');
+    } catch {}
     setError('');
     setSuccessInvoice(null);
     setShowPreview(false);
@@ -1716,6 +1687,23 @@ export const InvoiceBuilderModal = ({
                           className="text-[11px] font-medium text-slate-400 hover:text-amber-400 transition-colors"
                         >
                           + Delivery Note
+                        </button>
+                      )}
+                      {items.some(i => i.product_id) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              sessionStorage.removeItem('rais_invoice_draft_session_v1');
+                              localStorage.removeItem('rais_invoice_draft_session_v1');
+                            } catch {}
+                            setItems([{ product_id: '', quantity: 1, unit_price: 0, discount_rate: 0, packaging_unit: 'PKT' }]);
+                          }}
+                          className="flex items-center gap-1 text-[11px] font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/20 transition-colors"
+                          title="Clear all line items"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Clear Items</span>
                         </button>
                       )}
                       <button
