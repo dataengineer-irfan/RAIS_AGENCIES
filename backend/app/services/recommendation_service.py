@@ -105,6 +105,21 @@ class RecommendationService:
                     if any(w in text for w in ["TORTILLAH", "TORTILLA", "WRAP"]):
                         detected_affinities.add("WRAP")
 
+                if not detected_affinities:
+                    cust_obj = db.query(Customer).filter(Customer.id == customer_id).first()
+                    if cust_obj and cust_obj.business_name:
+                        b_text = cust_obj.business_name.upper()
+                        if any(w in b_text for w in ["PIZZA"]):
+                            detected_affinities.add("PIZZA")
+                        elif any(w in b_text for w in ["BURGER", "PATTY"]):
+                            detected_affinities.add("BURGER")
+                        elif any(w in b_text for w in ["AFC", "CHICKEN", "BROASTED"]):
+                            detected_affinities.add("FRIED_CHICKEN")
+                        elif any(w in b_text for w in ["MANDI", "SHAWARMA", "WRAP"]):
+                            detected_affinities.add("WRAP")
+                        elif any(w in b_text for w in ["MOMO", "CAFE", "BAKERY"]):
+                            detected_affinities.add("SNACKS")
+
             # Extract specific product category purchase flags on CURRENT / SETTLED transaction
             tx_combined_text = " ".join(all_transaction_descs).upper()
 

@@ -2,7 +2,7 @@ from typing import List, Optional
 from decimal import Decimal
 from datetime import date, datetime, timezone
 import uuid
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from app.models.payment import Payment, PaymentAllocation
@@ -326,7 +326,7 @@ class PaymentService:
         return allocation
 
     @staticmethod
-    def _build_payment_response(p: Payment, cust_balance: Optional[Decimal] = None) -> PaymentResponse:
+    def _build_payment_response(p: Payment, cust_balance: Optional[Decimal] = None, is_list: bool = False) -> PaymentResponse:
         allocs = []
         if p.allocations:
             for a in p.allocations:
@@ -359,37 +359,38 @@ class PaymentService:
                 disc_val = Decimal("0.00")
 
         settled_items_list = []
-        settled_descs = []
-        exclude_pids = []
-        if p.allocations:
-            for a in p.allocations:
-                if a.invoice and a.invoice.items:
-                    for itm in a.invoice.items:
-                        settled_items_list.append({
-                            "product_id": str(itm.product_id) if itm.product_id else None,
-                            "item_description": itm.item_description,
-                            "packaging_unit": itm.packaging_unit,
-                            "quantity": float(itm.quantity or 0)
-                        })
-                        if itm.product_id:
-                            exclude_pids.append(str(itm.product_id))
-                        if itm.item_description:
-                            settled_descs.append(itm.item_description)
-
         restock_sugg = None
-        db_state = getattr(p, '_sa_instance_state', None)
-        active_db = getattr(db_state, 'session', None) if db_state else None
-        if active_db and p.customer_id:
-            try:
-                from app.services.recommendation_service import RecommendationService
-                restock_sugg = RecommendationService.get_customer_restock_suggestion(
-                    db=active_db,
-                    customer_id=str(p.customer_id),
-                    exclude_product_ids=exclude_pids,
-                    current_item_descriptions=settled_descs
-                )
-            except Exception:
-                restock_sugg = None
+        if not is_list:
+            settled_descs = []
+            exclude_pids = []
+            if p.allocations:
+                for a in p.allocations:
+                    if a.invoice and a.invoice.items:
+                        for itm in a.invoice.items:
+                            settled_items_list.append({
+                                "product_id": str(itm.product_id) if itm.product_id else None,
+                                "item_description": itm.item_description,
+                                "packaging_unit": itm.packaging_unit,
+                                "quantity": float(itm.quantity or 0)
+                            })
+                            if itm.product_id:
+                                exclude_pids.append(str(itm.product_id))
+                            if itm.item_description:
+                                settled_descs.append(itm.item_description)
+
+            db_state = getattr(p, '_sa_instance_state', None)
+            active_db = getattr(db_state, 'session', None) if db_state else None
+            if active_db and p.customer_id:
+                try:
+                    from app.services.recommendation_service import RecommendationService
+                    restock_sugg = RecommendationService.get_customer_restock_suggestion(
+                        db=active_db,
+                        customer_id=str(p.customer_id),
+                        exclude_product_ids=exclude_pids,
+                        current_item_descriptions=settled_descs
+                    )
+                except Exception:
+                    restock_sugg = None
 
         return PaymentResponse(
             id=p.id,
@@ -445,7 +446,7 @@ class PaymentService:
     ) -> List[PaymentResponse]:
         query = db.query(Payment).options(
             joinedload(Payment.customer),
-            joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
+            selectinload(Payment.allocations).joinedload(PaymentAllocation.invoice)
         ).filter(Payment.status.notin_(["CANCELLED", "VOID"]))
         if customer_id:
             query = query.filter(Payment.customer_id == customer_id)
@@ -465,7 +466,7 @@ class PaymentService:
             except Exception:
                 pass
 
-        return [PaymentService._build_payment_response(p, cust_balance=cust_balance_map.get(p.customer_id)) for p in payments]
+        return [PaymentService._build_payment_response(p, cust_balance=cust_balance_map.get(p.customer_id), is_list=True) for p in payments]
 
     @staticmethod
     def update_payment(

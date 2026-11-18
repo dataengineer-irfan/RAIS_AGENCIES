@@ -16,6 +16,24 @@ def test_payment_receipt_promotional_spotlight_rendering(db):
         db.add(cat)
         db.flush()
 
+    prod = db.query(Product).filter_by(sku="RAIS-SAU-06").first()
+    if prod:
+        prod.current_stock = Decimal("40.00")
+        prod.is_active = True
+    else:
+        prod = Product(
+            sku="RAIS-SAU-06",
+            category_id=cat.id,
+            name="DELMONTE PIZZA PASTA SAUCE",
+            brand="Del Monte",
+            packaging_unit="1 KG PACKET",
+            base_price=Decimal("155.00"),
+            current_stock=Decimal("40.00"),
+            is_active=True
+        )
+        db.add(prod)
+    db.flush()
+
     customer = Customer(
         id="cust-pizzatime-promo",
         business_name="PIZZA TIME",
