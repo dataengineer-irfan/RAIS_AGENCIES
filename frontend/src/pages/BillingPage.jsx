@@ -115,10 +115,12 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
   useEffect(() => {
     loadInvoices();
-    customerApi.listCustomers({ limit: 300 }).then(data => {
-      const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
-      setCustomersList(list);
-    }).catch(err => console.error('Failed to load customers for filter', err));
+    if (customerApi && typeof customerApi.list === 'function') {
+      customerApi.list({ limit: 300 }).then(data => {
+        const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
+        setCustomersList(Array.isArray(list) ? list : []);
+      }).catch(err => console.error('Failed to load customers for filter', err));
+    }
   }, []);
 
   const loadInvoices = async (selectId = null) => {
@@ -282,8 +284,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   const customerOptions = useMemo(() => {
     const map = new Map();
 
-    customersList.forEach(c => {
-      if (c.id) {
+    const safeCusts = Array.isArray(customersList) ? customersList : [];
+    safeCusts.forEach(c => {
+      if (c && c.id) {
         map.set(c.id, {
           id: c.id,
           name: c.business_name || c.contact_person || 'Unnamed Outlet',
@@ -293,8 +296,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       }
     });
 
-    invoices.forEach(inv => {
-      if (inv.customer_id) {
+    const safeInvs = Array.isArray(invoices) ? invoices : [];
+    safeInvs.forEach(inv => {
+      if (inv && inv.customer_id) {
         if (!map.has(inv.customer_id)) {
           map.set(inv.customer_id, {
             id: inv.customer_id,
@@ -303,14 +307,17 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             count: 0
           });
         }
-        map.get(inv.customer_id).count += 1;
+        const existing = map.get(inv.customer_id);
+        if (existing) {
+          existing.count += 1;
+        }
       }
     });
 
     return Array.from(map.values()).sort((a, b) => {
       if (a.count > 0 && b.count === 0) return -1;
       if (b.count > 0 && a.count === 0) return 1;
-      return a.name.localeCompare(b.name);
+      return String(a.name || '').localeCompare(String(b.name || ''));
     });
   }, [customersList, invoices]);
 
