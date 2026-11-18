@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from app.core.config import settings
 from app.core.database import engine, Base
 import app.models  # Ensures all models are registered in Base
@@ -55,9 +56,10 @@ def _get_cors_headers(request: Request):
 
 @app.exception_handler(RaisAppException)
 async def rais_exception_handler(request: Request, exc: RaisAppException):
+    content = exc.detail if isinstance(exc.detail, (dict, list, str, int, float, bool)) else str(exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
-        content=exc.detail,
+        content=jsonable_encoder(content),
         headers=_get_cors_headers(request)
     )
 
@@ -68,7 +70,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     detail_msg = str(exc) if settings.ENVIRONMENT != "production" else "Internal server error occurred."
     return JSONResponse(
         status_code=500,
-        content={"detail": detail_msg, "message": str(exc)},
+        content=jsonable_encoder({"detail": detail_msg, "message": str(exc)}),
         headers=_get_cors_headers(request)
     )
 

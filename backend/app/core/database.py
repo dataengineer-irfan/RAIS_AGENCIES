@@ -34,7 +34,13 @@ def validate_database_safety(url: str, env_name: str) -> None:
     is_prod_target = any(p in hostname for p in PROD_HOST_PATTERNS)
     normalized_env = (env_name or "development").strip().lower()
     is_test_runner = "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules
-    is_render_prod = os.environ.get("RENDER") == "true" and normalized_env == "production"
+
+    # If executing on Render cloud infrastructure (not a local test runner)
+    is_on_render = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
+    if is_on_render and not is_test_runner and normalized_env != "staging":
+        normalized_env = "production"
+
+    is_render_prod = is_on_render and normalized_env == "production"
 
     if is_prod_target:
         if normalized_env in ("development", "staging", "test") or is_test_runner:

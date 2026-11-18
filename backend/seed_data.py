@@ -215,7 +215,6 @@ def seed_database():
         db.rollback()
         print(f"[ERROR] Error during seed: {e}")
         raise
-        raise
     finally:
         db.close()
 
