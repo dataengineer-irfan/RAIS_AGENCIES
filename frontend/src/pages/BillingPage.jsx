@@ -334,15 +334,6 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     return customerOptions.find(c => c.id === selectedCustomerId) || null;
   }, [customerOptions, selectedCustomerId]);
 
-  const activeCustomerDue = useMemo(() => {
-    if (!activeCustomer) return 0;
-    const invDue = Number(statusCounts.totalDue || 0);
-    const ledgerBal = Number(activeCustomer.outstanding_balance || 0);
-    if (invDue > 0) return invDue;
-    if (ledgerBal > 0) return ledgerBal;
-    return 0;
-  }, [activeCustomer, statusCounts.totalDue]);
-
   const customerScopedInvoices = useMemo(() => {
     if (!selectedCustomerId || selectedCustomerId === 'ALL') return invoices;
     return invoices.filter(inv => inv.customer_id === selectedCustomerId);
@@ -376,7 +367,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     }
 
     return {
-      total: invoices.length,
+      total: customerScopedInvoices.length,
       due,
       paid,
       partial,
@@ -385,6 +376,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       totalDue
     };
   }, [customerScopedInvoices]);
+
+  const activeCustomerDue = useMemo(() => {
+    if (!activeCustomer) return 0;
+    const invDue = Number(statusCounts?.totalDue || 0);
+    const ledgerBal = Number(activeCustomer?.outstanding_balance || 0);
+    if (invDue > 0) return invDue;
+    if (ledgerBal > 0) return ledgerBal;
+    return 0;
+  }, [activeCustomer, statusCounts]);
 
   const filteredInvoices = useMemo(() => {
     const term = (searchTerm || '').trim().toLowerCase();
