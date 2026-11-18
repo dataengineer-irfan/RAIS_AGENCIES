@@ -446,7 +446,7 @@ class PaymentService:
         query = db.query(Payment).options(
             joinedload(Payment.customer),
             joinedload(Payment.allocations).joinedload(PaymentAllocation.invoice)
-        )
+        ).filter(Payment.status.notin_(["CANCELLED", "VOID"]))
         if customer_id:
             query = query.filter(Payment.customer_id == customer_id)
         if from_date:

@@ -264,7 +264,24 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
       await loadPayments();
     } catch (err) {
       console.error('Failed to delete payment', err);
-      const errMsg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Failed to delete payment voucher.';
+      const rawDetail = err?.response?.data?.detail;
+      const errMsg = (typeof rawDetail === 'object' ? rawDetail?.message : rawDetail)
+        || err?.response?.data?.message
+        || err?.message
+        || 'Failed to delete payment voucher.';
+
+      if (typeof errMsg === 'string' && (errMsg.includes('already CANCELLED') || errMsg.includes('already cancelled'))) {
+        setDeleteConfirmModal(null);
+        setDeleteModalError('');
+        setNotification({
+          type: 'info',
+          message: `Payment voucher ${payment.payment_number} is already cancelled.`
+        });
+        setTimeout(() => setNotification(null), 4000);
+        await loadPayments();
+        return;
+      }
+
       setDeleteModalError(errMsg);
       setNotification({
         type: 'error',

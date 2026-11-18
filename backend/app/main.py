@@ -39,12 +39,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Exception handlers
+# Exception handlers with guaranteed CORS headers
+def _get_cors_headers(request: Request):
+    origin = request.headers.get("origin")
+    headers = {
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, X-Requested-With",
+    }
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    else:
+        headers["Access-Control-Allow-Origin"] = "*"
+    return headers
+
 @app.exception_handler(RaisAppException)
 async def rais_exception_handler(request: Request, exc: RaisAppException):
     return JSONResponse(
         status_code=exc.status_code,
-        content=exc.detail
+        content=exc.detail,
+        headers=_get_cors_headers(request)
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import logging
+    logging.exception(f"Unhandled Server Error: {exc}")
+    detail_msg = str(exc) if settings.ENVIRONMENT != "production" else "Internal server error occurred."
+    return JSONResponse(
+        status_code=500,
+        content={"detail": detail_msg, "message": str(exc)},
+        headers=_get_cors_headers(request)
     )
 
 # Include API Routers
