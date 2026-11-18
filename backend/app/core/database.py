@@ -85,13 +85,14 @@ if database_url.startswith("sqlite"):
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 else:
+    # Tuned for Supabase session pooler (max 15 clients) & zero-downtime rolling deploys
     engine = create_engine(
         database_url,
         pool_pre_ping=True,
-        pool_size=20,
-        max_overflow=30,
-        pool_recycle=300,
-        pool_timeout=20,
+        pool_size=4,
+        max_overflow=4,
+        pool_recycle=180,
+        pool_timeout=15,
         echo=False
     )
 
