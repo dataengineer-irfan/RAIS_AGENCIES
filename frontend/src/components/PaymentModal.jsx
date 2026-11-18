@@ -133,6 +133,7 @@ export const PaymentModal = ({
     e.preventDefault();
     if (submitting) return;
     setError('');
+    setSuccessMsg('');
     if (!customerId) {
       setError('Please select a customer to record payment.');
       return;
@@ -167,20 +168,28 @@ export const PaymentModal = ({
 
       const result = await paymentApi.record(payload);
       submissionKeyRef.current = null; // Successfully processed, clear submission key
-      emitDataUpdated('payment-recorded', { payment: result });
+      setError('');
       const discText = discNum > 0 ? ` (with ₹${discNum.toFixed(2)} cash discount)` : '';
       setSuccessMsg(`Payment ${result?.payment_number || 'REC'} of ₹${amtNum.toFixed(2)}${discText} recorded successfully!`);
-      // Trigger counter soundbox announcement (Paytm/PhonePe dual-tone + voice chime)
-      playSoundboxChime(amtNum, {
-        method: paymentMethod,
-        customerName: selectedCustomer?.business_name || ''
-      });
-      if (onPaymentRecorded) {
-        onPaymentRecorded(result);
+
+      // Safely perform post-save side effects
+      try {
+        emitDataUpdated('payment-recorded', { payment: result });
+        // Trigger counter soundbox announcement (Paytm/PhonePe dual-tone + voice chime)
+        playSoundboxChime(amtNum, {
+          method: paymentMethod,
+          customerName: currentCustomer?.business_name || ''
+        });
+        if (onPaymentRecorded) {
+          onPaymentRecorded(result);
+        }
+        if (onPaymentSuccess) {
+          onPaymentSuccess(result);
+        }
+      } catch (sideEffectErr) {
+        console.warn('Post-payment notification warning:', sideEffectErr);
       }
-      if (onPaymentSuccess) {
-        onPaymentSuccess(result);
-      }
+
       setTimeout(() => {
         onClose();
       }, 1200);
@@ -219,7 +228,7 @@ export const PaymentModal = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
-          {error && (
+          {error && !successMsg && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs font-semibold">
               {error}
             </div>
