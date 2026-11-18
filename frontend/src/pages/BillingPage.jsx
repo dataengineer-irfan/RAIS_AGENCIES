@@ -27,7 +27,9 @@ import {
   ShieldCheck,
   Scale,
   Lock,
-  Package
+  Package,
+  Users,
+  User
 } from 'lucide-react';
 import { billingApi, customerApi } from '../services/api';
 import { playSoundboxChime } from '../utils/soundbox';
@@ -73,6 +75,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   const [sortBy, setSortBy] = useState('DATE_DESC'); // DATE_DESC, DATE_ASC, AMOUNT_DESC, AMOUNT_ASC, DUE_DESC, INV_DESC
   const [dateFilter, setDateFilter] = useState('ALL'); // 'ALL', 'TODAY', 'YESTERDAY', '7D', 'MONTH', 'CUSTOM'
   const [customDate, setCustomDate] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('ALL');
+  const [customersList, setCustomersList] = useState([]);
   
   // Master-Detail State (Pre-seeded at Frame 0 from persistent cache)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(() => {
@@ -111,6 +115,10 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
 
   useEffect(() => {
     loadInvoices();
+    customerApi.listCustomers({ limit: 300 }).then(data => {
+      const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
+      setCustomersList(list);
+    }).catch(err => console.error('Failed to load customers for filter', err));
   }, []);
 
   const loadInvoices = async (selectId = null) => {
@@ -270,6 +278,52 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     }
   };
 
+  // Unique Customers Derived from Database + Invoices
+  const customerOptions = useMemo(() => {
+    const map = new Map();
+
+    customersList.forEach(c => {
+      if (c.id) {
+        map.set(c.id, {
+          id: c.id,
+          name: c.business_name || c.contact_person || 'Unnamed Outlet',
+          code: c.customer_code || '',
+          count: 0
+        });
+      }
+    });
+
+    invoices.forEach(inv => {
+      if (inv.customer_id) {
+        if (!map.has(inv.customer_id)) {
+          map.set(inv.customer_id, {
+            id: inv.customer_id,
+            name: inv.customer_name || 'Unnamed Outlet',
+            code: inv.customer_code || '',
+            count: 0
+          });
+        }
+        map.get(inv.customer_id).count += 1;
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.count > 0 && b.count === 0) return -1;
+      if (b.count > 0 && a.count === 0) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [customersList, invoices]);
+
+  const activeCustomer = useMemo(() => {
+    if (!selectedCustomerId || selectedCustomerId === 'ALL') return null;
+    return customerOptions.find(c => c.id === selectedCustomerId) || null;
+  }, [customerOptions, selectedCustomerId]);
+
+  const customerScopedInvoices = useMemo(() => {
+    if (!selectedCustomerId || selectedCustomerId === 'ALL') return invoices;
+    return invoices.filter(inv => inv.customer_id === selectedCustomerId);
+  }, [invoices, selectedCustomerId]);
+
   // Micro-Metrics & Status Counts for 1-Click Filter Ribbon
   const statusCounts = useMemo(() => {
     let due = 0;
@@ -279,7 +333,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     let totalBilled = 0;
     let totalDue = 0;
 
-    for (const inv of invoices) {
+    for (const inv of customerScopedInvoices) {
       const tot = parseFloat(inv.total_amount || 0);
       const out = parseFloat(inv.outstanding_amount || 0);
       totalBilled += tot;
@@ -306,11 +360,14 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       totalBilled,
       totalDue
     };
-  }, [invoices]);
+  }, [customerScopedInvoices]);
 
   const filteredInvoices = useMemo(() => {
     const term = (searchTerm || '').trim().toLowerCase();
     const list = invoices.filter(inv => {
+      if (selectedCustomerId && selectedCustomerId !== 'ALL') {
+        if (inv.customer_id !== selectedCustomerId) return false;
+      }
       if (activeStatusFilter === 'DUE') {
         const out = parseFloat(inv.outstanding_amount || 0);
         if (out <= 0 && inv.status !== 'ISSUED' && inv.status !== 'PARTIALLY_PAID' && inv.status !== 'OVERDUE') return false;
@@ -376,7 +433,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       // Default: DATE_DESC
       return new Date(b.invoice_date || b.created_at || 0) - new Date(a.invoice_date || a.created_at || 0);
     });
-  }, [invoices, activeStatusFilter, searchTerm, sortBy, dateFilter, customDate]);
+  }, [invoices, activeStatusFilter, searchTerm, sortBy, dateFilter, customDate, selectedCustomerId]);
 
   const selectedInvoice = selectedInvoiceDetails || invoices.find(i => i.id === selectedInvoiceId);
 
@@ -504,6 +561,39 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           )}
         </div>
 
+        {/* Customer Filter Dropdown */}
+        <div className="flex items-center gap-1 shrink-0">
+          <div className="relative flex items-center">
+            <Users className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              className={`pl-7 pr-6 py-1.5 bg-slate-950 border rounded-xl text-xs font-medium cursor-pointer transition-colors max-w-[210px] truncate focus:outline-none ${
+                selectedCustomerId !== 'ALL'
+                  ? 'border-amber-500 text-amber-300 bg-amber-500/10 font-bold ring-1 ring-amber-500/40'
+                  : 'border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+              title="Filter by Customer Outlet"
+            >
+              <option value="ALL">👥 All Customers ({customerOptions.length})</option>
+              {customerOptions.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.code ? `(${c.code})` : ''} {c.count > 0 ? `• ${c.count} bills` : ''}
+                </option>
+              ))}
+            </select>
+            {selectedCustomerId !== 'ALL' && (
+              <button
+                onClick={() => setSelectedCustomerId('ALL')}
+                className="absolute right-2 text-amber-400 hover:text-white text-xs font-bold p-0.5"
+                title="Reset to All Customers"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Sort Selector */}
         <div className="flex items-center gap-1 shrink-0">
           <select
@@ -574,6 +664,26 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                 ✕
               </button>
             )}
+          </div>
+
+          {/* Mobile Customer Filter */}
+          <div className="relative shrink-0">
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              className={`py-1.5 px-2 bg-slate-950 border rounded-lg text-xs font-bold cursor-pointer max-w-[130px] truncate focus:outline-none ${
+                selectedCustomerId !== 'ALL'
+                  ? 'border-amber-500 text-amber-300 bg-amber-500/10'
+                  : 'border-slate-800 text-slate-400'
+              }`}
+            >
+              <option value="ALL">👥 All Outlets</option>
+              {customerOptions.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {hasRole(['ADMIN', 'OPERATOR']) && (
@@ -674,6 +784,24 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               <span>{loading && invoices.length === 0 ? 'Tax Invoices' : invoices.length > 0 ? `Tax Invoices (${filteredInvoices.length})` : 'Tax Invoices'}</span>
               <span>Total / Due</span>
             </div>
+            {selectedCustomerId !== 'ALL' && activeCustomer && (
+              <div className="flex items-center justify-between px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 shadow-sm animate-fadeIn">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] uppercase tracking-wider font-black text-amber-400">Customer:</span>
+                  <strong className="truncate text-white font-bold">{activeCustomer.name}</strong>
+                  {activeCustomer.code && (
+                    <span className="text-[10px] font-mono text-amber-400 font-bold">({activeCustomer.code})</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedCustomerId('ALL')}
+                  className="text-[10px] font-bold text-amber-400 hover:text-white bg-amber-500/20 hover:bg-amber-500/30 px-2 py-0.5 rounded-lg transition-colors shrink-0 ml-1.5"
+                  title="Clear customer filter"
+                >
+                  ✕ Show All
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-[11px] font-bold">
               {[
                 { id: 'ALL', label: 'All' },
@@ -980,12 +1108,24 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
                 {/* Bottom Row: Customer Name & Meta Context */}
                 <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
                   <div>
-                    <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
-                      {selectedInvoice.customer_name}
-                      {selectedInvoice.customer_contact && selectedInvoice.customer_contact.toLowerCase() !== (selectedInvoice.customer_name || '').toLowerCase() && (
-                        <span className="text-amber-700 dark:text-amber-300 font-bold ml-1.5">({selectedInvoice.customer_contact})</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                        {selectedInvoice.customer_name}
+                        {selectedInvoice.customer_contact && selectedInvoice.customer_contact.toLowerCase() !== (selectedInvoice.customer_name || '').toLowerCase() && (
+                          <span className="text-amber-700 dark:text-amber-300 font-bold ml-1.5">({selectedInvoice.customer_contact})</span>
+                        )}
+                      </h2>
+                      {selectedInvoice.customer_id && selectedCustomerId !== selectedInvoice.customer_id && (
+                        <button
+                          onClick={() => setSelectedCustomerId(selectedInvoice.customer_id)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all cursor-pointer shadow-xs active:scale-95"
+                          title={`Filter all invoices for ${selectedInvoice.customer_name || 'this customer'}`}
+                        >
+                          <Filter className="w-2.5 h-2.5" />
+                          <span>Filter Customer</span>
+                        </button>
                       )}
-                    </h2>
+                    </div>
                     <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 flex-wrap">
                       <span>Billed: {formatInvoiceDateTime(selectedInvoice.invoice_date, selectedInvoice.created_at).fullText}</span>
                       {selectedInvoice.due_date && (
