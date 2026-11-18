@@ -56,9 +56,17 @@ def _get_cors_headers(request: Request):
 @app.exception_handler(RaisAppException)
 async def rais_exception_handler(request: Request, exc: RaisAppException):
     content = exc.detail if isinstance(exc.detail, (dict, list, str, int, float, bool)) else str(exc.detail)
+    if isinstance(content, dict):
+        body = content
+        if "message" not in body and "detail" in body:
+            body["message"] = str(body["detail"])
+    elif isinstance(content, list):
+        body = {"detail": content, "message": ", ".join(str(x) for x in content)}
+    else:
+        body = {"detail": str(content), "message": str(content)}
     return JSONResponse(
         status_code=exc.status_code,
-        content=jsonable_encoder(content),
+        content=jsonable_encoder(body),
         headers=_get_cors_headers(request)
     )
 

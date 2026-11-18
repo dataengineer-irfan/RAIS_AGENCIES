@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { paymentApi } from '../services/api';
+import { paymentApi, getApiErrorMessage } from '../services/api';
 import { getLocalDateString } from '../utils/dateUtils';
 
 export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
@@ -54,7 +54,7 @@ export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
       }, 700);
     } catch (err) {
       console.error('Failed to update payment', err);
-      setError(err?.response?.data?.detail || err?.message || 'Failed to update payment voucher.');
+      setError(getApiErrorMessage(err, 'Failed to update payment voucher.'));
     } finally {
       setSubmitting(false);
     }
@@ -87,7 +87,7 @@ export const EditPaymentModal = ({ isOpen, payment, onClose, onSuccess }) => {
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-4 space-y-3.5 overflow-y-auto flex-1">
-          {error && (
+          {error && !successMsg && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2 text-rose-400 text-xs">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{error}</span>

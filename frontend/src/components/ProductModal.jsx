@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Package, CheckCircle2, DollarSign, Tag, Boxes, AlertCircle } from 'lucide-react';
-import { catalogueApi } from '../services/api';
+import { catalogueApi, getApiErrorMessage } from '../services/api';
 
 export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], onProductSaved }) => {
   const [internalCategories, setInternalCategories] = useState([]);
@@ -179,7 +179,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
         onClose();
       }, 700);
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || 'Failed to save product.';
+      const msg = getApiErrorMessage(err, 'Failed to save product.');
       setError(msg);
     } finally {
       setLoading(false);
@@ -245,7 +245,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit, categories = [], 
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {error && (
+          {error && !successMsg && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>

@@ -402,6 +402,21 @@ class BillingService:
             invoice.paid_amount += alloc_upi
             invoice.outstanding_amount = quantize_amount(invoice.total_amount - invoice.paid_amount)
 
+            # Double-entry ledger credit for UPI counter payment
+            from app.services.customer_service import CustomerService
+            CustomerService.record_ledger_entry(
+                db=db,
+                customer_id=customer.id,
+                entry_date=invoice.invoice_date,
+                entry_type="PAYMENT",
+                reference_id=pay_upi.id,
+                reference_number=pay_upi_num,
+                description=f"Counter payment received via UPI (Invoice #{invoice.invoice_number})",
+                debit=Decimal("0.00"),
+                credit=upi_val,
+                created_by_id=user_id
+            )
+
             # 2. CASH Payment Voucher
             pay_cash_num = SequenceService.get_next_sequence(db, "PAY")
             alloc_cash = min(invoice.outstanding_amount, cash_val)
@@ -431,6 +446,20 @@ class BillingService:
             db.add(alloc_cash_rec)
             invoice.paid_amount += alloc_cash
             invoice.outstanding_amount = quantize_amount(invoice.total_amount - invoice.paid_amount)
+
+            # Double-entry ledger credit for Cash counter payment
+            CustomerService.record_ledger_entry(
+                db=db,
+                customer_id=customer.id,
+                entry_date=invoice.invoice_date,
+                entry_type="PAYMENT",
+                reference_id=pay_cash.id,
+                reference_number=pay_cash_num,
+                description=f"Counter payment received via CASH (Invoice #{invoice.invoice_number})",
+                debit=Decimal("0.00"),
+                credit=cash_val,
+                created_by_id=user_id
+            )
 
             if invoice.outstanding_amount <= Decimal("0.00"):
                 invoice.status = InvoiceStatus.PAID.value
@@ -495,6 +524,21 @@ class BillingService:
                 allocated_at=now_dt
             )
             db.add(allocation)
+
+            # Double-entry ledger credit for Counter payment
+            from app.services.customer_service import CustomerService
+            CustomerService.record_ledger_entry(
+                db=db,
+                customer_id=customer.id,
+                entry_date=invoice.invoice_date,
+                entry_type="PAYMENT",
+                reference_id=payment.id,
+                reference_number=pay_number,
+                description=f"Counter payment received via {pay_method} (Invoice #{invoice.invoice_number})",
+                debit=Decimal("0.00"),
+                credit=total_received,
+                created_by_id=user_id
+            )
 
             invoice.paid_amount = alloc_to_this_invoice
             invoice.outstanding_amount = quantize_amount(invoice.total_amount - alloc_to_this_invoice)

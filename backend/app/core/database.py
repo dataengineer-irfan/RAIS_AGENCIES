@@ -71,10 +71,23 @@ connect_args = {}
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-# If connecting to Supabase pooler on port 5432 (session mode with 15 client limit),
+# If connecting to Supabase pooler on port 5432 (session mode with 15 client limit) or default port,
 # automatically route to port 6543 (transaction mode pooler) to completely eliminate EMAXCONNSESSION
-if "pooler.supabase.com:5432" in database_url:
-    database_url = database_url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
+if "pooler.supabase.com" in database_url:
+    try:
+        from urllib.parse import urlsplit, urlunsplit
+        _parts = urlsplit(database_url)
+        if _parts.hostname and "pooler.supabase.com" in _parts.hostname:
+            if _parts.port == 5432 or _parts.port is None:
+                _netloc = _parts.netloc
+                if f":{_parts.port}" in _netloc:
+                    _netloc = _netloc.replace(f":{_parts.port}", ":6543")
+                else:
+                    _netloc = f"{_netloc}:6543"
+                database_url = urlunsplit((_parts.scheme, _netloc, _parts.path, _parts.query, _parts.fragment))
+    except Exception:
+        if "pooler.supabase.com:5432" in database_url:
+            database_url = database_url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
 
 if database_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}

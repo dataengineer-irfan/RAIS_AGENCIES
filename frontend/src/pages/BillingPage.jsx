@@ -31,7 +31,7 @@ import {
   Users,
   User
 } from 'lucide-react';
-import { billingApi, customerApi } from '../services/api';
+import { billingApi, customerApi, getApiErrorMessage } from '../services/api';
 import { playSoundboxChime } from '../utils/soundbox';
 import { copyToClipboard, openWhatsApp } from '../utils/mobileHelpers';
 import { StatusBadge } from '../components/StatusBadge';
@@ -203,7 +203,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       await billingApi.issueInvoice(invoiceId);
       await loadInvoices(invoiceId);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to issue invoice');
+      alert(getApiErrorMessage(err, 'Failed to issue invoice'));
     }
   };
 
@@ -217,7 +217,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       setStatusReason('');
       await loadInvoices(selectedInvoiceId);
     } catch (err) {
-      alert(err.response?.data?.message || 'Status change failed');
+      alert(getApiErrorMessage(err, 'Status change failed'));
     }
   };
 

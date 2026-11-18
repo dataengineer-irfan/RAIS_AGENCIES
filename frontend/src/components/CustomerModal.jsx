@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Building2, Mic } from 'lucide-react';
-import { customerApi } from '../services/api';
+import { customerApi, getApiErrorMessage } from '../services/api';
 import { VoiceDictationModal } from './VoiceDictationModal';
 import { IS_VOICE_ENABLED } from '../utils/featureFlags';
 
@@ -144,10 +144,14 @@ export const CustomerModal = ({ isOpen, onClose, customerToEdit, onCustomerSaved
       } else {
         await customerApi.create(payload);
       }
-      if (onCustomerSaved) onCustomerSaved();
+      try {
+        if (onCustomerSaved) onCustomerSaved();
+      } catch (cbErr) {
+        console.warn('onCustomerSaved callback error:', cbErr);
+      }
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || 'Failed to save customer.';
+      const msg = getApiErrorMessage(err, 'Failed to save customer.');
       setError(msg);
     } finally {
       setLoading(false);

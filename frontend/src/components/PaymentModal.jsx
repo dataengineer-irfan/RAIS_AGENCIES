@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, CreditCard, CheckCircle2, Tag, RotateCcw } from 'lucide-react';
-import { customerApi, billingApi, paymentApi } from '../services/api';
+import { customerApi, billingApi, paymentApi, getApiErrorMessage } from '../services/api';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { emitDataUpdated } from '../utils/eventBus';
 import { playSoundboxChime } from '../utils/soundbox';
@@ -194,7 +194,7 @@ export const PaymentModal = ({
         onClose();
       }, 1200);
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || 'Failed to record payment.';
+      const msg = getApiErrorMessage(err, 'Failed to record payment.');
       setError(msg);
     } finally {
       setSubmitting(false);

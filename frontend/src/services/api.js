@@ -107,6 +107,23 @@ export const setLocalCachedSnapshot = (key, data) => {
   }
 };
 
+export const getApiErrorMessage = (err, fallback = 'Operation failed.') => {
+  if (!err) return fallback;
+  const data = err.response?.data;
+  if (!data) return err.message || fallback;
+  if (typeof data === 'string') return data;
+
+  const detail = data.detail ?? data.message ?? data.error;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map(d => (typeof d === 'string' ? d : d.msg || JSON.stringify(d))).join(', ');
+  }
+  if (typeof detail === 'object' && detail !== null) {
+    return detail.message || detail.msg || JSON.stringify(detail);
+  }
+  return fallback;
+};
+
 export const clearApiCache = () => {
   _CLIENT_CACHE.clear();
 };

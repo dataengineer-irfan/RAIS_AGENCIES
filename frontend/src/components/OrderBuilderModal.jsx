@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ShoppingBag, Plus, Trash2, X, AlertTriangle, CheckCircle, CheckCircle2, Calculator, MessageSquare, Minus, Sparkles, RefreshCw } from 'lucide-react';
-import { customerApi, catalogueApi, orderApi } from '../services/api';
+import { customerApi, catalogueApi, orderApi, getApiErrorMessage } from '../services/api';
 import { SmartProductSearchPicker } from './SmartProductSearchPicker';
 import { SearchableCustomerSelect } from './SearchableCustomerSelect';
 import { shareOrderOnWhatsApp } from '../utils/whatsappShare';
@@ -198,21 +198,26 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
 
       const res = await orderApi.create(payload);
       setCreatedOrder(res);
-      emitDataUpdated('order-created', { order: res });
-      if (onOrderCreated) {
-        onOrderCreated(res);
-      }
-      if (andShareWhatsApp) {
-        const custObj = customers.find(c => c.id === customerId);
-        shareOrderOnWhatsApp({
-          order: res,
-          customer: custObj,
-          items: items,
-          products: products
-        });
+      setError('');
+      try {
+        emitDataUpdated('order-created', { order: res });
+        if (onOrderCreated) {
+          onOrderCreated(res);
+        }
+        if (andShareWhatsApp) {
+          const custObj = customers.find(c => c.id === customerId);
+          shareOrderOnWhatsApp({
+            order: res,
+            customer: custObj,
+            items: items,
+            products: products
+          });
+        }
+      } catch (sideErr) {
+        console.warn('Post-order creation side-effect warning:', sideErr);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create order.');
+      setError(getApiErrorMessage(err, 'Failed to create order.'));
     } finally {
       setLoading(false);
     }
@@ -309,7 +314,7 @@ export const OrderBuilderModal = ({ isOpen, onClose, onOrderCreated, preselected
         ) : (
           /* Form Body */
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 text-xs overflow-y-auto flex-1 custom-scrollbar">
-            {error && (
+            {error && !createdOrder && (
               <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl">
                 {error}
               </div>

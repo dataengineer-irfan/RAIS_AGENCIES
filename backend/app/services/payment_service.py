@@ -484,6 +484,7 @@ class PaymentService:
         if not payment:
             raise EntityNotFoundException("Payment", payment_id)
 
+        old_amount = payment.amount
         before_state = {
             "amount": str(payment.amount),
             "payment_date": str(payment.payment_date),
@@ -569,6 +570,21 @@ class PaymentService:
         )
 
         if data.amount is not None:
+            diff = payment.amount - old_amount
+            if diff != Decimal("0.00"):
+                from app.services.customer_service import CustomerService
+                CustomerService.record_ledger_entry(
+                    db=db,
+                    customer_id=payment.customer_id,
+                    entry_date=payment.payment_date,
+                    entry_type="ADJUSTMENT",
+                    reference_id=payment.id,
+                    reference_number=f"ADJ-{payment.payment_number}",
+                    description=f"Payment {payment.payment_number} amount adjusted ({'+' if diff > 0 else '-'}₹{abs(diff):.2f})",
+                    debit=abs(diff) if diff < Decimal("0.00") else Decimal("0.00"),
+                    credit=diff if diff > Decimal("0.00") else Decimal("0.00"),
+                    created_by_id=user_id
+                )
             from app.services.reconciliation_service import ReconciliationService
             ReconciliationService.reconcile_customer_fifo(db, payment.customer_id, auto_commit=False)
 

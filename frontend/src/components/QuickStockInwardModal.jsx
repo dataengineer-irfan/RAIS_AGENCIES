@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Zap, PackagePlus, AlertTriangle, CheckCircle2, RefreshCw, Layers, ArrowRight } from 'lucide-react';
-import { inventoryApi } from '../services/api';
+import { inventoryApi, getApiErrorMessage } from '../services/api';
 import { formatProductDisplay } from '../utils/productHelpers';
 
 export const QuickStockInwardModal = ({
@@ -78,7 +78,11 @@ export const QuickStockInwardModal = ({
       });
 
       // Notify parent to update local state immediately
-      onStockUpdated(prod, newStock);
+      try {
+        if (onStockUpdated) onStockUpdated(prod, newStock);
+      } catch (cbErr) {
+        console.warn('onStockUpdated callback error:', cbErr);
+      }
 
       // Smooth auto-dismiss so operator continues billing without interruption
       setTimeout(() => {
@@ -86,8 +90,7 @@ export const QuickStockInwardModal = ({
       }, 800);
     } catch (err) {
       console.error('Quick stock inward failed:', err);
-      const msg = err.response?.data?.detail || err.message || 'Failed to update stock.';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      setError(getApiErrorMessage(err, 'Failed to update stock.'));
     } finally {
       setLoading(false);
     }
@@ -128,7 +131,7 @@ export const QuickStockInwardModal = ({
 
         {/* Content Body */}
         <form onSubmit={handleSubmit} className="p-4 space-y-3.5 text-xs">
-          {error && (
+          {error && !success && (
             <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{error}</span>

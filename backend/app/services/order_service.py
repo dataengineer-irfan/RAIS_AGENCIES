@@ -172,8 +172,6 @@ class OrderService:
         
         # Mark order as completed
         order.status = "COMPLETED"
-        db.commit()
-        db.refresh(order)
 
         AuditService.log_action(
             db=db,
@@ -183,6 +181,9 @@ class OrderService:
             action="CONVERT_TO_INVOICE",
             after_state={"order_number": order.order_number, "invoice_number": invoice.invoice_number}
         )
+
+        db.commit()
+        db.refresh(order)
 
         return invoice
 
@@ -207,9 +208,6 @@ class OrderService:
                 user_id=user_id
             )
 
-        db.commit()
-        db.refresh(order)
-
         AuditService.log_action(
             db=db,
             user_id=user_id,
@@ -218,6 +216,9 @@ class OrderService:
             action="CANCEL_ORDER",
             after_state={"order_number": order.order_number, "status": "CANCELLED", "reason": reason}
         )
+
+        db.commit()
+        db.refresh(order)
 
         from app.services.billing_service import BillingService
         BillingService.invalidate_cache()
