@@ -1236,21 +1236,22 @@ class BillingService:
 
         # Calculate in-stock restock suggestion for customer (strictly fail-safe & zero prices)
         restock_sugg = None
-        db_state = getattr(inv, '_sa_instance_state', None)
-        active_db = getattr(db_state, 'session', None) if db_state else None
-        if active_db and inv.customer_id:
-            try:
-                from app.services.recommendation_service import RecommendationService
-                exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
-                current_descs = [getattr(itm, 'item_description', '') for itm in (inv.items or []) if getattr(itm, 'item_description', None)]
-                restock_sugg = RecommendationService.get_customer_restock_suggestion(
-                    db=active_db,
-                    customer_id=str(inv.customer_id),
-                    exclude_product_ids=exclude_pids,
-                    current_item_descriptions=current_descs
-                )
-            except Exception:
-                restock_sugg = None
+        if not is_list:
+            db_state = getattr(inv, '_sa_instance_state', None)
+            active_db = getattr(db_state, 'session', None) if db_state else None
+            if active_db and inv.customer_id:
+                try:
+                    from app.services.recommendation_service import RecommendationService
+                    exclude_pids = [str(getattr(itm, 'product_id', '')) for itm in (inv.items or []) if getattr(itm, 'product_id', None)]
+                    current_descs = [getattr(itm, 'item_description', '') for itm in (inv.items or []) if getattr(itm, 'item_description', None)]
+                    restock_sugg = RecommendationService.get_customer_restock_suggestion(
+                        db=active_db,
+                        customer_id=str(inv.customer_id),
+                        exclude_product_ids=exclude_pids,
+                        current_item_descriptions=current_descs
+                    )
+                except Exception:
+                    restock_sugg = None
 
         return InvoiceResponse(
             id=inv.id,
@@ -1313,9 +1314,11 @@ class BillingService:
             if now - ts < _INVOICES_CACHE_TTL:
                 return cached_data
 
+        from app.models.payment import PaymentAllocation
         query = db.query(Invoice).options(
             joinedload(Invoice.customer),
-            selectinload(Invoice.items)
+            selectinload(Invoice.items),
+            selectinload(Invoice.allocations).joinedload(PaymentAllocation.payment)
         )
         if customer_id:
             query = query.filter(Invoice.customer_id == customer_id)

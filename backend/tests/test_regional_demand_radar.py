@@ -22,6 +22,10 @@ def setup_radar_db():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
+    # Clean any leftover radar SKUs from previous test suites
+    db.query(Product).filter(Product.sku.in_(["RAIS-BKT-01", "RAIS-PKG-01", "RAIS-PKG-02", "RAIS-PKG-03", "RAIS-BOX-10"])).delete(synchronize_session=False)
+    db.commit()
+
     # Create Categories
     def get_or_create_cat(code, name, order):
         c = db.query(Category).filter_by(code=code).first()
