@@ -26,7 +26,7 @@ def list_invoices(
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(500, ge=1, le=2000),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):

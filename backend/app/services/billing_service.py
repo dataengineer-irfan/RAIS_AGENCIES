@@ -1303,7 +1303,7 @@ class BillingService:
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
         skip: int = 0,
-        limit: int = 100
+        limit: int = 500
     ) -> List[InvoiceResponse]:
         import time
         cache_key = f"{customer_id}_{status}_{search}_{from_date}_{to_date}_{skip}_{limit}"

@@ -123,13 +123,34 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     }
   }, []);
 
+  // Customer-scoped invoice fetcher: when a customer is selected, fetch their entire billing history from DB
+  useEffect(() => {
+    if (selectedCustomerId && selectedCustomerId !== 'ALL') {
+      billingApi.listInvoices({ customer_id: selectedCustomerId, limit: 500 }).then(data => {
+        const custInvoices = Array.isArray(data) ? data : (data?.items || data?.data || []);
+        if (custInvoices.length > 0) {
+          setInvoices(prev => {
+            const map = new Map();
+            prev.forEach(inv => {
+              if (inv && inv.id) map.set(inv.id, inv);
+            });
+            custInvoices.forEach(inv => {
+              if (inv && inv.id) map.set(inv.id, inv);
+            });
+            return Array.from(map.values()).sort((a, b) => new Date(b.invoice_date || b.created_at || 0) - new Date(a.invoice_date || a.created_at || 0));
+          });
+        }
+      }).catch(err => console.error('Failed to load customer scoped invoices', err));
+    }
+  }, [selectedCustomerId]);
+
   const loadInvoices = async (selectId = null) => {
     // Only show full loading skeleton if we have zero invoices in memory/cache
     if (invoices.length === 0 && !getInitialInvoices().length) {
       setLoading(true);
     }
     try {
-      const data = await billingApi.listInvoices();
+      const data = await billingApi.listInvoices({ limit: 500 });
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       setInvoices(items);
       _invoicesMemoryCache = items;
@@ -503,7 +524,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               Invoices Hub
             </h1>
             <span className="whitespace-nowrap shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-800 text-amber-400 rounded-full border border-slate-700 font-mono">
-              {loading && invoices.length === 0 ? 'Syncing...' : `${filteredInvoices.length}/${invoices.length}`}
+              {loading && invoices.length === 0 ? 'Syncing...' : selectedCustomerId !== 'ALL' ? `${filteredInvoices.length} Bills` : `${filteredInvoices.length}/${invoices.length}`}
             </span>
           </div>
         </div>
