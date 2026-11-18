@@ -291,7 +291,9 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           id: c.id,
           name: c.business_name || c.contact_person || 'Unnamed Outlet',
           code: c.customer_code || '',
-          count: 0
+          outstanding_balance: parseFloat(c.outstanding_balance || 0),
+          count: 0,
+          invoicesDue: 0
         });
       }
     });
@@ -304,12 +306,18 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
             id: inv.customer_id,
             name: inv.customer_name || 'Unnamed Outlet',
             code: inv.customer_code || '',
-            count: 0
+            outstanding_balance: parseFloat(inv.customer_outstanding_balance || 0),
+            count: 0,
+            invoicesDue: 0
           });
         }
         const existing = map.get(inv.customer_id);
         if (existing) {
           existing.count += 1;
+          const out = parseFloat(inv.outstanding_amount || 0);
+          if (out > 0) {
+            existing.invoicesDue += out;
+          }
         }
       }
     });
@@ -325,6 +333,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     if (!selectedCustomerId || selectedCustomerId === 'ALL') return null;
     return customerOptions.find(c => c.id === selectedCustomerId) || null;
   }, [customerOptions, selectedCustomerId]);
+
+  const activeCustomerDue = useMemo(() => {
+    if (!activeCustomer) return 0;
+    const invDue = Number(statusCounts.totalDue || 0);
+    const ledgerBal = Number(activeCustomer.outstanding_balance || 0);
+    if (invDue > 0) return invDue;
+    if (ledgerBal > 0) return ledgerBal;
+    return 0;
+  }, [activeCustomer, statusCounts.totalDue]);
 
   const customerScopedInvoices = useMemo(() => {
     if (!selectedCustomerId || selectedCustomerId === 'ALL') return invoices;
@@ -475,7 +492,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     <div className="flex flex-col h-full w-full overflow-hidden gap-2">
       
       {/* ─── DESKTOP UNIFIED COMMAND RIBBON (>= md) ─── */}
-      <div className="hidden md:flex items-center justify-between gap-2.5 bg-slate-900/95 border border-slate-800 rounded-2xl px-3.5 py-1.5 shrink-0 shadow-md min-h-[46px]">
+      <div className="hidden md:flex items-center gap-2 bg-slate-900/95 border border-slate-800 rounded-2xl px-3 py-1.5 shrink-0 shadow-md min-h-[46px] w-full">
         {/* Left: Icon & Title */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -491,91 +508,92 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           </div>
         </div>
 
-        {/* Center: 1-Click Status Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
-          <button
-            onClick={() => setActiveStatusFilter('ALL')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-              activeStatusFilter === 'ALL'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-            }`}
-          >
-            All ({statusCounts.total})
-          </button>
-          <button
-            onClick={() => setActiveStatusFilter(activeStatusFilter === 'DUE' ? 'ALL' : 'DUE')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeStatusFilter === 'DUE'
-                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20 ring-1 ring-rose-400'
-                : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
-            }`}
-          >
-            <span>🚨 Due</span>
-            <span className="font-mono text-[11px]">({statusCounts.due})</span>
-          </button>
-          <button
-            onClick={() => setActiveStatusFilter(activeStatusFilter === 'PAID' ? 'ALL' : 'PAID')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeStatusFilter === 'PAID'
-                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
-                : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
-            }`}
-          >
-            <span>🟢 Paid</span>
-            <span className="font-mono text-[11px]">({statusCounts.paid})</span>
-          </button>
-          <button
-            onClick={() => setActiveStatusFilter(activeStatusFilter === 'PARTIALLY_PAID' ? 'ALL' : 'PARTIALLY_PAID')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-              activeStatusFilter === 'PARTIALLY_PAID'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
-                : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
-            }`}
-          >
-            <span>Partial</span>
-            <span className="font-mono text-[11px]">({statusCounts.partial})</span>
-          </button>
-          <button
-            onClick={() => setActiveStatusFilter(activeStatusFilter === 'DRAFT' ? 'ALL' : 'DRAFT')}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-              activeStatusFilter === 'DRAFT'
-                ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-600'
-                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-            }`}
-          >
-            Draft ({statusCounts.draft})
-          </button>
-        </div>
-
-        {/* Center-Right: Omni-Search Input with Clear */}
-        <div className="relative flex-1 max-w-[240px] min-w-[140px]">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search bill #, outlet, item..."
-            className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-          />
-          {searchTerm && (
+        {/* Center: Scrollable/Flexing Filters & Search */}
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          {/* Status Filter Pills */}
+          <div className="flex items-center gap-1 shrink-0">
             <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+              onClick={() => setActiveStatusFilter('ALL')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                activeStatusFilter === 'ALL'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+              }`}
             >
-              ✕
+              All ({statusCounts.total})
             </button>
-          )}
-        </div>
+            <button
+              onClick={() => setActiveStatusFilter(activeStatusFilter === 'DUE' ? 'ALL' : 'DUE')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                activeStatusFilter === 'DUE'
+                  ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20 ring-1 ring-rose-400'
+                  : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30'
+              }`}
+            >
+              <span>🚨 Due</span>
+              <span className="font-mono text-[11px]">({statusCounts.due})</span>
+            </button>
+            <button
+              onClick={() => setActiveStatusFilter(activeStatusFilter === 'PAID' ? 'ALL' : 'PAID')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                activeStatusFilter === 'PAID'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400'
+                  : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+              }`}
+            >
+              <span>🟢 Paid</span>
+              <span className="font-mono text-[11px]">({statusCounts.paid})</span>
+            </button>
+            <button
+              onClick={() => setActiveStatusFilter(activeStatusFilter === 'PARTIALLY_PAID' ? 'ALL' : 'PARTIALLY_PAID')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                activeStatusFilter === 'PARTIALLY_PAID'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-1 ring-amber-400'
+                  : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30'
+              }`}
+            >
+              <span>Partial</span>
+              <span className="font-mono text-[11px]">({statusCounts.partial})</span>
+            </button>
+            <button
+              onClick={() => setActiveStatusFilter(activeStatusFilter === 'DRAFT' ? 'ALL' : 'DRAFT')}
+              className={`px-2 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                activeStatusFilter === 'DRAFT'
+                  ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-600'
+                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              Draft ({statusCounts.draft})
+            </button>
+          </div>
 
-        {/* Customer Filter Dropdown */}
-        <div className="flex items-center gap-1 shrink-0">
-          <div className="relative flex items-center">
+          {/* Omni-Search Input */}
+          <div className="relative min-w-[120px] max-w-[180px] flex-1 shrink-0">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search bill #..."
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-0.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Customer Filter Dropdown with Due badge in options */}
+          <div className="relative flex items-center shrink-0 max-w-[190px]">
             <Users className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
             <select
               value={selectedCustomerId}
               onChange={(e) => setSelectedCustomerId(e.target.value)}
-              className={`pl-7 pr-6 py-1.5 bg-slate-950 border rounded-xl text-xs font-medium cursor-pointer transition-colors max-w-[210px] truncate focus:outline-none ${
+              className={`pl-7 pr-6 py-1.5 bg-slate-950 border rounded-xl text-xs font-medium cursor-pointer transition-colors max-w-[190px] truncate focus:outline-none ${
                 selectedCustomerId !== 'ALL'
                   ? 'border-amber-500 text-amber-300 bg-amber-500/10 font-bold ring-1 ring-amber-500/40'
                   : 'border-slate-800 text-slate-300 hover:border-slate-700'
@@ -583,11 +601,16 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               title="Filter by Customer Outlet"
             >
               <option value="ALL">👥 All Customers ({customerOptions.length})</option>
-              {customerOptions.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.code ? `(${c.code})` : ''} {c.count > 0 ? `• ${c.count} bills` : ''}
-                </option>
-              ))}
+              {customerOptions.map(c => {
+                const due = (c.invoicesDue > 0) ? c.invoicesDue : (c.outstanding_balance || 0);
+                const dueTag = due > 0 ? ` • ₹${Math.round(due).toLocaleString('en-IN')} Due` : '';
+                const billsTag = c.count > 0 ? ` (${c.count} bills)` : '';
+                return (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.code ? `(${c.code})` : ''}{dueTag}{billsTag}
+                  </option>
+                );
+              })}
             </select>
             {selectedCustomerId !== 'ALL' && (
               <button
@@ -599,26 +622,27 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               </button>
             )}
           </div>
+
+          {/* Sort Selector */}
+          <div className="flex items-center shrink-0">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:border-amber-500 font-mono font-medium cursor-pointer"
+              title="Sort Invoices Order"
+            >
+              <option value="DATE_DESC">📅 Newest</option>
+              <option value="DATE_ASC">📅 Oldest</option>
+              <option value="AMOUNT_DESC">💰 Amount (High → Low)</option>
+              <option value="AMOUNT_ASC">💰 Amount (Low → High)</option>
+              <option value="DUE_DESC">🚨 Due (High → Low)</option>
+              <option value="INV_DESC"># Invoice Number</option>
+            </select>
+          </div>
         </div>
 
-        {/* Sort Selector */}
-        <div className="flex items-center gap-1 shrink-0">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-500 font-mono font-medium cursor-pointer"
-            title="Sort Invoices Order"
-          >
-            <option value="DATE_DESC">📅 Newest Date</option>
-            <option value="DATE_ASC">📅 Oldest Date</option>
-            <option value="AMOUNT_DESC">💰 Amount (High → Low)</option>
-            <option value="AMOUNT_ASC">💰 Amount (Low → High)</option>
-            <option value="DUE_DESC">🚨 Due (High → Low)</option>
-            <option value="INV_DESC"># Invoice Number</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+        {/* Right: Actions, Live Ticker & + Invoice CTA (Pinned & NEVER Clipped) */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto pl-1">
           {/* Live Financial Micro-Ticker */}
           <div className="hidden 2xl:flex items-center gap-2 px-2.5 py-1 bg-slate-950/80 border border-slate-800 rounded-xl font-mono text-[11px] shrink-0">
             <span className="text-slate-400">Billed: <strong className="text-white">₹{statusCounts.totalBilled.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong></span>
@@ -630,7 +654,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           {onNavigate && (
             <button
               onClick={() => onNavigate('audit', { entity: 'Invoice', action: 'DELETE' })}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/30 rounded-xl text-xs font-bold transition shadow-sm shrink-0"
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-slate-800 hover:border-amber-500/30 rounded-xl text-xs font-bold transition shadow-sm shrink-0"
               title="Inspect audit records for deleted and cancelled invoices"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
@@ -642,7 +666,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
           {hasRole(['ADMIN', 'OPERATOR']) && (
             <button
               onClick={onOpenInvoiceBuilder}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all hover:scale-105 shrink-0 whitespace-nowrap"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>+ Invoice</span>
@@ -685,11 +709,15 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               }`}
             >
               <option value="ALL">👥 All Outlets</option>
-              {customerOptions.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {customerOptions.map(c => {
+                const due = (c.invoicesDue > 0) ? c.invoicesDue : (c.outstanding_balance || 0);
+                const dueTag = due > 0 ? ` • ₹${Math.round(due).toLocaleString('en-IN')}` : '';
+                return (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{dueTag}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -792,17 +820,34 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
               <span>Total / Due</span>
             </div>
             {selectedCustomerId !== 'ALL' && activeCustomer && (
-              <div className="flex items-center justify-between px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 shadow-sm animate-fadeIn">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] uppercase tracking-wider font-black text-amber-400">Customer:</span>
-                  <strong className="truncate text-white font-bold">{activeCustomer.name}</strong>
-                  {activeCustomer.code && (
-                    <span className="text-[10px] font-mono text-amber-400 font-bold">({activeCustomer.code})</span>
-                  )}
+              <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 shadow-sm animate-fadeIn">
+                <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[10px] uppercase tracking-wider font-black text-amber-400">Customer:</span>
+                    <strong className="truncate text-white font-bold">{activeCustomer.name}</strong>
+                    {activeCustomer.code && (
+                      <span className="text-[10px] font-mono text-amber-400 font-bold">({activeCustomer.code})</span>
+                    )}
+                  </div>
+                  {/* Total Due Amount Badge prominently beside customer */}
+                  <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-mono font-black shrink-0 shadow-xs ${
+                    activeCustomerDue > 0
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  }`}>
+                    <span className="text-[9px] uppercase tracking-wider font-sans font-extrabold opacity-85">
+                      {activeCustomerDue > 0 ? 'Total Due:' : 'Status:'}
+                    </span>
+                    <span>
+                      {activeCustomerDue > 0
+                        ? `₹${activeCustomerDue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : 'Paid in Full (₹0 Due)'}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setSelectedCustomerId('ALL')}
-                  className="text-[10px] font-bold text-amber-400 hover:text-white bg-amber-500/20 hover:bg-amber-500/30 px-2 py-0.5 rounded-lg transition-colors shrink-0 ml-1.5"
+                  className="text-[10px] font-bold text-amber-400 hover:text-white bg-amber-500/20 hover:bg-amber-500/30 px-2 py-0.5 rounded-lg transition-colors shrink-0 ml-auto"
                   title="Clear customer filter"
                 >
                   ✕ Show All
