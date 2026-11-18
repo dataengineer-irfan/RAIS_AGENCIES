@@ -8,19 +8,18 @@ import app.models  # Ensures all models are registered in Base
 from app.api import auth, customers, catalogue, quotations, orders, invoices, payments, inventory, reports, audit, ai, analytics, backup, executive
 from app.core.exceptions import RaisAppException
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
-# Safe schema migrations on startup
-from sqlalchemy import text as _text
+# Safe schema initialization & migrations on startup
 try:
+    Base.metadata.create_all(bind=engine)
+    from sqlalchemy import text as _text
     with engine.connect() as _conn:
         _conn.execute(_text("ALTER TABLE products ADD COLUMN IF NOT EXISTS purchase_cost NUMERIC(12,2) NULL"))
         _conn.execute(_text("ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(100) NULL"))
         _conn.execute(_text("ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS supplier_invoice_number VARCHAR(100) NULL"))
         _conn.commit()
-except Exception:
-    pass
+except Exception as _init_err:
+    import logging
+    logging.warning(f"Startup database schema check deferred: {_init_err}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

@@ -2,6 +2,7 @@ import os
 import sys
 from urllib.parse import urlparse
 from sqlalchemy import create_engine, event
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.engine import Engine
 from typing import Generator
@@ -70,6 +71,11 @@ connect_args = {}
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
+# If connecting to Supabase pooler on port 5432 (session mode with 15 client limit),
+# automatically route to port 6543 (transaction mode pooler) to completely eliminate EMAXCONNSESSION
+if "pooler.supabase.com:5432" in database_url:
+    database_url = database_url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
+
 if database_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
     engine = create_engine(
@@ -85,14 +91,15 @@ if database_url.startswith("sqlite"):
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 else:
-    # Tuned for Supabase session pooler (max 15 clients) & zero-downtime rolling deploys
+    # Disable psycopg3 prepared statements for Supabase transaction pooler (PgBouncer/Supavisor)
+    connect_args = {"prepare_threshold": None}
+
+    # Use NullPool for Supabase pooler: connections are released back to Supavisor immediately on query completion
+    # Zero idle connections held, eliminating any risk of hitting the 15-session client limit
     engine = create_engine(
         database_url,
-        pool_pre_ping=True,
-        pool_size=4,
-        max_overflow=4,
-        pool_recycle=180,
-        pool_timeout=15,
+        poolclass=NullPool,
+        connect_args=connect_args,
         echo=False
     )
 
