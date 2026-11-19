@@ -290,7 +290,7 @@ export const ForecastStoryWidget = ({ onOpenDrilldown, onBackToOverview }) => {
         </div>
 
         <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto custom-scrollbar [scrollbar-width:thin] scrollbar-thin">
-          <table className="w-full min-w-[420px] text-left text-xs border-collapse">
+          <table className="w-full min-w-[560px] text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
               <tr>
                 <th className="py-2 px-2.5">Date</th>

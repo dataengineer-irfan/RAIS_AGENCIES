@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from decimal import Decimal
 from datetime import datetime, date, timedelta, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.models.invoice import Invoice
 from app.models.payment import Payment
 from app.models.analytics import MonthlyTarget
@@ -62,7 +62,7 @@ class ForecastingService:
             Payment.payment_date,
             func.sum(Payment.amount).label("day_total")
         ).filter(
-            Payment.status.notin_(["CANCELLED", "VOID"]),
+            or_(Payment.status.is_(None), Payment.status.notin_(["CANCELLED", "VOID"])),
             Payment.payment_date >= date(year, month, 1),
             Payment.payment_date <= today
         ).group_by(Payment.payment_date).order_by(Payment.payment_date.asc()).all()
