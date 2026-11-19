@@ -78,13 +78,13 @@ export function playSoundboxChime(amount, { customerName = '', method = 'UPI', l
         let utterance;
         if (teVoice) {
           // Native Telugu speech engine: "రైస్ ఏజెన్సీస్ లో [amount] రూపాయలు అందాయి"
-          utterance = new SpeechSynthesisUtterance(`రైస్ ఏజెన్సీస్ లో ${amtNum} రూపాయలు అందాయి`);
+          utterance = new SpeechSynthesisUtterance(`రైస్ ఏజెన్సీస్ లో ${amtNum} రూపాయలు అందాయి, థాంక్యూ!`);
           utterance.voice = teVoice;
           utterance.lang = 'te-IN';
         } else {
           // Phonetic Telugu: Works with any Indian voice (en-IN) on Windows/Mac/Linux
           // Sounds exactly like Rayachoty Telugu to local listeners!
-          utterance = new SpeechSynthesisUtterance(`Raais Agencies lo ${amtNum} roopaayalu andaayi`);
+          utterance = new SpeechSynthesisUtterance(`Raais Agencies lo ${amtNum} roopaayalu andaayi, thank you!`);
           const inVoice = voices.find(v => v.lang === 'en-IN' || v.name?.includes('India') || v.name?.includes('Hindi'));
           if (inVoice) {
             utterance.voice = inVoice;
