@@ -84,7 +84,7 @@ export function playSoundboxChime(amount, { customerName = '', method = 'UPI', l
         } else {
           // Phonetic Telugu: Works with any Indian voice (en-IN) on Windows/Mac/Linux
           // Sounds exactly like Rayachoty Telugu to local listeners!
-          utterance = new SpeechSynthesisUtterance(`RAIS Agencies lo ${amtNum} roopaayalu andaayi`);
+          utterance = new SpeechSynthesisUtterance(`Raais Agencies lo ${amtNum} roopaayalu andaayi`);
           const inVoice = voices.find(v => v.lang === 'en-IN' || v.name?.includes('India') || v.name?.includes('Hindi'));
           if (inVoice) {
             utterance.voice = inVoice;
