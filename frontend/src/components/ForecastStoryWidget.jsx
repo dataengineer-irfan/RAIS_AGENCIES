@@ -295,7 +295,8 @@ export const ForecastStoryWidget = ({ onOpenDrilldown, onBackToOverview }) => {
               <tr>
                 <th className="py-2 px-2.5">Date</th>
                 <th className="py-2 px-2.5 text-right">Daily Invoiced</th>
-                <th className="py-2 px-2.5 text-right">Cumulative</th>
+                <th className="py-2 px-2.5 text-right">Collections</th>
+                <th className="py-2 px-2.5 text-right">Cumulative Billed</th>
                 <th className="py-2 px-2.5 text-right">Pace vs Target</th>
                 <th className="py-2 px-2.5 text-center">Status</th>
               </tr>
@@ -303,6 +304,7 @@ export const ForecastStoryWidget = ({ onOpenDrilldown, onBackToOverview }) => {
             <tbody className="divide-y divide-slate-800/40">
               {[...(forecast.sparkline || [])].reverse().map((day) => {
                 const dailyVal = parseFloat(day.daily_revenue || 0);
+                const dailyColl = parseFloat(day.daily_collected || 0);
                 const isDayAhead = dailyVal >= targetDailyRate;
 
                 const formatDateDisplay = (dateStr) => {
@@ -334,6 +336,13 @@ export const ForecastStoryWidget = ({ onOpenDrilldown, onBackToOverview }) => {
                     </td>
                     <td className="py-2 px-2.5 text-right font-mono font-bold text-white whitespace-nowrap">
                       ₹{dailyVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-2 px-2.5 text-right font-mono font-bold whitespace-nowrap">
+                      {dailyColl > 0 ? (
+                        <span className="text-emerald-400">₹{dailyColl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      ) : (
+                        <span className="text-slate-600 font-normal">₹0.00</span>
+                      )}
                     </td>
                     <td className="py-2 px-2.5 text-right font-mono font-semibold text-slate-300 whitespace-nowrap">
                       ₹{parseFloat(day.cumulative_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}

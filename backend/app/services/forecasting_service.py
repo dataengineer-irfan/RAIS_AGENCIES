@@ -5,11 +5,12 @@ from datetime import datetime, date, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.invoice import Invoice
+from app.models.payment import Payment
 from app.models.analytics import MonthlyTarget
 from app.core.datetime_utils import get_ist_today
 
 _FORECAST_CACHE = {"timestamp": 0, "data": None}
-CACHE_TTL_SECONDS = 60
+CACHE_TTL_SECONDS = 180  # 3-minute RAM cache to preserve Supabase egress bandwidth
 
 class ForecastingService:
     @staticmethod
@@ -30,37 +31,56 @@ class ForecastingService:
         days_in_month = calendar.monthrange(year, month)[1]
         days_elapsed = max(today.day, 1)
 
+        # Valid billed invoice statuses (harmonized with ReportingService)
+        VALID_INVOICE_STATUSES = ["ISSUED", "PAID", "PARTIALLY_PAID", "OVERDUE"]
+
         # 1. Fetch current month's invoiced revenue so far
         current_invoices = db.query(
             func.coalesce(func.sum(Invoice.total_amount), 0).label("total")
         ).filter(
-            Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT"]),
+            Invoice.status.in_(VALID_INVOICE_STATUSES),
             Invoice.invoice_date >= date(year, month, 1),
             Invoice.invoice_date <= today
         ).scalar()
 
         current_revenue = float(current_invoices or 0.0)
 
-        # 2. Daily revenue sparkline for the current month
+        # 2. Daily revenue & collections sparkline for the current month
         daily_records = db.query(
             Invoice.invoice_date,
             func.sum(Invoice.total_amount).label("day_total")
         ).filter(
-            Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT"]),
+            Invoice.status.in_(VALID_INVOICE_STATUSES),
             Invoice.invoice_date >= date(year, month, 1),
             Invoice.invoice_date <= today
         ).group_by(Invoice.invoice_date).order_by(Invoice.invoice_date.asc()).all()
 
         daily_map = {r.invoice_date.day: float(r.day_total or 0) for r in daily_records}
+
+        # Daily collections from payments
+        daily_payments = db.query(
+            Payment.payment_date,
+            func.sum(Payment.amount).label("day_total")
+        ).filter(
+            Payment.status.notin_(["CANCELLED", "VOID"]),
+            Payment.payment_date >= date(year, month, 1),
+            Payment.payment_date <= today
+        ).group_by(Payment.payment_date).order_by(Payment.payment_date.asc()).all()
+
+        daily_payment_map = {r.payment_date.day: float(r.day_total or 0) for r in daily_payments}
+        total_collections = sum(daily_payment_map.values())
+
         sparkline = []
         cumulative = 0.0
         for d in range(1, days_elapsed + 1):
             day_val = daily_map.get(d, 0.0)
+            coll_val = daily_payment_map.get(d, 0.0)
             cumulative += day_val
             sparkline.append({
                 "day": d,
                 "date": f"{year}-{month:02d}-{d:02d}",
                 "daily_revenue": round(day_val, 2),
+                "daily_collected": round(coll_val, 2),
                 "cumulative_revenue": round(cumulative, 2)
             })
 
@@ -73,7 +93,7 @@ class ForecastingService:
             m_expr.label("m_str"),
             func.sum(Invoice.total_amount).label("m_total")
         ).filter(
-            Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "DRAFT"]),
+            Invoice.status.in_(VALID_INVOICE_STATUSES),
             Invoice.invoice_date >= start_90d,
             Invoice.invoice_date < date(year, month, 1)
         ).group_by(m_expr).order_by(m_expr).all()
@@ -125,6 +145,7 @@ class ForecastingService:
             "days_elapsed": days_elapsed,
             "days_in_month": days_in_month,
             "current_revenue": round(current_revenue, 2),
+            "current_collections": round(total_collections, 2),
             "target_revenue": round(target_revenue, 2),
             "projected_month_end": round(projected_revenue, 2),
             "daily_run_rate": round(daily_run_rate, 2),

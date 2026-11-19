@@ -131,7 +131,7 @@ class ProductPerformanceService:
             func.count(func.distinct(Invoice.id)).label("orders_period")
         ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
          .filter(
-             Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
+             Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "OVERDUE"]),
              Invoice.invoice_date >= calc_start,
              Invoice.invoice_date <= calc_end
          ).group_by(InvoiceItem.product_id).all()
@@ -152,7 +152,7 @@ class ProductPerformanceService:
                 func.sum(InvoiceItem.line_total).label("revenue_prior")
             ).join(Invoice, Invoice.id == InvoiceItem.invoice_id)\
              .filter(
-                 Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID"]),
+                 Invoice.status.in_(["ISSUED", "PAID", "PARTIALLY_PAID", "OVERDUE"]),
                  Invoice.invoice_date >= prior_start,
                  Invoice.invoice_date <= prior_end
              ).group_by(InvoiceItem.product_id).all()
