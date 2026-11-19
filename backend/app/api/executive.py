@@ -31,7 +31,7 @@ def format_inr(val: float) -> str:
 import time
 
 _EXECUTIVE_CACHE = {"timestamp": 0, "data": None}
-_EXECUTIVE_CACHE_TTL = 0  # 0 TTL = Direct real-time live queries against PostgreSQL on every hit
+_EXECUTIVE_CACHE_TTL = 180  # 180-second (3-minute) high-efficiency in-memory cache to prevent Supabase egress exhaustion
 
 def invalidate_executive_cache():
     _EXECUTIVE_CACHE["timestamp"] = 0
@@ -62,6 +62,10 @@ def get_executive_briefing(
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0, post-check=0, pre-check=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+
+    now_ts = time.time()
+    if not force_refresh and _EXECUTIVE_CACHE["data"] and (now_ts - _EXECUTIVE_CACHE["timestamp"] < _EXECUTIVE_CACHE_TTL):
+        return _EXECUTIVE_CACHE["data"]
 
     today = get_ist_today()
     first_day_month = date(today.year, today.month, 1)
@@ -1388,6 +1392,8 @@ def get_executive_briefing(
         "financial_audit": financial_audit_telemetry,
         "handover_memo": memo_data
     }
+    _EXECUTIVE_CACHE["timestamp"] = time.time()
+    _EXECUTIVE_CACHE["data"] = briefing_payload
     return briefing_payload
 
 @router.get("/memo")

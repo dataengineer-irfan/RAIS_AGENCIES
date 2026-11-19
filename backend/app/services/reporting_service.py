@@ -18,12 +18,12 @@ from app.core.weight_utils import extract_unit_weight_kg
 
 from app.core.datetime_utils import get_ist_today, get_ist_now
 
-# 60-Second In-Memory Response Caches
+# 120-Second In-Memory Response Caches
 _DASHBOARD_CACHE = {"timestamp": 0, "data": None}
 _AGING_SUMMARY_CACHE = {"timestamp": 0, "data": None}
 _CUSTOMER_AGING_CACHE = {"timestamp": 0, "data": None}
 _PRODUCT_SALES_CACHE = {"timestamp": 0, "data": None}
-CACHE_TTL_SECONDS = 60
+CACHE_TTL_SECONDS = 120
 
 def invalidate_reporting_caches():
     _DASHBOARD_CACHE["timestamp"] = 0

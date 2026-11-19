@@ -320,14 +320,14 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
       fetchData();
     }
 
-    // 90-second refresh interval
-    const intervalId = setInterval(fetchData, 90000);
+    // 180-second (3-minute) refresh interval (keeps Supabase egress minimal)
+    const intervalId = setInterval(fetchData, 180000);
 
-    // Stale data watchdog (if no fresh sync for > 150 seconds, mark as delayed)
+    // Stale data watchdog (if no fresh sync for > 270 seconds, mark as delayed)
     const watchdogId = setInterval(() => {
       if (!isMountedRef.current) return;
       const ageSeconds = (Date.now() - lastSyncTime.getTime()) / 1000;
-      if (ageSeconds > 150 && connectionStatus === 'live') {
+      if (ageSeconds > 270 && connectionStatus === 'live') {
         setConnectionStatus('delayed');
       }
     }, 15000);

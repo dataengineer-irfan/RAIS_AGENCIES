@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Home,
   RefreshCw, 
@@ -65,6 +65,7 @@ export const HomePage = ({
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   const [savingMemo, setSavingMemo] = useState(false);
   const [memoSaveSuccess, setMemoSaveSuccess] = useState(false);
+  const lastFetchRef = useRef(0);
 
   const fetchBriefingData = async (isManual = false, isBackground = false) => {
     try {
@@ -75,6 +76,7 @@ export const HomePage = ({
         setLoading(true);
       }
 
+      lastFetchRef.current = Date.now();
       const res = await executiveApi.getBriefing(isManual);
       setBriefing(res);
       setLastSyncTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
@@ -95,28 +97,33 @@ export const HomePage = ({
     }
   };
 
-  // Initial mount + real-time 12s polling + tab visibility / focus sync + event bus
+  // Initial mount + high-efficiency 3-minute polling + smart focus sync + immediate event bus
   useEffect(() => {
     fetchBriefingData();
 
-    // 12-second live telemetry polling heartbeat for real-time operations
+    // 3-minute background telemetry polling (keeps Supabase egress minimal)
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchBriefingData(false, true);
       }
-    }, 12000);
+    }, 180000);
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchBriefingData(true, true);
+      // Only refetch on tab switch if at least 90s have passed since last sync
+      if (document.visibilityState === 'visible' && (Date.now() - lastFetchRef.current > 90000)) {
+        fetchBriefingData(false, true);
       }
     };
 
     const handleWindowFocus = () => {
-      fetchBriefingData(true, true);
+      // Only refetch on window focus if at least 90s have passed since last sync
+      if (Date.now() - lastFetchRef.current > 90000) {
+        fetchBriefingData(false, true);
+      }
     };
 
     const handleDataUpdated = () => {
+      // Immediate refresh when user creates invoice, records payment, or edits data
       fetchBriefingData(true, true);
     };
 
