@@ -5,6 +5,11 @@
  * 100% offline, zero external dependencies, zero subscriptions.
  */
 
+// Warm up voices table on module load
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  try { window.speechSynthesis.getVoices?.(); } catch (e) {}
+}
+
 const STORAGE_KEY = 'rais_soundbox_enabled';
 
 export function isSoundboxEnabled() {
@@ -61,19 +66,34 @@ export function playSoundboxChime(amount, { customerName = '', method = 'UPI', l
 
         const amtNum = Math.round(Number(amount) || 0);
         const formattedAmt = amtNum.toLocaleString('en-IN');
-        const text = `₹${formattedAmt} received on RAIS Agencies via ${method}`;
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.05;
-
-        // Try to pick an Indian English voice if available
         const voices = window.speechSynthesis.getVoices?.() || [];
-        const inVoice = voices.find(v => v.lang === 'en-IN' || v.name?.includes('India') || v.name?.includes('Hindi'));
-        if (inVoice) {
-          utterance.voice = inVoice;
+        // Check for native Telugu voice (e.g. Android Chrome Google Telugu, Windows Telugu TTS)
+        const teVoice = voices.find(v => 
+          v.lang === 'te-IN' || 
+          v.lang?.toLowerCase().startsWith('te') || 
+          v.name?.toLowerCase().includes('telugu')
+        );
+
+        let utterance;
+        if (teVoice) {
+          // Native Telugu speech engine: "రైస్ ఏజెన్సీస్ లో [amount] రూపాయలు అందాయి"
+          utterance = new SpeechSynthesisUtterance(`రైస్ ఏజెన్సీస్ లో ${amtNum} రూపాయలు అందాయి`);
+          utterance.voice = teVoice;
+          utterance.lang = 'te-IN';
+        } else {
+          // Phonetic Telugu: Works with any Indian voice (en-IN) on Windows/Mac/Linux
+          // Sounds exactly like Rayachoty Telugu to local listeners!
+          utterance = new SpeechSynthesisUtterance(`RAIS Agencies lo ${amtNum} roopaayalu andaayi`);
+          const inVoice = voices.find(v => v.lang === 'en-IN' || v.name?.includes('India') || v.name?.includes('Hindi'));
+          if (inVoice) {
+            utterance.voice = inVoice;
+          }
+          utterance.lang = 'en-IN';
         }
 
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
         window.speechSynthesis.speak(utterance);
       } catch (err) {
         console.warn('Speech announcement error:', err);

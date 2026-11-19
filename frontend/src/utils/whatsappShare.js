@@ -185,7 +185,29 @@ export const shareInvoiceOnWhatsApp = async ({
     }
     const totalObligation = billAmt + priorBal;
 
-    settlementSection = `✅ *Status:* *PAID IN FULL*\n💵 *Settlement Received:* *₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (${paymentMethod || 'CASH'})\n`;
+    const appliedToOld = Math.min(priorBal, receivedAmount);
+    const appliedToThis = Math.max(0, receivedAmount - appliedToOld);
+    const isThisBillPaid = isPaid || (appliedToThis >= billAmt - 0.01 && billAmt > 0);
+
+    let statusLabel = 'PAID IN FULL';
+    let statusIcon = '✅';
+    if (isThisBillPaid) {
+      if (finalBalance !== null && finalBalance !== undefined && finalBalance <= 0.01) {
+        statusLabel = 'PAID IN FULL';
+        statusIcon = '✅';
+      } else {
+        statusLabel = 'THIS BILL PAID IN FULL';
+        statusIcon = '✅';
+      }
+    } else if (appliedToThis <= 0.01 && receivedAmount > 0) {
+      statusLabel = 'THIS BILL PENDING (PRIOR DUE CLEARED)';
+      statusIcon = '🟠';
+    } else if (appliedToThis > 0.01) {
+      statusLabel = 'PARTIALLY PAID';
+      statusIcon = '🟠';
+    }
+
+    settlementSection = `${statusIcon} *Status:* *${statusLabel}*\n💵 *Settlement Received:* *₹${receivedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}* (${paymentMethod || 'CASH'})\n`;
     if (priorBal > 0.01) {
       settlementSection += `📋 *Prior Past Due:* +₹${priorBal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
       settlementSection += `📊 *Total Account Obligation:* ₹${totalObligation.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n`;
@@ -217,7 +239,8 @@ export const shareInvoiceOnWhatsApp = async ({
 
   // Only show UPI payment instructions if the bill is not fully paid OR if there is an active ledger due
   let upiSection = '';
-  const isCompletelyCleared = isSettled && (closingBalance === null || closingBalance <= 0.01);
+  const isThisBillPaidFinal = isPaid || (invOutstanding <= 0.01);
+  const isCompletelyCleared = isThisBillPaidFinal && (closingBalance === null || closingBalance <= 0.01);
   if (!isCompletelyCleared) {
     upiSection = `📲 *Pay via UPI:* \`9347453135@ybl\` (RAIS AGENCIES)\nGPay / PhonePe: 9347453135\n`;
   }
