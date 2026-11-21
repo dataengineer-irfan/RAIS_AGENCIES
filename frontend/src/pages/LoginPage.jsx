@@ -6,7 +6,7 @@ import { RaisLogo } from '../components/RaisLogo';
 export const LoginPage = () => {
   const { login, loading } = useAuth();
   const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('RaisAdmin@2026');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -18,9 +18,9 @@ export const LoginPage = () => {
     }
   };
 
-  const setDemoUser = (u, p) => {
+  const handleSelectUser = (u) => {
     setUsername(u);
-    setPassword(p);
+    setPassword('');
     setError('');
   };
 
@@ -97,14 +97,15 @@ export const LoginPage = () => {
           </button>
         </form>
 
-        {/* One-Click Role Accounts */}
+        {/* Select User Role */}
         <div className="pt-4 border-t border-slate-800">
           <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 text-center mb-2.5">
-            Quick Select User Account:
+            Select User Role:
           </p>
           <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
             <button
-              onClick={() => setDemoUser('admin', 'RaisAdmin@2026')}
+              type="button"
+              onClick={() => handleSelectUser('admin')}
               className={`p-2 rounded-lg border font-bold uppercase transition-all ${
                 username === 'admin'
                   ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
@@ -114,7 +115,8 @@ export const LoginPage = () => {
               Administrator
             </button>
             <button
-              onClick={() => setDemoUser('operator', 'RaisOperator@2026')}
+              type="button"
+              onClick={() => handleSelectUser('operator')}
               className={`p-2 rounded-lg border font-bold uppercase transition-all ${
                 username === 'operator'
                   ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
@@ -124,7 +126,8 @@ export const LoginPage = () => {
               Operator
             </button>
             <button
-              onClick={() => setDemoUser('viewer', 'RaisViewer@2026')}
+              type="button"
+              onClick={() => handleSelectUser('viewer')}
               className={`p-2 rounded-lg border font-bold uppercase transition-all ${
                 username === 'viewer'
                   ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
