@@ -103,6 +103,11 @@ export const InvoiceBuilderModal = ({
       setCustomers(custData);
       setProducts(prodData);
       setCategories(catData);
+      try {
+        if (prodData.length > 0) {
+          localStorage.setItem('rais_cached_products', JSON.stringify(prodData));
+        }
+      } catch (_) {}
 
       // ─── EDIT BILL MODE: Pre-populate from invoiceToEdit ───
       if (isEditMode && invoiceToEdit) {
@@ -1021,6 +1026,7 @@ export const InvoiceBuilderModal = ({
                           customer: customerData,
                           items: items,
                           products: products,
+                          recentPurchases: customerPricingHistory,
                           showRestock: includeRestockSuggestion,
                           mode: 'direct'
                         });
@@ -1041,6 +1047,7 @@ export const InvoiceBuilderModal = ({
                           customer: customerData,
                           items: items,
                           products: products,
+                          recentPurchases: customerPricingHistory,
                           showRestock: includeRestockSuggestion
                         });
                       }}
@@ -1334,7 +1341,7 @@ export const InvoiceBuilderModal = ({
 
                 {/* Visual Product Companion Spotlight Banner (Mirrors A4 Print / WhatsApp Image) */}
                 {(() => {
-                  const companion = deriveRestockSuggestion(items, products);
+                  const companion = deriveRestockSuggestion(items, products, null, '', customerPricingHistory);
                   if (!companion || !companion.name) return null;
                   const encodedName = encodeURIComponent(companion.name);
 
@@ -1465,7 +1472,8 @@ export const InvoiceBuilderModal = ({
                         outstanding_balance: estClosing
                       },
                       items: items,
-                      products: products
+                      products: products,
+                      recentPurchases: customerPricingHistory
                     });
                   }}
                   className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs rounded-xl uppercase tracking-wider transition-colors"

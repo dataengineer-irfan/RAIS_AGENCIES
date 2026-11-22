@@ -84,6 +84,7 @@ export const shareInvoiceOnWhatsApp = async ({
   customer,
   items = [],
   products = [],
+  recentPurchases = null,
   restockSuggestion = null,
   showRestock = true,
   mode = 'direct'
@@ -97,6 +98,22 @@ export const shareInvoiceOnWhatsApp = async ({
   const billAmt = parseFloat(invoice?.total_amount || 0);
   const totalAmtFormatted = billAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 });
   const invOutstanding = parseFloat(invoice?.outstanding_amount !== undefined ? invoice.outstanding_amount : invoice?.total_amount || 0);
+
+  // Fallback to cached products from localStorage if products array is empty
+  let effectiveProducts = products;
+  if ((!effectiveProducts || !effectiveProducts.length) && typeof window !== 'undefined') {
+    try {
+      const cached = JSON.parse(localStorage.getItem('rais_cached_products') || '[]');
+      if (Array.isArray(cached) && cached.length > 0) effectiveProducts = cached;
+    } catch (_) {}
+  }
+
+  // Resolve customer recent purchases from args, customer object, or pricing history
+  const effectiveRecentPurchases = recentPurchases || 
+    customer?.recent_purchases || 
+    customer?.pricing_history || 
+    customer?.customerPricingHistory || 
+    invoice?.recent_purchases;
 
   // Overall customer ledger due balance
   let overallDue = null;
@@ -248,10 +265,10 @@ export const shareInvoiceOnWhatsApp = async ({
   const billIdentifier = invoice?.invoice_number || invoice?.id || '';
   const cleanBillUrl = getCleanBillUrl(billIdentifier, 'invoice');
 
-  // Derive in-stock restock suggestion (strictly NO PRICES)
+  // Derive in-stock restock suggestion (strictly NO PRICES, honoring recent purchases)
   let restockSection = '';
   if (showRestock) {
-    const finalSuggestion = deriveRestockSuggestion(items, products, restockSuggestion);
+    const finalSuggestion = deriveRestockSuggestion(items, effectiveProducts, restockSuggestion, bName, effectiveRecentPurchases);
     if (finalSuggestion && finalSuggestion.display_text) {
       restockSection = `\n${finalSuggestion.display_text}\n`;
     }
@@ -278,7 +295,8 @@ ${settlementSection}${restockSection}${upiSection}${getCompactQuickLinks(cleanBi
         invoice,
         customer: customer || { business_name: custName, phone: custPhone },
         items,
-        products,
+        products: effectiveProducts,
+        recentPurchases: effectiveRecentPurchases,
         restockSuggestion,
         includeRestockSuggestion: showRestock
       });
@@ -314,7 +332,8 @@ ${settlementSection}${restockSection}${upiSection}${getCompactQuickLinks(cleanBi
             invoice,
             customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
             items,
-            products,
+            products: effectiveProducts,
+            recentPurchases: effectiveRecentPurchases,
             restockSuggestion,
             includeRestockSuggestion: showRestock
           });
@@ -335,7 +354,8 @@ ${settlementSection}${restockSection}${upiSection}${getCompactQuickLinks(cleanBi
             invoice,
             customer: { ...(customer || {}), business_name: bName, contact_person: cPerson, phone: custPhone },
             items,
-            products,
+            products: effectiveProducts,
+            recentPurchases: effectiveRecentPurchases,
             restockSuggestion,
             includeRestockSuggestion: showRestock
           });

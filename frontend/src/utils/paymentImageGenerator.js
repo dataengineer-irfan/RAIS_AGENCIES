@@ -513,7 +513,7 @@ export const generatePaymentBlob = async (data) => {
       : null;
     if (suggestion) {
       const imgUrl = suggestion.image_url || getProductImageUrl(suggestion);
-      preloadedImg = await preloadImage(imgUrl, 1200);
+      preloadedImg = await preloadImage(imgUrl, 4000);
     }
   } catch (err) {
     console.warn('Payment suggestion image preload failed gracefully:', err);

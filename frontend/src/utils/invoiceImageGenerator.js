@@ -55,7 +55,13 @@ export const formatCustomerDisplayName = (businessName, contactPerson) => {
   return `${bName} (${cPerson})`;
 };
 
-export const deriveRestockSuggestion = (items = [], products = [], explicitSuggestion = null, customerContextText = '') => {
+export const deriveRestockSuggestion = (
+  items = [], 
+  products = [], 
+  explicitSuggestion = null, 
+  customerContextText = '',
+  recentPurchases = null
+) => {
   if (explicitSuggestion) {
     const s = { ...explicitSuggestion };
     if (!s.image_url) s.image_url = getProductImageUrl(s);
@@ -65,6 +71,16 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
       s.packaging_unit = '100 NOS';
     }
     return s;
+  }
+
+  // Fallback to cached product catalogue from localStorage if not provided
+  if ((!products || !products.length) && typeof window !== 'undefined') {
+    try {
+      const cached = JSON.parse(localStorage.getItem('rais_cached_products') || '[]');
+      if (Array.isArray(cached) && cached.length > 0) {
+        products = cached;
+      }
+    } catch (_) {}
   }
 
   // 1. Analyze all items on the current or settled transaction
@@ -87,6 +103,49 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
 
   const allTxText = transactionTexts.join(' ');
 
+  // 1b. Analyze customer historical purchases (e.g. last 7 days) to disqualify already purchased items
+  const recentProductIds = new Set();
+  const recentSkus = new Set();
+  const recentTexts = [];
+
+  if (recentPurchases) {
+    const now = new Date();
+    // 7-day cutoff (YYYY-MM-DD)
+    const cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    if (Array.isArray(recentPurchases)) {
+      recentPurchases.forEach(item => {
+        if (!item) return;
+        if (typeof item === 'string') {
+          recentSkus.add(item.toUpperCase().trim());
+          recentProductIds.add(String(item));
+        } else if (typeof item === 'object') {
+          const itemDate = item.invoice_date || item.created_at || item.date;
+          if (itemDate && String(itemDate).substring(0, 10) < cutoffDate) {
+            return; // older than 7 days, allow re-recommendation
+          }
+          if (item.product_id) recentProductIds.add(String(item.product_id));
+          if (item.sku) recentSkus.add(String(item.sku).toUpperCase().trim());
+          const name = item.product_name || item.item_description || item.name || '';
+          if (name) recentTexts.push(name.toUpperCase());
+        }
+      });
+    } else if (typeof recentPurchases === 'object') {
+      // Pricing history map format: { [productId]: { invoice_date, ... } }
+      Object.entries(recentPurchases).forEach(([pid, info]) => {
+        if (!info) return;
+        const invDate = info.invoice_date || info.date;
+        if (invDate && String(invDate).substring(0, 10) < cutoffDate) {
+          return; // older than 7 days
+        }
+        recentProductIds.add(String(pid));
+        const p = (products || []).find(x => String(x?.id) === String(pid));
+        if (p?.sku) recentSkus.add(p.sku.toUpperCase().trim());
+        if (p?.name) recentTexts.push(p.name.toUpperCase());
+      });
+    }
+  }
+
   // 2. Detect Specific Category Purchases (to STRICTLY DISQUALIFY identical items)
   const hasPizzaBox = /PIZZA\s*BOX/i.test(allTxText);
   const hasBurgerBox = /BURGER\s*BOX/i.test(allTxText);
@@ -105,6 +164,18 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   const hasMomosNuggets = /MOMO|NUGGET|POPS|POPCORN/i.test(allTxText);
   const hasAnyBox = hasPizzaBox || hasBurgerBox || hasChickenBucket || /BOX|BUCKET/i.test(allTxText);
 
+  // Combined checks including recent 7-day purchases
+  const recentAllText = recentTexts.join(' ');
+  const hasRecentPeriPeri = hasPeriPeri || /PERI\s*PERI/i.test(recentAllText);
+  const hasRecentMayo = hasMayo || /MAYO/i.test(recentAllText);
+  const hasRecentOregano = hasOregano || /OREGANO/i.test(recentAllText);
+  const hasRecentCheese = hasCheese || /CHEESE|MOZZARELLA|MOZEROLLA/i.test(recentAllText);
+  const hasRecentKetchup = hasKetchup || /KETCHUP/i.test(recentAllText);
+  const hasRecentFries = hasFries || /FRIES/i.test(recentAllText);
+  const hasRecentBreading = hasBreading || /BREADING|MARINADE/i.test(recentAllText);
+  const hasRecentTortilla = hasTortilla || /TORTILLA|WRAP/i.test(recentAllText);
+  const hasRecentPatty = hasPatty || /PATTY/i.test(recentAllText);
+
   // General vertical affinity detection
   const isPizza = hasPizzaBox || hasCheese || hasPizzaSauce || /PIZZA|MOZEROLLA|MOZZARELLA|BASE\s*9|BASE\s*8/i.test(allTxText);
   const isBurger = hasBurgerBox || hasPatty || hasMayo || /BURGER|PATTY|BUN/i.test(allTxText);
@@ -115,9 +186,10 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   // 3. Strict Negative Disqualification Function
   const isDisqualified = (candidate) => {
     if (!candidate) return true;
-    if (purchasedProductIds.has(String(candidate.id))) return true;
+    const candId = String(candidate.id || '');
+    if (purchasedProductIds.has(candId) || recentProductIds.has(candId)) return true;
     const cSku = (candidate.sku || '').toUpperCase().trim();
-    if (cSku && purchasedSkus.has(cSku)) return true;
+    if (cSku && (purchasedSkus.has(cSku) || recentSkus.has(cSku))) return true;
 
     const cName = (candidate.name || '').toUpperCase();
     // SKU-prefix family & Takeaway Box exclusion: if customer bought ANY box, block ALL takeaway boxes/buckets
@@ -128,16 +200,16 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
     if (hasBurgerBox && /BURGER\s*BOX/i.test(cName)) return true;
     if (hasChickenBucket && /BUCKET|CHICKEN\s*BOX/i.test(cName)) return true;
     if (hasButterPaper && /BUTTER\s*PAPER|GREASEPROOF/i.test(cName)) return true;
-    if (hasKetchup && /KETCHUP/i.test(cName)) return true;
-    if (hasMayo && /MAYO/i.test(cName)) return true;
-    if (hasOregano && /OREGANO/i.test(cName)) return true;
-    if (hasCheese && /CHEESE|MOZZARELLA|MOZEROLLA/i.test(cName)) return true;
+    if (hasRecentKetchup && /KETCHUP/i.test(cName)) return true;
+    if (hasRecentMayo && /MAYO/i.test(cName)) return true;
+    if (hasRecentOregano && /OREGANO/i.test(cName)) return true;
+    if (hasRecentCheese && /CHEESE|MOZZARELLA|MOZEROLLA/i.test(cName)) return true;
     if (hasPizzaSauce && /PIZZA\s*SAUCE|PASTA\s*SAUCE/i.test(cName)) return true;
-    if (hasFries && /FRIES/i.test(cName)) return true;
-    if (hasPeriPeri && /PERI\s*PERI/i.test(cName)) return true;
-    if (hasBreading && /BREADING|MARINADE/i.test(cName)) return true;
-    if (hasTortilla && /TORTILLA|TORTILLAH|WRAP/i.test(cName)) return true;
-    if (hasPatty && /PATTY/i.test(cName)) return true;
+    if (hasRecentFries && /FRIES/i.test(cName)) return true;
+    if (hasRecentPeriPeri && /PERI\s*PERI/i.test(cName)) return true;
+    if (hasRecentBreading && /BREADING|MARINADE/i.test(cName)) return true;
+    if (hasRecentTortilla && /TORTILLA|TORTILLAH|WRAP/i.test(cName)) return true;
+    if (hasRecentPatty && /PATTY/i.test(cName)) return true;
 
     return false;
   };
@@ -145,7 +217,7 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
   // 4. Fallback if product catalogue is not loaded
   if (!products || !products.length) {
     if (isPizza) {
-      if (!hasOregano) {
+      if (!hasRecentOregano) {
         const pName = 'BIG BELL OREGANO SEASONING';
         return {
           sku: 'RAIS-SAU-06',
@@ -157,7 +229,7 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
           display_text: `📦 *IN STOCK FOR YOUR PIZZAS:* ${pName} (1 PACKET) — _Ready for immediate delivery_`
         };
       }
-      if (!hasCheese) {
+      if (!hasRecentCheese) {
         const pName = 'MILKY MIST MOZZARELLA CHEESE';
         return {
           sku: 'RAIS-CHS-01',
@@ -171,7 +243,7 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
       }
     }
     if (isBurger) {
-      if (!hasMayo) {
+      if (!hasRecentMayo) {
         const pName = 'DELMONTE TANDOORI MAYO';
         return {
           sku: 'RAIS-SAU-04',
@@ -183,7 +255,7 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
           display_text: `📦 *IN STOCK FOR YOUR BURGERS:* ${pName} (1 KG) — _Ready for immediate delivery_`
         };
       }
-      if (!hasFries) {
+      if (!hasRecentFries) {
         const pName = 'AMUL FRENCH FRIES 6MM';
         return {
           sku: 'RAIS-VEG-01',
@@ -195,9 +267,21 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
           display_text: `📦 *BEST-SELLING BURGER SIDE:* ${pName} (2.5 KG) — _Ready for immediate delivery_`
         };
       }
+      if (!hasRecentPeriPeri) {
+        const pName = 'VKL PERI PERI SPRINKLER';
+        return {
+          sku: 'RAIS-BRD-03',
+          name: pName,
+          packaging_unit: '1 PACKET',
+          context_note: 'Top Seasoning for Fries',
+          image_url: getProductImageUrl('RAIS-BRD-03', pName),
+          telugu_note: getTeluguCompanionPhrase(pName),
+          display_text: `📦 *TOP SEASONING FOR FRIES:* ${pName} (1 PACKET) — _Ready for immediate delivery_`
+        };
+      }
     }
     if (isWrap) {
-      if (hasTortilla) {
+      if (hasTortilla && !hasButterPaper) {
         const pName = 'PRINTED GREASEPROOF BUTTER PAPER';
         return {
           sku: 'RAIS-BOX-08',
@@ -210,16 +294,29 @@ export const deriveRestockSuggestion = (items = [], products = [], explicitSugge
         };
       }
     }
-    const defaultName = 'VKL PERI PERI SPRINKLER';
-    return {
-      sku: 'RAIS-BRD-03',
-      name: defaultName,
-      packaging_unit: '1 PACKET',
-      context_note: 'In Stock for your Kitchen',
-      image_url: getProductImageUrl('RAIS-BRD-03', defaultName),
-      telugu_note: getTeluguCompanionPhrase(defaultName),
-      display_text: `📦 *IN STOCK FOR YOUR KITCHEN:* ${defaultName} (1 PACKET) — _Ready for immediate delivery_`
-    };
+    if (!hasRecentPeriPeri) {
+      const defaultName = 'VKL PERI PERI SPRINKLER';
+      return {
+        sku: 'RAIS-BRD-03',
+        name: defaultName,
+        packaging_unit: '1 PACKET',
+        context_note: 'In Stock for your Kitchen',
+        image_url: getProductImageUrl('RAIS-BRD-03', defaultName),
+        telugu_note: getTeluguCompanionPhrase(defaultName),
+        display_text: `📦 *IN STOCK FOR YOUR KITCHEN:* ${defaultName} (1 PACKET) — _Ready for immediate delivery_`
+      };
+    } else {
+      const defaultName = 'PRINTED GREASEPROOF BUTTER PAPER';
+      return {
+        sku: 'RAIS-BOX-08',
+        name: defaultName,
+        packaging_unit: '1000 SHEETS',
+        context_note: 'Depot Fast-Moving Essential',
+        image_url: getProductImageUrl('RAIS-BOX-08', defaultName),
+        telugu_note: getTeluguCompanionPhrase(defaultName),
+        display_text: `📦 *DEPOT FAST-MOVING ESSENTIAL:* ${defaultName} (1000 SHEETS) — _Ready for immediate delivery_`
+      };
+    }
   }
 
   // 5. Available products: active, in-stock, and NOT disqualified
@@ -357,6 +454,7 @@ export const generateInvoiceCanvas = ({
   customer,
   items = [],
   products = [],
+  recentPurchases = null,
   restockSuggestion = null,
   includeRestockSuggestion = true,
   preloadedSuggestionImage = null
@@ -431,7 +529,13 @@ export const generateInvoiceCanvas = ({
 
   // Derive restock recommendation (strictly ZERO PRICES)
   const suggestion = includeRestockSuggestion !== false
-    ? deriveRestockSuggestion(processedItems, products, restockSuggestion || invoice?.restock_suggestion)
+    ? deriveRestockSuggestion(
+        processedItems, 
+        products, 
+        restockSuggestion || invoice?.restock_suggestion,
+        bName,
+        recentPurchases || customer?.recent_purchases || customer?.customerPricingHistory || invoice?.recent_purchases
+      )
     : null;
   const restockStripHeight = suggestion ? 84 : 0;
 
@@ -1195,11 +1299,17 @@ export const generateInvoiceBlob = async (data) => {
   try {
     const processedItems = (data?.items && data.items.length > 0) ? data.items : [];
     const suggestion = data?.includeRestockSuggestion !== false
-      ? deriveRestockSuggestion(processedItems, data?.products || [], data?.restockSuggestion || data?.invoice?.restock_suggestion)
+      ? deriveRestockSuggestion(
+          processedItems, 
+          data?.products || [], 
+          data?.restockSuggestion || data?.invoice?.restock_suggestion,
+          data?.customer?.business_name || '',
+          data?.recentPurchases || data?.customer?.recent_purchases || data?.customerPricingHistory || data?.invoice?.recent_purchases
+        )
       : null;
     if (suggestion) {
       const imgUrl = suggestion.image_url || getProductImageUrl(suggestion);
-      preloadedImg = await preloadImage(imgUrl, 1200);
+      preloadedImg = await preloadImage(imgUrl, 4000);
     }
   } catch (err) {
     console.warn('Suggestion image preload failed gracefully:', err);

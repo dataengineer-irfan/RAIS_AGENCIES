@@ -227,6 +227,24 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  // Helper to extract customer's recent purchases from in-memory invoices cache (last 7 days, 0 network egress)
+  const getCustomerRecentPurchases = (targetCustId, currentInvId) => {
+    if (!targetCustId || !Array.isArray(invoices)) return [];
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const recent = [];
+    invoices.forEach(inv => {
+      if (inv && inv.customer_id === targetCustId && inv.id !== currentInvId) {
+        const invDate = inv.invoice_date || inv.created_at;
+        if (invDate && String(invDate).substring(0, 10) >= cutoff) {
+          (inv.items || []).forEach(item => {
+            recent.push(item);
+          });
+        }
+      }
+    });
+    return recent;
+  };
+
   const handleSendWhatsAppInvoice = async (inv) => {
     if (!inv) return;
     let fullInvoice = inv;
@@ -237,6 +255,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       console.warn('Could not fetch fresh invoice details, sharing available data:', e);
     }
     const balanceToUse = fullInvoice.customer_outstanding_balance ?? fullInvoice.closing_balance ?? null;
+    const recentPurchases = getCustomerRecentPurchases(fullInvoice.customer_id, fullInvoice.id);
     await shareInvoiceOnWhatsApp({
       invoice: fullInvoice,
       customer: {
@@ -246,7 +265,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
         customer_code: fullInvoice.customer_code,
         outstanding_balance: balanceToUse
       },
-      items: fullInvoice.items || []
+      items: fullInvoice.items || [],
+      recentPurchases
     });
   };
 
@@ -260,6 +280,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       console.warn('Could not fetch fresh invoice details, sharing available data:', e);
     }
     const balanceToUse = fullInvoice.customer_outstanding_balance ?? fullInvoice.closing_balance ?? null;
+    const recentPurchases = getCustomerRecentPurchases(fullInvoice.customer_id, fullInvoice.id);
     await shareInvoiceImageFile({
       invoice: fullInvoice,
       customer: {
@@ -269,7 +290,8 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
         customer_code: fullInvoice.customer_code,
         outstanding_balance: balanceToUse
       },
-      items: fullInvoice.items || []
+      items: fullInvoice.items || [],
+      recentPurchases
     });
   };
 

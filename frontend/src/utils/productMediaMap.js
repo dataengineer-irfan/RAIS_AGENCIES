@@ -188,7 +188,7 @@ export function getTeluguCompanionPhrase(name = '') {
  * Preloads an image into an HTMLImageElement with a strict timeout.
  * Guaranteed never to throw; resolves to null on error or timeout.
  */
-export function preloadImage(url, timeoutMs = 1200) {
+export function preloadImage(url, timeoutMs = 4000) {
   if (typeof window === 'undefined' || !url) {
     return Promise.resolve(null);
   }
@@ -196,7 +196,18 @@ export function preloadImage(url, timeoutMs = 1200) {
   return new Promise((resolve) => {
     let resolved = false;
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+
+    // Only set crossOrigin for external remote URLs; same-origin relative assets (/assets/...) must NOT have crossOrigin set
+    if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) {
+      try {
+        const parsed = new URL(url);
+        if (typeof window !== 'undefined' && parsed.origin !== window.location.origin) {
+          img.crossOrigin = 'anonymous';
+        }
+      } catch (e) {
+        // Safe fallback for parsing errors
+      }
+    }
 
     const timer = setTimeout(() => {
       if (!resolved) {
