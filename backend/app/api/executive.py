@@ -31,7 +31,7 @@ def format_inr(val: float) -> str:
 import time
 
 _EXECUTIVE_CACHE = {"timestamp": 0, "data": None}
-_EXECUTIVE_CACHE_TTL = 180  # 180-second (3-minute) high-efficiency in-memory cache to prevent Supabase egress exhaustion
+_EXECUTIVE_CACHE_TTL = 21600  # 6-hour RAM cache (refreshes ~4 times a day to minimize Supabase egress)
 
 def invalidate_executive_cache():
     _EXECUTIVE_CACHE["timestamp"] = 0

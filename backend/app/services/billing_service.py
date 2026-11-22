@@ -64,6 +64,11 @@ class BillingService:
             _MATRIX_CACHE["data"] = None
         except Exception:
             pass
+        try:
+            from app.api.executive import invalidate_executive_cache
+            invalidate_executive_cache()
+        except Exception:
+            pass
 
     @staticmethod
     def calculate_invoice_totals(

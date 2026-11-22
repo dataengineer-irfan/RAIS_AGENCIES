@@ -23,7 +23,7 @@ _DASHBOARD_CACHE = {"timestamp": 0, "data": None}
 _AGING_SUMMARY_CACHE = {"timestamp": 0, "data": None}
 _CUSTOMER_AGING_CACHE = {"timestamp": 0, "data": None}
 _PRODUCT_SALES_CACHE = {"timestamp": 0, "data": None}
-CACHE_TTL_SECONDS = 120
+CACHE_TTL_SECONDS = 600  # 10-minute RAM cache
 
 def invalidate_reporting_caches():
     _DASHBOARD_CACHE["timestamp"] = 0

@@ -10,7 +10,7 @@ from app.models.analytics import MonthlyTarget
 from app.core.datetime_utils import get_ist_today
 
 _FORECAST_CACHE = {"timestamp": 0, "data": None}
-CACHE_TTL_SECONDS = 180  # 3-minute RAM cache to preserve Supabase egress bandwidth
+CACHE_TTL_SECONDS = 600  # 10-minute RAM cache to preserve Supabase egress bandwidth
 
 class ForecastingService:
     @staticmethod
