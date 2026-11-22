@@ -97,27 +97,39 @@ export const HomePage = ({
     }
   };
 
-  // Initial mount + high-efficiency 3-minute polling + smart focus sync + immediate event bus
+  // Initial mount + deep-efficiency 6-minute polling + smart idle sleep + immediate event bus
+  const lastUserActivityRef = useRef(Date.now());
+
   useEffect(() => {
     fetchBriefingData();
 
-    // 3-minute background telemetry polling (keeps Supabase egress minimal)
-    const pollInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
+    const recordUserActivity = () => {
+      const wasIdle = (Date.now() - lastUserActivityRef.current) > 300000;
+      lastUserActivityRef.current = Date.now();
+      // If user returns from > 5 min idle and data is older than 6 mins, refresh once
+      if (wasIdle && (Date.now() - lastFetchRef.current > 360000) && document.visibilityState === 'visible') {
         fetchBriefingData(false, true);
       }
-    }, 180000);
+    };
+
+    // 6-minute background telemetry polling (pauses completely when user is idle > 5 mins)
+    const pollInterval = setInterval(() => {
+      const isIdle = (Date.now() - lastUserActivityRef.current) > 300000;
+      if (document.visibilityState === 'visible' && !isIdle) {
+        fetchBriefingData(false, true);
+      }
+    }, 360000);
 
     const handleVisibilityChange = () => {
-      // Only refetch on tab switch if at least 90s have passed since last sync
-      if (document.visibilityState === 'visible' && (Date.now() - lastFetchRef.current > 90000)) {
+      // Only refetch on tab switch if at least 180s have passed since last sync
+      if (document.visibilityState === 'visible' && (Date.now() - lastFetchRef.current > 180000)) {
         fetchBriefingData(false, true);
       }
     };
 
     const handleWindowFocus = () => {
-      // Only refetch on window focus if at least 90s have passed since last sync
-      if (Date.now() - lastFetchRef.current > 90000) {
+      // Only refetch on window focus if at least 180s have passed since last sync
+      if (Date.now() - lastFetchRef.current > 180000) {
         fetchBriefingData(false, true);
       }
     };
@@ -130,12 +142,18 @@ export const HomePage = ({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleWindowFocus);
     window.addEventListener('rais:data-updated', handleDataUpdated);
+    window.addEventListener('mousemove', recordUserActivity, { passive: true });
+    window.addEventListener('keydown', recordUserActivity, { passive: true });
+    window.addEventListener('touchstart', recordUserActivity, { passive: true });
 
     return () => {
       clearInterval(pollInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('rais:data-updated', handleDataUpdated);
+      window.removeEventListener('mousemove', recordUserActivity);
+      window.removeEventListener('keydown', recordUserActivity);
+      window.removeEventListener('touchstart', recordUserActivity);
     };
   }, []);
 

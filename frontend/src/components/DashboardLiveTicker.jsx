@@ -320,22 +320,42 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
       fetchData();
     }
 
-    // 180-second (3-minute) refresh interval (keeps Supabase egress minimal)
-    const intervalId = setInterval(fetchData, 180000);
+    // 360-second (6-minute) refresh interval with idle sleep (halts when user is away > 5 mins)
+    let lastActivityTime = Date.now();
+    const onActivity = () => { lastActivityTime = Date.now(); };
+    window.addEventListener('mousemove', onActivity, { passive: true });
+    window.addEventListener('keydown', onActivity, { passive: true });
+    window.addEventListener('touchstart', onActivity, { passive: true });
 
-    // Stale data watchdog (if no fresh sync for > 270 seconds, mark as delayed)
+    const handleDataUpdated = () => {
+      if (isMountedRef.current) fetchData();
+    };
+    window.addEventListener('rais:data-updated', handleDataUpdated);
+
+    const intervalId = setInterval(() => {
+      const isIdle = (Date.now() - lastActivityTime) > 300000;
+      if (!isIdle) {
+        fetchData();
+      }
+    }, 360000);
+
+    // Stale data watchdog (if no fresh sync for > 540 seconds, mark as delayed)
     const watchdogId = setInterval(() => {
       if (!isMountedRef.current) return;
       const ageSeconds = (Date.now() - lastSyncTime.getTime()) / 1000;
-      if (ageSeconds > 270 && connectionStatus === 'live') {
+      if (ageSeconds > 540 && connectionStatus === 'live') {
         setConnectionStatus('delayed');
       }
-    }, 15000);
+    }, 30000);
 
     return () => {
       isMountedRef.current = false;
       clearInterval(intervalId);
       clearInterval(watchdogId);
+      window.removeEventListener('mousemove', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('touchstart', onActivity);
+      window.removeEventListener('rais:data-updated', handleDataUpdated);
     };
   }, [kpis, lastSyncTime, connectionStatus]);
 
