@@ -266,12 +266,15 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
   const [isTabHidden, setIsTabHidden] = useState(false);
 
   const isMountedRef = useRef(true);
+  const lastSyncTimeRef = useRef(new Date());
 
   // Sync prop changes
   useEffect(() => {
     if (kpis) {
       setInternalKpis(kpis);
-      setLastSyncTime(new Date());
+      const now = new Date();
+      lastSyncTimeRef.current = now;
+      setLastSyncTime(now);
       setConnectionStatus('live');
     }
   }, [kpis]);
@@ -292,7 +295,7 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
     };
   }, []);
 
-  // Background Data Fetcher with Sensible Interval (90 seconds)
+  // Background Data Fetcher with Sensible Interval (3 minutes, zero infinite loops)
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -304,7 +307,9 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
         const data = await reportApi.getDashboard();
         if (isMountedRef.current && data) {
           setInternalKpis(data);
-          setLastSyncTime(new Date());
+          const now = new Date();
+          lastSyncTimeRef.current = now;
+          setLastSyncTime(now);
           setConnectionStatus('live');
         }
       } catch (err) {
@@ -323,21 +328,21 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
     // 180-second (3-minute) refresh interval (keeps Supabase egress minimal)
     const intervalId = setInterval(fetchData, 180000);
 
-    // Stale data watchdog (if no fresh sync for > 270 seconds, mark as delayed)
+    // Stale data watchdog (checks lastSyncTimeRef without triggering React re-renders)
     const watchdogId = setInterval(() => {
       if (!isMountedRef.current) return;
-      const ageSeconds = (Date.now() - lastSyncTime.getTime()) / 1000;
-      if (ageSeconds > 270 && connectionStatus === 'live') {
-        setConnectionStatus('delayed');
+      const ageSeconds = (Date.now() - lastSyncTimeRef.current.getTime()) / 1000;
+      if (ageSeconds > 270) {
+        setConnectionStatus((prev) => (prev === 'live' ? 'delayed' : prev));
       }
-    }, 15000);
+    }, 30000);
 
     return () => {
       isMountedRef.current = false;
       clearInterval(intervalId);
       clearInterval(watchdogId);
     };
-  }, [kpis, lastSyncTime, connectionStatus]);
+  }, [kpis]);
 
   const items = useMemo(() => generateTickerItems(internalKpis), [internalKpis]);
   const formattedSyncTime = useMemo(() => formatISTTime(lastSyncTime), [lastSyncTime]);
