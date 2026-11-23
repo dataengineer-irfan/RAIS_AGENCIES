@@ -97,27 +97,27 @@ export const HomePage = ({
     }
   };
 
-  // Initial mount + high-efficiency 3-minute polling + smart focus sync + immediate event bus
+  // Initial mount + high-efficiency 5-minute polling + smart focus sync + immediate event bus
   useEffect(() => {
     fetchBriefingData();
 
-    // 3-minute background telemetry polling (keeps Supabase egress minimal)
+    // 5-minute background telemetry polling (keeps Supabase egress minimal)
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchBriefingData(false, true);
       }
-    }, 180000);
+    }, 300000);
 
     const handleVisibilityChange = () => {
-      // Only refetch on tab switch if at least 90s have passed since last sync
-      if (document.visibilityState === 'visible' && (Date.now() - lastFetchRef.current > 90000)) {
+      // Only refetch on tab switch if at least 180s have passed since last sync
+      if (document.visibilityState === 'visible' && (Date.now() - lastFetchRef.current > 180000)) {
         fetchBriefingData(false, true);
       }
     };
 
     const handleWindowFocus = () => {
-      // Only refetch on window focus if at least 90s have passed since last sync
-      if (Date.now() - lastFetchRef.current > 90000) {
+      // Only refetch on window focus if at least 180s have passed since last sync
+      if (Date.now() - lastFetchRef.current > 180000) {
         fetchBriefingData(false, true);
       }
     };
