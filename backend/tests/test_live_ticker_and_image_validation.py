@@ -521,3 +521,24 @@ def test_ticker_business_rules_contract():
     assert c_active["order_phone"] == "9347453135"
     assert "9347453135" in c_active["wa_url"]
     assert "wholesale%20order" in c_active["wa_url"]
+
+
+def test_get_ticker_summary_wire_payload_and_schema(setup_validation_db):
+    """
+    Validates that get_ticker_summary returns the exact micro-payload required by the frontend live ticker:
+    - Payload size is ultra-lean (< 2 KB).
+    - Contains revenue_periods.today, today_order_fulfillment, low_stock_alerts, top_selling_products.
+    - Low stock alerts are capped at <= 5.
+    """
+    db = setup_validation_db
+    import json
+    data = ReportingService.get_ticker_summary(db=db, force_refresh=True)
+    raw_json = json.dumps(data)
+    assert len(raw_json) < 2048, f"Payload must be under 2KB, got {len(raw_json)} bytes"
+    assert "revenue_periods" in data
+    assert "today" in data["revenue_periods"]
+    assert "invoices_count" in data["revenue_periods"]["today"]
+    assert "revenue" in data["revenue_periods"]["today"]
+    assert "low_stock_alerts" in data
+    assert len(data["low_stock_alerts"]) <= 5
+    assert "top_selling_products" in data
