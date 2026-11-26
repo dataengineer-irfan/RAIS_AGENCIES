@@ -167,7 +167,11 @@ def export_database_backup(
 
     total_records = 0
     for table_name, model_cls in models_to_backup:
-        records = serialize_table(db.query(model_cls))
+        query = db.query(model_cls)
+        # Cap high-churn telemetry/audit table to most recent 500 rows to prevent wire bloat
+        if table_name == "audit_logs":
+            query = query.order_by(model_cls.created_at.desc()).limit(500)
+        records = serialize_table(query)
         count = len(records)
         total_records += count
         backup_payload["tables"][table_name] = records

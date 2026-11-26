@@ -29,13 +29,21 @@ def quantize_amount(val: Decimal) -> Decimal:
 
 _INVOICES_CACHE: Dict[str, Any] = {}
 _INVOICES_CACHE_TTL: float = 60.0  # 60 seconds server-side in-memory TTL
+_LAST_ANALYTICS_INVALIDATION: float = 0.0
 logger = logging.getLogger("billing_service")
 
 class BillingService:
     @staticmethod
-    def invalidate_cache():
-        global _INVOICES_CACHE
+    def invalidate_cache(force_analytics: bool = False):
+        global _INVOICES_CACHE, _LAST_ANALYTICS_INVALIDATION
         _INVOICES_CACHE.clear()
+
+        # Debounce heavy downstream analytical cache invalidation to at most once every 60 seconds
+        now_ts = datetime.now(timezone.utc).timestamp()
+        if not force_analytics and (now_ts - _LAST_ANALYTICS_INVALIDATION < 60.0):
+            return
+
+        _LAST_ANALYTICS_INVALIDATION = now_ts
         try:
             from app.services.reporting_service import invalidate_reporting_caches
             invalidate_reporting_caches()

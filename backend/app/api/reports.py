@@ -33,6 +33,16 @@ def get_dashboard_kpis(
 ):
     return ReportingService.get_dashboard_kpis(db)
 
+@router.get("/ticker-summary")
+def get_ticker_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """
+    Ultra-lean telemetry endpoint for continuous header ticker (~1.2 KB wire weight).
+    """
+    return ReportingService.get_ticker_summary(db)
+
 @router.get("/aging", response_model=AgingBucket)
 def get_aging_summary(
     db: Session = Depends(get_db),

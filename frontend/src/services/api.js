@@ -133,6 +133,7 @@ const getCacheKey = (url, params) => {
 };
 
 const getPersistentKeyForUrl = (url, params) => {
+  if (url === '/reports/ticker-summary') return 'ticker_summary';
   if (url === '/reports/dashboard') return 'dashboard_kpis';
   if (url === '/customers' && (!params || Object.keys(params).length === 0 || params.limit === 100)) return 'customers_list';
   if (url === '/catalogue/categories') return 'categories_list';
@@ -144,15 +145,22 @@ const getPersistentKeyForUrl = (url, params) => {
   return null;
 };
 
+const getTtlForUrl = (url) => {
+  if (url === '/reports/ticker-summary') return 120000; // 2 minutes client RAM cache for live ticker
+  if (url.startsWith('/catalogue/')) return 300000; // 5 minutes client RAM cache for product & category catalogues
+  return CACHE_TTL_MS; // 60 seconds default
+};
+
 export const cachedGet = async (url, config = {}) => {
   const key = getCacheKey(url, config.params);
   const now = Date.now();
   const persistentKey = getPersistentKeyForUrl(url, config.params);
+  const ttl = getTtlForUrl(url);
 
   // 1. Check in-memory RAM cache first (fastest, 60s TTL)
   if (_CLIENT_CACHE.has(key)) {
     const cached = _CLIENT_CACHE.get(key);
-    if (now - cached.timestamp < CACHE_TTL_MS) {
+    if (now - cached.timestamp < ttl) {
       return cached.data;
     }
   }
@@ -517,6 +525,9 @@ export const paymentApi = {
 };
 
 export const reportApi = {
+  getTickerSummary: async () => {
+    return cachedGet('/reports/ticker-summary');
+  },
   getDashboard: async () => {
     return cachedGet('/reports/dashboard');
   },

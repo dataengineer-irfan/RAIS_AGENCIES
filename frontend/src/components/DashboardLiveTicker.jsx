@@ -304,7 +304,7 @@ export const ContinuousLiveTicker = ({ kpis = null, className = '' }) => {
         return; // Skip poll if tab is in background
       }
       try {
-        const data = await reportApi.getDashboard();
+        const data = await reportApi.getTickerSummary();
         if (isMountedRef.current && data) {
           setInternalKpis(data);
           const now = new Date();
