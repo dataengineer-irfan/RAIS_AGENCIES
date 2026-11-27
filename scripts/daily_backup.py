@@ -277,7 +277,10 @@ def run_backup():
     print("📦 Extracting table records:")
     try:
         for table_name, model_cls in models_to_backup:
-            records = serialize_model_instances(db.query(model_cls))
+            query = db.query(model_cls)
+            if table_name == "audit_logs":
+                query = query.order_by(model_cls.created_at.desc()).limit(500)
+            records = serialize_model_instances(query)
             count = len(records)
             total_records += count
             backup_payload["tables"][table_name] = records

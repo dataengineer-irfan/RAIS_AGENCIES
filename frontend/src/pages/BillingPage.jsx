@@ -116,7 +116,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   useEffect(() => {
     loadInvoices();
     if (customerApi && typeof customerApi.list === 'function') {
-      customerApi.list({ limit: 300 }).then(data => {
+      customerApi.list({ limit: 100 }).then(data => {
         const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
         setCustomersList(Array.isArray(list) ? list : []);
       }).catch(err => console.error('Failed to load customers for filter', err));
@@ -126,7 +126,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
   // Customer-scoped invoice fetcher: when a customer is selected, fetch their entire billing history from DB
   useEffect(() => {
     if (selectedCustomerId && selectedCustomerId !== 'ALL') {
-      billingApi.listInvoices({ customer_id: selectedCustomerId, limit: 500 }).then(data => {
+      billingApi.listInvoices({ customer_id: selectedCustomerId, limit: 100 }).then(data => {
         const custInvoices = Array.isArray(data) ? data : (data?.items || data?.data || []);
         if (custInvoices.length > 0) {
           setInvoices(prev => {
@@ -150,7 +150,7 @@ export const BillingPage = ({ onOpenInvoiceBuilder, onOpenPaymentForInvoice, onN
       setLoading(true);
     }
     try {
-      const data = await billingApi.listInvoices({ limit: 500 });
+      const data = await billingApi.listInvoices({ limit: 100 });
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);
       setInvoices(items);
       _invoicesMemoryCache = items;

@@ -150,7 +150,7 @@ export const PaymentsPage = ({ onOpenPaymentModal, onNavigate }) => {
     setLoading(true);
     try {
       const [data, summary] = await Promise.all([
-        paymentApi.list({ limit: 500 }),
+        paymentApi.list({ limit: 100 }),
         paymentApi.getSummary().catch(() => null)
       ]);
       const items = Array.isArray(data) ? data : (data?.items || data?.data || []);

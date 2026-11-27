@@ -128,6 +128,14 @@ export const clearApiCache = () => {
   _CLIENT_CACHE.clear();
 };
 
+export const invalidateApiCacheForPrefix = (...prefixes) => {
+  for (const key of _CLIENT_CACHE.keys()) {
+    if (prefixes.some(p => key.startsWith(p))) {
+      _CLIENT_CACHE.delete(key);
+    }
+  }
+};
+
 const getCacheKey = (url, params) => {
   return `${url}_${JSON.stringify(params || {})}`;
 };
@@ -194,12 +202,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401s, Invalidate Cache on Mutations, and Auto-Retry on Cold-Boot Timeouts
+// Handle 401s, Selective Cache Invalidation on Mutations, and Auto-Retry on Cold-Boot Timeouts
 api.interceptors.response.use(
   (response) => {
     const method = response.config.method?.toLowerCase();
     if (['post', 'put', 'patch', 'delete'].includes(method)) {
-      clearApiCache();
+      const reqUrl = (response.config?.url || '').replace(/^\/api/, '');
+      if (reqUrl.startsWith('/invoices')) {
+        invalidateApiCacheForPrefix('/invoices', '/reports', '/analytics', '/customers/reorder-alerts');
+      } else if (reqUrl.startsWith('/payments')) {
+        invalidateApiCacheForPrefix('/payments', '/invoices', '/reports', '/analytics', '/customers');
+      } else if (reqUrl.startsWith('/catalogue')) {
+        invalidateApiCacheForPrefix('/catalogue', '/reports', '/analytics');
+      } else if (reqUrl.startsWith('/customers')) {
+        invalidateApiCacheForPrefix('/customers', '/reports', '/analytics');
+      } else if (reqUrl.startsWith('/orders') || reqUrl.startsWith('/quotations') || reqUrl.startsWith('/inventory')) {
+        invalidateApiCacheForPrefix('/orders', '/quotations', '/inventory', '/reports');
+      } else {
+        clearApiCache();
+      }
     }
     return response;
   },

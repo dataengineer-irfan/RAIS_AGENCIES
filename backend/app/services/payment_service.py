@@ -328,7 +328,7 @@ class PaymentService:
     @staticmethod
     def _build_payment_response(p: Payment, cust_balance: Optional[Decimal] = None, is_list: bool = False) -> PaymentResponse:
         allocs = []
-        if p.allocations:
+        if not is_list and p.allocations:
             for a in p.allocations:
                 allocs.append(
                     PaymentAllocationResponse(
@@ -445,8 +445,7 @@ class PaymentService:
         limit: int = 100
     ) -> List[PaymentResponse]:
         query = db.query(Payment).options(
-            joinedload(Payment.customer),
-            selectinload(Payment.allocations).joinedload(PaymentAllocation.invoice)
+            joinedload(Payment.customer)
         ).filter(Payment.status.notin_(["CANCELLED", "VOID"]))
         if customer_id:
             query = query.filter(Payment.customer_id == customer_id)

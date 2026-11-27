@@ -26,7 +26,8 @@ def list_invoices(
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
     skip: int = Query(0, ge=0),
-    limit: int = Query(500, ge=1, le=2000),
+    limit: int = Query(100, ge=1, le=2000),
+    include_items: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_authenticated)
 ):
@@ -38,7 +39,8 @@ def list_invoices(
         from_date=from_date,
         to_date=to_date,
         skip=skip,
-        limit=limit
+        limit=limit,
+        include_items=include_items
     )
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
